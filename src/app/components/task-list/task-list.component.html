@@ -1,0 +1,9 @@
+<ul>
+  <li *ngFor="let task of taskList">
+    <app-task (edit)="onEdit($event)"
+              (remove)="onRemove($event)"
+              (startTime)="onStartTime($event)"
+              [task]="task">
+    </app-task>
+  </li>
+</ul>
