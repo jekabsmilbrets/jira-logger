@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { createStore, UseStore, get, set, update, del, getMany, keys, entries } from 'idb-keyval';
-import { Observable, throwError, from } from 'rxjs';
+// eslint-disable-next-line import/named
+import { createStore, get, set, update, del, entries, UseStore } from 'idb-keyval';
+import { Observable, from } from 'rxjs';
 
 @Injectable()
 export class StorageService {
@@ -11,10 +12,28 @@ export class StorageService {
     this.createStores();
   }
 
+  public list(customStoreName?: string): Observable<any> {
+    if (customStoreName) {
+      if (!this.stores.has(customStoreName)) {
+        throw new Error('Invalid store!');
+      }
+
+      return from(
+        entries(
+          this.stores.get(customStoreName) as UseStore,
+        ),
+      );
+    }
+
+    return from(
+      entries(),
+    );
+  }
+
   public read(key: IDBValidKey, customStoreName?: string): Observable<any> {
     if (customStoreName) {
       if (!this.stores.has(customStoreName)) {
-        return throwError(() => 'Invalid store!');
+        throw new Error('Invalid store!');
       }
 
       return from(
@@ -30,28 +49,10 @@ export class StorageService {
     );
   }
 
-  public listAll(customStoreName?: string): Observable<any> {
-    if (customStoreName) {
-      if (!this.stores.has(customStoreName)) {
-        return throwError(() => 'Invalid store!');
-      }
-
-      return from(
-        entries(
-          this.stores.get(customStoreName) as UseStore,
-        ),
-      );
-    }
-
-    return from(
-      entries(),
-    );
-  }
-
   public create(key: IDBValidKey, value: any, customStoreName?: string): Observable<void> {
     if (customStoreName) {
       if (!this.stores.has(customStoreName)) {
-        return throwError(() => 'Invalid store!');
+        throw new Error('Invalid store!');
       }
 
       return from(
@@ -74,7 +75,7 @@ export class StorageService {
   public update(key: IDBValidKey, value: any, customStoreName?: string): Observable<void> {
     if (customStoreName) {
       if (!this.stores.has(customStoreName)) {
-        return throwError(() => 'Invalid store!');
+        throw new Error('Invalid store!');
       }
 
       return from(
@@ -94,10 +95,10 @@ export class StorageService {
     );
   }
 
-  public delete(key: IDBValidKey, value: any, customStoreName?: string): Observable<void> {
+  public delete(key: IDBValidKey, customStoreName?: string): Observable<void> {
     if (customStoreName) {
       if (!this.stores.has(customStoreName)) {
-        return throwError(() => 'Invalid store!');
+        throw new Error('Invalid store!');
       }
 
       return from(
@@ -115,6 +116,10 @@ export class StorageService {
     );
   }
 
+  public listStores(): string[] {
+    return Array.from(this.stores.keys());
+  }
+
   private createStores(): void {
     const stores = [
       'task',
@@ -123,7 +128,7 @@ export class StorageService {
     stores.forEach(
       (storeName: string) => this.stores.set(
         storeName,
-        createStore(storeName + '-db', storeName + 'store'),
+        createStore(storeName + '-db', storeName + '-store'),
       ),
     );
   }

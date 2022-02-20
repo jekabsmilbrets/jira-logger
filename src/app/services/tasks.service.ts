@@ -1,16 +1,16 @@
 import { Injectable } from '@angular/core';
-import { StorageService } from './storage.service';
-import { BehaviorSubject, Observable, tap, switchMap, take, map, of } from 'rxjs';
+import { BehaviorSubject, Observable, tap, switchMap, of, map, take } from 'rxjs';
+import { TaskInterface } from 'src/app/interfaces/task.interface';
 import { Task } from 'src/app/models/task.model';
 
-@Injectable({
-  providedIn: 'root',
-})
+import { StorageService } from './storage.service';
+
+@Injectable()
 export class TasksService {
   public tasks$: Observable<Task[]>;
 
   private tasksSubject: BehaviorSubject<Task[]> = new BehaviorSubject<Task[]>([]);
-  private storeName = 'task';
+  private readonly storeName = 'task';
 
   constructor(
     private storage: StorageService,
@@ -18,24 +18,20 @@ export class TasksService {
     this.tasks$ = this.tasksSubject.asObservable();
   }
 
-  public getTasks(): Observable<Task[]> {
-    return this.storage.listAll(this.storeName)
+  public list(): Observable<Task[]> {
+    return this.storage.list(this.storeName)
                .pipe(
-                 tap((tasks) => this.tasksSubject.next(tasks)),
-               );
-  }
-
-  public update(task: Task): Observable<Task> {
-    return this.storage.update(task.name, task, this.storeName)
-               .pipe(
-                 switchMap(
-                   () => this.getTasks()
-                 ),
                  map(
-                   (tasks: Task[]) => tasks.find(
-                     (nTask: Task) => nTask.name === task.name
-                   ) as Task
+                   (tasksData) => tasksData
+                     .map(
+                       ([, taskData]: [string, TaskInterface]) => new Task(taskData),
+                     )
+                     .sort(
+                       (a: Task, b: Task) => a.createDate.getTime() < b.createDate.getTime() ? 1 : -1,
+                     ),
                  ),
+                 tap((tasks: Task[]) => console.log(tasks)),
+                 tap((tasks: Task[]) => this.tasksSubject.next(tasks)),
                );
   }
 
@@ -43,12 +39,38 @@ export class TasksService {
     return this.storage.create(task.name, task, this.storeName)
                .pipe(
                  switchMap(
-                   () => this.getTasks()
+                   () => this.list().pipe(take(1)),
                  ),
-                 map(
-                   (tasks: Task[]) => tasks.find(
-                     (nTask: Task) => nTask.name === task.name
-                   ) as Task
+                 switchMap(
+                   (tasks: Task[]) => {
+                     const foundTask: Task | undefined = this.findTask(tasks, task.name);
+
+                     if (!foundTask) {
+                       throw new Error(`Problems creating task "${task.name}"!`);
+                     }
+
+                     return of(foundTask);
+                   },
+                 ),
+               );
+  }
+
+  public update(task: Task): Observable<Task> {
+    return this.storage.update(task.name, task, this.storeName)
+               .pipe(
+                 switchMap(
+                   () => this.list().pipe(take(1)),
+                 ),
+                 switchMap(
+                   (tasks: Task[]) => {
+                     const foundTask: Task | undefined = this.findTask(tasks, task.name);
+
+                     if (!foundTask) {
+                       throw new Error(`Problems updating task "${task.name}"!`);
+                     }
+
+                     return of(foundTask);
+                   },
                  ),
                );
   }
@@ -56,12 +78,17 @@ export class TasksService {
   public delete(task: Task): Observable<void> {
     return this.storage.delete(task.name, this.storeName)
                .pipe(
+                 take(1),
                  switchMap(
-                   () => this.getTasks()
+                   () => this.list().pipe(take(1)),
                  ),
-                 switchMap(
-                   () => of()
-                 )
-               )
+                 switchMap(() => of(undefined)),
+               );
+  }
+
+  private findTask(tasks: Task[], taskName: string): Task | undefined {
+    return tasks.find(
+      (task: Task) => task.name === taskName,
+    );
   }
 }
