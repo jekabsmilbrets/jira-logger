@@ -18,13 +18,5 @@
       "Pretty Diff",
       "JS-Beautify"
     ]
-  },
-  "JavaScript": {
-    "beautifiers": [
-      "Prettier",
-      "Pretty Diff",
-      "JS-Beautify",
-      "ESLint"
-    ]
   }
 }
