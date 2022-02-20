@@ -88,6 +88,35 @@ export class TasksService {
                );
   }
 
+  public stopAllTaskWorkLogs(ignoreTask: Task): Observable<void> {
+    return this.tasks$
+               .pipe(
+                 take(1),
+                 switchMap(
+                   (tasks: Task[]) => this.storage.massUpdate(
+                     this.findAndFilterTasksForTimeLogStop(tasks, ignoreTask),
+                     this.storeName,
+                   ),
+                 ),
+               );
+
+  }
+
+  private findAndFilterTasksForTimeLogStop(tasks: Task[], ignoreTask: Task): { key: IDBValidKey; value: any }[] {
+    return tasks
+      .filter((task: Task) => task.lastTimeLogId !== null && task.id !== ignoreTask.id)
+      .map(
+        (task: Task) => {
+          task.stopTimeLog();
+
+          return {
+            key: task.name,
+            value: task,
+          };
+        },
+      );
+  }
+
   private findTask(tasks: Task[], taskName: string): Task | undefined {
     return tasks.find(
       (task: Task) => task.name === taskName,
