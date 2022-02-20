@@ -6,6 +6,7 @@ export interface TaskInterface extends ModelInterface {
   createDate: Date;
 
   name: string;
+  description?: string;
 
   lastTimeLogId?: string | null;
 
