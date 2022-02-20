@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { TaskListComponent } from './components/task-list/task-list.component';
 import { TaskComponent } from './components/task/task.component';
+import { ReadableTimePipe } from './pipes/readable-time.pipe';
 import { TasksService } from './services/tasks.service';
 
 import { TaskRoutingModule } from './task-routing.module';
@@ -21,6 +22,7 @@ import { TimerComponent } from './views/timer/timer.component';
     ReportComponent,
     TaskComponent,
     TaskListComponent,
+    ReadableTimePipe,
   ],
   imports: [
     CommonModule,
