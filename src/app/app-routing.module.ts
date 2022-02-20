@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { ReportComponent } from 'src/app/views/report/report.component';
+
 import { TasksComponent } from './views/tasks/tasks.component';
 import { TimerComponent } from './views/timer/timer.component';
 
