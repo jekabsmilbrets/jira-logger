@@ -1,9 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { ReportComponent } from 'src/app/views/report/report.component';
-
-import { TasksComponent } from './views/tasks/tasks.component';
-import { TimerComponent } from './views/timer/timer.component';
 
 const routes: Routes = [
   {
@@ -12,20 +8,12 @@ const routes: Routes = [
     pathMatch: 'full',
   },
   {
-    path: 'report',
-    component: ReportComponent,
-  },
-  {
     path: 'tasks',
-    component: TasksComponent,
-  },
-  {
-    path: 'timer',
-    component: TimerComponent,
+    loadChildren: () => import('./modules/task/task.module').then(m => m.TaskModule),
   },
   {
     path: '**',
-    redirectTo: '',
+    redirectTo: '**',
   },
 ];
 
