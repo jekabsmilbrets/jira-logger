@@ -1,19 +1,22 @@
 import { NgModule } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { ServiceWorkerModule } from '@angular/service-worker';
+import { StorageService } from 'src/app/services/storage.service';
+import { TasksService } from 'src/app/services/tasks.service';
+
+import { environment } from '../environments/environment';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { ServiceWorkerModule } from '@angular/service-worker';
-import { environment } from '../environments/environment';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { TaskListComponent } from './components/task-list/task-list.component';
+import { TaskComponent } from './components/task/task.component';
+import { ReportComponent } from './views/report/report.component';
 import { TasksComponent } from './views/tasks/tasks.component';
 import { TimerComponent } from './views/timer/timer.component';
-import { ReportComponent } from './views/report/report.component';
-import { TaskComponent } from './components/task/task.component';
-import { TaskListComponent } from './components/task-list/task-list.component';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 
 @NgModule({
   declarations: [
@@ -22,7 +25,7 @@ import { MatIconModule } from '@angular/material/icon';
     TimerComponent,
     ReportComponent,
     TaskComponent,
-    TaskListComponent
+    TaskListComponent,
   ],
   imports: [
     BrowserModule,
@@ -38,7 +41,11 @@ import { MatIconModule } from '@angular/material/icon';
     MatButtonModule,
     MatIconModule,
   ],
-  providers: [],
-  bootstrap: [AppComponent]
+  providers: [
+    StorageService,
+    TasksService,
+  ],
+  bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {
+}
