@@ -1,5 +1,4 @@
 <button (click)="createTask()" color="primary" mat-raised-button>Create task</button>
-<app-task-list (edit)="onEdit($event)"
-               (remove)="onRemove($event)"
-               (startTime)="onStartTime($event)"
+<app-task-list (remove)="onRemove($event)"
+               (update)="onUpdate($event)"
                [tasks]="tasks$ | async"></app-task-list>

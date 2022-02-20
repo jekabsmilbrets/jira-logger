@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
+
 import { Observable, take } from 'rxjs';
 
-import { Task } from '../../models/task.model';
-import { TasksService } from '../../services/tasks.service';
+import { Task } from '@task/models/task.model';
+import { TasksService } from '@task/services/tasks.service';
 
 @Component({
   selector: 'app-tasks',
@@ -41,7 +42,7 @@ export class TasksComponent implements OnInit {
         .subscribe();
   }
 
-  public onEdit(task: Task): void {
+  public onUpdate(task: Task): void {
     this.tasksService.update(task)
         .pipe(
           take(1),
@@ -55,9 +56,5 @@ export class TasksComponent implements OnInit {
           take(1),
         )
         .subscribe();
-  }
-
-  public onStartTime(task: Task): void {
-    console.log('onStartTime ', {task});
   }
 }
