@@ -16,6 +16,8 @@
       },
       "extends": [
         "plugin:@angular-eslint/recommended",
+        "plugin:@angular-eslint/ng-cli-compat",
+        "plugin:@angular-eslint/ng-cli-compat--formatting-add-on",
         "plugin:@angular-eslint/template/process-inline-templates"
       ],
       "rules": {
@@ -34,7 +36,61 @@
             "prefix": "app",
             "style": "kebab-case"
           }
-        ]
+        ],
+        "import/no-unresolved": "off",
+        "import/named": "warn",
+        "import/namespace": "warn",
+        "import/no-named-as-default": "off",
+        "import/export": "warn",
+        "import/order": [
+          "error",
+          {
+            "alphabetize": {
+              "order": "asc"
+            },
+            "groups": [
+              "builtin",
+              "external",
+              "parent",
+              "sibling",
+              "index"
+            ],
+            "pathGroups": [
+              {
+                "pattern": "rxjs|rxjs/**",
+                "group": "builtin",
+                "position": "after"
+              },
+              {
+                "pattern": "@core/**",
+                "group": "external",
+                "position": "after"
+              },
+              {
+                "pattern": "@shared/**",
+                "group": "external",
+                "position": "after"
+              }
+            ],
+            "newlines-between": "always-and-inside-groups",
+            "pathGroupsExcludedImportTypes": []
+          }
+        ],
+        "@typescript-eslint/member-ordering": [
+          "error",
+          {
+            "default": [
+              "public-field",
+              "protected-field",
+              "private-field",
+              "constructor",
+              "public-method",
+              "protected-method",
+              "private-method"
+            ]
+          }
+        ],
+        "no-underscore-dangle": "off"
       }
     },
     {
