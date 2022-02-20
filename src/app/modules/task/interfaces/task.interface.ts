@@ -1,11 +1,13 @@
+import { ModelInterface } from '@core/interfaces/model.interface';
+
 import { TimeLogInterface } from './time-log.interface';
 
-export interface TaskInterface {
+export interface TaskInterface extends ModelInterface {
   createDate: Date;
 
   name: string;
 
-  lastTimeLogId?: number;
+  lastTimeLogId?: string | null;
 
   timeLogs: { [key: number]: TimeLogInterface };
 }
