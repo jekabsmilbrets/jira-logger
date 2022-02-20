@@ -1,7 +1,7 @@
-import { TimeLogInterface } from '../interfaces/time-log.interface';
+import { TimeLogInterface } from '@task/interfaces/time-log.interface';
 
 export class TimeLog implements TimeLogInterface {
-  private _id!: number;
+  private _id!: string;
 
   private _endTime!: Date;
   private _startTime!: Date;
@@ -12,11 +12,11 @@ export class TimeLog implements TimeLogInterface {
     Object.assign(this, data);
   }
 
-  public get id(): number {
+  public get id(): string {
     return this._id;
   }
 
-  public set id(value: number) {
+  public set id(value: string) {
     this._id = value;
   }
 
