@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 
-import { Observable, take } from 'rxjs';
+import { Observable, take, of, iif, switchMap } from 'rxjs';
+
+import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
 
 import { Task } from '@task/models/task.model';
 import { TasksService } from '@task/services/tasks.service';
@@ -42,12 +44,27 @@ export class TasksComponent implements OnInit {
         .subscribe();
   }
 
-  public onUpdate(task: Task): void {
-    this.tasksService.update(task)
-        .pipe(
-          take(1),
-        )
-        .subscribe();
+  public onUpdate([task, action]: [Task, TaskUpdateActionEnum]): void {
+    iif(
+      () => action === TaskUpdateActionEnum.startWorkLog,
+      this.tasksService.stopAllTaskWorkLogs(task)
+          .pipe(
+            take(1),
+          ),
+      of(null),
+    )
+      .pipe(
+        switchMap(
+          () => this.tasksService.update(task)
+                    .pipe(
+                      take(1),
+                    ),
+        ),
+      )
+      .pipe(
+        take(1),
+      )
+      .subscribe();
   }
 
   public onRemove(task: Task): void {
