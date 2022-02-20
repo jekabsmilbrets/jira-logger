@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 // eslint-disable-next-line import/named
-import { createStore, get, set, update, del, entries, UseStore } from 'idb-keyval';
+import { createStore, get, set, del, entries, UseStore, setMany } from 'idb-keyval';
 import { Observable, from } from 'rxjs';
 
 @Injectable()
@@ -73,24 +73,34 @@ export class StorageService {
   }
 
   public update(key: IDBValidKey, value: any, customStoreName?: string): Observable<void> {
+    return this.create(key, value, customStoreName);
+  }
+
+  public massUpdate(data: { key: IDBValidKey; value: any }[], customStoreName?: string): Observable<void> {
+    const dataEntries: [IDBValidKey, any][] = data.map(
+      (dataRow: { key: IDBValidKey; value: any }) => [
+        dataRow.key,
+        dataRow.value,
+      ],
+    );
+
     if (customStoreName) {
       if (!this.stores.has(customStoreName)) {
         throw new Error('Invalid store!');
       }
 
       return from(
-        set(
-          key,
-          value,
+        setMany(
+          dataEntries,
           this.stores.get(customStoreName) as UseStore,
         ),
       );
     }
 
+
     return from(
-      update(
-        key,
-        value,
+      setMany(
+        dataEntries,
       ),
     );
   }
