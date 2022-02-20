@@ -93,10 +93,18 @@ export class TasksService {
                .pipe(
                  take(1),
                  switchMap(
-                   (tasks: Task[]) => this.storage.massUpdate(
-                     this.findAndFilterTasksForTimeLogStop(tasks, ignoreTask),
-                     this.storeName,
-                   ),
+                   (tasks: Task[]) => {
+                     const data = this.findAndFilterTasksForTimeLogStop(tasks, ignoreTask);
+
+                     if (data.length === 0) {
+                       return of(undefined);
+                     }
+
+                     return this.storage.massUpdate(
+                       data,
+                       this.storeName,
+                     );
+                   },
                  ),
                );
 
@@ -104,7 +112,7 @@ export class TasksService {
 
   private findAndFilterTasksForTimeLogStop(tasks: Task[], ignoreTask: Task): { key: IDBValidKey; value: any }[] {
     return tasks
-      .filter((task: Task) => task.lastTimeLogId !== null && task.id !== ignoreTask.id)
+      .filter((task: Task) => task.id !== ignoreTask.id)
       .map(
         (task: Task) => {
           task.stopTimeLog();
