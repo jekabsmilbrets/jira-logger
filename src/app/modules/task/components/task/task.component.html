@@ -4,7 +4,7 @@
   <mat-card-content>Task desc</mat-card-content>
 
   <mat-card-actions>
-    <button (click)="onEdit(task)" aria-label="Edit" mat-icon-button>
+    <button (click)="onUpdate(task)" aria-label="Edit" mat-icon-button>
       <mat-icon>edit</mat-icon>
     </button>
 
@@ -12,8 +12,9 @@
       <mat-icon>delete</mat-icon>
     </button>
 
-    <button (click)="onStartTime(task)" aria-label="Start Timer" color="primary" mat-icon-button>
+    <button (click)="onToggleTimeLog(task)" aria-label="Start Timer" color="primary" mat-icon-button>
       <mat-icon>timer</mat-icon>
+      <mat-icon>{{task.lastTimeLogId ? 'pause' : 'play_arrow'}}</mat-icon>
     </button>
   </mat-card-actions>
 </mat-card>
