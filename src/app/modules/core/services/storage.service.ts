@@ -79,7 +79,7 @@ export class StorageService {
       }
 
       return from(
-        update(
+        set(
           key,
           value,
           this.stores.get(customStoreName) as UseStore,

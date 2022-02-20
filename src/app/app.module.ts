@@ -3,11 +3,12 @@ import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ServiceWorkerModule } from '@angular/service-worker';
 
-import { environment } from '../environments/environment';
+import { environment } from 'environments/environment';
+
+import { CoreModule } from '@core/core.module';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { StorageService } from './modules/task/services/storage.service';
 
 @NgModule({
   declarations: [
@@ -23,10 +24,10 @@ import { StorageService } from './modules/task/services/storage.service';
       registrationStrategy: 'registerWhenStable:30000',
     }),
     BrowserAnimationsModule,
+
+    CoreModule,
   ],
-  providers: [
-    StorageService,
-  ],
+  providers: [],
   bootstrap: [AppComponent],
 })
 export class AppModule {
