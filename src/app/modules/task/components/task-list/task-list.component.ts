@@ -1,5 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 
+import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
+
 import { Task } from '@task/models/task.model';
 
 @Component({
@@ -12,13 +14,16 @@ export class TaskListComponent {
   public tasks: Task[] | null = [];
 
   @Output()
-  public update: EventEmitter<Task> = new EventEmitter<Task>();
+  public update: EventEmitter<[Task, TaskUpdateActionEnum]> = new EventEmitter<[Task, TaskUpdateActionEnum]>();
 
   @Output()
   public remove: EventEmitter<Task> = new EventEmitter<Task>();
 
-  public onUpdate(task: Task): void {
-    this.update.emit(task);
+  public onUpdate([task, action]: [Task, TaskUpdateActionEnum]): void {
+    this.update.emit([
+      task,
+      action,
+    ]);
   }
 
   public onRemove(task: Task): void {
