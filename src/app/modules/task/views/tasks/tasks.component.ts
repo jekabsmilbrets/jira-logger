@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { FormGroup, FormControl, Validators, AbstractControl } from '@angular/forms';
 
 import { Observable, take, of, iif, switchMap } from 'rxjs';
 
@@ -14,6 +15,28 @@ import { TasksService } from '@task/services/tasks.service';
 })
 export class TasksComponent implements OnInit {
   public tasks$: Observable<Task[]>;
+  public createTaskForm: FormGroup = new FormGroup({
+    name: new FormControl(
+      undefined,
+      [Validators.required],
+      [
+        (control: AbstractControl) => this.tasks$
+                                          .pipe(
+                                            take(1),
+                                            switchMap(
+                                              (tasks: Task[]) => {
+                                                const value = control.value;
+
+                                                if (tasks.find((task) => task.name === value)) {
+                                                  return of({'duplicate-task': true});
+                                                }
+
+                                                return of(null);
+                                              },
+                                            ),
+                                          ),
+      ]),
+  });
 
   constructor(
     private tasksService: TasksService,
@@ -31,17 +54,16 @@ export class TasksComponent implements OnInit {
 
   public createTask(): void {
     const task = new Task({
-      name: 'MTET-' + (Math.floor(Math.random() * 10000) + 10000).toString().substring(1),
+      name: this.createTaskForm.get('name')?.value,
     });
-
-    task.startTimeLog('test');
-    task.stopTimeLog();
 
     this.tasksService.create(task)
         .pipe(
           take(1),
         )
-        .subscribe();
+        .subscribe(
+          () => this.createTaskForm.reset(),
+        );
   }
 
   public onUpdate([task, action]: [Task, TaskUpdateActionEnum]): void {
