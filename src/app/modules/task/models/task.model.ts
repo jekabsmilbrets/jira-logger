@@ -9,6 +9,7 @@ export class Task implements TaskInterface {
   private _createDate!: Date;
   private _lastTimeLogId!: string | null;
   private _timeLogs: { [key: string]: TimeLogInterface } = {};
+  private _description!: string;
 
   constructor(data?: Partial<TaskInterface>) {
     Object.assign(this, data);
@@ -38,6 +39,14 @@ export class Task implements TaskInterface {
 
   public set name(value: string) {
     this._name = value;
+  }
+
+  public get description(): string {
+    return this._description;
+  }
+
+  public set description(value: string) {
+    this._description = value;
   }
 
 
