@@ -1,13 +1,17 @@
 <mat-card>
   <mat-card-title>{{task.name}}</mat-card-title>
-  <mat-card-content>Go to task</mat-card-content>
+
+  <mat-card-content>Task desc</mat-card-content>
+
   <mat-card-actions>
     <button (click)="onEdit(task)" aria-label="Edit" mat-icon-button>
       <mat-icon>edit</mat-icon>
     </button>
+
     <button (click)="onRemove(task)" aria-label="Remove" color="warn" mat-icon-button>
       <mat-icon>delete</mat-icon>
     </button>
+
     <button (click)="onStartTime(task)" aria-label="Start Timer" color="primary" mat-icon-button>
       <mat-icon>timer</mat-icon>
     </button>
