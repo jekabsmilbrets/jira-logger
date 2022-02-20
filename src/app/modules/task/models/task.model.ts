@@ -33,6 +33,7 @@ export class Task implements TaskInterface {
     this._id = value;
   }
 
+
   public get name(): string {
     return this._name;
   }
@@ -88,6 +89,21 @@ export class Task implements TaskInterface {
     this._timeLogs = value;
   }
 
+  public get timeLoggedToday(): number {
+    const timeLogs: TimeLog[] = Object.values(this.timeLogs) as TimeLog[];
+    let timeSpentInSeconds = 0;
+
+    timeLogs.forEach((timeLog: TimeLog) => {
+      if (!timeLog.endTime || !timeLog.startTime) {
+        return;
+      }
+
+      timeSpentInSeconds += timeLog.endTime.getTime() - timeLog.startTime.getTime();
+    });
+
+    return Math.ceil(timeSpentInSeconds / 1000);
+  }
+
   public startTimeLog(description?: string): string {
     if (this.lastTimeLogId) {
       throw new Error(`There is running Time Log already with ID "${this.lastTimeLogId}"!`);
@@ -107,22 +123,16 @@ export class Task implements TaskInterface {
     return timeLog.id;
   }
 
-  public stopTimeLog(id?: string): void {
-    if (!id) {
-      if (this.lastTimeLogId) {
-        id = this.lastTimeLogId;
-      }
-
-      if (!id) {
-        throw new Error('No usable Time Log id defined!');
-      }
+  public stopTimeLog(): void {
+    if (!this.lastTimeLogId) {
+      return;
     }
 
-    if (!this.timeLogs.hasOwnProperty(id)) {
-      throw new Error(`Could not find time log for ID: "${id}" for task "${this.name}"`);
+    if (!this.timeLogs.hasOwnProperty(this.lastTimeLogId)) {
+      throw new Error(`Could not find time log for ID: "${this.lastTimeLogId}" for task "${this.name}"`);
     }
 
-    const timeLog: TimeLog = this.timeLogs[id] as TimeLog;
+    const timeLog: TimeLog = this.timeLogs[this.lastTimeLogId] as TimeLog;
 
     timeLog.endTime = new Date();
     this.lastTimeLogId = null;
