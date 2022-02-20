@@ -1,9 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
+import { ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 
 import { TaskListComponent } from './components/task-list/task-list.component';
 import { TaskComponent } from './components/task/task.component';
@@ -26,11 +29,14 @@ import { TimerComponent } from './views/timer/timer.component';
   ],
   imports: [
     CommonModule,
+    ReactiveFormsModule,
     TaskRoutingModule,
     MatCardModule,
     MatIconModule,
     MatButtonModule,
     MatButtonToggleModule,
+    MatFormFieldModule,
+    MatInputModule,
   ],
   providers: [
     TasksService,

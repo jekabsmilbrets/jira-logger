@@ -1,4 +1,12 @@
-<button (click)="createTask()" color="primary" mat-raised-button>Create task</button>
+<form (ngSubmit)="createTask()" [formGroup]="createTaskForm">
+  <mat-form-field>
+    <mat-label>Task</mat-label>
+    <input formControlName="name" matInput>
+  </mat-form-field>
+
+  <button [disabled]="!createTaskForm.valid" color="primary" mat-raised-button>Create task</button>
+</form>
+
 <app-task-list (remove)="onRemove($event)"
                (update)="onUpdate($event)"
                [tasks]="tasks$ | async"></app-task-list>
