@@ -7,6 +7,8 @@ import { environment } from 'environments/environment';
 
 import { CoreModule } from '@core/core.module';
 
+import { LayoutModule } from '@layout/layout.module';
+
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 
@@ -16,7 +18,6 @@ import { AppComponent } from './app.component';
   ],
   imports: [
     BrowserModule,
-    AppRoutingModule,
     ServiceWorkerModule.register('ngsw-worker.js', {
       enabled: environment.production,
       // Register the ServiceWorker as soon as the app is stable
@@ -26,6 +27,9 @@ import { AppComponent } from './app.component';
     BrowserAnimationsModule,
 
     CoreModule,
+    LayoutModule,
+
+    AppRoutingModule,
   ],
   providers: [],
   bootstrap: [AppComponent],
