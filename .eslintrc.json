@@ -70,6 +70,11 @@
                 "pattern": "@task/**",
                 "group": "external",
                 "position": "after"
+              },
+              {
+                "pattern": "@layout/**",
+                "group": "external",
+                "position": "after"
               }
             ],
             "newlines-between": "always-and-inside-groups",

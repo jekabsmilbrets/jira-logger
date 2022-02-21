@@ -30,6 +30,9 @@
       "@task/*": [
         "app/modules/task/*"
       ],
+      "@layout/*": [
+        "app/modules/layout/*"
+      ],
     }
   },
   "angularCompilerOptions": {
