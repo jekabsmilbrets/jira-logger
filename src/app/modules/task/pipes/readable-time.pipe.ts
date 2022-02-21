@@ -5,7 +5,7 @@ import { Pipe, PipeTransform } from '@angular/core';
 })
 export class ReadableTimePipe implements PipeTransform {
 
-  public transform(seconds: number): unknown {
+  public transform(seconds: number, withSeconds: boolean = false): unknown {
     const levels = [
       [
         Math.floor(seconds / 31536000),
@@ -23,8 +23,15 @@ export class ReadableTimePipe implements PipeTransform {
         Math.floor((((seconds % 31536000) % 86400) % 3600) / 60),
         'm',
       ], // minutes
-      // [(((seconds % 31536000) % 86400) % 3600) % 60, 's'], // seconds
     ];
+
+    if (withSeconds) {
+      levels.push([
+        (((seconds % 31536000) % 86400) % 3600) % 60,
+        's',
+      ]); // seconds
+    }
+
     let output = '';
 
     for (let i = 0, max = levels.length; i < max; i++) {
@@ -36,5 +43,4 @@ export class ReadableTimePipe implements PipeTransform {
 
     return output.trim();
   }
-
 }

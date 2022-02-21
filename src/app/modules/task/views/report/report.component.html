@@ -1,1 +1,45 @@
-<p>report works!</p>
+<mat-table [dataSource]="dataSource" matSort>
+  <ng-container matColumnDef="name">
+    <mat-header-cell *matHeaderCellDef
+                     mat-sort-header="name"
+                     sortActionDescription="Sort by Task">
+      Task
+    </mat-header-cell>
+
+    <mat-cell *matCellDef="let row">
+      {{row.name}}
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="description">
+    <mat-header-cell *matHeaderCellDef
+                     mat-sort-header="description"
+                     sortActionDescription="Sort by Description">
+      Description
+    </mat-header-cell>
+
+    <mat-cell *matCellDef="let row">
+      {{row.description ?? 'N/A'}}
+    </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="timeLoggedToday">
+    <mat-header-cell *matHeaderCellDef
+                     mat-sort-header="timeLoggedToday"
+                     sortActionDescription="Sort by Total Time Logged">
+      Total Time Logged
+    </mat-header-cell>
+
+    <mat-cell *matCellDef="let row">
+      {{row.timeLoggedToday | readableTime: true}}
+    </mat-cell>
+  </ng-container>
+
+  <mat-header-row *matHeaderRowDef="['name', 'description', 'timeLoggedToday']"></mat-header-row>
+  <mat-row *matRowDef="let row; columns: ['name', 'description', 'timeLoggedToday']"></mat-row>
+</mat-table>
+
+<mat-paginator [pageSizeOptions]="[5, 10, 20]"
+               aria-label="Select page"
+               showFirstLastButtons>
+</mat-paginator>
