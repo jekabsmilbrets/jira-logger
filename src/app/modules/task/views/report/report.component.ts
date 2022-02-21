@@ -9,14 +9,12 @@ import { Task } from '@task/models/task.model';
 
 import { TasksService } from '@task/services/tasks.service';
 
-
 @Component({
   selector: 'app-report',
   templateUrl: './report.component.html',
   styleUrls: ['./report.component.scss'],
 })
 export class ReportComponent implements OnInit, AfterViewInit, OnDestroy {
-
   public dataSource: MatTableDataSource<Task> = new MatTableDataSource<Task>([]);
 
   @ViewChild(MatSort)
@@ -29,11 +27,11 @@ export class ReportComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private tasksService: TasksService,
   ) {
-    this.tasksService.tasks$
-        .pipe(
-          tap((data: Task[]) => this.dataSource.data = data),
-        )
-        .subscribe();
+    this.tasksSubscription = this.tasksService.tasks$
+                                 .pipe(
+                                   tap((data: Task[]) => this.dataSource.data = data),
+                                 )
+                                 .subscribe();
   }
 
   public ngOnInit(): void {
