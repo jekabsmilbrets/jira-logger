@@ -1,0 +1,10 @@
+<mat-nav-list>
+  <a (click)="onSidenavClose()"
+     *ngFor="let nav of navData"
+     [routerLink]="nav.route"
+     mat-list-item
+     routerLinkActive="active-link">
+    <mat-icon>{{nav.icon}}</mat-icon>
+    <span class="nav-caption">{{nav.name}}</span>
+  </a>
+</mat-nav-list>
