@@ -3,7 +3,6 @@ import { RouterModule, Routes } from '@angular/router';
 
 import { ReportComponent } from './views/report/report.component';
 import { TasksComponent } from './views/tasks/tasks.component';
-import { TimerComponent } from './views/timer/timer.component';
 
 const routes: Routes = [
   {
@@ -18,10 +17,6 @@ const routes: Routes = [
   {
     path: 'list',
     component: TasksComponent,
-  },
-  {
-    path: 'timer',
-    component: TimerComponent,
   },
   {
     path: '**',
