@@ -16,12 +16,10 @@ import { TasksService } from './services/tasks.service';
 import { TaskRoutingModule } from './task-routing.module';
 import { ReportComponent } from './views/report/report.component';
 import { TasksComponent } from './views/tasks/tasks.component';
-import { TimerComponent } from './views/timer/timer.component';
 
 @NgModule({
   declarations: [
     TasksComponent,
-    TimerComponent,
     ReportComponent,
     TaskComponent,
     TaskListComponent,
