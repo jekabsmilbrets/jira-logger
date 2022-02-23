@@ -15,6 +15,7 @@ import { TasksService } from '@task/services/tasks.service';
 })
 export class TasksComponent implements OnInit {
   public tasks$: Observable<Task[]>;
+
   public createTaskForm: FormGroup = new FormGroup({
     name: new FormControl(
       undefined,
@@ -36,6 +37,7 @@ export class TasksComponent implements OnInit {
                                             ),
                                           ),
       ]),
+    description: new FormControl(),
   });
 
   constructor(
@@ -55,6 +57,7 @@ export class TasksComponent implements OnInit {
   public createTask(): void {
     const task = new Task({
       name: this.createTaskForm.get('name')?.value,
+      description: this.createTaskForm.get('description')?.value,
     });
 
     this.tasksService.create(task)
