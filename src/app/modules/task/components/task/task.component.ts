@@ -8,6 +8,7 @@ import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
 import { Task } from '@task/models/task.model';
 import { TasksService } from '@task/services/tasks.service';
 
+
 @Component({
   selector: 'app-task',
   templateUrl: './task.component.html',
@@ -91,5 +92,13 @@ export class TaskComponent implements OnInit {
       task,
       action,
     ]);
+  }
+
+  public toggleEditMode(): void {
+    this.editMode = !this.editMode;
+    this.formGroup.patchValue({
+      name: this.task.name,
+      description: this.task.description,
+    });
   }
 }
