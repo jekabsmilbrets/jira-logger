@@ -10,7 +10,9 @@ import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
+import { MatToolbarModule } from '@angular/material/toolbar';
 
+import { ReportModeSwitcherComponent } from './components/report-mode-switcher/report-mode-switcher.component';
 import { TaskListComponent } from './components/task-list/task-list.component';
 import { TaskComponent } from './components/task/task.component';
 import { ReadableTimePipe } from './pipes/readable-time.pipe';
@@ -27,6 +29,7 @@ import { TasksComponent } from './views/tasks/tasks.component';
     TaskComponent,
     TaskListComponent,
     ReadableTimePipe,
+    ReportModeSwitcherComponent,
   ],
   imports: [
     CommonModule,
@@ -41,6 +44,7 @@ import { TasksComponent } from './views/tasks/tasks.component';
     MatTableModule,
     MatSortModule,
     MatPaginatorModule,
+    MatToolbarModule,
   ],
   providers: [
     TasksService,
