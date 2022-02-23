@@ -5,6 +5,13 @@ import { MatTableDataSource } from '@angular/material/table';
 
 import { take, tap, Subscription } from 'rxjs';
 
+import { DynamicMenu } from '@core/models/dynamic-menu';
+
+import { DynamicMenuService } from '@core/services/dynamic-menu.service';
+
+import { ReportModeSwitcherComponent } from '@task/components/report-mode-switcher/report-mode-switcher.component';
+
+
 import { Task } from '@task/models/task.model';
 
 import { TasksService } from '@task/services/tasks.service';
@@ -26,7 +33,16 @@ export class ReportComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
     private tasksService: TasksService,
+    private dynamicMenuService: DynamicMenuService,
   ) {
+    this.dynamicMenuService.addDynamicMenu(
+      new DynamicMenu(
+        ReportModeSwitcherComponent,
+        {
+          route: '/tasks/report',
+        },
+      ),
+    );
     this.tasksSubscription = this.tasksService.tasks$
                                  .pipe(
                                    tap((data: Task[]) => this.dataSource.data = data),
