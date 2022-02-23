@@ -1,10 +1,22 @@
-<form (ngSubmit)="createTask()" [formGroup]="createTaskForm">
+<form (ngSubmit)="createTask()"
+      [formGroup]="createTaskForm">
   <mat-form-field>
     <mat-label>Task</mat-label>
-    <input formControlName="name" matInput>
+    <input formControlName="name"
+           matInput>
   </mat-form-field>
 
-  <button [disabled]="!createTaskForm.valid" color="primary" mat-raised-button>Create task</button>
+  <mat-form-field>
+    <mat-label>Description</mat-label>
+    <textarea formControlName="description"
+              matInput></textarea>
+  </mat-form-field>
+
+  <button [disabled]="!createTaskForm.valid"
+          color="primary"
+          mat-raised-button>
+    Create task
+  </button>
 </form>
 
 <app-task-list (remove)="onRemove($event)"
