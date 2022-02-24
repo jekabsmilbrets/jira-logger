@@ -67,6 +67,11 @@
                 "position": "after"
               },
               {
+                "pattern": "@shared/**",
+                "group": "external",
+                "position": "after"
+              },
+              {
                 "pattern": "@task/**",
                 "group": "external",
                 "position": "after"
