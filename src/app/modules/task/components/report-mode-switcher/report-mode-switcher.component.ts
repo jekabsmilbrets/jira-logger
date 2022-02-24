@@ -24,7 +24,7 @@ export class ReportModeSwitcherComponent implements OnDestroy {
     },
   ];
 
-  public reportModeFormControl: FormControl = new FormControl();
+  public reportModeFormControl: FormControl = new FormControl(ReportModeEnum.total);
   private reportModeSubscription: Subscription;
 
   constructor(
