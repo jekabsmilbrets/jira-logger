@@ -35,8 +35,8 @@
     </mat-cell>
   </ng-container>
 
-  <mat-header-row *matHeaderRowDef="['name', 'description', 'timeLoggedToday']"></mat-header-row>
-  <mat-row *matRowDef="let row; columns: ['name', 'description', 'timeLoggedToday']"></mat-row>
+  <mat-header-row *matHeaderRowDef="columns"></mat-header-row>
+  <mat-row *matRowDef="let row; columns: columns"></mat-row>
 </mat-table>
 
 <mat-paginator [pageSizeOptions]="[5, 10, 20]"
