@@ -1,0 +1,9 @@
+<mat-form-field>
+  <mat-label>Report mode</mat-label>
+  <mat-select [formControl]="reportModeFormControl">
+    <mat-option *ngFor="let reportMode of reportModes; let i = index"
+                [value]="reportMode.value">
+      {{reportMode.viewValue}}
+    </mat-option>
+  </mat-select>
+</mat-form-field>
