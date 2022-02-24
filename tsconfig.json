@@ -27,6 +27,9 @@
       "@core/*": [
         "app/modules/core/*"
       ],
+      "@shared/*": [
+        "app/modules/shared/*"
+      ],
       "@task/*": [
         "app/modules/task/*"
       ],
