@@ -3,6 +3,8 @@ import { ReactiveFormsModule } from '@angular/forms';
 
 import { SharedModule } from '@shared/shared.module';
 
+import { ReportService } from '@task/services/report.service';
+
 import { ReportModeSwitcherComponent } from './components/report-mode-switcher/report-mode-switcher.component';
 import { TaskListComponent } from './components/task-list/task-list.component';
 import { TaskComponent } from './components/task/task.component';
@@ -29,6 +31,7 @@ import { TasksComponent } from './views/tasks/tasks.component';
   ],
   providers: [
     TasksService,
+    ReportService,
   ],
 })
 export class TaskModule {
