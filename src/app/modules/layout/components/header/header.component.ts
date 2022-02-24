@@ -1,4 +1,4 @@
-import { Component, Input, ViewChild, OnDestroy } from '@angular/core';
+import { Component, Input, ViewChild, OnDestroy, Injector } from '@angular/core';
 import { MatSidenav } from '@angular/material/sidenav';
 
 import { Router, NavigationEnd } from '@angular/router';
@@ -28,6 +28,7 @@ export class HeaderComponent implements OnDestroy {
   constructor(
     private dynamicMenuService: DynamicMenuService,
     private router: Router,
+    private _injector: Injector,
   ) {
     this.routerEventsSubscription = this.router.events
                                         .pipe(
@@ -60,7 +61,17 @@ export class HeaderComponent implements OnDestroy {
                        const viewContainerRef = this.dynamicMenu.viewContainerRef;
                        viewContainerRef.clear();
 
-                       viewContainerRef.createComponent<DynamicMenuInterface>(dynamicMenu.component);
+                       viewContainerRef.createComponent<DynamicMenuInterface>(
+                         dynamicMenu.component,
+                         {
+                           injector: Injector.create(
+                             {
+                               providers: dynamicMenu?.data?.providers ?? [],
+                               parent: this._injector,
+                             },
+                           ),
+                         },
+                       );
                      } else {
                        const viewContainerRef = this.dynamicMenu.viewContainerRef;
                        viewContainerRef.clear();
