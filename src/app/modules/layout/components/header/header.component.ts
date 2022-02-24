@@ -52,7 +52,6 @@ export class HeaderComponent implements OnDestroy {
                  take(1),
                  tap(
                    (dynamicMenus: DynamicMenu[]) => {
-                     console.log({...navigationEndEvent});
                      const dynamicMenu: DynamicMenu | undefined = dynamicMenus.find(
                        (dM: DynamicMenu) => dM.data.route === navigationEndEvent.url,
                      );

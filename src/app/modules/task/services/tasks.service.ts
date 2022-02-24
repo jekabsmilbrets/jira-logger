@@ -32,7 +32,6 @@ export class TasksService {
                        (a: Task, b: Task) => a.createDate.getTime() < b.createDate.getTime() ? 1 : -1,
                      ),
                  ),
-                 tap((tasks: Task[]) => console.log(tasks)),
                  tap((tasks: Task[]) => this.tasksSubject.next(tasks)),
                );
   }
