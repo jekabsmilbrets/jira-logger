@@ -33,14 +33,16 @@
       <button (click)="toggleEditMode()"
               *ngIf="!editMode"
               aria-label="Edit"
-              mat-icon-button>
+              mat-icon-button
+              type="button">
         <mat-icon>edit</mat-icon>
       </button>
-      
+
       <button (click)="toggleEditMode()"
               *ngIf="editMode"
               aria-label="Edit"
-              mat-icon-button>
+              mat-icon-button
+              type="button">
         <mat-icon>cancel</mat-icon>
       </button>
 
@@ -55,14 +57,16 @@
       <button (click)="onRemove(task)"
               aria-label="Remove"
               color="warn"
-              mat-icon-button>
+              mat-icon-button
+              type="button">
         <mat-icon>delete</mat-icon>
       </button>
 
       <button (click)="onToggleTimeLog(task)"
               aria-label="Start Timer"
               color="primary"
-              mat-icon-button>
+              mat-icon-button
+              type="button">
         <mat-icon>timer</mat-icon>
         <mat-icon>{{task.lastTimeLogId ? 'pause' : 'play_arrow'}}</mat-icon>
       </button>
