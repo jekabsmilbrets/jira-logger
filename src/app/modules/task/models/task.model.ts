@@ -1,12 +1,14 @@
+import { Searchable } from '@shared/interfaces/searchable.interface';
+
 import { TaskInterface } from '@task/interfaces/task.interface';
 import { TimeLogInterface } from '@task/interfaces/time-log.interface';
 
 import { TimeLog } from './time-log.model';
 
-export class Task implements TaskInterface {
+export class Task implements TaskInterface, Searchable {
   private _id!: string;
   private _name!: string;
-  private _createDate!: Date;
+  private _createDate!: number;
   private _lastTimeLogId!: string | null;
   private _timeLogs: { [key: string]: TimeLogInterface } = {};
   private _description!: string;
@@ -56,11 +58,11 @@ export class Task implements TaskInterface {
       this.createDate = new Date();
     }
 
-    return this._createDate;
+    return new Date(this._createDate);
   }
 
   public set createDate(value: Date) {
-    this._createDate = value;
+    this._createDate = value.getTime();
   }
 
 
@@ -89,7 +91,7 @@ export class Task implements TaskInterface {
     this._timeLogs = value;
   }
 
-  public get timeLoggedToday(): number {
+  public get timeLogged(): number {
     const timeLogs: TimeLog[] = Object.values(this.timeLogs) as TimeLog[];
     let timeSpentInSeconds = 0;
 

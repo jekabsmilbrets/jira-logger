@@ -3,8 +3,8 @@ import { TimeLogInterface } from '@task/interfaces/time-log.interface';
 export class TimeLog implements TimeLogInterface {
   private _id!: string;
 
-  private _endTime!: Date;
-  private _startTime!: Date;
+  private _endTime!: number;
+  private _startTime!: number;
 
   private _description!: string;
 
@@ -21,19 +21,19 @@ export class TimeLog implements TimeLogInterface {
   }
 
   public get startTime(): Date {
-    return this._startTime;
+    return new Date(this._startTime);
   }
 
   public set startTime(value: Date) {
-    this._startTime = value;
+    this._startTime = value.getTime();
   }
 
   public get endTime(): Date {
-    return this._endTime;
+    return new Date(this._endTime);
   }
 
   public set endTime(value: Date) {
-    this._endTime = value;
+    this._endTime = value.getTime();
   }
 
   public get description(): string {

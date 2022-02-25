@@ -24,8 +24,8 @@
                   matInput></textarea>
       </mat-form-field>
 
-      <span *ngIf="task.timeLoggedToday > 59">
-        Total Time Worked: {{ task.timeLoggedToday | readableTime }}
+      <span *ngIf="task.timeLogged > 59">
+        Total Time Worked: {{ task.timeLogged | readableTime }}
       </span>
     </mat-card-content>
 
