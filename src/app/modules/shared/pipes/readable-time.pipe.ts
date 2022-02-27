@@ -5,7 +5,11 @@ import { Pipe, PipeTransform } from '@angular/core';
 })
 export class ReadableTimePipe implements PipeTransform {
 
-  public transform(seconds: number, withSeconds: boolean = false): unknown {
+  public transform(seconds: number, withSeconds: boolean = false): string {
+    if (!seconds) {
+      return '';
+    }
+
     const levels = [
       [
         Math.floor(seconds / 31536000),
