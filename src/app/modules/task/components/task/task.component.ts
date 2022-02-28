@@ -3,6 +3,8 @@ import { FormGroup, FormControl, Validators, AbstractControl } from '@angular/fo
 
 import { take, switchMap, of, Observable } from 'rxjs';
 
+import { TaskTagsEnum } from '@task/enums/task-tags.enum';
+
 import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
 
 import { Task } from '@task/models/task.model';
@@ -48,7 +50,23 @@ export class TaskComponent implements OnInit {
                                           ),
       ]),
     description: new FormControl(),
+    tags: new FormControl([TaskTagsEnum.opex]),
   });
+
+  public tags: { viewValue: string; value: TaskTagsEnum }[] = [
+    {
+      value: TaskTagsEnum.opex,
+      viewValue: 'OPEX',
+    },
+    {
+      value: TaskTagsEnum.capex,
+      viewValue: 'CAPEX',
+    },
+    {
+      value: TaskTagsEnum.other,
+      viewValue: 'OTHER',
+    },
+  ];
 
   constructor(
     private tasksService: TasksService,
@@ -60,12 +78,20 @@ export class TaskComponent implements OnInit {
     this.formGroup.patchValue({
       name: this.task.name,
       description: this.task.description,
+      tags: this.task.tags,
     });
+  }
+
+  public viewTag(tag: TaskTagsEnum): string {
+    return this.tags.find((sTag) => sTag.value === tag)?.viewValue ?? '';
   }
 
   public onUpdate(task: Task): void {
     task.name = this.formGroup.get('name')?.value;
     task.description = this.formGroup.get('description')?.value;
+    task.tags = this.formGroup.get('tags')?.value ?? [];
+
+    console.log(task);
 
     this.update.emit([
       task,
