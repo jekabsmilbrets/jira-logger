@@ -12,6 +12,15 @@
               matInput></textarea>
   </mat-form-field>
 
+  <mat-form-field>
+    <mat-label>Tags</mat-label>
+    <mat-select formControlName="tags" multiple>
+      <mat-option *ngFor="let tag of tags" [value]="tag.value">
+        {{tag.viewValue}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
   <button [disabled]="!createTaskForm.valid"
           color="primary"
           mat-raised-button>
