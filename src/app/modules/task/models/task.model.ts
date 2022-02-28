@@ -1,23 +1,26 @@
+import { Searchable } from '@shared/interfaces/searchable.interface';
+
 import { TaskInterface } from '@task/interfaces/task.interface';
 import { TimeLogInterface } from '@task/interfaces/time-log.interface';
 
 import { TimeLog } from './time-log.model';
 
-export class Task implements TaskInterface {
-  private _id!: string;
+export class Task implements TaskInterface, Searchable {
+  private _uuid!: string;
   private _name!: string;
-  private _createDate!: Date;
+  private _createDate!: number;
   private _lastTimeLogId!: string | null;
   private _timeLogs: { [key: string]: TimeLogInterface } = {};
   private _description!: string;
+  private _timeLogged = 0;
 
   constructor(data?: Partial<TaskInterface>) {
     Object.assign(this, data);
 
     this.timeLogs = this.timeLogs;
 
-    if (!this.id) {
-      this.id = `task-${this.name}-${(new Date()).getTime().toString()}`;
+    if (!this.uuid) {
+      this.uuid = `task-${this.name}-${(new Date()).getTime().toString()}`;
     }
 
     if (!this._createDate) {
@@ -25,12 +28,12 @@ export class Task implements TaskInterface {
     }
   }
 
-  public get id(): string {
-    return this._id;
+  public get uuid(): string {
+    return this._uuid;
   }
 
-  public set id(value: string) {
-    this._id = value;
+  public set uuid(value: string) {
+    this._uuid = value;
   }
 
 
@@ -56,11 +59,11 @@ export class Task implements TaskInterface {
       this.createDate = new Date();
     }
 
-    return this._createDate;
+    return new Date(this._createDate);
   }
 
   public set createDate(value: Date) {
-    this._createDate = value;
+    this._createDate = value.getTime();
   }
 
 
@@ -89,19 +92,12 @@ export class Task implements TaskInterface {
     this._timeLogs = value;
   }
 
-  public get timeLoggedToday(): number {
-    const timeLogs: TimeLog[] = Object.values(this.timeLogs) as TimeLog[];
-    let timeSpentInSeconds = 0;
+  public get timeLogged(): number {
+    return this._timeLogged;
+  }
 
-    timeLogs.forEach((timeLog: TimeLog) => {
-      if (!timeLog.endTime || !timeLog.startTime) {
-        return;
-      }
-
-      timeSpentInSeconds += timeLog.endTime.getTime() - timeLog.startTime.getTime();
-    });
-
-    return Math.ceil(timeSpentInSeconds / 1000);
+  public set timeLogged(value: number) {
+    this._timeLogged = value;
   }
 
   public startTimeLog(description?: string): string {
@@ -111,16 +107,15 @@ export class Task implements TaskInterface {
 
     const startTime = new Date();
     const timeLog = new TimeLog({
-      id: startTime.getTime().toString(),
+      uuid: startTime.getTime().toString(),
       startTime,
       description,
     });
 
-    this.timeLogs[timeLog.id] = timeLog;
+    this.lastTimeLogId = timeLog.uuid;
+    this.timeLogs[this.lastTimeLogId] = timeLog;
 
-    this.lastTimeLogId = timeLog.id;
-
-    return timeLog.id;
+    return this.lastTimeLogId;
   }
 
   public stopTimeLog(): void {
@@ -135,6 +130,27 @@ export class Task implements TaskInterface {
     const timeLog: TimeLog = this.timeLogs[this.lastTimeLogId] as TimeLog;
 
     timeLog.endTime = new Date();
+
+    this.timeLogged = this.calcTimeLogged();
     this.lastTimeLogId = null;
+  }
+
+  private calcTimeLogged(): number {
+    const timeLogs: TimeLog[] = (Object.values(this.timeLogs) as TimeLog[]) ?? [];
+
+    return timeLogs.map(
+                     (timeLog: TimeLog) => [
+                       timeLog?.endTime?.getTime(),
+                       timeLog?.startTime?.getTime(),
+                     ],
+                   )
+                   .reduce(
+                     (prev: number, [endTime, startTime]) => (
+                       !endTime || !startTime
+                     ) ? prev : Math.ceil(
+                       prev + ((endTime - startTime) / 1000),
+                     ),
+                     0,
+                   ) ?? 0;
   }
 }

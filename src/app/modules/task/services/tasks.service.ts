@@ -79,7 +79,6 @@ export class TasksService {
   public delete(task: Task): Observable<void> {
     return this.storage.delete(task.name, this.storeName)
                .pipe(
-                 take(1),
                  switchMap(
                    () => this.list().pipe(take(1)),
                  ),
@@ -90,7 +89,6 @@ export class TasksService {
   public stopAllTaskWorkLogs(ignoreTask: Task): Observable<void> {
     return this.tasks$
                .pipe(
-                 take(1),
                  switchMap(
                    (tasks: Task[]) => {
                      const data = this.findAndFilterTasksForTimeLogStop(tasks, ignoreTask);
@@ -111,7 +109,7 @@ export class TasksService {
 
   private findAndFilterTasksForTimeLogStop(tasks: Task[], ignoreTask: Task): { key: IDBValidKey; value: any }[] {
     return tasks
-      .filter((task: Task) => task.id !== ignoreTask.id)
+      .filter((task: Task) => task.uuid !== ignoreTask.uuid)
       .map(
         (task: Task) => {
           task.stopTimeLog();
