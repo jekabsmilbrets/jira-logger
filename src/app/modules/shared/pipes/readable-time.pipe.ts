@@ -6,8 +6,8 @@ import { Pipe, PipeTransform } from '@angular/core';
 export class ReadableTimePipe implements PipeTransform {
 
   public transform(seconds: number, withSeconds: boolean = false): string {
-    if (!seconds) {
-      return '';
+    if (Number.isNaN(seconds) || seconds === 0) {
+      return '0 s';
     }
 
     const levels = [
