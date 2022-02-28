@@ -3,6 +3,9 @@ import { FormGroup, FormControl, Validators, AbstractControl } from '@angular/fo
 
 import { Observable, take, of, iif, switchMap } from 'rxjs';
 
+import { TaskTagsEnum } from '@task/enums/task-tags.enum';
+
+
 import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
 
 import { Task } from '@task/models/task.model';
@@ -38,7 +41,23 @@ export class TasksComponent implements OnInit {
                                           ),
       ]),
     description: new FormControl(),
+    tags: new FormControl([TaskTagsEnum.opex]),
   });
+
+  public tags: { viewValue: string; value: TaskTagsEnum }[] = [
+    {
+      value: TaskTagsEnum.opex,
+      viewValue: 'OPEX',
+    },
+    {
+      value: TaskTagsEnum.capex,
+      viewValue: 'CAPEX',
+    },
+    {
+      value: TaskTagsEnum.other,
+      viewValue: 'OTHER',
+    },
+  ];
 
   constructor(
     private tasksService: TasksService,
@@ -58,6 +77,7 @@ export class TasksComponent implements OnInit {
     const task = new Task({
       name: this.createTaskForm.get('name')?.value,
       description: this.createTaskForm.get('description')?.value,
+      tags: this.createTaskForm.get('tags')?.value,
     });
 
     this.tasksService.create(task)
@@ -65,7 +85,7 @@ export class TasksComponent implements OnInit {
           take(1),
         )
         .subscribe(
-          () => this.createTaskForm.reset(),
+          () => this.createTaskForm.reset({tags:[TaskTagsEnum.opex]}),
         );
   }
 
