@@ -1,5 +1,7 @@
 import { ModelInterface } from '@core/interfaces/model.interface';
 
+import { TaskTagsEnum } from '../enums/task-tags.enum';
+
 import { TimeLogInterface } from './time-log.interface';
 
 export interface TaskInterface extends ModelInterface {
@@ -12,4 +14,6 @@ export interface TaskInterface extends ModelInterface {
   timeLogged?: number;
 
   timeLogs: { [key: number]: TimeLogInterface };
+
+  tags: TaskTagsEnum[];
 }
