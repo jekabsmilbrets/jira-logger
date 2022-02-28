@@ -3,13 +3,25 @@
   <mat-card>
     <mat-card-title>
       <ng-container *ngIf="!editMode">
-        {{task.name}}
+        <span>{{task.name}}</span>
+        <mat-chip-list aria-label="Task tags">
+          <mat-chip *ngFor="let tag of task.tags">{{ viewTag(tag) }}</mat-chip>
+        </mat-chip-list>
       </ng-container>
 
       <mat-form-field *ngIf="editMode">
         <mat-label>Task</mat-label>
         <input formControlName="name"
                matInput>
+      </mat-form-field>
+
+      <mat-form-field *ngIf="editMode">
+        <mat-label>Tags</mat-label>
+        <mat-select formControlName="tags" multiple>
+          <mat-option *ngFor="let tag of tags" [value]="tag.value">
+            {{tag.viewValue}}
+          </mat-option>
+        </mat-select>
       </mat-form-field>
     </mat-card-title>
 
