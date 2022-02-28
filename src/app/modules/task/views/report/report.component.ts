@@ -1,13 +1,13 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 
-import { SharedModule } from 'app/modules/shared/shared.module';
-
-import { take, Observable } from 'rxjs';
+import { take, Observable, Subscription } from 'rxjs';
 
 import { DynamicMenu } from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
 import { Column } from '@shared/interfaces/column.interface';
+
+import { SharedModule } from '@shared/shared.module';
 
 import { ReportModeSwitcherComponent } from '@task/components/report-mode-switcher/report-mode-switcher.component';
 import { columns as totalModelColumns } from '@task/constants/report-total-columns.constant';
@@ -21,7 +21,7 @@ import { TasksService } from '@task/services/tasks.service';
   templateUrl: './report.component.html',
   styleUrls: ['./report.component.scss'],
 })
-export class ReportComponent implements OnInit {
+export class ReportComponent implements OnInit, OnDestroy {
   public tasks$: Observable<Task[]>;
   public columns: Column[] = [];
 
@@ -29,11 +29,36 @@ export class ReportComponent implements OnInit {
     total: totalModelColumns,
   };
 
+  private reportModeSubscription!: Subscription;
+
   constructor(
     private tasksService: TasksService,
     private dynamicMenuService: DynamicMenuService,
     private reportService: ReportService,
   ) {
+    this.createDynamicMenu();
+
+    this.tasks$ = this.tasksService.tasks$;
+  }
+
+  public ngOnInit(): void {
+    this.reportModeSubscription = this.reportService.reportMode$
+                                      .subscribe(
+                                        (reportMode: ReportModeEnum) => this.switchReportMode(reportMode),
+                                      );
+
+    this.tasksService.list()
+        .pipe(
+          take(1),
+        )
+        .subscribe();
+  }
+
+  public ngOnDestroy(): void {
+    this.reportModeSubscription.unsubscribe();
+  }
+
+  private createDynamicMenu(): void {
     this.dynamicMenuService.addDynamicMenu(
       new DynamicMenu(
         ReportModeSwitcherComponent,
@@ -49,20 +74,9 @@ export class ReportComponent implements OnInit {
         },
       ),
     );
-
-    this.tasks$ = this.tasksService.tasks$;
-
-    this.reportService.reportMode$
-        .subscribe(
-          (reportMode: ReportModeEnum) => this.columns = this.modeColumns[reportMode],
-        );
   }
 
-  public ngOnInit(): void {
-    this.tasksService.list()
-        .pipe(
-          take(1),
-        )
-        .subscribe();
+  private switchReportMode(reportMode: ReportModeEnum): void {
+    this.columns = this.modeColumns[reportMode];
   }
 }
