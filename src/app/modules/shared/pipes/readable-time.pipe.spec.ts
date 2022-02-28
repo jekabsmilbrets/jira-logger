@@ -1,4 +1,4 @@
-import { ReadableTimePipe } from './readable-time.pipe';
+import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 
 describe('ReadableTimePipe', () => {
   it('create an instance', () => {
