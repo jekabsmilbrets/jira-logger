@@ -9,6 +9,7 @@ export interface TaskInterface extends ModelInterface {
   description?: string;
 
   lastTimeLogId?: string | null;
+  timeLogged?: number;
 
   timeLogs: { [key: number]: TimeLogInterface };
 }

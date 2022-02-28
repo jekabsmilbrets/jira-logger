@@ -12,6 +12,7 @@ export class Task implements TaskInterface, Searchable {
   private _lastTimeLogId!: string | null;
   private _timeLogs: { [key: string]: TimeLogInterface } = {};
   private _description!: string;
+  private _timeLogged = 0;
 
   constructor(data?: Partial<TaskInterface>) {
     Object.assign(this, data);
@@ -92,18 +93,11 @@ export class Task implements TaskInterface, Searchable {
   }
 
   public get timeLogged(): number {
-    const timeLogs: TimeLog[] = Object.values(this.timeLogs) as TimeLog[];
-    let timeSpentInSeconds = 0;
+    return this._timeLogged;
+  }
 
-    timeLogs.forEach((timeLog: TimeLog) => {
-      if (!timeLog.endTime || !timeLog.startTime) {
-        return;
-      }
-
-      timeSpentInSeconds += timeLog.endTime.getTime() - timeLog.startTime.getTime();
-    });
-
-    return Math.ceil(timeSpentInSeconds / 1000);
+  public set timeLogged(value: number) {
+    this._timeLogged = value;
   }
 
   public startTimeLog(description?: string): string {
@@ -136,6 +130,27 @@ export class Task implements TaskInterface, Searchable {
     const timeLog: TimeLog = this.timeLogs[this.lastTimeLogId] as TimeLog;
 
     timeLog.endTime = new Date();
+
+    this.timeLogged = this.calcTimeLogged();
     this.lastTimeLogId = null;
+  }
+
+  private calcTimeLogged(): number {
+    const timeLogs: TimeLog[] = (Object.values(this.timeLogs) as TimeLog[]) ?? [];
+
+    return timeLogs.map(
+                     (timeLog: TimeLog) => [
+                       timeLog?.endTime?.getTime(),
+                       timeLog?.startTime?.getTime(),
+                     ],
+                   )
+                   .reduce(
+                     (prev: number, [endTime, startTime]) => (
+                       !endTime || !startTime
+                     ) ? prev : Math.ceil(
+                       prev + ((endTime - startTime) / 1000),
+                     ),
+                     0,
+                   ) ?? 0;
   }
 }
