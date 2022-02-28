@@ -1,3 +1,3 @@
 export interface Searchable {
-  id: number | string;
+  uuid: number | string;
 }

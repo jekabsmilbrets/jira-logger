@@ -6,7 +6,7 @@ import { TimeLogInterface } from '@task/interfaces/time-log.interface';
 import { TimeLog } from './time-log.model';
 
 export class Task implements TaskInterface, Searchable {
-  private _id!: string;
+  private _uuid!: string;
   private _name!: string;
   private _createDate!: number;
   private _lastTimeLogId!: string | null;
@@ -18,8 +18,8 @@ export class Task implements TaskInterface, Searchable {
 
     this.timeLogs = this.timeLogs;
 
-    if (!this.id) {
-      this.id = `task-${this.name}-${(new Date()).getTime().toString()}`;
+    if (!this.uuid) {
+      this.uuid = `task-${this.name}-${(new Date()).getTime().toString()}`;
     }
 
     if (!this._createDate) {
@@ -27,12 +27,12 @@ export class Task implements TaskInterface, Searchable {
     }
   }
 
-  public get id(): string {
-    return this._id;
+  public get uuid(): string {
+    return this._uuid;
   }
 
-  public set id(value: string) {
-    this._id = value;
+  public set uuid(value: string) {
+    this._uuid = value;
   }
 
 
@@ -113,16 +113,15 @@ export class Task implements TaskInterface, Searchable {
 
     const startTime = new Date();
     const timeLog = new TimeLog({
-      id: startTime.getTime().toString(),
+      uuid: startTime.getTime().toString(),
       startTime,
       description,
     });
 
-    this.timeLogs[timeLog.id] = timeLog;
+    this.lastTimeLogId = timeLog.uuid;
+    this.timeLogs[this.lastTimeLogId] = timeLog;
 
-    this.lastTimeLogId = timeLog.id;
-
-    return timeLog.id;
+    return this.lastTimeLogId;
   }
 
   public stopTimeLog(): void {

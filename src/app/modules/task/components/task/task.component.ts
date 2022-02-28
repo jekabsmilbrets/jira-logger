@@ -8,7 +8,6 @@ import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
 import { Task } from '@task/models/task.model';
 import { TasksService } from '@task/services/tasks.service';
 
-
 @Component({
   selector: 'app-task',
   templateUrl: './task.component.html',
@@ -39,7 +38,7 @@ export class TaskComponent implements OnInit {
                                               (tasks: Task[]) => {
                                                 const value = control.value;
 
-                                                if (tasks.find((task) => task.name === value && this.task.id !== task.id)) {
+                                                if (tasks.find((task) => task.name === value && this.task.uuid !== task.uuid)) {
                                                   return of({'duplicate-task': true});
                                                 }
 

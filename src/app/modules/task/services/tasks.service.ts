@@ -109,7 +109,7 @@ export class TasksService {
 
   private findAndFilterTasksForTimeLogStop(tasks: Task[], ignoreTask: Task): { key: IDBValidKey; value: any }[] {
     return tasks
-      .filter((task: Task) => task.id !== ignoreTask.id)
+      .filter((task: Task) => task.uuid !== ignoreTask.uuid)
       .map(
         (task: Task) => {
           task.stopTimeLog();
