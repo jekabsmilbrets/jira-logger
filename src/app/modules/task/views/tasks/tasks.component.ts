@@ -5,7 +5,6 @@ import { Observable, take, of, iif, switchMap } from 'rxjs';
 
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
-
 import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
 
 import { Task } from '@task/models/task.model';
@@ -85,7 +84,7 @@ export class TasksComponent implements OnInit {
           take(1),
         )
         .subscribe(
-          () => this.createTaskForm.reset({tags:[TaskTagsEnum.opex]}),
+          () => this.createTaskForm.reset({tags: [TaskTagsEnum.opex]}),
         );
   }
 
