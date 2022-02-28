@@ -1,8 +1,10 @@
+import { CdkTableModule } from '@angular/cdk/table';
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -13,6 +15,11 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
+import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
+
+import { TableComponent } from './components/table/table.component';
 
 @NgModule({
   imports: [
@@ -30,6 +37,9 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     MatSortModule,
     MatTableModule,
     MatToolbarModule,
+    MatCheckboxModule,
+    CdkTableModule,
+    MatTooltipModule,
   ],
   exports: [
     CommonModule,
@@ -46,6 +56,13 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     MatSortModule,
     MatTableModule,
     MatToolbarModule,
+    TableComponent,
+    ReadableTimePipe,
+  ],
+  declarations: [
+    TableComponent,
+
+    ReadableTimePipe,
   ],
 })
 export class SharedModule {
