@@ -1,5 +1,7 @@
 import { Searchable } from '@shared/interfaces/searchable.interface';
 
+import { TaskTagsEnum } from '@task/enums/task-tags.enum';
+
 import { TaskInterface } from '@task/interfaces/task.interface';
 import { TimeLogInterface } from '@task/interfaces/time-log.interface';
 
@@ -13,6 +15,7 @@ export class Task implements TaskInterface, Searchable {
   private _timeLogs: { [key: string]: TimeLogInterface } = {};
   private _description!: string;
   private _timeLogged = 0;
+  private _tags: TaskTagsEnum[] = [];
 
   constructor(data?: Partial<TaskInterface>) {
     Object.assign(this, data);
@@ -51,6 +54,14 @@ export class Task implements TaskInterface, Searchable {
 
   public set description(value: string) {
     this._description = value;
+  }
+
+  public get tags(): TaskTagsEnum[] {
+    return this._tags;
+  }
+
+  public set tags(value: TaskTagsEnum[]) {
+    this._tags = value;
   }
 
 
@@ -133,6 +144,18 @@ export class Task implements TaskInterface, Searchable {
 
     this.timeLogged = this.calcTimeLogged();
     this.lastTimeLogId = null;
+  }
+
+  public addTag(tag: TaskTagsEnum): void {
+    if (!this.tags.includes(tag)) {
+      this.tags.push(tag);
+    }
+  }
+
+  public removeTag(tag: TaskTagsEnum): void {
+    if (this.tags.includes(tag)) {
+      this.tags = this.tags.filter(eTag => eTag !== tag);
+    }
   }
 
   private calcTimeLogged(): number {
