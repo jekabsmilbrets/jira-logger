@@ -52,7 +52,7 @@ export class TableComponent implements AfterViewInit {
       return ['select'].concat(
         this.columns
             .filter((column: Column) => column.visible)
-            .map((column: Column) => column.columnDef)
+            .map((column: Column) => column.columnDef),
       );
     }
     return this.columns
