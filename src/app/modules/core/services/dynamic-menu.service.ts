@@ -14,10 +14,12 @@ export class DynamicMenuService {
     this.dynamicMenus$ = this.dynamicMenusSubject.asObservable();
   }
 
-  public addDynamicMenu(dynamicMenu: DynamicMenu): void {
+  public addDynamicMenu(
+    dynamicMenu: DynamicMenu,
+  ): void {
     const currentDynamicMenus = this.dynamicMenusSubject.getValue();
     const dynamicMenuExists = currentDynamicMenus.findIndex(
-      (currentDynamicMenu: DynamicMenu) => dynamicMenu.component === currentDynamicMenu.component,
+      (cDM: DynamicMenu) => dynamicMenu.component === cDM.component,
     ) >= 0;
 
     if (!dynamicMenuExists) {
