@@ -1,8 +1,8 @@
-import { NgModule } from '@angular/core';
+import { NgModule }              from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
 import { ReportComponent } from './views/report/report.component';
-import { TasksComponent } from './views/tasks/tasks.component';
+import { TasksComponent }  from './views/tasks/tasks.component';
 
 const routes: Routes = [
   {
@@ -12,6 +12,11 @@ const routes: Routes = [
   },
   {
     path: 'report',
+    redirectTo: 'report/total',
+    pathMatch: 'full',
+  },
+  {
+    path: 'report/:reportMode',
     component: ReportComponent,
   },
   {
@@ -25,8 +30,8 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule],
-})
+            imports: [RouterModule.forChild(routes)],
+            exports: [RouterModule],
+          })
 export class TaskRoutingModule {
 }

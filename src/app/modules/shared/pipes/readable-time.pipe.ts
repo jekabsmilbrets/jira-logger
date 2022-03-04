@@ -1,8 +1,8 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
-  name: 'readableTime',
-})
+        name: 'readableTime',
+      })
 export class ReadableTimePipe implements PipeTransform {
 
   public transform(seconds: number, withSeconds: boolean = false): string {
@@ -31,9 +31,9 @@ export class ReadableTimePipe implements PipeTransform {
 
     if (withSeconds) {
       levels.push([
-        (((seconds % 31536000) % 86400) % 3600) % 60,
-        's',
-      ]); // seconds
+                    (((seconds % 31536000) % 86400) % 3600) % 60,
+                    's',
+                  ]); // seconds
     }
 
     let output = '';

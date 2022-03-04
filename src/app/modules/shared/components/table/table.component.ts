@@ -1,18 +1,18 @@
-import { SelectionModel } from '@angular/cdk/collections';
-import { Component, Input, ViewChild, AfterViewInit } from '@angular/core';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatSort, SortDirection } from '@angular/material/sort';
-import { MatTableDataSource } from '@angular/material/table';
+import { SelectionModel }                              from '@angular/cdk/collections';
+import { AfterViewInit, Component, Input, ViewChild } from '@angular/core';
+import { MatPaginator }                                from '@angular/material/paginator';
+import { MatSort, SortDirection }                     from '@angular/material/sort';
+import { MatTableDataSource }                          from '@angular/material/table';
 
-import { Column } from '@shared/interfaces/column.interface';
-import { Searchable } from '@shared/interfaces/searchable.interface';
+import { Column }          from '@shared/interfaces/column.interface';
+import { Searchable }      from '@shared/interfaces/searchable.interface';
 import { getNestedObject } from '@shared/utils/get-nested-object.util';
 
 @Component({
-  selector: 'app-shared-table',
-  templateUrl: './table.component.html',
-  styleUrls: ['./table.component.scss'],
-})
+             selector: 'app-shared-table',
+             templateUrl: './table.component.html',
+             styleUrls: ['./table.component.scss'],
+           })
 export class TableComponent implements AfterViewInit {
   @Input()
   public isSelectable = true;
@@ -34,7 +34,6 @@ export class TableComponent implements AfterViewInit {
   @ViewChild(MatPaginator, {static: true})
   public paginator!: MatPaginator;
 
-
   public selection = new SelectionModel<Searchable>(true, []);
 
   public dataSource: MatTableDataSource<Searchable> = new MatTableDataSource<Searchable>([]);
@@ -49,9 +48,15 @@ export class TableComponent implements AfterViewInit {
 
   public get displayedColumns(): string[] {
     if (this.isSelectable) {
-      return ['select'].concat(this.columns.map((column: Column) => column.columnDef));
+      return ['select'].concat(
+        this.columns
+            .filter((column: Column) => column.visible)
+            .map((column: Column) => column.columnDef),
+      );
     }
-    return this.columns.map((column: Column) => column.columnDef);
+    return this.columns
+               .filter((column: Column) => column.visible)
+               .map((column: Column) => column.columnDef);
   }
 
   public ngAfterViewInit(): void {

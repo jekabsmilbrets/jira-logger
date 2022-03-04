@@ -1,18 +1,16 @@
 import { Component, OnDestroy } from '@angular/core';
-import { FormControl } from '@angular/forms';
+import { FormControl }          from '@angular/forms';
 
 import { Subscription } from 'rxjs';
 
 import { ReportModeEnum } from '@task/enums/report-mode.enum';
-import { ReportService } from '@task/services/report.service';
-
-
+import { ReportService }  from '@task/services/report.service';
 
 @Component({
-  selector: 'app-report-mode-switcher',
-  templateUrl: './report-mode-switcher.component.html',
-  styleUrls: ['./report-mode-switcher.component.scss'],
-})
+             selector: 'app-report-mode-switcher',
+             templateUrl: './report-mode-switcher.component.html',
+             styleUrls: ['./report-mode-switcher.component.scss'],
+           })
 export class ReportModeSwitcherComponent implements OnDestroy {
   public reportModes: {
     value: ReportModeEnum;
@@ -22,19 +20,34 @@ export class ReportModeSwitcherComponent implements OnDestroy {
       value: ReportModeEnum.total,
       viewValue: 'Total',
     },
+    {
+      value: ReportModeEnum.month,
+      viewValue: 'Month',
+    },
   ];
 
   public reportModeFormControl: FormControl = new FormControl(ReportModeEnum.total);
-  private reportModeSubscription: Subscription;
+  private subscriptions: Subscription[] = [];
 
   constructor(
     private reportService: ReportService,
   ) {
-    this.reportModeSubscription = this.listenToReportModeChange();
+    this.subscriptions.push(
+      this.listenToReportModeChange(),
+    );
+    this.subscriptions.push(
+      this.reportService.reportMode$
+          .subscribe(
+            (reportMode: ReportModeEnum) => this.reportModeFormControl.setValue(
+              reportMode,
+              {emitEvent: false},
+            ),
+          ),
+    );
   }
 
   public ngOnDestroy(): void {
-    this.reportModeSubscription.unsubscribe();
+    this.subscriptions.forEach((sub: Subscription) => sub.unsubscribe());
   }
 
   private listenToReportModeChange(): Subscription {
