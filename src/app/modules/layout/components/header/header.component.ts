@@ -24,7 +24,6 @@ export class HeaderComponent implements OnDestroy {
 
   private routerEventsSubscription: Subscription;
 
-
   constructor(
     private dynamicMenuService: DynamicMenuService,
     private router: Router,
@@ -54,7 +53,7 @@ export class HeaderComponent implements OnDestroy {
                  tap(
                    (dynamicMenus: DynamicMenu[]) => {
                      const dynamicMenu: DynamicMenu | undefined = dynamicMenus.find(
-                       (dM: DynamicMenu) => dM.data.route === navigationEndEvent.url,
+                       (dM: DynamicMenu) => navigationEndEvent.url.includes(dM.data.route),
                      );
 
                      if (dynamicMenu) {
@@ -73,8 +72,7 @@ export class HeaderComponent implements OnDestroy {
                          },
                        );
                      } else {
-                       const viewContainerRef = this.dynamicMenu.viewContainerRef;
-                       viewContainerRef.clear();
+                       this.dynamicMenu.viewContainerRef.clear();
                      }
                    },
                  ),
