@@ -1,14 +1,14 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
 
 import { Task } from '@task/models/task.model';
 
 @Component({
-  selector: 'app-task-list',
-  templateUrl: './task-list.component.html',
-  styleUrls: ['./task-list.component.scss'],
-})
+             selector: 'app-task-list',
+             templateUrl: './task-list.component.html',
+             styleUrls: ['./task-list.component.scss'],
+           })
 export class TaskListComponent {
   @Input()
   public tasks: Task[] | null = [];
@@ -20,10 +20,12 @@ export class TaskListComponent {
   public remove: EventEmitter<Task> = new EventEmitter<Task>();
 
   public onUpdate([task, action]: [Task, TaskUpdateActionEnum]): void {
-    this.update.emit([
-      task,
-      action,
-    ]);
+    this.update.emit(
+      [
+        task,
+        action,
+      ],
+    );
   }
 
   public onRemove(task: Task): void {

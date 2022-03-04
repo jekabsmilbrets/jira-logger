@@ -2,7 +2,7 @@ import { Searchable } from '@shared/interfaces/searchable.interface';
 
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
-import { TaskInterface } from '@task/interfaces/task.interface';
+import { TaskInterface }    from '@task/interfaces/task.interface';
 import { TimeLogInterface } from '@task/interfaces/time-log.interface';
 
 import { TimeLog } from './time-log.model';
@@ -39,7 +39,6 @@ export class Task implements TaskInterface, Searchable {
     this._uuid = value;
   }
 
-
   public get name(): string {
     return this._name;
   }
@@ -47,23 +46,6 @@ export class Task implements TaskInterface, Searchable {
   public set name(value: string) {
     this._name = value;
   }
-
-  public get description(): string {
-    return this._description;
-  }
-
-  public set description(value: string) {
-    this._description = value;
-  }
-
-  public get tags(): TaskTagsEnum[] {
-    return this._tags;
-  }
-
-  public set tags(value: TaskTagsEnum[]) {
-    this._tags = value;
-  }
-
 
   public get createDate(): Date {
     if (!this._createDate) {
@@ -76,7 +58,6 @@ export class Task implements TaskInterface, Searchable {
   public set createDate(value: Date) {
     this._createDate = value.getTime();
   }
-
 
   public get lastTimeLogId(): string | null {
     return this._lastTimeLogId;
@@ -103,6 +84,14 @@ export class Task implements TaskInterface, Searchable {
     this._timeLogs = value;
   }
 
+  public get description(): string {
+    return this._description;
+  }
+
+  public set description(value: string) {
+    this._description = value;
+  }
+
   public get timeLogged(): number {
     return this._timeLogged;
   }
@@ -111,17 +100,27 @@ export class Task implements TaskInterface, Searchable {
     this._timeLogged = value;
   }
 
+  public get tags(): TaskTagsEnum[] {
+    return this._tags;
+  }
+
+  public set tags(value: TaskTagsEnum[]) {
+    this._tags = value;
+  }
+
   public startTimeLog(description?: string): string {
     if (this.lastTimeLogId) {
       throw new Error(`There is running Time Log already with ID "${this.lastTimeLogId}"!`);
     }
 
     const startTime = new Date();
-    const timeLog = new TimeLog({
-      uuid: startTime.getTime().toString(),
-      startTime,
-      description,
-    });
+    const timeLog = new TimeLog(
+      {
+        uuid: startTime.getTime().toString(),
+        startTime,
+        description,
+      },
+    );
 
     this.lastTimeLogId = timeLog.uuid;
     this.timeLogs[this.lastTimeLogId] = timeLog;
@@ -158,22 +157,67 @@ export class Task implements TaskInterface, Searchable {
     }
   }
 
-  private calcTimeLogged(): number {
-    const timeLogs: TimeLog[] = (Object.values(this.timeLogs) as TimeLog[]) ?? [];
+  public calcTimeLoggedForDateRange(startDate: Date, endDate: Date): number {
+    const startDateYear = startDate.getFullYear();
+    const startDateMonth = startDate.getMonth();
+    const startDateDate = startDate.getDate();
+    const endDateYear = endDate.getFullYear();
+    const endDateMonth = endDate.getMonth();
+    const endDateDate = endDate.getDate();
+    const timeLogs: TimeLog[] = ((Object.values(this.timeLogs) as TimeLog[]) ?? [])
+      .filter(
+        (timeLog: TimeLog) => {
+          const startTimeYear = timeLog.startTime.getFullYear();
+          const startTimeMonth = timeLog.startTime.getMonth();
+          const startTimeDate = timeLog.startTime.getDate();
+          return (startTimeYear >= startDateYear && startTimeYear <= endDateYear) &&
+            (startTimeMonth >= startDateMonth && startTimeMonth <= endDateMonth) &&
+            (startTimeDate >= startDateDate && startTimeDate <= endDateDate);
+        },
+      ) ?? [];
 
-    return timeLogs.map(
-                     (timeLog: TimeLog) => [
-                       timeLog?.endTime?.getTime(),
-                       timeLog?.startTime?.getTime(),
-                     ],
-                   )
-                   .reduce(
-                     (prev: number, [endTime, startTime]) => (
-                       !endTime || !startTime
-                     ) ? prev : Math.ceil(
-                       prev + ((endTime - startTime) / 1000),
-                     ),
-                     0,
-                   ) ?? 0;
+    return this.calcTimeLogged(timeLogs);
+  }
+
+  public calcTimeLoggedForDate(date: Date): number {
+    const dateYear = date.getFullYear();
+    const dateMonth = date.getMonth();
+    const dateDate = date.getDate();
+    const timeLogs: TimeLog[] = ((Object.values(this.timeLogs) as TimeLog[]) ?? [])
+      .filter(
+        (timeLog: TimeLog) => timeLog.startTime.getFullYear() === dateYear &&
+          timeLog.startTime.getMonth() === dateMonth &&
+          timeLog.startTime.getDate() === dateDate,
+      ) ?? [];
+
+    return this.calcTimeLogged(timeLogs);
+  }
+
+  private calcTimeLogged(timeLogs?: TimeLog[]): number {
+    timeLogs = timeLogs ?? ((Object.values(this.timeLogs) as TimeLog[]) ?? []);
+
+    if (timeLogs.length === 0) {
+      return 0;
+    }
+
+    const mapFn = (timeLog: TimeLog) => [
+      timeLog?.endTime?.getTime(),
+      timeLog?.startTime?.getTime(),
+    ];
+
+    const reduceFn = (prev: number, times: number[]) => {
+      const [endTime, startTime]: number[] = [...times];
+
+      return (
+               !endTime || !startTime
+             ) ? prev : Math.ceil(
+        prev + ((endTime - startTime) / 1000),
+      );
+    };
+
+    return (
+      timeLogs.map(mapFn)
+              .reduce(reduceFn, 0)
+    ) ?? 0;
   }
 }

@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
 
-import { Observable, BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 import { ReportModeEnum } from '@task/enums/report-mode.enum';
-
 
 @Injectable()
 export class ReportService {

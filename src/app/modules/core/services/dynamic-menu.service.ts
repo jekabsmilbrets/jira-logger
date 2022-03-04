@@ -14,11 +14,18 @@ export class DynamicMenuService {
     this.dynamicMenus$ = this.dynamicMenusSubject.asObservable();
   }
 
-  public addDynamicMenu(dynamicMenu: DynamicMenu): void {
+  public addDynamicMenu(
+    dynamicMenu: DynamicMenu,
+  ): void {
     const currentDynamicMenus = this.dynamicMenusSubject.getValue();
+    const dynamicMenuExists = currentDynamicMenus.findIndex(
+      (cDM: DynamicMenu) => dynamicMenu.component === cDM.component,
+    ) >= 0;
 
-    currentDynamicMenus.push(dynamicMenu);
+    if (!dynamicMenuExists) {
+      currentDynamicMenus.push(dynamicMenu);
 
-    this.dynamicMenusSubject.next(currentDynamicMenus);
+      this.dynamicMenusSubject.next(currentDynamicMenus);
+    }
   }
 }
