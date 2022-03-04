@@ -36,7 +36,10 @@ registerLocaleData(lv);
     AppRoutingModule,
   ],
   providers: [
-    { provide: LOCALE_ID, useValue: 'lv-LV' }
+    {
+      provide: LOCALE_ID,
+      useValue: 'lv-LV',
+    },
   ],
   bootstrap: [AppComponent],
 })

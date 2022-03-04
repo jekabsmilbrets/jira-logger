@@ -17,7 +17,7 @@ export class DynamicMenuService {
   public addDynamicMenu(dynamicMenu: DynamicMenu): void {
     const currentDynamicMenus = this.dynamicMenusSubject.getValue();
     const dynamicMenuExists = currentDynamicMenus.findIndex(
-      (currentDynamicMenu: DynamicMenu) => dynamicMenu.component === currentDynamicMenu.component
+      (currentDynamicMenu: DynamicMenu) => dynamicMenu.component === currentDynamicMenu.component,
     ) >= 0;
 
     if (!dynamicMenuExists) {
