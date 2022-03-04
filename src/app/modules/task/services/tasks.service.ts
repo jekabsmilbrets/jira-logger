@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 
-import { BehaviorSubject, Observable, tap, switchMap, of, map, take } from 'rxjs';
+import { BehaviorSubject, map, Observable, of, switchMap, take, tap } from 'rxjs';
 
 import { StorageService } from '@core/services/storage.service';
 
 import { TaskInterface } from '@task/interfaces/task.interface';
-import { Task } from '@task/models/task.model';
+import { Task }          from '@task/models/task.model';
 
 @Injectable()
 export class TasksService {

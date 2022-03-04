@@ -1,20 +1,20 @@
-import { Component, Input, EventEmitter, Output, OnInit } from '@angular/core';
-import { FormGroup, FormControl, Validators, AbstractControl } from '@angular/forms';
+import { Component, EventEmitter, Input, OnInit, Output }      from '@angular/core';
+import { FormControl, FormGroup, Validators, AbstractControl } from '@angular/forms';
 
-import { take, switchMap, of, Observable } from 'rxjs';
+import { Observable, take, switchMap, of } from 'rxjs';
 
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
 import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
 
-import { Task } from '@task/models/task.model';
+import { Task }         from '@task/models/task.model';
 import { TasksService } from '@task/services/tasks.service';
 
 @Component({
-  selector: 'app-task',
-  templateUrl: './task.component.html',
-  styleUrls: ['./task.component.scss'],
-})
+             selector: 'app-task',
+             templateUrl: './task.component.html',
+             styleUrls: ['./task.component.scss'],
+           })
 export class TaskComponent implements OnInit {
   @Input()
   public task!: Task;
@@ -28,30 +28,37 @@ export class TaskComponent implements OnInit {
 
   public editMode = false;
 
-  public formGroup: FormGroup = new FormGroup({
-    name: new FormControl(
-      undefined,
-      [Validators.required],
-      [
-        (control: AbstractControl) => this.tasks$
-                                          .pipe(
-                                            take(1),
-                                            switchMap(
-                                              (tasks: Task[]) => {
-                                                const value = control.value;
+  public formGroup: FormGroup = new FormGroup(
+    {
+      name: new FormControl(
+        undefined,
+        [Validators.required],
+        [
+          (control: AbstractControl) => this.tasks$
+                                            .pipe(
+                                              take(1),
+                                              switchMap(
+                                                (tasks: Task[]) => {
+                                                  const value = control.value;
 
-                                                if (tasks.find((task) => task.name === value && this.task.uuid !== task.uuid)) {
-                                                  return of({'duplicate-task': true});
-                                                }
+                                                  if (
+                                                    tasks.find(
+                                                      (task: Task) => task.name === value && this.task.uuid !== task.uuid,
+                                                    )
+                                                  ) {
+                                                    return of({'duplicate-task': true});
+                                                  }
 
-                                                return of(null);
-                                              },
+                                                  return of(null);
+                                                },
+                                              ),
                                             ),
-                                          ),
-      ]),
-    description: new FormControl(),
-    tags: new FormControl([TaskTagsEnum.opex]),
-  });
+        ],
+      ),
+      description: new FormControl(),
+      tags: new FormControl([TaskTagsEnum.opex]),
+    },
+  );
 
   public tags: { viewValue: string; value: TaskTagsEnum }[] = [
     {
@@ -75,15 +82,19 @@ export class TaskComponent implements OnInit {
   }
 
   public ngOnInit(): void {
-    this.formGroup.patchValue({
-      name: this.task.name,
-      description: this.task.description,
-      tags: this.task.tags,
-    });
+    this.formGroup.patchValue(
+      {
+        name: this.task.name,
+        description: this.task.description,
+        tags: this.task.tags,
+      },
+    );
   }
 
   public viewTag(tag: TaskTagsEnum): string {
-    return this.tags.find((sTag) => sTag.value === tag)?.viewValue ?? '';
+    return this.tags.find(
+      (sTag) => sTag.value === tag
+    )?.viewValue ?? '';
   }
 
   public onUpdate(task: Task): void {
@@ -91,12 +102,12 @@ export class TaskComponent implements OnInit {
     task.description = this.formGroup.get('description')?.value;
     task.tags = this.formGroup.get('tags')?.value ?? [];
 
-    console.log(task);
-
-    this.update.emit([
-      task,
-      TaskUpdateActionEnum.update,
-    ]);
+    this.update.emit(
+      [
+        task,
+        TaskUpdateActionEnum.update,
+      ],
+    );
   }
 
   public onRemove(task: Task): void {
@@ -113,17 +124,21 @@ export class TaskComponent implements OnInit {
       action = TaskUpdateActionEnum.stopWorkLog;
     }
 
-    this.update.emit([
-      task,
-      action,
-    ]);
+    this.update.emit(
+      [
+        task,
+        action,
+      ],
+    );
   }
 
   public toggleEditMode(): void {
     this.editMode = !this.editMode;
-    this.formGroup.patchValue({
-      name: this.task.name,
-      description: this.task.description,
-    });
+    this.formGroup.patchValue(
+      {
+        name: this.task.name,
+        description: this.task.description,
+      },
+    );
   }
 }

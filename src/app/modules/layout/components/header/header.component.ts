@@ -1,20 +1,20 @@
-import { Component, Input, ViewChild, OnDestroy, Injector } from '@angular/core';
-import { MatSidenav } from '@angular/material/sidenav';
+import { Component, Injector, Input, OnDestroy, ViewChild } from '@angular/core';
+import { MatSidenav }                                       from '@angular/material/sidenav';
 
-import { Router, NavigationEnd } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 
-import { Subscription, filter, switchMap, take, tap, Observable } from 'rxjs';
+import { delay, filter, Observable, Subscription, switchMap, take, tap } from 'rxjs';
 
 import { DynamicMenuDirective } from '@core/directives/dynamic-menu.directive';
 import { DynamicMenuInterface } from '@core/interfaces/dynamic-menu.interface';
-import { DynamicMenu } from '@core/models/dynamic-menu';
-import { DynamicMenuService } from '@core/services/dynamic-menu.service';
+import { DynamicMenu }          from '@core/models/dynamic-menu';
+import { DynamicMenuService }   from '@core/services/dynamic-menu.service';
 
 @Component({
-  selector: 'app-header',
-  templateUrl: './header.component.html',
-  styleUrls: ['./header.component.scss'],
-})
+             selector: 'app-header',
+             templateUrl: './header.component.html',
+             styleUrls: ['./header.component.scss'],
+           })
 export class HeaderComponent implements OnDestroy {
   @Input()
   public sidenav!: MatSidenav;
@@ -23,7 +23,6 @@ export class HeaderComponent implements OnDestroy {
   private dynamicMenu!: DynamicMenuDirective;
 
   private routerEventsSubscription: Subscription;
-
 
   constructor(
     private dynamicMenuService: DynamicMenuService,
@@ -35,6 +34,7 @@ export class HeaderComponent implements OnDestroy {
                                           filter(
                                             (e): e is NavigationEnd => e instanceof NavigationEnd,
                                           ),
+                                          delay(100), // hax :D :D without it loadingDynamicMenu causes loading empty dynamic menus
                                           switchMap(
                                             (navigationEndEvent: NavigationEnd) => this.loadDynamicMenu(navigationEndEvent),
                                           ),
@@ -53,7 +53,7 @@ export class HeaderComponent implements OnDestroy {
                  tap(
                    (dynamicMenus: DynamicMenu[]) => {
                      const dynamicMenu: DynamicMenu | undefined = dynamicMenus.find(
-                       (dM: DynamicMenu) => dM.data.route === navigationEndEvent.url,
+                       (dM: DynamicMenu) => navigationEndEvent.url.includes(dM.data.route),
                      );
 
                      if (dynamicMenu) {
@@ -72,8 +72,7 @@ export class HeaderComponent implements OnDestroy {
                          },
                        );
                      } else {
-                       const viewContainerRef = this.dynamicMenu.viewContainerRef;
-                       viewContainerRef.clear();
+                       this.dynamicMenu.viewContainerRef.clear();
                      }
                    },
                  ),
