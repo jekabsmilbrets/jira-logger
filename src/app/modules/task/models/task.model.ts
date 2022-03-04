@@ -39,7 +39,6 @@ export class Task implements TaskInterface, Searchable {
     this._uuid = value;
   }
 
-
   public get name(): string {
     return this._name;
   }
@@ -47,23 +46,6 @@ export class Task implements TaskInterface, Searchable {
   public set name(value: string) {
     this._name = value;
   }
-
-  public get description(): string {
-    return this._description;
-  }
-
-  public set description(value: string) {
-    this._description = value;
-  }
-
-  public get tags(): TaskTagsEnum[] {
-    return this._tags;
-  }
-
-  public set tags(value: TaskTagsEnum[]) {
-    this._tags = value;
-  }
-
 
   public get createDate(): Date {
     if (!this._createDate) {
@@ -76,7 +58,6 @@ export class Task implements TaskInterface, Searchable {
   public set createDate(value: Date) {
     this._createDate = value.getTime();
   }
-
 
   public get lastTimeLogId(): string | null {
     return this._lastTimeLogId;
@@ -103,6 +84,14 @@ export class Task implements TaskInterface, Searchable {
     this._timeLogs = value;
   }
 
+  public get description(): string {
+    return this._description;
+  }
+
+  public set description(value: string) {
+    this._description = value;
+  }
+
   public get timeLogged(): number {
     return this._timeLogged;
   }
@@ -111,17 +100,27 @@ export class Task implements TaskInterface, Searchable {
     this._timeLogged = value;
   }
 
+  public get tags(): TaskTagsEnum[] {
+    return this._tags;
+  }
+
+  public set tags(value: TaskTagsEnum[]) {
+    this._tags = value;
+  }
+
   public startTimeLog(description?: string): string {
     if (this.lastTimeLogId) {
       throw new Error(`There is running Time Log already with ID "${this.lastTimeLogId}"!`);
     }
 
     const startTime = new Date();
-    const timeLog = new TimeLog({
-      uuid: startTime.getTime().toString(),
-      startTime,
-      description,
-    });
+    const timeLog = new TimeLog(
+      {
+        uuid: startTime.getTime().toString(),
+        startTime,
+        description,
+      },
+    );
 
     this.lastTimeLogId = timeLog.uuid;
     this.timeLogs[this.lastTimeLogId] = timeLog;
@@ -210,8 +209,8 @@ export class Task implements TaskInterface, Searchable {
       const [endTime, startTime]: number[] = [...times];
 
       return (
-        !endTime || !startTime
-      ) ? prev : Math.ceil(
+               !endTime || !startTime
+             ) ? prev : Math.ceil(
         prev + ((endTime - startTime) / 1000),
       );
     };
