@@ -1,5 +1,5 @@
 import { Component, OnDestroy } from '@angular/core';
-import { FormControl }           from '@angular/forms';
+import { FormControl }          from '@angular/forms';
 
 import { Subscription } from 'rxjs';
 
@@ -27,16 +27,27 @@ export class ReportModeSwitcherComponent implements OnDestroy {
   ];
 
   public reportModeFormControl: FormControl = new FormControl(ReportModeEnum.total);
-  private reportModeSubscription: Subscription;
+  private subscriptions: Subscription[] = [];
 
   constructor(
     private reportService: ReportService,
   ) {
-    this.reportModeSubscription = this.listenToReportModeChange();
+    this.subscriptions.push(
+      this.listenToReportModeChange(),
+    );
+    this.subscriptions.push(
+      this.reportService.reportMode$
+          .subscribe(
+            (reportMode: ReportModeEnum) => this.reportModeFormControl.setValue(
+              reportMode,
+              {emitEvent: false},
+            ),
+          ),
+    );
   }
 
   public ngOnDestroy(): void {
-    this.reportModeSubscription.unsubscribe();
+    this.subscriptions.forEach((sub: Subscription) => sub.unsubscribe());
   }
 
   private listenToReportModeChange(): Subscription {
