@@ -6,8 +6,6 @@ import { Subscription } from 'rxjs';
 import { ReportModeEnum } from '@task/enums/report-mode.enum';
 import { ReportService } from '@task/services/report.service';
 
-
-
 @Component({
   selector: 'app-report-mode-switcher',
   templateUrl: './report-mode-switcher.component.html',
@@ -21,6 +19,10 @@ export class ReportModeSwitcherComponent implements OnDestroy {
     {
       value: ReportModeEnum.total,
       viewValue: 'Total',
+    },
+    {
+      value: ReportModeEnum.month,
+      viewValue: 'Month',
     },
   ];
 
