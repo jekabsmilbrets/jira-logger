@@ -1,14 +1,14 @@
-import { Component, Input, ViewChild, OnDestroy, Injector } from '@angular/core';
-import { MatSidenav } from '@angular/material/sidenav';
+import { Component, Injector, Input, OnDestroy, ViewChild } from '@angular/core';
+import { MatSidenav }                                       from '@angular/material/sidenav';
 
-import { Router, NavigationEnd } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 
-import { Subscription, filter, switchMap, take, tap, Observable, delay } from 'rxjs';
+import { delay, filter, Observable, Subscription, switchMap, take, tap } from 'rxjs';
 
 import { DynamicMenuDirective } from '@core/directives/dynamic-menu.directive';
 import { DynamicMenuInterface } from '@core/interfaces/dynamic-menu.interface';
-import { DynamicMenu } from '@core/models/dynamic-menu';
-import { DynamicMenuService } from '@core/services/dynamic-menu.service';
+import { DynamicMenu }          from '@core/models/dynamic-menu';
+import { DynamicMenuService }   from '@core/services/dynamic-menu.service';
 
 @Component({
   selector: 'app-header',

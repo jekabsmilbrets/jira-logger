@@ -1,13 +1,13 @@
-import { Component, Input, EventEmitter, Output, OnInit } from '@angular/core';
-import { FormGroup, FormControl, Validators, AbstractControl } from '@angular/forms';
+import { Component, EventEmitter, Input, OnInit, Output }      from '@angular/core';
+import { AbstractControl, FormControl, FormGroup, Validators } from '@angular/forms';
 
-import { take, switchMap, of, Observable } from 'rxjs';
+import { Observable, of, switchMap, take } from 'rxjs';
 
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
 import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
 
-import { Task } from '@task/models/task.model';
+import { Task }         from '@task/models/task.model';
 import { TasksService } from '@task/services/tasks.service';
 
 @Component({
