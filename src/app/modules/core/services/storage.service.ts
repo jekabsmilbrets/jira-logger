@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable }                                              from '@angular/core';
 // eslint-disable-next-line import/named
-import { createStore, get, set, del, entries, UseStore, setMany } from 'idb-keyval';
-import { Observable, from } from 'rxjs';
+import { createStore, del, entries, get, set, setMany, UseStore } from 'idb-keyval';
+import { from, Observable }                                       from 'rxjs';
 
 @Injectable()
 export class StorageService {

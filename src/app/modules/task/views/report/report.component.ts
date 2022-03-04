@@ -1,23 +1,24 @@
-import { formatDate } from '@angular/common';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { formatDate }                    from '@angular/common';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute, Params }       from '@angular/router';
 
-import { take, Observable, Subscription, tap } from 'rxjs';
+import { Observable, Subscription, take } from 'rxjs';
 
-import { DynamicMenu } from '@core/models/dynamic-menu';
+import { DynamicMenu }        from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
-import { Column } from '@shared/interfaces/column.interface';
+import { Column }           from '@shared/interfaces/column.interface';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 
 import { SharedModule } from '@shared/shared.module';
 
-import { ReportModeSwitcherComponent } from '@task/components/report-mode-switcher/report-mode-switcher.component';
+import { ReportModeSwitcherComponent }  from '@task/components/report-mode-switcher/report-mode-switcher.component';
 import { columns as monthModelColumns } from '@task/constants/report-month-columns.constant';
 import { columns as totalModelColumns } from '@task/constants/report-total-columns.constant';
-import { ReportModeEnum } from '@task/enums/report-mode.enum';
-import { Task } from '@task/models/task.model';
-import { ReportService } from '@task/services/report.service';
-import { TasksService } from '@task/services/tasks.service';
+import { ReportModeEnum }               from '@task/enums/report-mode.enum';
+import { Task }                         from '@task/models/task.model';
+import { ReportService }                from '@task/services/report.service';
+import { TasksService }                 from '@task/services/tasks.service';
 
 @Component({
   selector: 'app-report',

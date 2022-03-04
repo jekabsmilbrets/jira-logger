@@ -1,5 +1,5 @@
 import { Component, OnDestroy } from '@angular/core';
-import { FormControl } from '@angular/forms';
+import { FormControl }           from '@angular/forms';
 
 import { Subscription } from 'rxjs';
 

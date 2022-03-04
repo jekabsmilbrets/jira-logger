@@ -2,7 +2,7 @@ import { Searchable } from '@shared/interfaces/searchable.interface';
 
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
-import { TaskInterface } from '@task/interfaces/task.interface';
+import { TaskInterface }    from '@task/interfaces/task.interface';
 import { TimeLogInterface } from '@task/interfaces/time-log.interface';
 
 import { TimeLog } from './time-log.model';

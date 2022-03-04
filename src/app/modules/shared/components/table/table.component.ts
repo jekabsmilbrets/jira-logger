@@ -1,11 +1,11 @@
-import { SelectionModel } from '@angular/cdk/collections';
-import { Component, Input, ViewChild, AfterViewInit } from '@angular/core';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatSort, SortDirection } from '@angular/material/sort';
-import { MatTableDataSource } from '@angular/material/table';
+import { SelectionModel }                              from '@angular/cdk/collections';
+import { AfterViewInit, Component, Input, ViewChild } from '@angular/core';
+import { MatPaginator }                                from '@angular/material/paginator';
+import { MatSort, SortDirection }                     from '@angular/material/sort';
+import { MatTableDataSource }                          from '@angular/material/table';
 
-import { Column } from '@shared/interfaces/column.interface';
-import { Searchable } from '@shared/interfaces/searchable.interface';
+import { Column }          from '@shared/interfaces/column.interface';
+import { Searchable }      from '@shared/interfaces/searchable.interface';
 import { getNestedObject } from '@shared/utils/get-nested-object.util';
 
 @Component({

@@ -1,4 +1,4 @@
-import { Column } from '@shared/interfaces/column.interface';
+import { Column }      from '@shared/interfaces/column.interface';
 import { columnValue } from '@shared/utils/column-value.util';
 
 import { Task } from '@task/models/task.model';
