@@ -3,7 +3,7 @@ import { MatSidenav } from '@angular/material/sidenav';
 
 import { Router, NavigationEnd } from '@angular/router';
 
-import { Subscription, filter, switchMap, take, tap, Observable } from 'rxjs';
+import { Subscription, filter, switchMap, take, tap, Observable, delay } from 'rxjs';
 
 import { DynamicMenuDirective } from '@core/directives/dynamic-menu.directive';
 import { DynamicMenuInterface } from '@core/interfaces/dynamic-menu.interface';
@@ -35,6 +35,7 @@ export class HeaderComponent implements OnDestroy {
                                           filter(
                                             (e): e is NavigationEnd => e instanceof NavigationEnd,
                                           ),
+                                          delay(100), // hax :D :D without it loadingDynamicMenu causes loading empty dynamic menus
                                           switchMap(
                                             (navigationEndEvent: NavigationEnd) => this.loadDynamicMenu(navigationEndEvent),
                                           ),
