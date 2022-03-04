@@ -1,4 +1,6 @@
-import { NgModule } from '@angular/core';
+import { registerLocaleData } from '@angular/common';
+import lv from '@angular/common/locales/lv';
+import { NgModule, LOCALE_ID } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ServiceWorkerModule } from '@angular/service-worker';
@@ -11,6 +13,8 @@ import { LayoutModule } from '@layout/layout.module';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+
+registerLocaleData(lv);
 
 @NgModule({
   declarations: [
@@ -31,7 +35,9 @@ import { AppComponent } from './app.component';
 
     AppRoutingModule,
   ],
-  providers: [],
+  providers: [
+    { provide: LOCALE_ID, useValue: 'lv-LV' }
+  ],
   bootstrap: [AppComponent],
 })
 export class AppModule {
