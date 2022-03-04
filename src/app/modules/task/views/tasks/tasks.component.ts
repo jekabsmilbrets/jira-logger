@@ -11,10 +11,10 @@ import { Task }         from '@task/models/task.model';
 import { TasksService } from '@task/services/tasks.service';
 
 @Component({
-  selector: 'app-tasks',
-  templateUrl: './tasks.component.html',
-  styleUrls: ['./tasks.component.scss'],
-})
+             selector: 'app-tasks',
+             templateUrl: './tasks.component.html',
+             styleUrls: ['./tasks.component.scss'],
+           })
 export class TasksComponent implements OnInit {
   public tasks$: Observable<Task[]>;
 

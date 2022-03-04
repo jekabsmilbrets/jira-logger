@@ -5,10 +5,10 @@ import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
 import { Task } from '@task/models/task.model';
 
 @Component({
-  selector: 'app-task-list',
-  templateUrl: './task-list.component.html',
-  styleUrls: ['./task-list.component.scss'],
-})
+             selector: 'app-task-list',
+             templateUrl: './task-list.component.html',
+             styleUrls: ['./task-list.component.scss'],
+           })
 export class TaskListComponent {
   @Input()
   public tasks: Task[] | null = [];

@@ -11,17 +11,17 @@ import { LayoutComponent }       from './views/layout/layout.component';
 import { PageNotFoundComponent } from './views/page-not-found/page-not-found.component';
 
 @NgModule({
-  declarations: [
-    LayoutComponent,
-    PageNotFoundComponent,
-    HeaderComponent,
-    SidenavComponent,
-  ],
-  imports: [
-    LayoutRoutingModule,
-    CoreModule,
-    SharedModule,
-  ],
-})
+            declarations: [
+              LayoutComponent,
+              PageNotFoundComponent,
+              HeaderComponent,
+              SidenavComponent,
+            ],
+            imports: [
+              LayoutRoutingModule,
+              CoreModule,
+              SharedModule,
+            ],
+          })
 export class LayoutModule {
 }

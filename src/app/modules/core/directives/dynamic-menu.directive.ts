@@ -1,8 +1,8 @@
 import { Directive, ViewContainerRef } from '@angular/core';
 
 @Directive({
-  selector: '[appDynamicMenu]',
-})
+             selector: '[appDynamicMenu]',
+           })
 export class DynamicMenuDirective {
   constructor(public viewContainerRef: ViewContainerRef) {
   }

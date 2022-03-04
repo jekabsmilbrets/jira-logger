@@ -3,10 +3,10 @@ import { Component, EventEmitter, Output } from '@angular/core';
 import { SideNavInterface } from '@layout/interfaces/side-nav.interface';
 
 @Component({
-  selector: 'app-sidenav',
-  templateUrl: './sidenav.component.html',
-  styleUrls: ['./sidenav.component.scss'],
-})
+             selector: 'app-sidenav',
+             templateUrl: './sidenav.component.html',
+             styleUrls: ['./sidenav.component.scss'],
+           })
 export class SidenavComponent {
   @Output()
   public sidenavClose: EventEmitter<void> = new EventEmitter<void>();
