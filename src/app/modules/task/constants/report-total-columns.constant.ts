@@ -9,18 +9,21 @@ export const columns: Column[] = [
     columnDef: 'name',
     header: 'Name',
     sortable: true,
+    visible: true,
     cell: (task: Task) => columnValue(task, 'name'),
   },
   {
     columnDef: 'description',
     header: 'Description',
     sortable: true,
+    visible: true,
     cell: (task: Task) => columnValue(task, 'description'),
   },
   {
     columnDef: 'timeLogged',
     header: 'Total Time Logged',
     sortable: true,
+    visible: true,
     cell: (task: Task) => (new ReadableTimePipe())
       .transform(
         columnValue(task, 'timeLogged'),
