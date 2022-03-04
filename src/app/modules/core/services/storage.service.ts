@@ -1,18 +1,19 @@
-import { Injectable } from '@angular/core';
+import { Injectable }                                              from '@angular/core';
 // eslint-disable-next-line import/named
-import { createStore, get, set, del, entries, UseStore, setMany } from 'idb-keyval';
-import { Observable, from } from 'rxjs';
+import { createStore, del, entries, get, set, setMany, UseStore } from 'idb-keyval';
+import { from, Observable }                                       from 'rxjs';
 
 @Injectable()
 export class StorageService {
-
   protected stores: Map<string, UseStore> = new Map<string, UseStore>([]);
 
   constructor() {
     this.createStores();
   }
 
-  public list(customStoreName?: string): Observable<any> {
+  public list(
+    customStoreName?: string,
+  ): Observable<any> {
     if (customStoreName) {
       if (!this.stores.has(customStoreName)) {
         throw new Error('Invalid store!');
@@ -30,7 +31,10 @@ export class StorageService {
     );
   }
 
-  public read(key: IDBValidKey, customStoreName?: string): Observable<any> {
+  public read(
+    key: IDBValidKey,
+    customStoreName?: string,
+  ): Observable<any> {
     if (customStoreName) {
       if (!this.stores.has(customStoreName)) {
         throw new Error('Invalid store!');
@@ -49,7 +53,11 @@ export class StorageService {
     );
   }
 
-  public create(key: IDBValidKey, value: any, customStoreName?: string): Observable<void> {
+  public create(
+    key: IDBValidKey,
+    value: any,
+    customStoreName?: string,
+  ): Observable<void> {
     if (customStoreName) {
       if (!this.stores.has(customStoreName)) {
         throw new Error('Invalid store!');
@@ -72,11 +80,18 @@ export class StorageService {
     );
   }
 
-  public update(key: IDBValidKey, value: any, customStoreName?: string): Observable<void> {
+  public update(
+    key: IDBValidKey,
+    value: any,
+    customStoreName?: string,
+  ): Observable<void> {
     return this.create(key, value, customStoreName);
   }
 
-  public massUpdate(data: { key: IDBValidKey; value: any }[], customStoreName?: string): Observable<void> {
+  public massUpdate(
+    data: { key: IDBValidKey; value: any }[],
+    customStoreName?: string,
+  ): Observable<void> {
     const dataEntries: [IDBValidKey, any][] = data.map(
       (dataRow: { key: IDBValidKey; value: any }) => [
         dataRow.key,
@@ -97,7 +112,6 @@ export class StorageService {
       );
     }
 
-
     return from(
       setMany(
         dataEntries,
@@ -105,7 +119,10 @@ export class StorageService {
     );
   }
 
-  public delete(key: IDBValidKey, customStoreName?: string): Observable<void> {
+  public delete(
+    key: IDBValidKey,
+    customStoreName?: string,
+  ): Observable<void> {
     if (customStoreName) {
       if (!this.stores.has(customStoreName)) {
         throw new Error('Invalid store!');
