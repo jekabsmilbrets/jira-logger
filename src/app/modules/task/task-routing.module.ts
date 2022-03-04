@@ -12,6 +12,11 @@ const routes: Routes = [
   },
   {
     path: 'report',
+    redirectTo: 'report/total',
+    pathMatch: 'full',
+  },
+  {
+    path: 'report/:reportMode',
     component: ReportComponent,
   },
   {
