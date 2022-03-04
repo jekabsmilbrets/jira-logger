@@ -31,9 +31,9 @@ export class ReadableTimePipe implements PipeTransform {
 
     if (withSeconds) {
       levels.push([
-        (((seconds % 31536000) % 86400) % 3600) % 60,
-        's',
-      ]); // seconds
+                    (((seconds % 31536000) % 86400) % 3600) % 60,
+                    's',
+                  ]); // seconds
     }
 
     let output = '';
