@@ -20,10 +20,12 @@ export class TaskListComponent {
   public remove: EventEmitter<Task> = new EventEmitter<Task>();
 
   public onUpdate([task, action]: [Task, TaskUpdateActionEnum]): void {
-    this.update.emit([
-      task,
-      action,
-    ]);
+    this.update.emit(
+      [
+        task,
+        action,
+      ],
+    );
   }
 
   public onRemove(task: Task): void {
