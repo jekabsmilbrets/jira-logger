@@ -34,35 +34,38 @@ export class ReportComponent implements OnInit, OnDestroy {
     month: [],
   };
 
-  private reportModeSubscription!: Subscription;
+  private subscriptions: Subscription[] = [];
 
   constructor(
     private tasksService: TasksService,
     private dynamicMenuService: DynamicMenuService,
     private reportService: ReportService,
+    private activatedRoute: ActivatedRoute,
   ) {
+    this.subscriptions.push(
+      this.activatedRoute.params
+          .pipe()
+          .subscribe(
+            (params: Params) => {
+              const reportMode = params['reportMode'];
+              if (reportMode) {
+                this.reportService.reportMode = ReportModeEnum[reportMode as keyof typeof ReportModeEnum];
+              }
+            },
+          ),
+    );
+    this.subscriptions.push(
+      this.reportService.reportMode$
+          .subscribe(
+            (reportMode: ReportModeEnum) => this.switchReportMode(reportMode),
+          ),
+    );
   }
 
   public ngOnInit(): void {
     this.createDynamicMenu();
 
-    const date = new Date();
-    const dateA = new Date('2022-03-01');
-    const dateB = new Date('2022-03-31');
-    this.tasks$ = this.tasksService.tasks$
-                      .pipe(
-                        tap((tasks: Task[]) => tasks.map((task: Task) => console.log({
-                          date,
-                          task,
-                          calcTimeLoggedForDate: task.calcTimeLoggedForDate(date),
-                          calcTimeLoggedForDate2: task.calcTimeLoggedForDate(dateB),
-                          calcTimeLoggedForDateRange: task.calcTimeLoggedForDateRange(dateA, dateB),
-                        }))),
-                      );
-    this.reportModeSubscription = this.reportService.reportMode$
-                                      .subscribe(
-                                        (reportMode: ReportModeEnum) => this.switchReportMode(reportMode),
-                                      );
+    this.tasks$ = this.tasksService.tasks$;
 
     this.tasksService.list()
         .pipe(
@@ -72,7 +75,7 @@ export class ReportComponent implements OnInit, OnDestroy {
   }
 
   public ngOnDestroy(): void {
-    this.reportModeSubscription.unsubscribe();
+    this.subscriptions.forEach((sub: Subscription) => sub.unsubscribe());
   }
 
   private createDynamicMenu(): void {
@@ -103,7 +106,6 @@ export class ReportComponent implements OnInit, OnDestroy {
     }
 
     this.columns = this.tableColumns[reportMode];
-    console.log({columns: this.columns});
   }
 
   private generateMonthColumns(): Column[] {
