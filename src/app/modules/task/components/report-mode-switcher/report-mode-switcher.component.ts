@@ -4,13 +4,13 @@ import { FormControl }           from '@angular/forms';
 import { Subscription } from 'rxjs';
 
 import { ReportModeEnum } from '@task/enums/report-mode.enum';
-import { ReportService } from '@task/services/report.service';
+import { ReportService }  from '@task/services/report.service';
 
 @Component({
-  selector: 'app-report-mode-switcher',
-  templateUrl: './report-mode-switcher.component.html',
-  styleUrls: ['./report-mode-switcher.component.scss'],
-})
+             selector: 'app-report-mode-switcher',
+             templateUrl: './report-mode-switcher.component.html',
+             styleUrls: ['./report-mode-switcher.component.scss'],
+           })
 export class ReportModeSwitcherComponent implements OnDestroy {
   public reportModes: {
     value: ReportModeEnum;

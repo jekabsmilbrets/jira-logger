@@ -17,31 +17,31 @@ import { AppComponent }     from './app.component';
 registerLocaleData(lv);
 
 @NgModule({
-  declarations: [
-    AppComponent,
-  ],
-  imports: [
-    BrowserModule,
-    ServiceWorkerModule.register('ngsw-worker.js', {
-      enabled: environment.production,
-      // Register the ServiceWorker as soon as the app is stable
-      // or after 30 seconds (whichever comes first).
-      registrationStrategy: 'registerWhenStable:30000',
-    }),
-    BrowserAnimationsModule,
+            declarations: [
+              AppComponent,
+            ],
+            imports: [
+              BrowserModule,
+              ServiceWorkerModule.register('ngsw-worker.js', {
+                enabled: environment.production,
+                // Register the ServiceWorker as soon as the app is stable
+                // or after 30 seconds (whichever comes first).
+                registrationStrategy: 'registerWhenStable:30000',
+              }),
+              BrowserAnimationsModule,
 
-    CoreModule,
-    LayoutModule,
+              CoreModule,
+              LayoutModule,
 
-    AppRoutingModule,
-  ],
-  providers: [
-    {
-      provide: LOCALE_ID,
-      useValue: 'lv-LV',
-    },
-  ],
-  bootstrap: [AppComponent],
-})
+              AppRoutingModule,
+            ],
+            providers: [
+              {
+                provide: LOCALE_ID,
+                useValue: 'lv-LV',
+              },
+            ],
+            bootstrap: [AppComponent],
+          })
 export class AppModule {
 }

@@ -9,10 +9,10 @@ import { Searchable }      from '@shared/interfaces/searchable.interface';
 import { getNestedObject } from '@shared/utils/get-nested-object.util';
 
 @Component({
-  selector: 'app-shared-table',
-  templateUrl: './table.component.html',
-  styleUrls: ['./table.component.scss'],
-})
+             selector: 'app-shared-table',
+             templateUrl: './table.component.html',
+             styleUrls: ['./table.component.scss'],
+           })
 export class TableComponent implements AfterViewInit {
   @Input()
   public isSelectable = true;

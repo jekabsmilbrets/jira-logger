@@ -15,22 +15,22 @@ import { ReportComponent }   from './views/report/report.component';
 import { TasksComponent }    from './views/tasks/tasks.component';
 
 @NgModule({
-  declarations: [
-    TasksComponent,
-    ReportComponent,
-    TaskComponent,
-    TaskListComponent,
-    ReportModeSwitcherComponent,
-  ],
-  imports: [
-    ReactiveFormsModule,
-    TaskRoutingModule,
-    SharedModule,
-  ],
-  providers: [
-    TasksService,
-    ReportService,
-  ],
-})
+            declarations: [
+              TasksComponent,
+              ReportComponent,
+              TaskComponent,
+              TaskListComponent,
+              ReportModeSwitcherComponent,
+            ],
+            imports: [
+              ReactiveFormsModule,
+              TaskRoutingModule,
+              SharedModule,
+            ],
+            providers: [
+              TasksService,
+              ReportService,
+            ],
+          })
 export class TaskModule {
 }

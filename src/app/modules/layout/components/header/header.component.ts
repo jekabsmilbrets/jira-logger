@@ -11,10 +11,10 @@ import { DynamicMenu }          from '@core/models/dynamic-menu';
 import { DynamicMenuService }   from '@core/services/dynamic-menu.service';
 
 @Component({
-  selector: 'app-header',
-  templateUrl: './header.component.html',
-  styleUrls: ['./header.component.scss'],
-})
+             selector: 'app-header',
+             templateUrl: './header.component.html',
+             styleUrls: ['./header.component.scss'],
+           })
 export class HeaderComponent implements OnDestroy {
   @Input()
   public sidenav!: MatSidenav;
