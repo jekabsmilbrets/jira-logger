@@ -34,7 +34,6 @@ export class TableComponent implements AfterViewInit {
   @ViewChild(MatPaginator, {static: true})
   public paginator!: MatPaginator;
 
-
   public selection = new SelectionModel<Searchable>(true, []);
 
   public dataSource: MatTableDataSource<Searchable> = new MatTableDataSource<Searchable>([]);
