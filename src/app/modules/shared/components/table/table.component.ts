@@ -49,9 +49,15 @@ export class TableComponent implements AfterViewInit {
 
   public get displayedColumns(): string[] {
     if (this.isSelectable) {
-      return ['select'].concat(this.columns.map((column: Column) => column.columnDef));
+      return ['select'].concat(
+        this.columns
+            .filter((column: Column) => column.visible)
+            .map((column: Column) => column.columnDef)
+      );
     }
-    return this.columns.map((column: Column) => column.columnDef);
+    return this.columns
+               .filter((column: Column) => column.visible)
+               .map((column: Column) => column.columnDef);
   }
 
   public ngAfterViewInit(): void {
