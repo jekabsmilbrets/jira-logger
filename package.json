@@ -4,12 +4,22 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start-allow-remote": "ng serve --host 0.0.0.0 --disable-host-check",
     "build": "ng build",
+    "build-dev": "ng build --configuration development",
     "watch": "ng build --watch --configuration development",
     "watch-prod": "ng build --watch",
     "test": "ng test",
     "lint": "ng lint",
-    "server": "http-server -p 8080 -c-1 dist/jira-logger"
+    "docker-compose-build": "sh docker.sh -a build",
+    "docker-compose-start": "sh docker.sh -a start",
+    "docker-compose-start-background":  "sh docker.sh -a start -b",
+    "docker-compose-stop": "sh docker.sh -a stop",
+    "docker-watch": "sh docker.sh -a ng-watch",
+    "docker-watch-prod":  "sh docker.sh -a ng-watch-prod",
+    "docker-build": "sh docker.sh -a ng-build",
+    "docker-build-prod":  "sh docker.sh -a ng-build-prod",
+    "docker-npm-ci":  "sh docker.sh -i"
   },
   "private": true,
   "dependencies": {
@@ -46,7 +56,6 @@
     "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-jsdoc": "^37.9.4",
     "eslint-plugin-prefer-arrow": "^1.2.3",
-    "http-server": "^14.1.0",
     "jasmine-core": "~4.0.0",
     "karma": "~6.3.0",
     "karma-chrome-launcher": "~3.1.0",
