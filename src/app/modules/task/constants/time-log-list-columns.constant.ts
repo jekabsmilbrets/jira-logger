@@ -79,14 +79,14 @@ export const columns: Column[] = [
   {
     columnDef: 'second',
     header: 'second',
-    sortable: false,
-    visible: true,
+    sortable: true,
+    visible: false,
     cell: (timeLog: TimeLog) => columnValue(timeLog, 'second'),
   },
   {
     columnDef: 'timeLogged',
     header: 'Time logged',
-    sortable: true,
+    sortable: false,
     visible: true,
     pipe: 'readableTime',
     cell: (timeLog: TimeLog) => timeLog.timeLogged(),
