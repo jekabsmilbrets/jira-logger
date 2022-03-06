@@ -1,0 +1,14 @@
+<h2 mat-dialog-title>Time Log list for task {{ data.task.name }}</h2>
+
+<mat-dialog-content>
+  <app-shared-table [columns]="columns"
+                    [data]="data.task.timeLogs"
+                    [isSelectable]="false"
+                    [stickyHeader]="true"
+                    sortField="startTime"></app-shared-table>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <button [mat-dialog-close]="false" mat-button>Cancel</button>
+  <button [mat-dialog-close]="true" mat-button>Save changes</button>
+</mat-dialog-actions>

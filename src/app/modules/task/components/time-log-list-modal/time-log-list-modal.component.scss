@@ -1,0 +1,16 @@
+$max-height-table: 50vh;
+
+:host {
+  ::ng-deep app-shared-table {
+    .table-container {
+      max-height: $max-height-table;
+
+      ::ng-deep {
+        .mat-table {
+          max-height: $max-height-table;
+        }
+      }
+    }
+  }
+}
+
