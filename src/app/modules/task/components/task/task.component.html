@@ -82,6 +82,14 @@
         <mat-icon>timer</mat-icon>
         <mat-icon>{{task.lastTimeLogId ? 'pause' : 'play_arrow'}}</mat-icon>
       </button>
+
+      <button (click)="onOpenTimeLogsModal(task)"
+              aria-label="Remove"
+              color="warn"
+              mat-icon-button
+              type="button">
+        <mat-icon>history</mat-icon>
+      </button>
     </mat-card-actions>
   </mat-card>
 </form>
