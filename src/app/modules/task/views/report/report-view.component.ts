@@ -21,11 +21,11 @@ import { ReportService }                from '@task/services/report.service';
 import { TasksService }                 from '@task/services/tasks.service';
 
 @Component({
-             selector: 'app-report',
-             templateUrl: './report.component.html',
-             styleUrls: ['./report.component.scss'],
+             selector: 'app-report-view',
+             templateUrl: './report-view.component.html',
+             styleUrls: ['./report-view.component.scss'],
            })
-export class ReportComponent implements OnInit, OnDestroy {
+export class ReportViewComponent implements OnInit, OnDestroy {
   public tasks$!: Observable<Task[]>;
   public columns: Column[] = [];
 

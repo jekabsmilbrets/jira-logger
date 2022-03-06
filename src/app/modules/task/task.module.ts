@@ -12,25 +12,30 @@ import { ReportService } from './services/report.service';
 import { TasksService }  from './services/tasks.service';
 
 import { TaskRoutingModule } from './task-routing.module';
-import { ReportComponent }   from './views/report/report.component';
-import { TasksComponent }    from './views/tasks/tasks.component';
+
+import { ReportViewComponent } from './views/report/report-view.component';
+import { TasksViewComponent }  from './views/tasks/tasks-view.component';
 
 @NgModule({
             declarations: [
-              TasksComponent,
-              ReportComponent,
+              ReportModeSwitcherComponent,
+              ReportViewComponent,
+
               TaskComponent,
               TaskListComponent,
-              ReportModeSwitcherComponent,
+              TasksViewComponent,
+
               TimeLogListModalComponent,
             ],
             imports: [
-              ReactiveFormsModule,
               TaskRoutingModule,
+              ReactiveFormsModule,
+
               SharedModule,
             ],
             providers: [
               TasksService,
+
               ReportService,
             ],
           })
