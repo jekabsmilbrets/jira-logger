@@ -1,8 +1,8 @@
-import { SelectionModel }                              from '@angular/cdk/collections';
+import { SelectionModel }                             from '@angular/cdk/collections';
 import { AfterViewInit, Component, Input, ViewChild } from '@angular/core';
-import { MatPaginator }                                from '@angular/material/paginator';
+import { MatPaginator }                               from '@angular/material/paginator';
 import { MatSort, SortDirection }                     from '@angular/material/sort';
-import { MatTableDataSource }                          from '@angular/material/table';
+import { MatTableDataSource }                         from '@angular/material/table';
 
 import { Column }          from '@shared/interfaces/column.interface';
 import { Searchable }      from '@shared/interfaces/searchable.interface';
