@@ -10,4 +10,5 @@ export interface Column {
   cell: any;
   emptyCellValue?: string | null;
   index?: number;
+  pipe?: string;
 }

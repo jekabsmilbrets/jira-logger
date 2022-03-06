@@ -18,7 +18,11 @@
 
         <mat-cell *cdkCellDef="let row"
                   [matTooltip]="column.cell(row)">
-          <span>{{ column.cell(row) }}</span>
+          <ng-container *ngIf="column.pipe">
+            <span *ngIf="column.pipe === 'readableTime'">{{ column.cell(row) | readableTime }}</span>
+          </ng-container>
+
+          <span *ngIf="!column.pipe">{{ column.cell(row) }}</span>
         </mat-cell>
       </ng-container>
     </ng-container>

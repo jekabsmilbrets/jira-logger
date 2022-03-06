@@ -1,4 +1,4 @@
-import { formatDate }                    from '@angular/common';
+import { formatDate }                   from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params }       from '@angular/router';
 
