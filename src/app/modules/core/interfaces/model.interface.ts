@@ -1,3 +1,3 @@
 export interface ModelInterface {
-  uuid: string;
+  _uuid: string;
 }

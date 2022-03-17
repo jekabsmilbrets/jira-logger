@@ -1,26 +1,23 @@
-import { Searchable } from '@shared/interfaces/searchable.interface';
+import { getDateParts } from '@core/utils/get-date-parts.utility';
+
+import { Searchable }   from '@shared/interfaces/searchable.interface';
 
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
-import { TaskInterface }    from '@task/interfaces/task.interface';
-import { TimeLogInterface } from '@task/interfaces/time-log.interface';
-
 import { TimeLog } from './time-log.model';
 
-export class Task implements TaskInterface, Searchable {
+export class Task implements Searchable {
   private _uuid!: string;
   private _name!: string;
   private _createDate!: number;
   private _lastTimeLogId!: string | null;
-  private _timeLogs: { [key: string]: TimeLogInterface } = {};
+  private _timeLogs: TimeLog[] = [];
   private _description!: string;
   private _timeLogged = 0;
   private _tags: TaskTagsEnum[] = [];
 
-  constructor(data?: Partial<TaskInterface>) {
+  constructor(data?: Partial<Task>) {
     Object.assign(this, data);
-
-    this.timeLogs = this.timeLogs;
 
     if (!this.uuid) {
       this.uuid = `task-${this.name}-${(new Date()).getTime().toString()}`;
@@ -56,7 +53,7 @@ export class Task implements TaskInterface, Searchable {
   }
 
   public set createDate(value: Date) {
-    this._createDate = value.getTime();
+    this._createDate = value?.getTime();
   }
 
   public get lastTimeLogId(): string | null {
@@ -67,20 +64,11 @@ export class Task implements TaskInterface, Searchable {
     this._lastTimeLogId = value;
   }
 
-  public get timeLogs(): { [key: string]: TimeLogInterface } {
+  public get timeLogs(): TimeLog[] {
     return this._timeLogs;
   }
 
-  public set timeLogs(value: { [key: string]: TimeLogInterface }) {
-    if (Object.keys(value).length > 0) {
-      const timeLogKeys = Object.keys(value);
-      if (!(value[timeLogKeys[0]] instanceof TimeLog)) {
-        timeLogKeys.forEach(
-          (timeLogId: string) => value[timeLogId] = new TimeLog(value[timeLogId]),
-        );
-      }
-    }
-
+  public set timeLogs(value: TimeLog[]) {
     this._timeLogs = value;
   }
 
@@ -123,7 +111,7 @@ export class Task implements TaskInterface, Searchable {
     );
 
     this.lastTimeLogId = timeLog.uuid;
-    this.timeLogs[this.lastTimeLogId] = timeLog;
+    this.timeLogs.push(timeLog);
 
     return this.lastTimeLogId;
   }
@@ -132,12 +120,15 @@ export class Task implements TaskInterface, Searchable {
     if (!this.lastTimeLogId) {
       return;
     }
+    const timeLog: TimeLog | undefined = this.timeLogs.find(
+      (tl: TimeLog) => tl.uuid === this.lastTimeLogId,
+    );
 
-    if (!this.timeLogs.hasOwnProperty(this.lastTimeLogId)) {
-      throw new Error(`Could not find time log for ID: "${this.lastTimeLogId}" for task "${this.name}"`);
+    if (!timeLog) {
+      const lastTimeLogId = this.lastTimeLogId;
+      this.lastTimeLogId = null;
+      throw new Error(`Could not find time log for ID: "${lastTimeLogId}" for task "${this.name}"`);
     }
-
-    const timeLog: TimeLog = this.timeLogs[this.lastTimeLogId] as TimeLog;
 
     timeLog.endTime = new Date();
 
@@ -158,18 +149,13 @@ export class Task implements TaskInterface, Searchable {
   }
 
   public calcTimeLoggedForDateRange(startDate: Date, endDate: Date): number {
-    const startDateYear = startDate.getFullYear();
-    const startDateMonth = startDate.getMonth();
-    const startDateDate = startDate.getDate();
-    const endDateYear = endDate.getFullYear();
-    const endDateMonth = endDate.getMonth();
-    const endDateDate = endDate.getDate();
-    const timeLogs: TimeLog[] = ((Object.values(this.timeLogs) as TimeLog[]) ?? [])
+    const [startDateYear, startDateMonth, startDateDate] = getDateParts(startDate);
+    const [endDateYear, endDateMonth, endDateDate] = getDateParts(endDate);
+    const timeLogs: TimeLog[] = (this.timeLogs ?? [])
       .filter(
         (timeLog: TimeLog) => {
-          const startTimeYear = timeLog.startTime.getFullYear();
-          const startTimeMonth = timeLog.startTime.getMonth();
-          const startTimeDate = timeLog.startTime.getDate();
+          const [startTimeYear, startTimeMonth, startTimeDate] = getDateParts(timeLog.startTime);
+
           return (startTimeYear >= startDateYear && startTimeYear <= endDateYear) &&
             (startTimeMonth >= startDateMonth && startTimeMonth <= endDateMonth) &&
             (startTimeDate >= startDateDate && startTimeDate <= endDateDate);
@@ -180,10 +166,9 @@ export class Task implements TaskInterface, Searchable {
   }
 
   public calcTimeLoggedForDate(date: Date): number {
-    const dateYear = date.getFullYear();
-    const dateMonth = date.getMonth();
-    const dateDate = date.getDate();
-    const timeLogs: TimeLog[] = ((Object.values(this.timeLogs) as TimeLog[]) ?? [])
+    const [dateYear, dateMonth, dateDate] = getDateParts(date);
+
+    const timeLogs: TimeLog[] = (this.timeLogs ?? [])
       .filter(
         (timeLog: TimeLog) => timeLog.startTime.getFullYear() === dateYear &&
           timeLog.startTime.getMonth() === dateMonth &&
@@ -194,15 +179,16 @@ export class Task implements TaskInterface, Searchable {
   }
 
   private calcTimeLogged(timeLogs?: TimeLog[]): number {
-    timeLogs = timeLogs ?? ((Object.values(this.timeLogs) as TimeLog[]) ?? []);
+    timeLogs = timeLogs ?? (this.timeLogs ?? []);
 
     if (timeLogs.length === 0) {
       return 0;
     }
 
+    const filterFn = (timeLog: TimeLog) => timeLog?.endTime && timeLog?.startTime;
     const mapFn = (timeLog: TimeLog) => [
-      timeLog?.endTime?.getTime(),
-      timeLog?.startTime?.getTime(),
+      (timeLog.endTime as Date).getTime(),
+      timeLog.startTime.getTime(),
     ];
 
     const reduceFn = (prev: number, times: number[]) => {
@@ -216,7 +202,8 @@ export class Task implements TaskInterface, Searchable {
     };
 
     return (
-      timeLogs.map(mapFn)
+      timeLogs.filter(filterFn)
+              .map(mapFn)
               .reduce(reduceFn, 0)
     ) ?? 0;
   }

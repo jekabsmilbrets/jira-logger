@@ -13,16 +13,17 @@
     "lint": "ng lint",
     "docker-compose-build": "sh docker.sh -a build",
     "docker-compose-start": "sh docker.sh -a start",
-    "docker-compose-start-background":  "sh docker.sh -a start -b",
+    "docker-compose-start-background": "sh docker.sh -a start -b",
     "docker-compose-stop": "sh docker.sh -a stop",
     "docker-watch": "sh docker.sh -a ng-watch",
-    "docker-watch-prod":  "sh docker.sh -a ng-watch-prod",
+    "docker-watch-prod": "sh docker.sh -a ng-watch-prod",
     "docker-build": "sh docker.sh -a ng-build",
-    "docker-build-prod":  "sh docker.sh -a ng-build-prod",
-    "docker-npm-ci":  "sh docker.sh -i"
+    "docker-build-prod": "sh docker.sh -a ng-build-prod",
+    "docker-npm-ci": "sh docker.sh -i"
   },
   "private": true,
   "dependencies": {
+    "@angular-material-components/datetime-picker": "^7.0.1",
     "@angular/animations": "~13.2.0",
     "@angular/cdk": "^13.2.3",
     "@angular/common": "~13.2.0",
@@ -63,5 +64,9 @@
     "karma-jasmine": "~4.0.0",
     "karma-jasmine-html-reporter": "~1.7.0",
     "typescript": "~4.5.2"
+  },
+  "engines" : {
+    "npm" : ">=7.24.2",
+    "node" : ">=12.22.10"
   }
 }

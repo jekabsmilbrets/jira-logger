@@ -3,32 +3,41 @@ import { ReactiveFormsModule } from '@angular/forms';
 
 import { SharedModule } from '@shared/shared.module';
 
-import { ReportService } from '@task/services/report.service';
-
 import { ReportModeSwitcherComponent } from './components/report-mode-switcher/report-mode-switcher.component';
 import { TaskListComponent }           from './components/task-list/task-list.component';
 import { TaskComponent }               from './components/task/task.component';
-import { TasksService }                from './services/tasks.service';
+import { TimeLogListModalComponent }   from './components/time-log-list-modal/time-log-list-modal.component';
+import { TimeLogModalComponent }       from './components/time-log-modal/time-log-modal.component';
+
+import { ReportService } from './services/report.service';
+import { TasksService }  from './services/tasks.service';
 
 import { TaskRoutingModule } from './task-routing.module';
-import { ReportComponent }   from './views/report/report.component';
-import { TasksComponent }    from './views/tasks/tasks.component';
+
+import { ReportViewComponent } from './views/report/report-view.component';
+import { TasksViewComponent }  from './views/tasks/tasks-view.component';
 
 @NgModule({
             declarations: [
-              TasksComponent,
-              ReportComponent,
+              ReportModeSwitcherComponent,
+              ReportViewComponent,
+
               TaskComponent,
               TaskListComponent,
-              ReportModeSwitcherComponent,
+              TasksViewComponent,
+
+              TimeLogListModalComponent,
+              TimeLogModalComponent,
             ],
             imports: [
-              ReactiveFormsModule,
               TaskRoutingModule,
+              ReactiveFormsModule,
+
               SharedModule,
             ],
             providers: [
               TasksService,
+
               ReportService,
             ],
           })

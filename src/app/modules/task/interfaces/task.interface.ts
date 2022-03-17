@@ -5,15 +5,15 @@ import { TaskTagsEnum } from '../enums/task-tags.enum';
 import { TimeLogInterface } from './time-log.interface';
 
 export interface TaskInterface extends ModelInterface {
-  createDate: Date;
+  _createDate: Date;
 
-  name: string;
-  description?: string;
+  _name: string;
+  _description?: string;
 
-  lastTimeLogId?: string | null;
-  timeLogged?: number;
+  _lastTimeLogId?: string | null;
+  _timeLogged?: number;
 
-  timeLogs: { [key: number]: TimeLogInterface };
+  _timeLogs: TimeLogInterface[];
 
-  tags: TaskTagsEnum[];
+  _tags: TaskTagsEnum[];
 }
