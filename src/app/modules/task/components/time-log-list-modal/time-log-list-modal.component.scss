@@ -1,6 +1,36 @@
 $max-height-table: 50vh;
+$mat-icon-size: 18px;
 
 :host {
+  .dialog-title {
+    display: flex;
+    justify-content: space-between;
+
+    h2 {
+      margin: 4px 0 0 0;
+    }
+
+    .mat-icon-button {
+      .mat-icon {
+        line-height: $mat-icon-size;
+        width: $mat-icon-size;
+        height: $mat-icon-size;
+        font-size: $mat-icon-size;
+      }
+    }
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  ::ng-deep .mat-toolbar {
+    &.mat-toolbar-row,
+    &.mat-toolbar-single-row {
+      height: 32px;
+    }
+  }
+
   ::ng-deep app-shared-table {
     .table-container {
       max-height: $max-height-table;
