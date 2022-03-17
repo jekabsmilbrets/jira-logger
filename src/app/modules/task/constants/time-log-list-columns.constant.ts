@@ -19,12 +19,15 @@ export const columns: Column[] = [
     sortable: true,
     visible: true,
     cell: (timeLog: TimeLog) => columnValue(timeLog, 'description'),
+    hasFooter: true,
+    footerCell: () => 'Total',
   },
   {
     columnDef: 'startTime',
     header: 'Start time',
     sortable: true,
     visible: true,
+    isClickable: true,
     cell: (timeLog: TimeLog) => formatDate(timeLog.startTime, 'yyyy-MM-dd H:mm:s', 'lv'),
   },
   {
@@ -32,6 +35,7 @@ export const columns: Column[] = [
     header: 'End time',
     sortable: true,
     visible: true,
+    isClickable: true,
     cell: (timeLog: TimeLog) => timeLog.endTime && formatDate(timeLog.endTime, 'yyyy-MM-dd H:mm:s', 'lv'),
   },
   {
@@ -90,5 +94,8 @@ export const columns: Column[] = [
     visible: true,
     pipe: 'readableTime',
     cell: (timeLog: TimeLog) => timeLog.timeLogged(),
+    hasFooter: true,
+    footerCell: (timeLogs: TimeLog[]) => timeLogs.map(t => t.timeLogged())
+                                                 .reduce((acc, value) => acc + value, 0),
   },
 ];
