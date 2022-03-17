@@ -1,4 +1,6 @@
-export class TimeLog {
+import { Searchable } from '@shared/interfaces/searchable.interface';
+
+export class TimeLog implements Searchable {
   private _uuid!: string;
   private _endTime!: number | undefined;
   private _startTime!: number;

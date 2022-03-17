@@ -7,6 +7,7 @@ import { ReportModeSwitcherComponent } from './components/report-mode-switcher/r
 import { TaskListComponent }           from './components/task-list/task-list.component';
 import { TaskComponent }               from './components/task/task.component';
 import { TimeLogListModalComponent }   from './components/time-log-list-modal/time-log-list-modal.component';
+import { TimeLogModalComponent }       from './components/time-log-modal/time-log-modal.component';
 
 import { ReportService } from './services/report.service';
 import { TasksService }  from './services/tasks.service';
@@ -26,6 +27,7 @@ import { TasksViewComponent }  from './views/tasks/tasks-view.component';
               TasksViewComponent,
 
               TimeLogListModalComponent,
+              TimeLogModalComponent,
             ],
             imports: [
               TaskRoutingModule,
