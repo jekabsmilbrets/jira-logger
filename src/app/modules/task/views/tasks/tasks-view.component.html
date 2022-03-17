@@ -28,6 +28,7 @@
   </button>
 </form>
 
-<app-task-list (remove)="onRemove($event)"
+<app-task-list (reload)="onReload()"
+               (remove)="onRemove($event)"
                (update)="onUpdate($event)"
                [tasks]="tasks$ | async"></app-task-list>

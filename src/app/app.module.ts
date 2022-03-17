@@ -1,6 +1,6 @@
 import { registerLocaleData }      from '@angular/common';
 import lv                          from '@angular/common/locales/lv';
-import { LOCALE_ID, NgModule }    from '@angular/core';
+import { LOCALE_ID, NgModule }     from '@angular/core';
 import { BrowserModule }           from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ServiceWorkerModule }     from '@angular/service-worker';

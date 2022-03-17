@@ -1,0 +1,50 @@
+<div class="dialog-title" mat-dialog-title>
+  <h2>Time Log {{ data.timeLog.startTime | date: 'yyyy-MM-dd HH:mm:ss' }}</h2>
+
+  <button (click)="onCancel()"
+          aria-label="close dialog"
+          mat-icon-button>
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <form [formGroup]="formGroup">
+    <mat-form-field>
+      <mat-label>Description</mat-label>
+      <textarea formControlName="description"
+                matInput
+                placeholder="Ex. ToDo: Do actually something this time..."></textarea>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Start Time</mat-label>
+      <input [ngxMatDatetimePicker]="startTimePicker"
+             formControlName="startTime"
+             matInput
+             placeholder="Ex. 2000-01-01 01:02:03"
+             readonly>
+      <mat-datepicker-toggle [for]="$any(startTimePicker)" matSuffix></mat-datepicker-toggle>
+      <ngx-mat-datetime-picker #startTimePicker
+                               [showSeconds]="true"></ngx-mat-datetime-picker>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>End Time</mat-label>
+      <input [ngxMatDatetimePicker]="endTimePicker"
+             formControlName="endTime"
+             matInput
+             placeholder="Ex. 2222-12-31 23:59:59"
+             readonly>
+      <mat-datepicker-toggle [for]="$any(endTimePicker)" matSuffix></mat-datepicker-toggle>
+      <ngx-mat-datetime-picker #endTimePicker
+                               [showSeconds]="true"></ngx-mat-datetime-picker>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <button (click)="onCancel()" mat-button>Cancel</button>
+  <button (click)="onDelete()" color="warn" mat-button>Delete</button>
+  <button (click)="onSave()" mat-button>Save changes</button>
+</mat-dialog-actions>

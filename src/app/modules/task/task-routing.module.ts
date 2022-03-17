@@ -1,8 +1,8 @@
-import { NgModule }              from '@angular/core';
+import { NgModule }             from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { ReportComponent } from './views/report/report.component';
-import { TasksComponent }  from './views/tasks/tasks.component';
+import { ReportViewComponent } from './views/report/report-view.component';
+import { TasksViewComponent }  from './views/tasks/tasks-view.component';
 
 const routes: Routes = [
   {
@@ -17,11 +17,11 @@ const routes: Routes = [
   },
   {
     path: 'report/:reportMode',
-    component: ReportComponent,
+    component: ReportViewComponent,
   },
   {
     path: 'list',
-    component: TasksComponent,
+    component: TasksViewComponent,
   },
   {
     path: '**',

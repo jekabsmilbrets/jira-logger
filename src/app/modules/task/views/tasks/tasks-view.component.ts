@@ -11,11 +11,11 @@ import { Task }         from '@task/models/task.model';
 import { TasksService } from '@task/services/tasks.service';
 
 @Component({
-             selector: 'app-tasks',
-             templateUrl: './tasks.component.html',
-             styleUrls: ['./tasks.component.scss'],
+             selector: 'app-tasks-view',
+             templateUrl: './tasks-view.component.html',
+             styleUrls: ['./tasks-view.component.scss'],
            })
-export class TasksComponent implements OnInit {
+export class TasksViewComponent implements OnInit {
   public tasks$: Observable<Task[]>;
 
   public createTaskForm: FormGroup = new FormGroup(
@@ -69,11 +69,7 @@ export class TasksComponent implements OnInit {
   }
 
   public ngOnInit(): void {
-    this.tasksService.list()
-        .pipe(
-          take(1),
-        )
-        .subscribe();
+    this.reloadData();
   }
 
   public createTask(): void {
@@ -101,11 +97,11 @@ export class TasksComponent implements OnInit {
   public onUpdate(
     [
       task,
-      action
+      action,
     ]: [
       Task,
       TaskUpdateActionEnum
-    ]
+    ],
   ): void {
     iif(
       () => action === TaskUpdateActionEnum.startWorkLog,
@@ -131,6 +127,18 @@ export class TasksComponent implements OnInit {
 
   public onRemove(task: Task): void {
     this.tasksService.delete(task)
+        .pipe(
+          take(1),
+        )
+        .subscribe();
+  }
+
+  public onReload(): void {
+    this.reloadData();
+  }
+
+  private reloadData(): void {
+    this.tasksService.list()
         .pipe(
           take(1),
         )
