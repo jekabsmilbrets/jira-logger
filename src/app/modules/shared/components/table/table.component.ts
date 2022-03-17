@@ -1,8 +1,8 @@
-import { SelectionModel }                             from '@angular/cdk/collections';
-import { AfterViewInit, Component, Input, ViewChild } from '@angular/core';
-import { MatPaginator }                               from '@angular/material/paginator';
-import { MatSort, SortDirection }                     from '@angular/material/sort';
-import { MatTableDataSource }                         from '@angular/material/table';
+import { SelectionModel }                                                   from '@angular/cdk/collections';
+import { AfterViewInit, Component, Input, ViewChild, Output, EventEmitter } from '@angular/core';
+import { MatPaginator }                                                     from '@angular/material/paginator';
+import { MatSort, SortDirection }                                           from '@angular/material/sort';
+import { MatTableDataSource }                                               from '@angular/material/table';
 
 import { Column }          from '@shared/interfaces/column.interface';
 import { Searchable }      from '@shared/interfaces/searchable.interface';
@@ -18,15 +18,28 @@ export class TableComponent implements AfterViewInit {
   public isSelectable = true;
 
   @Input()
+  public enableRemoveAction = false;
+
+  @Input()
   public stickyHeader = true;
 
   @Input()
+  public stickyFooter = true;
+
+  @Input()
   public sortField = 'id';
+
   @Input()
   public sortDirection: SortDirection = 'asc';
 
   @Input()
   public columns: Column[] = [];
+
+  @Output()
+  public cellClicked: EventEmitter<[Searchable, Column]> = new EventEmitter<[Searchable, Column]>();
+
+  @Output()
+  public removeAction: EventEmitter<Searchable> = new EventEmitter<Searchable>();
 
   @ViewChild(MatSort, {static: true})
   public sort!: MatSort;
@@ -47,16 +60,20 @@ export class TableComponent implements AfterViewInit {
   }
 
   public get displayedColumns(): string[] {
-    if (this.isSelectable) {
-      return ['select'].concat(
-        this.columns
-            .filter((column: Column) => column.visible)
-            .map((column: Column) => column.columnDef),
-      );
+    const columns = this.columns
+                        .filter((column: Column) => column.visible)
+                        .map((column: Column) => column.columnDef);
+
+    if (this.enableRemoveAction) {
+      columns.push('remove');
     }
-    return this.columns
-               .filter((column: Column) => column.visible)
-               .map((column: Column) => column.columnDef);
+
+    if (this.isSelectable) {
+      columns.unshift('select');
+
+    }
+
+    return columns;
   }
 
   public ngAfterViewInit(): void {
@@ -79,5 +96,20 @@ export class TableComponent implements AfterViewInit {
     } else {
       this.dataSource.data.forEach(row => this.selection.select(row));
     }
+  }
+
+  public onCellClick(row: Searchable, column: Column): void {
+    if (column.isClickable) {
+      this.cellClicked.emit(
+        [
+          row,
+          column,
+        ],
+      );
+    }
+  }
+
+  public onRemoveAction(row: Searchable): void {
+    this.removeAction.emit(row);
   }
 }
