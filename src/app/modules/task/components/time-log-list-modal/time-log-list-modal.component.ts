@@ -80,6 +80,7 @@ export class TimeLogListModalComponent {
               switch (result.responseType) {
                 case 'cancel':
                   break;
+
                 case 'delete':
                   if (!result.hasOwnProperty('responseData')) {
                     return throwError(() => new Error('Missing response data'));
@@ -202,6 +203,7 @@ export class TimeLogListModalComponent {
     const timeLogs = [...this.data.task.timeLogs];
 
     timeLogs.push(timeLog);
+
     this.data.task.timeLogs = timeLogs;
   }
 }

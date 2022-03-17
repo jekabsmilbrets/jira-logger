@@ -5,7 +5,7 @@ export const adaptTimeLog = (dbTimeLog: TimeLogInterface): TimeLog => new TimeLo
   {
     uuid: dbTimeLog._uuid,
     endTime: dbTimeLog._endTime && new Date(dbTimeLog._endTime),
-    startTime: new Date(dbTimeLog._startTime),
+    startTime: dbTimeLog._startTime && new Date(dbTimeLog._startTime),
     description: dbTimeLog._description,
   },
 );

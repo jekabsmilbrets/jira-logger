@@ -6,12 +6,12 @@ export const adaptTask = (dbTask: TaskInterface): Task => new Task(
   {
     uuid: dbTask._uuid,
     name: dbTask._name,
-    createDate: new Date(dbTask._createDate),
+    createDate: dbTask._createDate && new Date(dbTask._createDate),
     lastTimeLogId: dbTask._lastTimeLogId,
-    timeLogs: adaptTimeLogs(dbTask._timeLogs),
+    timeLogs: (dbTask._timeLogs && adaptTimeLogs(dbTask._timeLogs)) ?? [],
     description: dbTask._description,
     timeLogged: dbTask._timeLogged,
-    tags: dbTask._tags,
+    tags: dbTask._tags ?? [],
   },
 );
 
