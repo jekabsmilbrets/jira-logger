@@ -125,7 +125,9 @@ export class Task implements Searchable {
     );
 
     if (!timeLog) {
-      throw new Error(`Could not find time log for ID: "${this.lastTimeLogId}" for task "${this.name}"`);
+      const lastTimeLogId = this.lastTimeLogId;
+      this.lastTimeLogId = null;
+      throw new Error(`Could not find time log for ID: "${lastTimeLogId}" for task "${this.name}"`);
     }
 
     timeLog.endTime = new Date();

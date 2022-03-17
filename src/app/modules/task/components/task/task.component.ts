@@ -2,17 +2,17 @@ import { Component, EventEmitter, Input, OnInit, Output }      from '@angular/co
 import { FormControl, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { MatDialog, MatDialogRef }                             from '@angular/material/dialog';
 
-import { Observable, take, switchMap, of } from 'rxjs';
-
-import { DialogData } from '@shared/interfaces/dialog-data.interface';
+import { Observable, take, switchMap, of, throwError } from 'rxjs';
 
 import { TimeLogListModalComponent } from '@task/components/time-log-list-modal/time-log-list-modal.component';
 
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
-import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
+import { TaskUpdateActionEnum }           from '@task/enums/task-update-action.enum';
+import { TimeLogsModalResponseInterface } from '@task/interfaces/time-logs-modal-response.interface';
 
 import { Task }         from '@task/models/task.model';
+import { TimeLog }      from '@task/models/time-log.model';
 import { TasksService } from '@task/services/tasks.service';
 
 @Component({
@@ -28,6 +28,8 @@ export class TaskComponent implements OnInit {
   public update: EventEmitter<[Task, TaskUpdateActionEnum]> = new EventEmitter<[Task, TaskUpdateActionEnum]>();
   @Output()
   public remove: EventEmitter<Task> = new EventEmitter<Task>();
+  @Output()
+  public reloadData: EventEmitter<void> = new EventEmitter<void>();
 
   public tasks$: Observable<Task[]>;
 
@@ -79,7 +81,7 @@ export class TaskComponent implements OnInit {
       viewValue: 'OTHER',
     },
   ];
-  private dialogRef!: MatDialogRef<TimeLogListModalComponent, DialogData>;
+  private dialogRef!: MatDialogRef<TimeLogListModalComponent, TimeLogsModalResponseInterface | undefined>;
 
   constructor(
     private tasksService: TasksService,
@@ -162,11 +164,36 @@ export class TaskComponent implements OnInit {
     this.dialogRef.afterClosed()
         .pipe(
           take(1),
+          switchMap(
+            (result: TimeLogsModalResponseInterface | undefined) => {
+              console.log(`Dialog result: `, result);
+              if (result) {
+                switch (result.responseType) {
+                  case 'cancel':
+                    this.reloadData.emit();
+                    return of(true);
+                  case 'update':
+                    if (!result.hasOwnProperty('responseData')) {
+                      return throwError(() => new Error('Missing response data'));
+                    }
+
+                    task.timeLogs = result.responseData as TimeLog[];
+
+                    this.update.emit(
+                      [
+                        task,
+                        TaskUpdateActionEnum.update,
+                      ],
+                    );
+
+                    return of(true);
+                }
+              }
+
+              return of(false);
+            },
+          ),
         )
-        .subscribe(
-          (result) => {
-            console.log(`Dialog result: ${result}`);
-          },
-        );
+        .subscribe();
   }
 }
