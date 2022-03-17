@@ -1,4 +1,6 @@
-import { Searchable } from '@shared/interfaces/searchable.interface';
+import { getDateParts } from '@core/utils/get-date-parts.utility';
+
+import { Searchable }   from '@shared/interfaces/searchable.interface';
 
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
@@ -16,8 +18,6 @@ export class Task implements Searchable {
 
   constructor(data?: Partial<Task>) {
     Object.assign(this, data);
-
-    this.timeLogs = this.timeLogs;
 
     if (!this.uuid) {
       this.uuid = `task-${this.name}-${(new Date()).getTime().toString()}`;
@@ -149,18 +149,13 @@ export class Task implements Searchable {
   }
 
   public calcTimeLoggedForDateRange(startDate: Date, endDate: Date): number {
-    const startDateYear = startDate.getFullYear();
-    const startDateMonth = startDate.getMonth();
-    const startDateDate = startDate.getDate();
-    const endDateYear = endDate.getFullYear();
-    const endDateMonth = endDate.getMonth();
-    const endDateDate = endDate.getDate();
+    const [startDateYear, startDateMonth, startDateDate] = getDateParts(startDate);
+    const [endDateYear, endDateMonth, endDateDate] = getDateParts(endDate);
     const timeLogs: TimeLog[] = (this.timeLogs ?? [])
       .filter(
         (timeLog: TimeLog) => {
-          const startTimeYear = timeLog.startTime.getFullYear();
-          const startTimeMonth = timeLog.startTime.getMonth();
-          const startTimeDate = timeLog.startTime.getDate();
+          const [startTimeYear, startTimeMonth, startTimeDate] = getDateParts(timeLog.startTime);
+
           return (startTimeYear >= startDateYear && startTimeYear <= endDateYear) &&
             (startTimeMonth >= startDateMonth && startTimeMonth <= endDateMonth) &&
             (startTimeDate >= startDateDate && startTimeDate <= endDateDate);
@@ -171,9 +166,8 @@ export class Task implements Searchable {
   }
 
   public calcTimeLoggedForDate(date: Date): number {
-    const dateYear = date.getFullYear();
-    const dateMonth = date.getMonth();
-    const dateDate = date.getDate();
+    const [dateYear, dateMonth, dateDate] = getDateParts(date);
+
     const timeLogs: TimeLog[] = (this.timeLogs ?? [])
       .filter(
         (timeLog: TimeLog) => timeLog.startTime.getFullYear() === dateYear &&
