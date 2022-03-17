@@ -10,4 +10,8 @@ export interface Column {
   cell: any;
   emptyCellValue?: string | null;
   index?: number;
+  pipe?: string;
+  isClickable?: boolean;
+  hasFooter?: boolean;
+  footerCell?: any;
 }

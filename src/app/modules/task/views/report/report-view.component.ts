@@ -1,4 +1,4 @@
-import { formatDate }                    from '@angular/common';
+import { formatDate }                   from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params }       from '@angular/router';
 
@@ -21,11 +21,11 @@ import { ReportService }                from '@task/services/report.service';
 import { TasksService }                 from '@task/services/tasks.service';
 
 @Component({
-             selector: 'app-report',
-             templateUrl: './report.component.html',
-             styleUrls: ['./report.component.scss'],
+             selector: 'app-report-view',
+             templateUrl: './report-view.component.html',
+             styleUrls: ['./report-view.component.scss'],
            })
-export class ReportComponent implements OnInit, OnDestroy {
+export class ReportViewComponent implements OnInit, OnDestroy {
   public tasks$!: Observable<Task[]>;
   public columns: Column[] = [];
 
@@ -42,6 +42,8 @@ export class ReportComponent implements OnInit, OnDestroy {
     private reportService: ReportService,
     private activatedRoute: ActivatedRoute,
   ) {
+    this.tasks$ = this.tasksService.tasks$;
+
     this.subscriptions.push(
       this.activatedRoute.params
           .pipe()
@@ -64,8 +66,6 @@ export class ReportComponent implements OnInit, OnDestroy {
 
   public ngOnInit(): void {
     this.createDynamicMenu();
-
-    this.tasks$ = this.tasksService.tasks$;
 
     this.tasksService.list()
         .pipe(

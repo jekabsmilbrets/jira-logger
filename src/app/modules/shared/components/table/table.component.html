@@ -11,15 +11,28 @@
       <ng-container *ngIf="column.visible">
         <mat-header-cell *cdkHeaderCellDef
                          [disabled]="!column.sortable"
-                         [mat-sort-header]="column.columnDef"
-                         [matTooltip]="column.header">
+                         [mat-sort-header]="column.columnDef">
           {{ column.header }}
         </mat-header-cell>
 
-        <mat-cell *cdkCellDef="let row"
-                  [matTooltip]="column.cell(row)">
-          <span>{{ column.cell(row) }}</span>
+        <mat-cell (click)="onCellClick(row, column)"
+                  *cdkCellDef="let row"
+                  [ngClass]="{'mat-cell-clickable': column.isClickable}">
+          <ng-container *ngIf="column.pipe">
+            <span *ngIf="column.pipe === 'readableTime'">{{ column.cell(row) | readableTime }}</span>
+          </ng-container>
+
+          <span *ngIf="!column.pipe">{{ column.cell(row) }}</span>
         </mat-cell>
+
+        <mat-footer-cell *cdkFooterCellDef>
+          <ng-container *ngIf="column.pipe">
+            <span
+              *ngIf="column.pipe === 'readableTime'">{{ (column.hasFooter ? column.footerCell(dataSource.data) : '') | readableTime }}</span>
+          </ng-container>
+
+          <span *ngIf="!column.pipe">{{ column.hasFooter ? column.footerCell(dataSource.data) : '' }}</span>
+        </mat-footer-cell>
       </ng-container>
     </ng-container>
 
@@ -37,9 +50,30 @@
                       [checked]="selection.isSelected(row)">
         </mat-checkbox>
       </mat-cell>
+
+      <mat-footer-cell *cdkFooterCellDef>
+      </mat-footer-cell>
+    </ng-container>
+
+    <ng-container cdkColumnDef="remove">
+      <mat-header-cell *cdkHeaderCellDef>
+        Remove
+      </mat-header-cell>
+
+      <mat-cell *cdkCellDef="let row">
+        <button (click)="onRemoveAction(row)"
+                color="warn"
+                mat-icon-button>
+          <mat-icon>delete</mat-icon>
+        </button>
+      </mat-cell>
+
+      <mat-footer-cell *cdkFooterCellDef>
+      </mat-footer-cell>
     </ng-container>
 
     <mat-header-row *cdkHeaderRowDef="displayedColumns; sticky: stickyHeader"></mat-header-row>
+    <mat-header-row *cdkFooterRowDef="displayedColumns; sticky: stickyFooter"></mat-header-row>
 
     <ng-container *ngIf="!isSelectable">
       <mat-row *cdkRowDef="let row; columns: displayedColumns"></mat-row>
