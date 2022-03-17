@@ -69,11 +69,7 @@ export class TasksViewComponent implements OnInit {
   }
 
   public ngOnInit(): void {
-    this.tasksService.list()
-        .pipe(
-          take(1),
-        )
-        .subscribe();
+    this.reloadData();
   }
 
   public createTask(): void {
@@ -131,6 +127,18 @@ export class TasksViewComponent implements OnInit {
 
   public onRemove(task: Task): void {
     this.tasksService.delete(task)
+        .pipe(
+          take(1),
+        )
+        .subscribe();
+  }
+
+  public onReload(): void {
+    this.reloadData();
+  }
+
+  private reloadData(): void {
+    this.tasksService.list()
         .pipe(
           take(1),
         )
