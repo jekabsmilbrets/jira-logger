@@ -19,6 +19,9 @@ export class TaskListComponent {
   @Output()
   public remove: EventEmitter<Task> = new EventEmitter<Task>();
 
+  @Output()
+  public reload: EventEmitter<void> = new EventEmitter<void>();
+
   public onUpdate([task, action]: [Task, TaskUpdateActionEnum]): void {
     this.update.emit(
       [
@@ -30,5 +33,9 @@ export class TaskListComponent {
 
   public onRemove(task: Task): void {
     this.remove.emit(task);
+  }
+
+  public onReload(): void {
+    this.reload.emit();
   }
 }
