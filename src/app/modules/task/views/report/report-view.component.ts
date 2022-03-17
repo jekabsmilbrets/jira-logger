@@ -42,6 +42,8 @@ export class ReportViewComponent implements OnInit, OnDestroy {
     private reportService: ReportService,
     private activatedRoute: ActivatedRoute,
   ) {
+    this.tasks$ = this.tasksService.tasks$;
+
     this.subscriptions.push(
       this.activatedRoute.params
           .pipe()
@@ -64,8 +66,6 @@ export class ReportViewComponent implements OnInit, OnDestroy {
 
   public ngOnInit(): void {
     this.createDynamicMenu();
-
-    this.tasks$ = this.tasksService.tasks$;
 
     this.tasksService.list()
         .pipe(

@@ -161,17 +161,18 @@ export class TaskComponent implements OnInit {
         },
       },
     );
+
     this.dialogRef.afterClosed()
         .pipe(
           take(1),
           switchMap(
             (result: TimeLogsModalResponseInterface | undefined) => {
-              console.log(`Dialog result: `, result);
               if (result) {
                 switch (result.responseType) {
                   case 'cancel':
                     this.reloadData.emit();
                     return of(true);
+
                   case 'update':
                     if (!result.hasOwnProperty('responseData')) {
                       return throwError(() => new Error('Missing response data'));

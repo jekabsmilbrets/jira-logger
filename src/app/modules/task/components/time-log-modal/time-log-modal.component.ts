@@ -29,7 +29,7 @@ export class TimeLogModalComponent implements OnInit {
   public ngOnInit(): void {
     this.formGroup.patchValue(
       {
-        startTime: new Date(this.data.timeLog.startTime.getTime()),
+        startTime: this.data.timeLog.startTime && new Date(this.data.timeLog.startTime.getTime()),
         endTime: this.data.timeLog.endTime && new Date(this.data.timeLog.endTime.getTime()),
         description: this.data.timeLog.description,
       },
@@ -37,7 +37,11 @@ export class TimeLogModalComponent implements OnInit {
   }
 
   public onCancel(): void {
-    this.dialogRef.close({responseType: 'cancel'});
+    this.dialogRef.close(
+      {
+        responseType: 'cancel',
+      },
+    );
   }
 
   public onSave(): void {

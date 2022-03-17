@@ -28,7 +28,7 @@ export const columns: Column[] = [
     sortable: true,
     visible: true,
     isClickable: true,
-    cell: (timeLog: TimeLog) => formatDate(timeLog.startTime, 'yyyy-MM-dd H:mm:s', 'lv'),
+    cell: (timeLog: TimeLog) => timeLog.startTime && formatDate(timeLog.startTime, 'yyyy-MM-dd H:mm:s', 'lv'),
   },
   {
     columnDef: 'endTime',
@@ -43,7 +43,7 @@ export const columns: Column[] = [
     header: 'Date',
     sortable: true,
     visible: true,
-    cell: (timeLog: TimeLog) => formatDate(timeLog.date, 'yyyy-MM-dd', 'lv'),
+    cell: (timeLog: TimeLog) => timeLog.date && formatDate(timeLog.date, 'yyyy-MM-dd', 'lv'),
   },
   {
     columnDef: 'year',
