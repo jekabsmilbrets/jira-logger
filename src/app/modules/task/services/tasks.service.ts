@@ -4,6 +4,8 @@ import { BehaviorSubject, map, Observable, of, switchMap, take, tap } from 'rxjs
 
 import { StorageService } from '@core/services/storage.service';
 
+import { adaptTask } from '@task/adapters/task.adapter';
+
 import { TaskInterface } from '@task/interfaces/task.interface';
 import { Task }          from '@task/models/task.model';
 
@@ -26,7 +28,7 @@ export class TasksService {
                  map(
                    (tasksData) => tasksData
                      .map(
-                       ([, taskData]: [string, TaskInterface]) => new Task(taskData),
+                       ([, taskData]: [string, TaskInterface]) => adaptTask(taskData),
                      )
                      .sort(
                        (a: Task, b: Task) => a.createDate.getTime() < b.createDate.getTime() ? 1 : -1,

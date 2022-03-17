@@ -4,10 +4,12 @@ import { Pipe, PipeTransform } from '@angular/core';
         name: 'readableTime',
       })
 export class ReadableTimePipe implements PipeTransform {
-
   public transform(seconds: number, withSeconds: boolean = false): string {
-    if (Number.isNaN(seconds) || seconds === 0) {
+    if (Number.isNaN(seconds)) {
       return '0 s';
+    }
+    if (seconds < 60) {
+      return `${seconds} s`;
     }
 
     const levels = [
@@ -30,10 +32,12 @@ export class ReadableTimePipe implements PipeTransform {
     ];
 
     if (withSeconds) {
-      levels.push([
-                    (((seconds % 31536000) % 86400) % 3600) % 60,
-                    's',
-                  ]); // seconds
+      levels.push(
+        [
+          (((seconds % 31536000) % 86400) % 3600) % 60,
+          's',
+        ],
+      ); // seconds
     }
 
     let output = '';
