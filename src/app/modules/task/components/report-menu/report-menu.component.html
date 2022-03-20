@@ -1,0 +1,15 @@
+<app-report-show-weekends (showWeekendsChange)="onShowWeekendsChange($event)"
+                          [showWeekends]="showWeekends$ | async"></app-report-show-weekends>
+
+<app-report-date-selector (endDateChange)="onEndDateChange($event)"
+                          (startDateChange)="onStartDateChange($event)"
+                          *ngIf="(reportMode$ | async) === 'dateRange'"
+                          [endDate]="endDate$ | async"
+                          [reportMode]="reportMode$ | async"
+                          [startDate]="startDate$ | async"></app-report-date-selector>
+
+<app-report-tag-filter (tagChange)="onTagChange($event)"
+                       [tags]="tags$ | async"></app-report-tag-filter>
+
+<app-report-mode-switcher (reportModeChange)="onReportModeChange($event)"
+                          [reportMode]="reportMode$ | async"></app-report-mode-switcher>

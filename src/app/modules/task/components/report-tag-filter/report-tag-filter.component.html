@@ -1,0 +1,11 @@
+<mat-form-field>
+  <mat-label>Tags</mat-label>
+  <mat-select (valueChange)="tagValueChange($event)"
+              [formControl]="tagFormControl"
+              multiple>
+    <mat-option *ngFor="let tag of tagList"
+                [value]="tag.value">
+      {{tag.viewValue}}
+    </mat-option>
+  </mat-select>
+</mat-form-field>

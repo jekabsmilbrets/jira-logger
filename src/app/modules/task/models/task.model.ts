@@ -1,6 +1,6 @@
 import { getDateParts } from '@core/utils/get-date-parts.utility';
 
-import { Searchable }   from '@shared/interfaces/searchable.interface';
+import { Searchable } from '@shared/interfaces/searchable.interface';
 
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
