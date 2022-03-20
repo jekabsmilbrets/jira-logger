@@ -1,0 +1,17 @@
+<mat-form-field>
+  <mat-label>Enter a date range</mat-label>
+  <mat-date-range-input [rangePicker]="picker">
+    <input (dateChange)="onStartDateChange($event)"
+           [formControl]="startDateFormControl"
+           matStartDate
+           placeholder="Start date">
+    <input (dateChange)="onEndDateChange($event)"
+           [formControl]="endDateFormControl"
+           matEndDate
+           placeholder="End date">
+  </mat-date-range-input>
+  <mat-datepicker-toggle [for]="picker"
+                         matSuffix>
+  </mat-datepicker-toggle>
+  <mat-date-range-picker #picker></mat-date-range-picker>
+</mat-form-field>
