@@ -1,7 +1,8 @@
 <mat-form-field>
   <mat-label>Report mode</mat-label>
-  <mat-select [formControl]="reportModeFormControl">
-    <mat-option *ngFor="let reportMode of reportModes; let i = index"
+  <mat-select (valueChange)="reportModeValueChange($event)"
+              [formControl]="reportModeFormControl">
+    <mat-option *ngFor="let reportMode of reportModes"
                 [value]="reportMode.value">
       {{reportMode.viewValue}}
     </mat-option>
