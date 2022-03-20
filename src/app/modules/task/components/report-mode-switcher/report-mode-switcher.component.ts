@@ -1,17 +1,14 @@
-import { Component, OnDestroy } from '@angular/core';
-import { FormControl }          from '@angular/forms';
-
-import { Subscription } from 'rxjs';
+import { Component, Output, EventEmitter, Input } from '@angular/core';
+import { FormControl }                            from '@angular/forms';
 
 import { ReportModeEnum } from '@task/enums/report-mode.enum';
-import { ReportService }  from '@task/services/report.service';
 
 @Component({
              selector: 'app-report-mode-switcher',
              templateUrl: './report-mode-switcher.component.html',
              styleUrls: ['./report-mode-switcher.component.scss'],
            })
-export class ReportModeSwitcherComponent implements OnDestroy {
+export class ReportModeSwitcherComponent {
   public reportModes: {
     value: ReportModeEnum;
     viewValue: string;
@@ -27,34 +24,21 @@ export class ReportModeSwitcherComponent implements OnDestroy {
   ];
 
   public reportModeFormControl: FormControl = new FormControl(ReportModeEnum.total);
-  private subscriptions: Subscription[] = [];
 
-  constructor(
-    private reportService: ReportService,
-  ) {
-    this.subscriptions.push(
-      this.listenToReportModeChange(),
-    );
-    this.subscriptions.push(
-      this.reportService.reportMode$
-          .subscribe(
-            (reportMode: ReportModeEnum) => this.reportModeFormControl.setValue(
-              reportMode,
-              {emitEvent: false},
-            ),
-          ),
-    );
+  @Output()
+  public reportModeChange: EventEmitter<ReportModeEnum> = new EventEmitter<ReportModeEnum>();
+
+  @Input()
+  public set reportMode(reportMode: ReportModeEnum | null) {
+    if (reportMode) {
+      this.reportModeFormControl.setValue(
+        reportMode,
+        {emitEvent: false},
+      );
+    }
   }
 
-  public ngOnDestroy(): void {
-    this.subscriptions.forEach((sub: Subscription) => sub.unsubscribe());
-  }
-
-  private listenToReportModeChange(): Subscription {
-    return this.reportModeFormControl
-               .valueChanges
-               .subscribe(
-                 (value: ReportModeEnum) => this.reportService.reportMode = value,
-               );
+  public reportModeValueChange(value: ReportModeEnum): void {
+    this.reportModeChange.emit(value);
   }
 }
