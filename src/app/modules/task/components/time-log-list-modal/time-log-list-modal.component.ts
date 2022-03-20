@@ -137,7 +137,6 @@ export class TimeLogListModalComponent {
       },
     );
 
-
     this.timeLogDialogRef.afterClosed()
         .pipe(
           take(1),

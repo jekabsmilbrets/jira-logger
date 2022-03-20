@@ -6,8 +6,6 @@ import { ReportModeEnum } from '@task/enums/report-mode.enum';
 import { TaskTagsEnum }   from '@task/enums/task-tags.enum';
 import { ReportService }  from '@task/services/report.service';
 
-
-
 @Component({
              selector: 'app-report-menu',
              templateUrl: './report-menu.component.html',
