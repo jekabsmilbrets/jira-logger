@@ -2,7 +2,7 @@ import { formatDate }                   from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params }       from '@angular/router';
 
-import { Observable, Subscription, take } from 'rxjs';
+import { Observable, Subscription, take, combineLatest, map } from 'rxjs';
 
 import { DynamicMenu }        from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
@@ -12,10 +12,11 @@ import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 
 import { SharedModule } from '@shared/shared.module';
 
-import { ReportModeSwitcherComponent }  from '@task/components/report-mode-switcher/report-mode-switcher.component';
+import { ReportMenuComponent }          from '@task/components/report-menu/report-menu.component';
 import { columns as monthModelColumns } from '@task/constants/report-month-columns.constant';
 import { columns as totalModelColumns } from '@task/constants/report-total-columns.constant';
 import { ReportModeEnum }               from '@task/enums/report-mode.enum';
+import { TaskTagsEnum }                 from '@task/enums/task-tags.enum';
 import { Task }                         from '@task/models/task.model';
 import { ReportService }                from '@task/services/report.service';
 import { TasksService }                 from '@task/services/tasks.service';
@@ -42,7 +43,17 @@ export class ReportViewComponent implements OnInit, OnDestroy {
     private reportService: ReportService,
     private activatedRoute: ActivatedRoute,
   ) {
-    this.tasks$ = this.tasksService.tasks$;
+    this.tasks$ = combineLatest(
+      [
+        this.tasksService.tasks$,
+        this.reportService.tags$,
+      ],
+    )
+      .pipe(
+        map(
+          ([tasks, tags]) => this.filterTasks(tasks, tags),
+        ),
+      );
 
     this.subscriptions.push(
       this.activatedRoute.params
@@ -56,6 +67,7 @@ export class ReportViewComponent implements OnInit, OnDestroy {
             },
           ),
     );
+
     this.subscriptions.push(
       this.reportService.reportMode$
           .subscribe(
@@ -78,10 +90,27 @@ export class ReportViewComponent implements OnInit, OnDestroy {
     this.subscriptions.forEach((sub: Subscription) => sub.unsubscribe());
   }
 
+  private filterTasks(tasks: Task[], tags: TaskTagsEnum[]): Task[] {
+    const filterByTags = (task: Task, sTags: TaskTagsEnum[]): boolean => {
+      if (sTags.length > 0) {
+        return sTags.some(
+          (sTag: TaskTagsEnum) => task.tags.includes(sTag),
+        );
+      }
+
+      return true;
+    };
+
+    return tasks
+      .filter(
+        (task: Task) => filterByTags(task, tags),
+      );
+  }
+
   private createDynamicMenu(): void {
     this.dynamicMenuService.addDynamicMenu(
       new DynamicMenu(
-        ReportModeSwitcherComponent,
+        ReportMenuComponent,
         {
           route: '/tasks/report',
           providers: [
