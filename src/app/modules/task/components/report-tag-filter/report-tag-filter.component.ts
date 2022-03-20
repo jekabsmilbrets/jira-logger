@@ -1,6 +1,8 @@
 import { Component, Output, EventEmitter, Input } from '@angular/core';
 import { FormControl }                            from '@angular/forms';
 
+import { defaultTaskFilterTags } from '@task/constants/default-tags.constants';
+
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
 @Component({
@@ -27,13 +29,7 @@ export class ReportTagFilterComponent {
     },
   ];
 
-  public tagFormControl: FormControl = new FormControl(
-    [
-      TaskTagsEnum.capex,
-      TaskTagsEnum.opex,
-      TaskTagsEnum.other,
-    ],
-  );
+  public tagFormControl: FormControl = new FormControl(defaultTaskFilterTags);
 
   @Output()
   public tagChange: EventEmitter<TaskTagsEnum[]> = new EventEmitter<TaskTagsEnum[]>();
