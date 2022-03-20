@@ -3,7 +3,9 @@ import { ReactiveFormsModule } from '@angular/forms';
 
 import { SharedModule } from '@shared/shared.module';
 
+import { ReportMenuComponent }         from './components/report-menu/report-menu.component';
 import { ReportModeSwitcherComponent } from './components/report-mode-switcher/report-mode-switcher.component';
+import { ReportTagFilterComponent }    from './components/report-tag-filter/report-tag-filter.component';
 import { TaskListComponent }           from './components/task-list/task-list.component';
 import { TaskComponent }               from './components/task/task.component';
 import { TimeLogListModalComponent }   from './components/time-log-list-modal/time-log-list-modal.component';
@@ -28,6 +30,8 @@ import { TasksViewComponent }  from './views/tasks/tasks-view.component';
 
               TimeLogListModalComponent,
               TimeLogModalComponent,
+              ReportMenuComponent,
+              ReportTagFilterComponent,
             ],
             imports: [
               TaskRoutingModule,
