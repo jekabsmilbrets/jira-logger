@@ -5,8 +5,6 @@ import { ReportShowWeekendsComponent } from 'app/modules/task/components/report-
 
 import { SharedModule } from '@shared/shared.module';
 
-
-
 import { ReportDateSelectorComponent } from './components/report-date-selector/report-date-selector.component';
 import { ReportMenuComponent }         from './components/report-menu/report-menu.component';
 import { ReportModeSwitcherComponent } from './components/report-mode-switcher/report-mode-switcher.component';

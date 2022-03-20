@@ -196,10 +196,11 @@ export class ReportViewComponent implements OnInit, OnDestroy {
           columnDef: 'date-' + currentDate.getTime(),
           header: formatDate(currentDate2, 'd. MMM', 'lv-LV'),
           sortable: true,
-          visible: !([
-            0,
-            6,
-          ].includes(currentDate2.getDay())),
+          visible: showWeekends ? true :
+                   !([
+                     0,
+                     6,
+                   ].includes(currentDate2.getDay())),
           cell: (task: Task) => (new ReadableTimePipe())
             .transform(
               task.calcTimeLoggedForDate(currentDate2),
