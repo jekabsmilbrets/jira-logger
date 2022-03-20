@@ -18,8 +18,8 @@ export class ReportModeSwitcherComponent {
       viewValue: 'Total',
     },
     {
-      value: ReportModeEnum.month,
-      viewValue: 'Month',
+      value: ReportModeEnum.dateRange,
+      viewValue: 'Date Range',
     },
   ];
 
