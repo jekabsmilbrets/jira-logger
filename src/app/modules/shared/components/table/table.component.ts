@@ -27,6 +27,9 @@ export class TableComponent implements AfterViewInit {
   public stickyFooter = true;
 
   @Input()
+  public enableFooter = false;
+
+  @Input()
   public sortField = 'id';
 
   @Input()
