@@ -1,0 +1,4 @@
+<app-report-tag-filter (tagChange)="onTagChange($event)"
+                       [tags]="tags$ | async"></app-report-tag-filter>
+<app-report-mode-switcher (reportModeChange)="onReportModeChange($event)"
+                          [reportMode]="reportMode$ | async"></app-report-mode-switcher>
