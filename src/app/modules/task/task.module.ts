@@ -1,9 +1,14 @@
 import { NgModule }            from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 
+import { ReportShowWeekendsComponent } from 'app/modules/task/components/report-show-weekends/report-show-weekends.component';
+
 import { SharedModule } from '@shared/shared.module';
 
+import { ReportDateSelectorComponent } from './components/report-date-selector/report-date-selector.component';
+import { ReportMenuComponent }         from './components/report-menu/report-menu.component';
 import { ReportModeSwitcherComponent } from './components/report-mode-switcher/report-mode-switcher.component';
+import { ReportTagFilterComponent }    from './components/report-tag-filter/report-tag-filter.component';
 import { TaskListComponent }           from './components/task-list/task-list.component';
 import { TaskComponent }               from './components/task/task.component';
 import { TimeLogListModalComponent }   from './components/time-log-list-modal/time-log-list-modal.component';
@@ -28,6 +33,10 @@ import { TasksViewComponent }  from './views/tasks/tasks-view.component';
 
               TimeLogListModalComponent,
               TimeLogModalComponent,
+              ReportMenuComponent,
+              ReportTagFilterComponent,
+              ReportDateSelectorComponent,
+              ReportShowWeekendsComponent,
             ],
             imports: [
               TaskRoutingModule,

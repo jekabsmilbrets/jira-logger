@@ -2,6 +2,7 @@ import { NgxMatNativeDateModule, NgxMatTimepickerModule, NgxMatDatetimePickerMod
 import { CdkTableModule }                                                             from '@angular/cdk/table';
 import { CommonModule }                                                               from '@angular/common';
 import { NgModule }                                                                   from '@angular/core';
+import { MatAutocompleteModule }                                                      from '@angular/material/autocomplete';
 import { MatButtonModule }                                                            from '@angular/material/button';
 import { MatButtonToggleModule }                                                      from '@angular/material/button-toggle';
 import { MatCardModule }                                                              from '@angular/material/card';
@@ -17,6 +18,7 @@ import { MatListModule }                                                        
 import { MatPaginatorModule }                                                         from '@angular/material/paginator';
 import { MatSelectModule }                                                            from '@angular/material/select';
 import { MatSidenavModule }                                                           from '@angular/material/sidenav';
+import { MatSlideToggleModule }                                                       from '@angular/material/slide-toggle';
 import { MatSortModule }                                                              from '@angular/material/sort';
 import { MatTableModule }                                                             from '@angular/material/table';
 import { MatToolbarModule }                                                           from '@angular/material/toolbar';
@@ -29,54 +31,65 @@ import { ReadableTimePipe } from './pipes/readable-time.pipe';
 @NgModule({
             imports: [
               CommonModule,
+
+              CdkTableModule,
+
+              MatAutocompleteModule,
               MatButtonModule,
               MatButtonToggleModule,
               MatCardModule,
+              MatCheckboxModule,
+              MatChipsModule,
+              MatDatepickerModule,
+              MatDialogModule,
               MatFormFieldModule,
               MatIconModule,
               MatInputModule,
               MatListModule,
+              MatNativeDateModule,
               MatPaginatorModule,
               MatSelectModule,
               MatSidenavModule,
+              MatSlideToggleModule,
               MatSortModule,
               MatTableModule,
               MatToolbarModule,
-              MatCheckboxModule,
-              CdkTableModule,
               MatTooltipModule,
-              MatChipsModule,
-              MatDialogModule,
-              MatDatepickerModule,
-              MatNativeDateModule,
 
               NgxMatDatetimePickerModule,
-              NgxMatTimepickerModule,
               NgxMatNativeDateModule,
+              NgxMatTimepickerModule,
             ],
             exports: [
               CommonModule,
+
+              CdkTableModule,
+
+              MatAutocompleteModule,
               MatButtonModule,
               MatButtonToggleModule,
               MatCardModule,
+              MatCheckboxModule,
+              MatChipsModule,
+              MatDatepickerModule,
+              MatDialogModule,
               MatFormFieldModule,
               MatIconModule,
               MatInputModule,
               MatListModule,
+              MatNativeDateModule,
               MatPaginatorModule,
               MatSelectModule,
               MatSidenavModule,
+              MatSlideToggleModule,
               MatSortModule,
               MatTableModule,
               MatToolbarModule,
-              MatChipsModule,
-              MatDialogModule,
-              MatDatepickerModule,
-              MatNativeDateModule,
+              MatTooltipModule,
 
               NgxMatDatetimePickerModule,
-              NgxMatTimepickerModule,
               NgxMatNativeDateModule,
+              NgxMatTimepickerModule,
 
               TableComponent,
               ReadableTimePipe,

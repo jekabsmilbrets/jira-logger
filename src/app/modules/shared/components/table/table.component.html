@@ -25,14 +25,16 @@
           <span *ngIf="!column.pipe">{{ column.cell(row) }}</span>
         </mat-cell>
 
-        <mat-footer-cell *cdkFooterCellDef>
-          <ng-container *ngIf="column.pipe">
+        <ng-container *ngIf="enableFooter">
+          <mat-footer-cell *cdkFooterCellDef>
+            <ng-container *ngIf="column.pipe">
             <span
               *ngIf="column.pipe === 'readableTime'">{{ (column.hasFooter ? column.footerCell(dataSource.data) : '') | readableTime }}</span>
-          </ng-container>
+            </ng-container>
 
-          <span *ngIf="!column.pipe">{{ column.hasFooter ? column.footerCell(dataSource.data) : '' }}</span>
-        </mat-footer-cell>
+            <span *ngIf="!column.pipe">{{ column.hasFooter ? column.footerCell(dataSource.data) : '' }}</span>
+          </mat-footer-cell>
+        </ng-container>
       </ng-container>
     </ng-container>
 
@@ -51,8 +53,10 @@
         </mat-checkbox>
       </mat-cell>
 
-      <mat-footer-cell *cdkFooterCellDef>
-      </mat-footer-cell>
+      <ng-container *ngIf="enableFooter">
+        <mat-footer-cell *cdkFooterCellDef>
+        </mat-footer-cell>
+      </ng-container>
     </ng-container>
 
     <ng-container cdkColumnDef="remove">
@@ -68,12 +72,17 @@
         </button>
       </mat-cell>
 
-      <mat-footer-cell *cdkFooterCellDef>
-      </mat-footer-cell>
+      <ng-container *ngIf="enableFooter">
+        <mat-footer-cell *cdkFooterCellDef>
+        </mat-footer-cell>
+      </ng-container>
     </ng-container>
 
     <mat-header-row *cdkHeaderRowDef="displayedColumns; sticky: stickyHeader"></mat-header-row>
-    <mat-header-row *cdkFooterRowDef="displayedColumns; sticky: stickyFooter"></mat-header-row>
+
+    <ng-container *ngIf="enableFooter">
+      <mat-header-row *cdkFooterRowDef="displayedColumns; sticky: stickyFooter"></mat-header-row>
+    </ng-container>
 
     <ng-container *ngIf="!isSelectable">
       <mat-row *cdkRowDef="let row; columns: displayedColumns"></mat-row>

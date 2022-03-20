@@ -19,4 +19,11 @@ export const columns: Column[] = [
     visible: true,
     cell: (task: Task) => columnValue(task, 'description'),
   },
+  {
+    columnDef: 'tags',
+    header: 'Tags',
+    sortable: true,
+    visible: true,
+    cell: (task: Task) => (columnValue(task, 'tags') as string[]).join(', '),
+  },
 ];

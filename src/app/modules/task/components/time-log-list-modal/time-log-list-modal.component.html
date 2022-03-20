@@ -22,8 +22,10 @@
                     (removeAction)="onRemoveAction($event)"
                     [columns]="columns"
                     [data]="data.task.timeLogs"
+                    [enableFooter]="true"
                     [enableRemoveAction]="true"
                     [isSelectable]="false"
+                    [stickyFooter]="true"
                     [stickyHeader]="true"
                     sortDirection="desc"
                     sortField="startTime"></app-shared-table>
