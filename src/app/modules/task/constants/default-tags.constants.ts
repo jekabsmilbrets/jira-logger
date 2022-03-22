@@ -5,3 +5,18 @@ export const defaultTaskFilterTags: TaskTagsEnum[] = [
   TaskTagsEnum.opex,
   TaskTagsEnum.other,
 ];
+
+export const defaultSelectTags: { viewValue: string; value: TaskTagsEnum }[] = [
+  {
+    value: TaskTagsEnum.opex,
+    viewValue: 'OPEX',
+  },
+  {
+    value: TaskTagsEnum.capex,
+    viewValue: 'CAPEX',
+  },
+  {
+    value: TaskTagsEnum.other,
+    viewValue: 'OTHER',
+  },
+];

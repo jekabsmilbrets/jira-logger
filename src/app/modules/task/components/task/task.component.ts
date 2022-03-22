@@ -4,9 +4,10 @@ import { MatDialog, MatDialogRef }                             from '@angular/ma
 
 import { Observable, take, switchMap, of, throwError } from 'rxjs';
 
-import { AreYouSureService }                                   from '@shared/services/are-you-sure.service';
+import { AreYouSureService } from '@shared/services/are-you-sure.service';
 
 import { TimeLogListModalComponent } from '@task/components/time-log-list-modal/time-log-list-modal.component';
+import { defaultSelectTags }         from '@task/constants/default-tags.constants';
 
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
@@ -69,20 +70,7 @@ export class TaskComponent implements OnInit {
     },
   );
 
-  public tags: { viewValue: string; value: TaskTagsEnum }[] = [
-    {
-      value: TaskTagsEnum.opex,
-      viewValue: 'OPEX',
-    },
-    {
-      value: TaskTagsEnum.capex,
-      viewValue: 'CAPEX',
-    },
-    {
-      value: TaskTagsEnum.other,
-      viewValue: 'OTHER',
-    },
-  ];
+  public tags: { viewValue: string; value: TaskTagsEnum }[] = defaultSelectTags;
   private dialogRef!: MatDialogRef<TimeLogListModalComponent, TimeLogsModalResponseInterface | undefined>;
 
   constructor(
