@@ -24,9 +24,13 @@ import { MatTableModule }                                                       
 import { MatToolbarModule }                                                           from '@angular/material/toolbar';
 import { MatTooltipModule }                                                           from '@angular/material/tooltip';
 
+import { AreYouSureDialogComponent } from './components/are-you-sure-dialog/are-you-sure-dialog.component';
+
 import { TableComponent } from './components/table/table.component';
 
 import { ReadableTimePipe } from './pipes/readable-time.pipe';
+
+import { AreYouSureService } from './services/are-you-sure.service';
 
 @NgModule({
             imports: [
@@ -98,6 +102,10 @@ import { ReadableTimePipe } from './pipes/readable-time.pipe';
               TableComponent,
 
               ReadableTimePipe,
+              AreYouSureDialogComponent,
+            ],
+            providers: [
+              AreYouSureService,
             ],
           })
 export class SharedModule {
