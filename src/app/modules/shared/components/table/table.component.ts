@@ -1,12 +1,18 @@
 import { SelectionModel }                                                   from '@angular/cdk/collections';
+import { formatDate }                                                       from '@angular/common';
 import { AfterViewInit, Component, Input, ViewChild, Output, EventEmitter } from '@angular/core';
 import { MatPaginator }                                                     from '@angular/material/paginator';
 import { MatSort, SortDirection }                                           from '@angular/material/sort';
 import { MatTableDataSource }                                               from '@angular/material/table';
 
-import { Column }          from '@shared/interfaces/column.interface';
-import { Searchable }      from '@shared/interfaces/searchable.interface';
-import { getNestedObject } from '@shared/utils/get-nested-object.util';
+import { take } from 'rxjs';
+
+import { Column }            from '@shared/interfaces/column.interface';
+import { Searchable }        from '@shared/interfaces/searchable.interface';
+import { AreYouSureService } from '@shared/services/are-you-sure.service';
+import { getNestedObject }   from '@shared/utils/get-nested-object.util';
+
+import { TimeLog } from '@task/models/time-log.model';
 
 @Component({
              selector: 'app-shared-table',
@@ -56,6 +62,11 @@ export class TableComponent implements AfterViewInit {
 
   private _data: Searchable[] = [];
 
+  constructor(
+    private areYouSureService: AreYouSureService,
+  ) {
+  }
+
   @Input()
   public set data(data: Searchable[] | null) {
     this._data = data ?? [];
@@ -73,7 +84,6 @@ export class TableComponent implements AfterViewInit {
 
     if (this.isSelectable) {
       columns.unshift('select');
-
     }
 
     return columns;
@@ -113,6 +123,24 @@ export class TableComponent implements AfterViewInit {
   }
 
   public onRemoveAction(row: Searchable): void {
-    this.removeAction.emit(row);
+    const timeLogDate = formatDate((row as TimeLog).date, 'yyyy-MM-dd', 'lv');
+    const timeLogStartTime = (row as TimeLog)?.startTime;
+    const timeLogStart = timeLogStartTime ? formatDate(timeLogStartTime, 'HH:mm:ss', 'lv') : null;
+    const timeLogEndTime = (row as TimeLog)?.endTime;
+    const timeLogEnd = timeLogEndTime ? formatDate(timeLogEndTime, 'HH:mm:ss', 'lv') : null;
+
+    this.areYouSureService.openDialog(
+          `Time log "${timeLogDate} ${timeLogStart}-${timeLogEnd}"`,
+        )
+        .pipe(
+          take(1),
+        )
+        .subscribe(
+          (response: boolean | undefined) => {
+            if (response === true) {
+              this.removeAction.emit(row);
+            }
+          },
+        );
   }
 }
