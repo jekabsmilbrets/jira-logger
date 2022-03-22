@@ -7,13 +7,12 @@ import { Observable, Subscription, take, combineLatest, map, delay } from 'rxjs'
 import { DynamicMenu }        from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
-import { Column }           from '@shared/interfaces/column.interface';
-import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
+import { Column } from '@shared/interfaces/column.interface';
 
 import { SharedModule } from '@shared/shared.module';
 
 import { ReportMenuComponent }          from '@task/components/report-menu/report-menu.component';
-import { columns as monthModelColumns } from '@task/constants/report-month-columns.constant';
+import { columns as monthModelColumns } from '@task/constants/report-date-range-columns.constant';
 import { columns as totalModelColumns } from '@task/constants/report-total-columns.constant';
 import { ReportModeEnum }               from '@task/enums/report-mode.enum';
 import { TaskTagsEnum }                 from '@task/enums/task-tags.enum';
@@ -195,17 +194,19 @@ export class ReportViewComponent implements OnInit, OnDestroy {
         {
           columnDef: 'date-' + currentDate.getTime(),
           header: formatDate(currentDate2, 'd. MMM', 'lv-LV'),
-          sortable: true,
+          sortable: false,
           visible: showWeekends ? true :
                    !([
                      0,
                      6,
                    ].includes(currentDate2.getDay())),
-          cell: (task: Task) => (new ReadableTimePipe())
-            .transform(
-              task.calcTimeLoggedForDate(currentDate2),
-              true,
-            ),
+          pipe: 'readableTime',
+          cell: (task: Task) => task.calcTimeLoggedForDate(currentDate2),
+          hasFooter: true,
+          footerCell: (tasks: Task[]) => tasks.map(
+                                                (task: Task) => task.calcTimeLoggedForDate(currentDate2),
+                                              )
+                                              .reduce((acc, value) => acc + value, 0),
         },
       );
 
@@ -216,14 +217,18 @@ export class ReportViewComponent implements OnInit, OnDestroy {
       {
         columnDef: 'timeLogged',
         header: 'Total Time Logged ' + formatDate(startDate, 'yyyy MMMM', 'lv-LV'),
-        sortable: true,
-        visible: true,
+        sortable: false,
         stickyEnd: true,
-        cell: (task: Task) => (new ReadableTimePipe())
-          .transform(
-            task.calcTimeLoggedForDateRange(startDate, endDate),
-            true,
-          ),
+        visible: true,
+        pipe: 'readableTime',
+        cell: (task: Task) => task.calcTimeLoggedForDateRange(startDate, endDate),
+        hasFooter: true,
+        footerCell: (tasks: Task[]) => tasks.map(
+                                              (task: Task) => task.timeLogs.map(t => t.timeLogged())
+                                                                  .reduce((acc, value) => acc + value, 0),
+                                            )
+                                            .reduce((acc, value) => acc + value, 0),
+
       },
     );
 
