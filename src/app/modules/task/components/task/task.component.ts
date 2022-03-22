@@ -4,6 +4,8 @@ import { MatDialog, MatDialogRef }                             from '@angular/ma
 
 import { Observable, take, switchMap, of, throwError } from 'rxjs';
 
+import { AreYouSureService }                                   from '@shared/services/are-you-sure.service';
+
 import { TimeLogListModalComponent } from '@task/components/time-log-list-modal/time-log-list-modal.component';
 
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
@@ -86,6 +88,7 @@ export class TaskComponent implements OnInit {
   constructor(
     private tasksService: TasksService,
     public dialog: MatDialog,
+    private areYouSureService: AreYouSureService,
   ) {
     this.tasks$ = this.tasksService.tasks$;
   }
@@ -110,6 +113,7 @@ export class TaskComponent implements OnInit {
     task.name = this.formGroup.get('name')?.value;
     task.description = this.formGroup.get('description')?.value;
     task.tags = this.formGroup.get('tags')?.value ?? [];
+    task.updateTimeLogged();
 
     this.update.emit(
       [
@@ -120,7 +124,17 @@ export class TaskComponent implements OnInit {
   }
 
   public onRemove(task: Task): void {
-    this.remove.emit(task);
+    this.areYouSureService.openDialog(`Task "${task.name}"`)
+        .pipe(
+          take(1),
+        )
+        .subscribe(
+          (response: boolean | undefined) => {
+            if (response === true) {
+              this.remove.emit(task);
+            }
+          },
+        );
   }
 
   public onToggleTimeLog(task: Task): void {
@@ -179,6 +193,7 @@ export class TaskComponent implements OnInit {
                     }
 
                     task.timeLogs = result.responseData as TimeLog[];
+                    task.updateTimeLogged();
 
                     this.update.emit(
                       [

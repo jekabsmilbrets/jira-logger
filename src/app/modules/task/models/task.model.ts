@@ -132,8 +132,14 @@ export class Task implements Searchable {
 
     timeLog.endTime = new Date();
 
-    this.timeLogged = this.calcTimeLogged();
+    this.updateTimeLogged();
     this.lastTimeLogId = null;
+  }
+
+  public updateTimeLogged(): number {
+    this.timeLogged = this.calcTimeLogged();
+
+    return this.timeLogged;
   }
 
   public addTag(tag: TaskTagsEnum): void {
