@@ -3,12 +3,16 @@ import { AbstractControl, FormControl, FormGroup, Validators } from '@angular/fo
 
 import { iif, Observable, of, switchMap, take } from 'rxjs';
 
+import { defaultSelectTags } from '@task/constants/default-tags.constants';
+
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
 import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
 
 import { Task }         from '@task/models/task.model';
+import { TimeLog }      from '@task/models/time-log.model';
 import { TasksService } from '@task/services/tasks.service';
+
 
 @Component({
              selector: 'app-tasks-view',
@@ -43,29 +47,25 @@ export class TasksViewComponent implements OnInit {
         ],
       ),
       description: new FormControl(),
-      tags: new FormControl([TaskTagsEnum.opex]),
+      tags: new FormControl([TaskTagsEnum.capex]),
     },
   );
 
-  public tags: { viewValue: string; value: TaskTagsEnum }[] = [
-    {
-      value: TaskTagsEnum.opex,
-      viewValue: 'OPEX',
-    },
-    {
-      value: TaskTagsEnum.capex,
-      viewValue: 'CAPEX',
-    },
-    {
-      value: TaskTagsEnum.other,
-      viewValue: 'OTHER',
-    },
-  ];
+  public tags: { viewValue: string; value: TaskTagsEnum }[] = defaultSelectTags;
 
   constructor(
     private tasksService: TasksService,
   ) {
-    this.tasks$ = this.tasksService.tasks$;
+    this.tasks$ = this.tasksService.tasks$
+                      .pipe(
+                        switchMap(
+                          (tasks: Task[]) => of(
+                            [...tasks].sort(
+                              this.taskSort,
+                            ),
+                          ),
+                        ),
+                      );
   }
 
   public ngOnInit(): void {
@@ -135,6 +135,18 @@ export class TasksViewComponent implements OnInit {
 
   public onReload(): void {
     this.reloadData();
+  }
+
+  private taskSort(a: Task, b: Task): number {
+    const mapDateTime = (timeLogs: TimeLog[]): number[] => timeLogs
+      .map(
+        (l: TimeLog) => (l?.endTime ? l.endTime : l.startTime).getTime(),
+      );
+
+    const aLastTimeLog = Math.max(...mapDateTime(a.timeLogs), -1);
+    const bLastTimeLog = Math.max(...mapDateTime(b.timeLogs), -1);
+
+    return bLastTimeLog === -1 ? 0 : bLastTimeLog - aLastTimeLog;
   }
 
   private reloadData(): void {
