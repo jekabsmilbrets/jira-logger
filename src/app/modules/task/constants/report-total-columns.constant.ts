@@ -1,6 +1,5 @@
-import { Column }           from '@shared/interfaces/column.interface';
-import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
-import { columnValue }      from '@shared/utils/column-value.util';
+import { Column }      from '@shared/interfaces/column.interface';
+import { columnValue } from '@shared/utils/column-value.util';
 
 import { Task } from '@task/models/task.model';
 
@@ -11,6 +10,8 @@ export const columns: Column[] = [
     sortable: true,
     visible: true,
     cell: (task: Task) => columnValue(task, 'name'),
+    hasFooter: true,
+    footerCell: () => 'Total',
   },
   {
     columnDef: 'description',
@@ -29,12 +30,16 @@ export const columns: Column[] = [
   {
     columnDef: 'timeLogged',
     header: 'Total Time Logged',
-    sortable: true,
+    sortable: false,
+    stickyEnd: true,
     visible: true,
-    cell: (task: Task) => (new ReadableTimePipe())
-      .transform(
-        columnValue(task, 'timeLogged'),
-        true,
-      ),
+    pipe: 'readableTime',
+    cell: (task: Task) => columnValue(task, 'timeLogged'),
+    hasFooter: true,
+    footerCell: (tasks: Task[]) => tasks.map(
+                                          (task: Task) => task.timeLogs.map(t => t.timeLogged())
+                                                              .reduce((acc, value) => acc + value, 0),
+                                        )
+                                        .reduce((acc, value) => acc + value, 0),
   },
 ];

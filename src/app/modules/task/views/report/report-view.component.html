@@ -1,4 +1,6 @@
 <app-shared-table [columns]="columns"
                   [data]="tasks$ | async"
+                  [enableFooter]="true"
                   [isSelectable]="false"
+                  [stickyFooter]="true"
                   [stickyHeader]="true"></app-shared-table>

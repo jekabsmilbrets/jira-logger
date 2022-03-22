@@ -11,6 +11,8 @@ export const columns: Column[] = [
     visible: true,
     sticky: true,
     cell: (task: Task) => columnValue(task, 'name'),
+    hasFooter: true,
+    footerCell: () => 'Total',
   },
   {
     columnDef: 'description',
