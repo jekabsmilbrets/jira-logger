@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1648053504328,
+  "timestamp": 1648057277520,
   "index": "/jira-logger/index.html",
   "assetGroups": [
     {
@@ -11,13 +11,13 @@
         "ignoreVary": true
       },
       "urls": [
-        "/jira-logger/765.cb54f6cfbd87fe9c.js",
+        "/jira-logger/765.2a808967f4f7a9cf.js",
         "/jira-logger/favicon.ico",
         "/jira-logger/index.html",
-        "/jira-logger/main.0345820cee59c981.js",
+        "/jira-logger/main.30f0a2325186d211.js",
         "/jira-logger/manifest.webmanifest",
         "/jira-logger/polyfills.fc0191b0be1c304e.js",
-        "/jira-logger/runtime.222bb9360a26d3aa.js",
+        "/jira-logger/runtime.c602e6ed8d43e721.js",
         "/jira-logger/styles.97e62f54002668e6.css"
       ],
       "patterns": []
@@ -44,7 +44,7 @@
   ],
   "dataGroups": [],
   "hashTable": {
-    "/jira-logger/765.cb54f6cfbd87fe9c.js": "3d588a7f1acda8be3464029aa3f75167a7084c9c",
+    "/jira-logger/765.2a808967f4f7a9cf.js": "73b761e0b0a580864173f2baeea06d234203328a",
     "/jira-logger/assets/icons/icon-128x128.png": "dae3b6ed49bdaf4327b92531d4b5b4a5d30c7532",
     "/jira-logger/assets/icons/icon-144x144.png": "b0bd89982e08f9bd2b642928f5391915b74799a7",
     "/jira-logger/assets/icons/icon-152x152.png": "7479a9477815dfd9668d60f8b3b2fba709b91310",
@@ -54,11 +54,11 @@
     "/jira-logger/assets/icons/icon-72x72.png": "c457e56089a36952cd67156f9996bc4ce54a5ed9",
     "/jira-logger/assets/icons/icon-96x96.png": "3914125a4b445bf111c5627875fc190f560daa41",
     "/jira-logger/favicon.ico": "22f6a4a3bcaafafb0254e0f2fa4ceb89e505e8b2",
-    "/jira-logger/index.html": "b24c8088e3d7ba706ce9f4d2a2479bfd92ba6d75",
-    "/jira-logger/main.0345820cee59c981.js": "4e9bf64cbf47e97ea023c9e60f98fcb355186085",
+    "/jira-logger/index.html": "33264ef3dec43d77e1bd56d74db36e94d66672b5",
+    "/jira-logger/main.30f0a2325186d211.js": "74435aa59ab75e13af29a6f70bafafe34c2d8f90",
     "/jira-logger/manifest.webmanifest": "9adf61607b160116b7cd607a7b36dc0290b6644b",
     "/jira-logger/polyfills.fc0191b0be1c304e.js": "6e2c6890d8e507671a85c506088db25b2c29484e",
-    "/jira-logger/runtime.222bb9360a26d3aa.js": "a87ec0c364c5855e0009895d5f9ef56af4635c76",
+    "/jira-logger/runtime.c602e6ed8d43e721.js": "c3e3c8ff62a4b62f0d53febb7cc82c1b17d51309",
     "/jira-logger/styles.97e62f54002668e6.css": "4f31a7d748c01e94956a5df32557b8097de3794e"
   },
   "navigationUrls": [
