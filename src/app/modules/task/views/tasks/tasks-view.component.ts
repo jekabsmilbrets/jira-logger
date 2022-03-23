@@ -140,13 +140,13 @@ export class TasksViewComponent implements OnInit {
   private taskSort(a: Task, b: Task): number {
     const mapDateTime = (timeLogs: TimeLog[]): number[] => timeLogs
       .map(
-        (l: TimeLog) => (l?.endTime ? l.endTime : l.startTime).getTime(),
+        (l: TimeLog) => l.startTime.getTime(),
       );
 
     const aLastTimeLog = Math.max(...mapDateTime(a.timeLogs), -1);
     const bLastTimeLog = Math.max(...mapDateTime(b.timeLogs), -1);
 
-    return bLastTimeLog === -1 ? 0 : bLastTimeLog - aLastTimeLog;
+    return bLastTimeLog - aLastTimeLog;
   }
 
   private reloadData(): void {
