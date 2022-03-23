@@ -123,10 +123,16 @@ export class TableComponent implements AfterViewInit {
   }
 
   public onRemoveAction(row: Searchable): void {
-    const timeLogDate = formatDate((row as TimeLog).date, 'yyyy-MM-dd', 'lv');
-    const timeLogStartTime = (row as TimeLog)?.startTime;
+    const timeLog: TimeLog | undefined = row as TimeLog;
+
+    if (!timeLog) {
+      return;
+    }
+
+    const timeLogDate = formatDate(timeLog.date, 'yyyy-MM-dd', 'lv');
+    const timeLogStartTime = timeLog.startTime;
     const timeLogStart = timeLogStartTime ? formatDate(timeLogStartTime, 'HH:mm:ss', 'lv') : null;
-    const timeLogEndTime = (row as TimeLog)?.endTime;
+    const timeLogEndTime = timeLog.endTime;
     const timeLogEnd = timeLogEndTime ? formatDate(timeLogEndTime, 'HH:mm:ss', 'lv') : null;
 
     this.areYouSureService.openDialog(
@@ -138,7 +144,7 @@ export class TableComponent implements AfterViewInit {
         .subscribe(
           (response: boolean | undefined) => {
             if (response === true) {
-              this.removeAction.emit(row);
+              this.removeAction.emit(timeLog);
             }
           },
         );

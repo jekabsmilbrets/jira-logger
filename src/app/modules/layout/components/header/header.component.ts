@@ -65,7 +65,7 @@ export class HeaderComponent implements OnDestroy {
                          {
                            injector: Injector.create(
                              {
-                               providers: dynamicMenu?.data?.providers ?? [],
+                               providers: dynamicMenu.data?.providers ?? [],
                                parent: this._injector,
                              },
                            ),
