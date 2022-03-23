@@ -66,6 +66,8 @@ export class TimeLogListModalComponent {
       },
     );
 
+    let oldTimeLog: TimeLog | undefined;
+
     this.timeLogDialogRef.afterClosed()
         .pipe(
           take(1),
@@ -86,9 +88,14 @@ export class TimeLogListModalComponent {
                     return throwError(() => new Error('Missing response data'));
                   }
 
-                  this.removeTimeLog(result?.responseData?.oldTimeLog as TimeLog);
+                  oldTimeLog = result.responseData?.oldTimeLog;
 
-                  return of(true);
+                  if (oldTimeLog) {
+                    this.removeTimeLog(oldTimeLog);
+
+                    return of(true);
+                  }
+                  break;
 
                 case 'update':
                   if (
@@ -103,9 +110,17 @@ export class TimeLogListModalComponent {
                     return throwError(() => new Error('Missing response data'));
                   }
 
-                  this.updateTimeLog(result.responseData?.oldTimeLog as TimeLog, result.responseData?.updatedTimeLogData);
+                  oldTimeLog = result.responseData?.oldTimeLog;
+                  const updatedTimeLogData = result.responseData?.updatedTimeLogData ?? {};
 
-                  return of(true);
+                  if (oldTimeLog) {
+
+                    this.updateTimeLog(oldTimeLog, updatedTimeLogData);
+
+                    return of(true);
+                  }
+
+                  break;
               }
 
               return of(false);
