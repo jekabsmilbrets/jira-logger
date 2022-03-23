@@ -172,7 +172,7 @@ export class TimeLogListModalComponent {
                     return throwError(() => new Error('Missing response data'));
                   }
 
-                  this.createTimeLog(result?.responseData?.updatedTimeLogData);
+                  this.createTimeLog(result.responseData?.updatedTimeLogData);
 
                   return of(true);
               }

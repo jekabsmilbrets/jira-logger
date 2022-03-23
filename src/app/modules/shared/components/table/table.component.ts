@@ -130,9 +130,9 @@ export class TableComponent implements AfterViewInit {
     }
 
     const timeLogDate = formatDate(timeLog.date, 'yyyy-MM-dd', 'lv');
-    const timeLogStartTime = timeLog?.startTime;
+    const timeLogStartTime = timeLog.startTime;
     const timeLogStart = timeLogStartTime ? formatDate(timeLogStartTime, 'HH:mm:ss', 'lv') : null;
-    const timeLogEndTime = timeLog?.endTime;
+    const timeLogEndTime = timeLog.endTime;
     const timeLogEnd = timeLogEndTime ? formatDate(timeLogEndTime, 'HH:mm:ss', 'lv') : null;
 
     this.areYouSureService.openDialog(
