@@ -90,10 +90,16 @@
           "error",
           {
             "default": [
+              "public-static-field",
+              "protected-static-field",
+              "private-static-field",
               "public-field",
               "protected-field",
               "private-field",
               "constructor",
+              "public-static-method",
+              "protected-static-method",
+              "private-static-method",
               "public-method",
               "protected-method",
               "private-method"
