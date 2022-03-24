@@ -64,6 +64,10 @@ export class Task implements Searchable {
     this._lastTimeLogId = value;
   }
 
+  public get isTimeLogRunning(): boolean {
+    return !!this.lastTimeLogId;
+  }
+
   public get timeLogs(): TimeLog[] {
     return this._timeLogs;
   }
