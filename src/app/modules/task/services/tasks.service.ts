@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 
-import { BehaviorSubject, map, Observable, of, switchMap, take, tap } from 'rxjs';
+import { BehaviorSubject, map, Observable, of, switchMap, take, tap, catchError, throwError, from, concatAll, toArray } from 'rxjs';
 
 import { StorageService } from '@core/services/storage.service';
 
@@ -22,9 +22,16 @@ export class TasksService {
     this.tasks$ = this.tasksSubject.asObservable();
   }
 
+  private static processError(error: any): Observable<never> {
+    console.error({error});
+    return throwError(error);
+  }
+
   public list(): Observable<Task[]> {
     return this.storage.list(this.storeName)
                .pipe(
+                 take(1),
+                 catchError((error) => TasksService.processError(error)),
                  map(
                    (tasksData) => tasksData
                      .map(
@@ -38,95 +45,81 @@ export class TasksService {
                );
   }
 
-  public create(task: Task): Observable<Task> {
+  public create(task: Task, skipReload: boolean = false): Observable<Task> {
     return this.storage.create(task.name, task, this.storeName)
                .pipe(
-                 switchMap(
-                   () => this.list().pipe(take(1)),
-                 ),
-                 switchMap(
-                   (tasks: Task[]) => {
-                     const foundTask: Task | undefined = this.findTask(tasks, task.name);
-
-                     if (!foundTask) {
-                       throw new Error(`Problems creating task "${task.name}"!`);
-                     }
-
-                     return of(foundTask);
-                   },
-                 ),
+                 take(1),
+                 catchError((error) => TasksService.processError(error)),
+                 switchMap(() => this.reloadList(skipReload)),
+                 map((tasks: Task[]) => this.findTask(tasks, task)),
                );
   }
 
-  public update(task: Task): Observable<Task> {
+  public update(task: Task, skipReload: boolean = false): Observable<Task> {
     return this.storage.update(task.name, task, this.storeName)
                .pipe(
-                 switchMap(
-                   () => this.list().pipe(take(1)),
-                 ),
-                 switchMap(
-                   (tasks: Task[]) => {
-                     const foundTask: Task | undefined = this.findTask(tasks, task.name);
-
-                     if (!foundTask) {
-                       throw new Error(`Problems updating task "${task.name}"!`);
-                     }
-
-                     return of(foundTask);
-                   },
-                 ),
+                 take(1),
+                 catchError((error) => TasksService.processError(error)),
+                 switchMap(() => this.reloadList(skipReload)),
+                 map((tasks: Task[]) => this.findTask(tasks, task)),
                );
   }
 
   public delete(task: Task): Observable<void> {
     return this.storage.delete(task.name, this.storeName)
                .pipe(
+                 take(1),
+                 catchError((error) => TasksService.processError(error)),
                  switchMap(
                    () => this.list().pipe(take(1)),
                  ),
-                 switchMap(() => of(undefined)),
+                 map(() => undefined),
                );
   }
 
-  public stopAllTaskWorkLogs(ignoreTask: Task): Observable<void> {
+  public stopAllTaskWorkLogs(ignoreTask: Task): Observable<undefined | Task[]> {
     return this.tasks$
                .pipe(
+                 take(1),
                  switchMap(
                    (tasks: Task[]) => {
-                     const data = this.findAndFilterTasksForTimeLogStop(tasks, ignoreTask);
+                     const tasksToStop: Task[] = tasks.filter((task: Task) => task.uuid !== ignoreTask.uuid && task.isTimeLogRunning);
 
-                     if (data.length === 0) {
+                     tasksToStop.forEach((t: Task) => t.stopTimeLog());
+
+                     if (tasksToStop.length === 0) {
                        return of(undefined);
                      }
 
-                     return this.storage.massUpdate(
-                       data,
-                       this.storeName,
-                     );
+                     const taskUpdateObservables = tasksToStop.map((t: Task) => this.update(t, true).pipe(take(1)));
+
+                     return from(taskUpdateObservables)
+                       .pipe(
+                         concatAll(),
+                         toArray(),
+                       );
                    },
                  ),
+                 catchError((error) => TasksService.processError(error)),
                );
 
   }
 
-  private findAndFilterTasksForTimeLogStop(tasks: Task[], ignoreTask: Task): { key: IDBValidKey; value: any }[] {
-    return tasks
-      .filter((task: Task) => task.uuid !== ignoreTask.uuid)
-      .map(
-        (task: Task) => {
-          task.stopTimeLog();
-
-          return {
-            key: task.name,
-            value: task,
-          };
-        },
-      );
+  private reloadList(skipReload: boolean = false): Observable<Task[]> {
+    return skipReload ?
+           this.tasks$.pipe(take(1)) :
+           this.list().pipe(take(1));
   }
 
-  private findTask(tasks: Task[], taskName: string): Task | undefined {
-    return tasks.find(
-      (task: Task) => task.name === taskName,
+  private findTask(tasks: Task[], task: Task): Task {
+    const foundTask: Task | undefined = tasks.find(
+      (t: Task) => t.uuid === task.uuid,
     );
+
+    if (!foundTask) {
+      throw new Error(`Problems creating task "${task.name}"!`);
+    }
+
+    return foundTask;
   }
 }

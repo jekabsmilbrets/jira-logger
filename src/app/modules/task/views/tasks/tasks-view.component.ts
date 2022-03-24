@@ -104,22 +104,13 @@ export class TasksViewComponent implements OnInit {
     ],
   ): void {
     iif(
-      () => action === TaskUpdateActionEnum.startWorkLog,
+      () => TaskUpdateActionEnum.startWorkLog === action,
       this.tasksService.stopAllTaskWorkLogs(task)
-          .pipe(
-            take(1),
-          ),
+          .pipe(take(1)),
       of(null),
     )
       .pipe(
-        switchMap(
-          () => this.tasksService.update(task)
-                    .pipe(
-                      take(1),
-                    ),
-        ),
-      )
-      .pipe(
+        switchMap(() => this.tasksService.update(task)),
         take(1),
       )
       .subscribe();
