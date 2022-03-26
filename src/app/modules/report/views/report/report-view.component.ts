@@ -49,8 +49,11 @@ export class ReportViewComponent implements OnInit, OnDestroy {
           .subscribe(
             (params: Params) => {
               const reportMode = params['reportMode'];
-              if (reportMode) {
+
+              if (reportMode && reportMode in ReportModeEnum) {
                 this.reportService.reportMode = ReportModeEnum[reportMode as keyof typeof ReportModeEnum];
+              } else {
+                this.reportService.reportMode = ReportModeEnum.total;
               }
             },
           ),
