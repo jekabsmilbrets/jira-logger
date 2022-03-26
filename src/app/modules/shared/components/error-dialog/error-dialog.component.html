@@ -1,0 +1,11 @@
+<h1 mat-dialog-title>{{data.errorTitle}}</h1>
+
+<div mat-dialog-content>
+  <p>{{data.errorMessage}}</p>
+  <pre>{{data.idbData | json}}</pre>
+</div>
+
+<div mat-dialog-actions>
+  <button (click)="onCancel()" mat-button>Cancel</button>
+  <button (click)="onDelete()" color="warn" mat-button>Delete</button>
+</div>
