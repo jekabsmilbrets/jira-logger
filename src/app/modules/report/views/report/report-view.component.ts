@@ -1,6 +1,6 @@
 import { formatDate }                   from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute, Params }       from '@angular/router';
+import { ActivatedRoute, ParamMap }     from '@angular/router';
 
 import { Observable, Subscription, take, combineLatest, map, delay } from 'rxjs';
 
@@ -44,16 +44,20 @@ export class ReportViewComponent implements OnInit, OnDestroy {
     private activatedRoute: ActivatedRoute,
   ) {
     this.subscriptions.push(
-      this.activatedRoute.params
+      this.activatedRoute.paramMap
           .pipe()
           .subscribe(
-            (params: Params) => {
-              const reportMode = params['reportMode'];
+            (params: ParamMap) => {
+              // @ts-ignore
 
-              if (reportMode && reportMode in ReportModeEnum) {
-                this.reportService.reportMode = ReportModeEnum[reportMode as keyof typeof ReportModeEnum];
-              } else {
-                this.reportService.reportMode = ReportModeEnum.total;
+              if (params.has('reportMode')) {
+                const reportMode = params.get('reportMode') as string;
+
+                if (reportMode in ReportModeEnum) {
+                  this.reportService.reportMode = ReportModeEnum[reportMode as keyof typeof ReportModeEnum];
+                } else {
+                  this.reportService.reportMode = ReportModeEnum.total;
+                }
               }
             },
           ),
