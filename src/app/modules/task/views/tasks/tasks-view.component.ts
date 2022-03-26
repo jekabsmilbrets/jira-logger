@@ -57,7 +57,7 @@ export class TasksViewComponent implements OnInit {
   constructor(
     private tasksService: TasksService,
   ) {
-    this.isLoading$ =this.tasksService.isLoading$;
+    this.isLoading$ = this.tasksService.isLoading$;
     this.tasks$ = this.tasksService.tasks$
                       .pipe(
                         switchMap(
