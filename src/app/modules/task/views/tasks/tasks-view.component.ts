@@ -21,6 +21,7 @@ import { TasksService } from '@task/services/tasks.service';
            })
 export class TasksViewComponent implements OnInit {
   public tasks$: Observable<Task[]>;
+  public isLoading$: Observable<boolean>;
 
   public createTaskForm: FormGroup = new FormGroup(
     {
@@ -56,6 +57,7 @@ export class TasksViewComponent implements OnInit {
   constructor(
     private tasksService: TasksService,
   ) {
+    this.isLoading$ =this.tasksService.isLoading$;
     this.tasks$ = this.tasksService.tasks$
                       .pipe(
                         switchMap(

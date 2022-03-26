@@ -21,7 +21,7 @@
     </mat-select>
   </mat-form-field>
 
-  <button [disabled]="!createTaskForm.valid"
+  <button [disabled]="!createTaskForm.valid || (isLoading$ | async)"
           color="primary"
           mat-raised-button>
     Create task
@@ -31,4 +31,5 @@
 <app-task-list (reload)="onReload()"
                (remove)="onRemove($event)"
                (update)="onUpdate($event)"
+               [isLoading]="isLoading$ | async"
                [tasks]="tasks$ | async"></app-task-list>
