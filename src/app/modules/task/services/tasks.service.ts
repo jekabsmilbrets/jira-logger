@@ -6,6 +6,8 @@ import {
 
 import { StorageService } from '@core/services/storage.service';
 
+import { ErrorDialogService } from '@shared/services/error-dialog.service';
+
 import { adaptTask } from '@task/adapters/task.adapter';
 
 import { TaskInterface } from '@task/interfaces/task.interface';
@@ -21,14 +23,10 @@ export class TasksService {
 
   constructor(
     private storage: StorageService,
+    private errorDialogService: ErrorDialogService,
   ) {
     this.tasks$ = this.tasksSubject.asObservable();
     this.isLoading$ = this.storage.isLoading$;
-  }
-
-  private static processError(error: any): Observable<never> {
-    console.error({error});
-    return throwError(error);
   }
 
   public list(): Observable<Task[]> {
@@ -38,7 +36,7 @@ export class TasksService {
                    () => this.storage.list(this.storeName),
                  ),
                  take(1),
-                 catchError((error) => TasksService.processError(error)),
+                 catchError((error) => this.processError(error)),
                  map(
                    (tasksData) => tasksData
                      .map(
@@ -59,7 +57,7 @@ export class TasksService {
                    () => this.storage.create(task.name, task, this.storeName),
                  ),
                  take(1),
-                 catchError((error) => TasksService.processError(error)),
+                 catchError((error) => this.processError(error)),
                  switchMap(() => this.reloadList(skipReload)),
                  map((tasks: Task[]) => this.findTask(tasks, task)),
                );
@@ -72,7 +70,7 @@ export class TasksService {
                    () => this.storage.update(task.name, task, this.storeName),
                  ),
                  take(1),
-                 catchError((error) => TasksService.processError(error)),
+                 catchError((error) => this.processError(error)),
                  switchMap(() => this.reloadList(skipReload)),
                  map((tasks: Task[]) => this.findTask(tasks, task)),
                );
@@ -85,7 +83,7 @@ export class TasksService {
                    () => this.storage.delete(task.name, this.storeName),
                  ),
                  take(1),
-                 catchError((error) => TasksService.processError(error)),
+                 catchError((error) => this.processError(error)),
                  switchMap(
                    () => this.list().pipe(take(1)),
                  ),
@@ -119,9 +117,29 @@ export class TasksService {
                        );
                    },
                  ),
-                 catchError((error) => TasksService.processError(error)),
+                 catchError((error) => this.processError(error)),
                );
 
+  }
+
+  private processError(error: any): Observable<never> {
+    console.error({error});
+
+    return this.tasks$
+               .pipe(
+                 take(1),
+                 switchMap(
+                   (tasks: Task[]) => this.errorDialogService.openDialog(
+                     {
+                       errorTitle: 'Error while doing db action :D',
+                       errorMessage: JSON.stringify(error),
+                       idbData: tasks,
+                     },
+                   ),
+                 ),
+                 take(1),
+                 switchMap(() => throwError(error)),
+               );
   }
 
   private waitForTurn(): Observable<boolean> {
