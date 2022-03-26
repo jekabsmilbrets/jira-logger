@@ -1,5 +1,5 @@
-import { Injectable }               from '@angular/core';
-import { MatDialogRef, MatDialog }  from '@angular/material/dialog';
+import { Injectable }              from '@angular/core';
+import { MatDialogRef, MatDialog } from '@angular/material/dialog';
 
 import { Observable } from 'rxjs';
 
@@ -9,7 +9,7 @@ import { ErrorDialogDataInterface } from '@shared/interfaces/error-dialog-data.i
 
 @Injectable()
 export class ErrorDialogService {
-  private dialogRef!: MatDialogRef<ErrorDialogComponent, boolean | undefined>;
+  private dialogRef!: MatDialogRef<ErrorDialogComponent, undefined>;
 
   constructor(
     private dialog: MatDialog,
@@ -18,7 +18,7 @@ export class ErrorDialogService {
 
   public openDialog(
     errorData: ErrorDialogDataInterface,
-  ): Observable<boolean | undefined> {
+  ): Observable<undefined> {
     this.dialogRef = this.dialog.open(
       ErrorDialogComponent,
       {
