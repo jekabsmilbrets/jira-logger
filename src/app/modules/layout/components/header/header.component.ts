@@ -19,6 +19,9 @@ export class HeaderComponent implements OnDestroy {
   @Input()
   public sidenav!: MatSidenav;
 
+  @Input()
+  public isLoading!: boolean | null;
+
   @ViewChild(DynamicMenuDirective, {static: true})
   private dynamicMenu!: DynamicMenuDirective;
 

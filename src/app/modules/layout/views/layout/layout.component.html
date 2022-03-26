@@ -1,5 +1,5 @@
 <div class="base-container mat-typography">
-  <app-header [sidenav]="sidenav"></app-header>
+  <app-header [isLoading]="isLoading$ | async" [sidenav]="sidenav"></app-header>
 
   <mat-sidenav-container [style.marginTop.px]="0" class="app-sidenav-container">
     <mat-sidenav #sidenav fixedTopGap="56" mode="over">
