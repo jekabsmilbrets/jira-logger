@@ -13,6 +13,9 @@ export class TaskListComponent {
   @Input()
   public tasks: Task[] | null = [];
 
+  @Input()
+  public isLoading!: boolean | null;
+
   @Output()
   public update: EventEmitter<[Task, TaskUpdateActionEnum]> = new EventEmitter<[Task, TaskUpdateActionEnum]>();
 

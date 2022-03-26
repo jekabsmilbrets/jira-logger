@@ -3,6 +3,7 @@
     <app-task (reloadData)="onReload()"
               (remove)="onRemove($event)"
               (update)="onUpdate($event)"
+              [isLoading]="isLoading"
               [task]="task">
     </app-task>
   </li>
