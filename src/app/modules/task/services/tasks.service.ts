@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 
-import { BehaviorSubject, map, Observable, of, switchMap, take, tap, catchError, throwError, from, concatAll, toArray } from 'rxjs';
+import {
+  BehaviorSubject, map, Observable, of, switchMap, take, tap, catchError, throwError, from, concatAll, toArray, filter,
+} from 'rxjs';
 
 import { StorageService } from '@core/services/storage.service';
 
@@ -11,6 +13,7 @@ import { Task }          from '@task/models/task.model';
 
 @Injectable()
 export class TasksService {
+  public isLoading$: Observable<boolean>;
   public tasks$: Observable<Task[]>;
 
   private tasksSubject: BehaviorSubject<Task[]> = new BehaviorSubject<Task[]>([]);
@@ -20,6 +23,7 @@ export class TasksService {
     private storage: StorageService,
   ) {
     this.tasks$ = this.tasksSubject.asObservable();
+    this.isLoading$ = this.storage.isLoading$;
   }
 
   private static processError(error: any): Observable<never> {
@@ -28,8 +32,11 @@ export class TasksService {
   }
 
   public list(): Observable<Task[]> {
-    return this.storage.list(this.storeName)
+    return this.waitForTurn()
                .pipe(
+                 switchMap(
+                   () => this.storage.list(this.storeName),
+                 ),
                  take(1),
                  catchError((error) => TasksService.processError(error)),
                  map(
@@ -46,8 +53,11 @@ export class TasksService {
   }
 
   public create(task: Task, skipReload: boolean = false): Observable<Task> {
-    return this.storage.create(task.name, task, this.storeName)
+    return this.waitForTurn()
                .pipe(
+                 switchMap(
+                   () => this.storage.create(task.name, task, this.storeName),
+                 ),
                  take(1),
                  catchError((error) => TasksService.processError(error)),
                  switchMap(() => this.reloadList(skipReload)),
@@ -56,8 +66,11 @@ export class TasksService {
   }
 
   public update(task: Task, skipReload: boolean = false): Observable<Task> {
-    return this.storage.update(task.name, task, this.storeName)
+    return this.waitForTurn()
                .pipe(
+                 switchMap(
+                   () => this.storage.update(task.name, task, this.storeName),
+                 ),
                  take(1),
                  catchError((error) => TasksService.processError(error)),
                  switchMap(() => this.reloadList(skipReload)),
@@ -66,8 +79,11 @@ export class TasksService {
   }
 
   public delete(task: Task): Observable<void> {
-    return this.storage.delete(task.name, this.storeName)
+    return this.waitForTurn()
                .pipe(
+                 switchMap(
+                   () => this.storage.delete(task.name, this.storeName),
+                 ),
                  take(1),
                  catchError((error) => TasksService.processError(error)),
                  switchMap(
@@ -78,8 +94,11 @@ export class TasksService {
   }
 
   public stopAllTaskWorkLogs(ignoreTask: Task): Observable<undefined | Task[]> {
-    return this.tasks$
+    return this.waitForTurn()
                .pipe(
+                 switchMap(
+                   () => this.tasks$,
+                 ),
                  take(1),
                  switchMap(
                    (tasks: Task[]) => {
@@ -103,6 +122,14 @@ export class TasksService {
                  catchError((error) => TasksService.processError(error)),
                );
 
+  }
+
+  private waitForTurn(): Observable<boolean> {
+    return this.storage.isLoading$
+               .pipe(
+                 filter((isLoading) => !isLoading),
+                 take(1),
+               );
   }
 
   private reloadList(skipReload: boolean = false): Observable<Task[]> {
