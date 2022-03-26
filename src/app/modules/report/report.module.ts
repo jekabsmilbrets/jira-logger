@@ -1,0 +1,40 @@
+import { NgModule }            from '@angular/core';
+import { ReactiveFormsModule } from '@angular/forms';
+
+import { SharedModule } from '@shared/shared.module';
+
+import { TasksService } from '@task/services/tasks.service';
+
+import { ReportDateSelectorComponent } from '@report/components/report-menu/report-date-selector/report-date-selector.component';
+import { ReportMenuComponent }         from '@report/components/report-menu/report-menu.component';
+import { ReportModeSwitcherComponent } from '@report/components/report-menu/report-mode-switcher/report-mode-switcher.component';
+import { ReportShowWeekendsComponent } from '@report/components/report-menu/report-show-weekends/report-show-weekends.component';
+import { ReportTagFilterComponent }    from '@report/components/report-menu/report-tag-filter/report-tag-filter.component';
+import { ReportRoutingModule }         from '@report/report-routing.module';
+import { ReportService }               from '@report/services/report.service';
+import { ReportViewComponent }         from '@report/views/report/report-view.component';
+
+@NgModule({
+            declarations: [
+              ReportModeSwitcherComponent,
+              ReportViewComponent,
+
+              ReportMenuComponent,
+              ReportTagFilterComponent,
+              ReportDateSelectorComponent,
+              ReportShowWeekendsComponent,
+            ],
+            imports: [
+              ReactiveFormsModule,
+
+              ReportRoutingModule,
+
+              SharedModule,
+            ],
+            providers: [
+              ReportService,
+              TasksService,
+            ],
+          })
+export class ReportModule {
+}

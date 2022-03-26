@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter }                           from
 import { FormControl }                                                      from '@angular/forms';
 import { MatDatepickerInputEvent, ExtractDateTypeFromSelection, DateRange } from '@angular/material/datepicker';
 
-import { ReportModeEnum } from '@task/enums/report-mode.enum';
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
 
 @Component({
              selector: 'app-report-date-selector',
