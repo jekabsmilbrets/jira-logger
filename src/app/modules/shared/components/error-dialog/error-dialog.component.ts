@@ -1,7 +1,7 @@
 import { Component, Inject }             from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
-import { ErrorDialogDataInterface }      from '@shared/interfaces/error-dialog-data.interface';
+import { ErrorDialogDataInterface } from '@shared/interfaces/error-dialog-data.interface';
 
 @Component({
              selector: 'app-error-dialog',
@@ -10,16 +10,12 @@ import { ErrorDialogDataInterface }      from '@shared/interfaces/error-dialog-d
            })
 export class ErrorDialogComponent {
   constructor(
-    private dialogRef: MatDialogRef<ErrorDialogComponent, boolean | undefined>,
+    private dialogRef: MatDialogRef<ErrorDialogComponent, undefined>,
     @Inject(MAT_DIALOG_DATA) public data: ErrorDialogDataInterface,
   ) {
   }
 
-  public onCancel(): void {
-    this.dialogRef.close(false);
-  }
-
-  public onDelete(): void {
-    this.dialogRef.close(true);
+  public onClose(): void {
+    this.dialogRef.close();
   }
 }
