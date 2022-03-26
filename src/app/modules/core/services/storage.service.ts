@@ -242,7 +242,6 @@ export class StorageService {
     data: { key: IDBValidKey; value: any }[],
     customStoreName: string,
   ) {
-
     if (!this.stores.has(customStoreName)) {
       throw new Error('Invalid store!');
     }
