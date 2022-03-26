@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 
-import { Observable } from 'rxjs';
+import { Observable, delay } from 'rxjs';
 
 import { StorageService } from '@core/services/storage.service';
 
@@ -15,6 +15,7 @@ export class LayoutComponent {
   constructor(
     private storageService: StorageService,
   ) {
-    this.isLoading$ = this.storageService.isLoading$;
+    this.isLoading$ = this.storageService.isLoading$
+                          .pipe(delay(10));
   }
 }
