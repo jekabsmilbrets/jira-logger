@@ -22,6 +22,7 @@ export class ErrorDialogService {
     this.dialogRef = this.dialog.open(
       ErrorDialogComponent,
       {
+        disableClose: true,
         data: errorData,
       },
     );
