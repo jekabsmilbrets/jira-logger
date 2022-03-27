@@ -5,10 +5,6 @@
     list-style: none;
 
     li {
-      ::ng-deep app-task {
-
-      }
-
       & + li {
         margin-top: 8px;
       }

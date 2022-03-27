@@ -14,7 +14,9 @@ export class AreYouSureService {
   ) {
   }
 
-  public openDialog(deleteString: string): Observable<boolean | undefined> {
+  public openDialog(
+    deleteString: string,
+  ): Observable<boolean | undefined> {
     this.dialogRef = this.dialog.open(
       AreYouSureDialogComponent,
       {

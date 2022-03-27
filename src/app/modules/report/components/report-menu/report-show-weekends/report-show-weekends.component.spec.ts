@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ReportShowWeekendsComponent } from 'app/modules/task/components/report-show-weekends/report-show-weekends.component';
+import { ReportShowWeekendsComponent } from './report-show-weekends.component';
 
 describe('ReportShowWeekendsComponent', () => {
   let component: ReportShowWeekendsComponent;

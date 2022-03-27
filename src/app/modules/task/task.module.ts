@@ -1,53 +1,48 @@
 import { NgModule }            from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 
-import { ReportShowWeekendsComponent } from 'app/modules/task/components/report-show-weekends/report-show-weekends.component';
-
 import { SharedModule } from '@shared/shared.module';
 
-import { ReportDateSelectorComponent } from './components/report-date-selector/report-date-selector.component';
-import { ReportMenuComponent }         from './components/report-menu/report-menu.component';
-import { ReportModeSwitcherComponent } from './components/report-mode-switcher/report-mode-switcher.component';
-import { ReportTagFilterComponent }    from './components/report-tag-filter/report-tag-filter.component';
-import { TaskListComponent }           from './components/task-list/task-list.component';
-import { TaskComponent }               from './components/task/task.component';
-import { TimeLogListModalComponent }   from './components/time-log-list-modal/time-log-list-modal.component';
-import { TimeLogModalComponent }       from './components/time-log-modal/time-log-modal.component';
+import { TasksSettingsDialogComponent } from '@task/components/settings-dialog/tasks-settings-dialog.component';
 
-import { ReportService } from './services/report.service';
-import { TasksService }  from './services/tasks.service';
+import { TaskListComponent }             from '@task/components/task-list/task-list.component';
+import { TaskComponent }                 from '@task/components/task/task.component';
+import { TasksMenuComponent }            from '@task/components/tasks-menu/tasks-menu.component';
+import { TasksSettingsTogglerComponent } from '@task/components/tasks-menu/tasks-settings-toggler/tasks-settings-toggler.component';
+import { TimeLogListModalComponent }     from '@task/components/time-log-list-modal/time-log-list-modal.component';
+import { TimeLogModalComponent }         from '@task/components/time-log-list-modal/time-log-modal/time-log-modal.component';
+import { TasksSettingsService }          from '@task/services/tasks-settings.service';
 
-import { TaskRoutingModule } from './task-routing.module';
+import { TasksService } from '@task/services/tasks.service';
 
-import { ReportViewComponent } from './views/report/report-view.component';
-import { TasksViewComponent }  from './views/tasks/tasks-view.component';
+import { TaskRoutingModule } from '@task/task-routing.module';
+
+import { TasksViewComponent } from '@task/views/tasks/tasks-view.component';
 
 @NgModule({
             declarations: [
-              ReportModeSwitcherComponent,
-              ReportViewComponent,
+              TasksViewComponent,
 
               TaskComponent,
               TaskListComponent,
-              TasksViewComponent,
+
+              TasksMenuComponent,
+              TasksSettingsDialogComponent,
+              TasksSettingsTogglerComponent,
 
               TimeLogListModalComponent,
               TimeLogModalComponent,
-              ReportMenuComponent,
-              ReportTagFilterComponent,
-              ReportDateSelectorComponent,
-              ReportShowWeekendsComponent,
             ],
             imports: [
-              TaskRoutingModule,
               ReactiveFormsModule,
+
+              TaskRoutingModule,
 
               SharedModule,
             ],
             providers: [
               TasksService,
-
-              ReportService,
+              TasksSettingsService,
             ],
           })
 export class TaskModule {
