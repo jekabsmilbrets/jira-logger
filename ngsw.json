@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1648402688187,
+  "timestamp": 1648408461221,
   "index": "/jira-logger/index.html",
   "assetGroups": [
     {
@@ -13,15 +13,15 @@
       "urls": [
         "/jira-logger/362.14fdf64361ccfec4.js",
         "/jira-logger/759.55ccb8b5ca6438ac.js",
-        "/jira-logger/855.3b0896511cf7c050.js",
+        "/jira-logger/855.09e8859aef7818bb.js",
         "/jira-logger/favicon.ico",
         "/jira-logger/index.html",
-        "/jira-logger/main.7fc5ce475b21f598.js",
+        "/jira-logger/main.f3ece30ae4d2ef63.js",
         "/jira-logger/manifest.webmanifest",
         "/jira-logger/polyfills.fc0191b0be1c304e.js",
-        "/jira-logger/runtime.326e68cd26c36ae1.js",
+        "/jira-logger/runtime.87627088400868bd.js",
         "/jira-logger/styles.97e62f54002668e6.css",
-        "/jira-logger/vendor.71a3c901d215639b.js"
+        "/jira-logger/vendor.5de7f3c6cf36eeeb.js"
       ],
       "patterns": []
     },
@@ -49,7 +49,7 @@
   "hashTable": {
     "/jira-logger/362.14fdf64361ccfec4.js": "a1b7d52e3113c610c13f0f0aaab150b8d7ff910a",
     "/jira-logger/759.55ccb8b5ca6438ac.js": "bb7bfe4872c36e3fe95fb9b92bd740717f6b92e4",
-    "/jira-logger/855.3b0896511cf7c050.js": "5153952de271bb27c3f1d045bddaf7efbffc1ab8",
+    "/jira-logger/855.09e8859aef7818bb.js": "a3e2d5c937ee9e47201384497c0ed4fd5b9e39e9",
     "/jira-logger/assets/icons/icon-128x128.png": "dae3b6ed49bdaf4327b92531d4b5b4a5d30c7532",
     "/jira-logger/assets/icons/icon-144x144.png": "b0bd89982e08f9bd2b642928f5391915b74799a7",
     "/jira-logger/assets/icons/icon-152x152.png": "7479a9477815dfd9668d60f8b3b2fba709b91310",
@@ -59,13 +59,13 @@
     "/jira-logger/assets/icons/icon-72x72.png": "c457e56089a36952cd67156f9996bc4ce54a5ed9",
     "/jira-logger/assets/icons/icon-96x96.png": "3914125a4b445bf111c5627875fc190f560daa41",
     "/jira-logger/favicon.ico": "22f6a4a3bcaafafb0254e0f2fa4ceb89e505e8b2",
-    "/jira-logger/index.html": "9b29c517e2d465fe935f515ed896e7b35c41eb45",
-    "/jira-logger/main.7fc5ce475b21f598.js": "32feafc56614e7822c6f0decbfb13fe1fdc53394",
+    "/jira-logger/index.html": "9202b9f388b1c95dcb7676790b783b90eeaf9361",
+    "/jira-logger/main.f3ece30ae4d2ef63.js": "ac3b146f735134b222b84b74aebee3c7d30f9239",
     "/jira-logger/manifest.webmanifest": "9adf61607b160116b7cd607a7b36dc0290b6644b",
     "/jira-logger/polyfills.fc0191b0be1c304e.js": "6e2c6890d8e507671a85c506088db25b2c29484e",
-    "/jira-logger/runtime.326e68cd26c36ae1.js": "dd24383aff286876507b5c09ee01859b26bdc5c8",
+    "/jira-logger/runtime.87627088400868bd.js": "4d0639a359d0bbc0b74c9ea58b064052f494ab05",
     "/jira-logger/styles.97e62f54002668e6.css": "4f31a7d748c01e94956a5df32557b8097de3794e",
-    "/jira-logger/vendor.71a3c901d215639b.js": "565153f50c3c700a2fea4ea83fb90d0dec84adae"
+    "/jira-logger/vendor.5de7f3c6cf36eeeb.js": "b681e8f973685feac92841fcb142b6cd3a85e270"
   },
   "navigationUrls": [
     {
