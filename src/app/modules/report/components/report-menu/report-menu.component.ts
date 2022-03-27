@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 
-import { Observable }   from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
