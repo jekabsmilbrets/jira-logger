@@ -9,6 +9,15 @@
 </div>
 
 <div mat-dialog-content>
+  <mat-slide-toggle (toggleChange)="showCurrent = !showCurrent">Show Current Data JSON</mat-slide-toggle>
+  <button [cdkCopyToClipboard]="data.currentTasks | json"
+          color="accent"
+          mat-button>
+    Copy to clipboard
+  </button>
+
+  <pre *ngIf="showCurrent">{{data.currentTasks | json}}</pre>
+
   <form [formGroup]="formGroup">
     <mat-form-field>
       <mat-label>JSON</mat-label>

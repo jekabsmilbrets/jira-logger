@@ -1,4 +1,5 @@
 import { NgxMatNativeDateModule, NgxMatTimepickerModule, NgxMatDatetimePickerModule } from '@angular-material-components/datetime-picker';
+import { ClipboardModule }                                                            from '@angular/cdk/clipboard';
 import { CdkTableModule }                                                             from '@angular/cdk/table';
 import { CommonModule }                                                               from '@angular/common';
 import { NgModule }                                                                   from '@angular/core';
@@ -25,22 +26,24 @@ import { MatTableModule }                                                       
 import { MatToolbarModule }                                                           from '@angular/material/toolbar';
 import { MatTooltipModule }                                                           from '@angular/material/tooltip';
 
+import { AreYouSureDialogComponent } from '@shared/components/are-you-sure-dialog/are-you-sure-dialog.component';
+
+import { ErrorDialogComponent } from '@shared/components/error-dialog/error-dialog.component';
+import { TableComponent }       from '@shared/components/table/table.component';
+
+import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
+
+import { AreYouSureService } from '@shared/services/are-you-sure.service';
+
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
-
-import { AreYouSureDialogComponent } from './components/are-you-sure-dialog/are-you-sure-dialog.component';
-
-import { ErrorDialogComponent } from './components/error-dialog/error-dialog.component';
-import { TableComponent }       from './components/table/table.component';
-
-import { ReadableTimePipe } from './pipes/readable-time.pipe';
-
-import { AreYouSureService } from './services/are-you-sure.service';
 
 @NgModule({
             imports: [
               CommonModule,
 
               CdkTableModule,
+
+              ClipboardModule,
 
               MatAutocompleteModule,
               MatButtonModule,
@@ -73,6 +76,8 @@ import { AreYouSureService } from './services/are-you-sure.service';
               CommonModule,
 
               CdkTableModule,
+
+              ClipboardModule,
 
               MatAutocompleteModule,
               MatButtonModule,
