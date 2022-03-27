@@ -2,11 +2,10 @@ import { Component, Inject }                  from '@angular/core';
 import { FormControl, Validators, FormGroup } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA }      from '@angular/material/dialog';
 
-import { AreYouSureDialogDataInterface } from '@shared/interfaces/are-you-sure-dialog-data.interface';
-
 import { validateTasksInterfaceData } from '@task/data-validators/task-interface.validator';
 
-import { TaskInterface } from '@task/interfaces/task.interface';
+import { TaskInterface }                    from '@task/interfaces/task.interface';
+import { TasksSettingsDialogDataInterface } from '@task/interfaces/tasks-settings-dialog-data.interface';
 
 @Component({
              selector: 'app-settings-dialog',
@@ -19,10 +18,11 @@ export class TasksSettingsDialogComponent {
       json: new FormControl(undefined, Validators.required),
     },
   );
+  public showCurrent = false;
 
   constructor(
     private dialogRef: MatDialogRef<TasksSettingsDialogComponent, TaskInterface[] | undefined>,
-    @Inject(MAT_DIALOG_DATA) public data: AreYouSureDialogDataInterface,
+    @Inject(MAT_DIALOG_DATA) public data: TasksSettingsDialogDataInterface,
   ) {
   }
 
