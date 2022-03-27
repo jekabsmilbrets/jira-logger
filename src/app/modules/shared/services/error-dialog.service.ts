@@ -6,7 +6,6 @@ import { Observable } from 'rxjs';
 import { ErrorDialogComponent }     from '@shared/components/error-dialog/error-dialog.component';
 import { ErrorDialogDataInterface } from '@shared/interfaces/error-dialog-data.interface';
 
-
 @Injectable()
 export class ErrorDialogService {
   private dialogRef!: MatDialogRef<ErrorDialogComponent, undefined>;
