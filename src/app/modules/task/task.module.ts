@@ -3,6 +3,8 @@ import { ReactiveFormsModule } from '@angular/forms';
 
 import { SharedModule } from '@shared/shared.module';
 
+import { TasksSettingsDialogComponent } from '@task/components/settings-dialog/tasks-settings-dialog.component';
+
 import { TaskListComponent }             from '@task/components/task-list/task-list.component';
 import { TaskComponent }                 from '@task/components/task/task.component';
 import { TasksMenuComponent }            from '@task/components/tasks-menu/tasks-menu.component';
@@ -23,7 +25,9 @@ import { TasksViewComponent } from '@task/views/tasks/tasks-view.component';
 
               TaskComponent,
               TaskListComponent,
+
               TasksMenuComponent,
+              TasksSettingsDialogComponent,
               TasksSettingsTogglerComponent,
 
               TimeLogListModalComponent,
