@@ -16,9 +16,10 @@ import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
 import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
 
-import { Task }         from '@task/models/task.model';
-import { TimeLog }      from '@task/models/time-log.model';
-import { TasksService } from '@task/services/tasks.service';
+import { Task }                 from '@task/models/task.model';
+import { TimeLog }              from '@task/models/time-log.model';
+import { TasksSettingsService } from '@task/services/tasks-settings.service';
+import { TasksService }         from '@task/services/tasks.service';
 
 @Component({
              selector: 'app-tasks-view',
@@ -62,6 +63,7 @@ export class TasksViewComponent implements OnInit {
 
   constructor(
     private tasksService: TasksService,
+    private tasksSettingsService: TasksSettingsService,
     private dynamicMenuService: DynamicMenuService,
   ) {
     this.isLoading$ = this.tasksService.isLoading$;
@@ -168,6 +170,10 @@ export class TasksViewComponent implements OnInit {
             {
               provide: TasksService,
               useValue: this.tasksService,
+            },
+            {
+              provide: TasksSettingsService,
+              useValue: this.tasksSettingsService,
             },
             SharedModule,
           ],
