@@ -122,6 +122,22 @@ export class TasksService {
 
   }
 
+  public importData(data: TaskInterface[]): Observable<boolean> {
+    const convertedData: { key: IDBValidKey; value: any }[] = data.map(
+      (taskData: TaskInterface) => ({
+        key: taskData._name,
+        value: taskData,
+      }),
+    );
+
+    return this.waitForTurn()
+               .pipe(
+                 switchMap(
+                   () => this.storage.recreateStore(convertedData, this.storeName),
+                 ),
+               );
+  }
+
   private processError(error: any): Observable<never> {
     console.error({error});
 
