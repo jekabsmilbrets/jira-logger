@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 
+import { ReportModeEnum } from 'app/modules/report/enums/report-mode.enum';
+
 import { BehaviorSubject, Observable } from 'rxjs';
 
 import { defaultTaskFilterTags } from '@task/constants/default-tags.constants';
 
-import { ReportModeEnum } from '@task/enums/report-mode.enum';
-import { TaskTagsEnum }   from '@task/enums/task-tags.enum';
+import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
 @Injectable()
 export class ReportService {

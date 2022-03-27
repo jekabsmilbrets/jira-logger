@@ -9,7 +9,6 @@ import { AreYouSureDialogDataInterface } from '@shared/interfaces/are-you-sure-d
              styleUrls: ['./are-you-sure-dialog.component.scss'],
            })
 export class AreYouSureDialogComponent {
-
   constructor(
     private dialogRef: MatDialogRef<AreYouSureDialogComponent, boolean | undefined>,
     @Inject(MAT_DIALOG_DATA) public data: AreYouSureDialogDataInterface,

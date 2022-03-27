@@ -8,7 +8,7 @@ import { take, switchMap, of, throwError } from 'rxjs';
 import { Column }     from '@shared/interfaces/column.interface';
 import { Searchable } from '@shared/interfaces/searchable.interface';
 
-import { TimeLogModalComponent } from '@task/components/time-log-modal/time-log-modal.component';
+import { TimeLogModalComponent } from '@task/components/time-log-list-modal/time-log-modal/time-log-modal.component';
 
 import { columns as timeLogListColumns }  from '@task/constants/time-log-list-columns.constant';
 import { TimeLogListDialogDataInterface } from '@task/interfaces/time-log-list-dialog-data.interface';

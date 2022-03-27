@@ -16,6 +16,7 @@ import { MatIconModule }                                                        
 import { MatInputModule }                                                             from '@angular/material/input';
 import { MatListModule }                                                              from '@angular/material/list';
 import { MatPaginatorModule }                                                         from '@angular/material/paginator';
+import { MatProgressBarModule }                                                       from '@angular/material/progress-bar';
 import { MatSelectModule }                                                            from '@angular/material/select';
 import { MatSidenavModule }                                                           from '@angular/material/sidenav';
 import { MatSlideToggleModule }                                                       from '@angular/material/slide-toggle';
@@ -24,9 +25,12 @@ import { MatTableModule }                                                       
 import { MatToolbarModule }                                                           from '@angular/material/toolbar';
 import { MatTooltipModule }                                                           from '@angular/material/tooltip';
 
+import { ErrorDialogService } from '@shared/services/error-dialog.service';
+
 import { AreYouSureDialogComponent } from './components/are-you-sure-dialog/are-you-sure-dialog.component';
 
-import { TableComponent } from './components/table/table.component';
+import { ErrorDialogComponent } from './components/error-dialog/error-dialog.component';
+import { TableComponent }       from './components/table/table.component';
 
 import { ReadableTimePipe } from './pipes/readable-time.pipe';
 
@@ -52,6 +56,7 @@ import { AreYouSureService } from './services/are-you-sure.service';
               MatListModule,
               MatNativeDateModule,
               MatPaginatorModule,
+              MatProgressBarModule,
               MatSelectModule,
               MatSidenavModule,
               MatSlideToggleModule,
@@ -83,6 +88,7 @@ import { AreYouSureService } from './services/are-you-sure.service';
               MatListModule,
               MatNativeDateModule,
               MatPaginatorModule,
+              MatProgressBarModule,
               MatSelectModule,
               MatSidenavModule,
               MatSlideToggleModule,
@@ -103,9 +109,11 @@ import { AreYouSureService } from './services/are-you-sure.service';
 
               ReadableTimePipe,
               AreYouSureDialogComponent,
+              ErrorDialogComponent,
             ],
             providers: [
               AreYouSureService,
+              ErrorDialogService,
             ],
           })
 export class SharedModule {

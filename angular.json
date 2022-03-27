@@ -60,7 +60,8 @@
                 }
               ],
               "outputHashing": "all",
-              "baseHref": "/jira-logger/"
+              "baseHref": "/jira-logger/",
+              "vendorChunk": true
             },
             "development": {
               "buildOptimizer": false,

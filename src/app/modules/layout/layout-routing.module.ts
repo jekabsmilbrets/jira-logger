@@ -19,6 +19,10 @@ const routes: Routes = [
         loadChildren: () => import('@task/task.module').then(m => m.TaskModule),
       },
       {
+        path: 'report',
+        loadChildren: () => import('@report/report.module').then(m => m.ReportModule),
+      },
+      {
         path: '**',
         component: PageNotFoundComponent,
       },
