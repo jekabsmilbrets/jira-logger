@@ -3,6 +3,7 @@ import { Component } from '@angular/core';
 import { take, switchMap, of } from 'rxjs';
 
 import { TaskInterface } from '@task/interfaces/task.interface';
+import { Task }          from '@task/models/task.model';
 
 import { TasksSettingsService } from '@task/services/tasks-settings.service';
 
@@ -21,8 +22,10 @@ export class TasksMenuComponent {
   }
 
   public onOpenSettingsDialog(): void {
-    this.tasksSettingsService.openDialog()
+    this.tasksService.tasks$
         .pipe(
+          take(1),
+          switchMap((tasks: Task[]) => this.tasksSettingsService.openDialog(tasks)),
           take(1),
           switchMap(
             (result: TaskInterface[] | undefined) => result ?
