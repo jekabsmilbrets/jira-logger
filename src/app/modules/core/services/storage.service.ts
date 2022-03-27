@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 
 // eslint-disable-next-line import/named
-import { createStore, del, entries, get, set, setMany, UseStore }                                 from 'idb-keyval';
-import { from, Observable, BehaviorSubject, filter, take, switchMap, tap, catchError, throwError } from 'rxjs';
+import { createStore, del, entries, get, set, setMany, UseStore }                                           from 'idb-keyval';
+import { from, Observable, BehaviorSubject, filter, take, switchMap, tap, catchError, throwError, of, map } from 'rxjs';
 
 import { DbFailInterface } from '@core/interfaces/db-fail.interface';
 
@@ -241,18 +241,21 @@ export class StorageService {
   public recreateStore(
     data: { key: IDBValidKey; value: any }[],
     customStoreName: string,
-  ) {
+  ): Observable<boolean> {
     if (!this.stores.has(customStoreName)) {
       throw new Error('Invalid store!');
     }
 
     StorageService.createStore(customStoreName);
 
-    return this.waitForTurn()
+    return this.massUpdate(data, customStoreName)
                .pipe(
-                 switchMap(
-                   () => this.massUpdate(data, customStoreName),
-                 ),
+                 take(1),
+                 catchError((error) => {
+                   console.error('Error @ recreateStore ', {error});
+                   return of(false);
+                 }),
+                 map(() => true),
                );
   }
 
