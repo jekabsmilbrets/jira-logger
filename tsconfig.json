@@ -33,6 +33,9 @@
       "@task/*": [
         "app/modules/task/*"
       ],
+      "@report/*": [
+        "app/modules/report/*"
+      ],
       "@layout/*": [
         "app/modules/layout/*"
       ],

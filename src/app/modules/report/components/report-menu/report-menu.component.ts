@@ -2,9 +2,10 @@ import { Component } from '@angular/core';
 
 import { Observable } from 'rxjs';
 
-import { ReportModeEnum } from '@task/enums/report-mode.enum';
-import { TaskTagsEnum }   from '@task/enums/task-tags.enum';
-import { ReportService }  from '@task/services/report.service';
+import { TaskTagsEnum } from '@task/enums/task-tags.enum';
+
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportService }  from '@report/services/report.service';
 
 @Component({
              selector: 'app-report-menu',

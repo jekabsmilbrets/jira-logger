@@ -19,6 +19,9 @@ export class HeaderComponent implements OnDestroy {
   @Input()
   public sidenav!: MatSidenav;
 
+  @Input()
+  public isLoading!: boolean | null;
+
   @ViewChild(DynamicMenuDirective, {static: true})
   private dynamicMenu!: DynamicMenuDirective;
 
@@ -53,7 +56,7 @@ export class HeaderComponent implements OnDestroy {
                  tap(
                    (dynamicMenus: DynamicMenu[]) => {
                      const dynamicMenu: DynamicMenu | undefined = dynamicMenus.find(
-                       (dM: DynamicMenu) => navigationEndEvent.url.includes(dM.data.route),
+                       (dM: DynamicMenu) => navigationEndEvent.urlAfterRedirects.includes(dM.data.route),
                      );
 
                      if (dynamicMenu) {

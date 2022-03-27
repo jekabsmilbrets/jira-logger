@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { ReportService } from './report.service';
+import { ErrorDialogService } from './error-dialog.service';
 
-describe('ReportService', () => {
-  let service: ReportService;
+describe('ErrorDialogService', () => {
+  let service: ErrorDialogService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(ReportService);
+    service = TestBed.inject(ErrorDialogService);
   });
 
   it('should be created', () => {

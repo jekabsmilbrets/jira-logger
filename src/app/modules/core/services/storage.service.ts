@@ -1,19 +1,33 @@
-import { Injectable }                                                      from '@angular/core';
+import { Injectable } from '@angular/core';
+
 // eslint-disable-next-line import/named
-import { createStore, del, entries, get, set, setMany, UseStore }          from 'idb-keyval';
-import { from, Observable, BehaviorSubject, filter, take, switchMap, tap } from 'rxjs';
+import { createStore, del, entries, get, set, setMany, UseStore }                                           from 'idb-keyval';
+import { from, Observable, BehaviorSubject, filter, take, switchMap, tap, catchError, throwError, of, map } from 'rxjs';
+
+import { DbFailInterface } from '@core/interfaces/db-fail.interface';
 
 @Injectable()
 export class StorageService {
   public isLoading$: Observable<boolean>;
+  public isDbFailed$: Observable<DbFailInterface | undefined>;
 
   protected stores: Map<string, UseStore> = new Map<string, UseStore>([]);
 
   private isLoadingSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  private isDbFailedSubject: BehaviorSubject<DbFailInterface | undefined> = new BehaviorSubject<DbFailInterface | undefined>(
+    undefined);
 
   constructor() {
     this.createStores();
     this.isLoading$ = this.isLoadingSubject.asObservable();
+    this.isDbFailed$ = this.isDbFailedSubject.asObservable();
+  }
+
+  private static createStore(name: string): UseStore {
+    const dbName = `${name}-db`;
+    const storeName = `${name}-store`;
+
+    return createStore(dbName, storeName);
   }
 
   public list(
@@ -25,13 +39,24 @@ export class StorageService {
       }
     }
 
+    const request = (csn?: string) => from(
+      entries(
+        this.getUseStore(csn),
+      ),
+    );
+
     return this.waitForTurn()
                .pipe(
                  switchMap(
-                   () => from(
-                     entries(
-                       this.getUseStore(customStoreName),
-                     ),
+                   () => request(customStoreName),
+                 ),
+                 catchError(
+                   (error) => this.reportError(
+                     error,
+                     request,
+                     {
+                       customStoreName,
+                     },
                    ),
                  ),
                  tap(() => this.isLoadingSubject.next(false)),
@@ -48,14 +73,29 @@ export class StorageService {
       }
     }
 
+    const request = (
+      k: IDBValidKey,
+      csn?: string,
+    ) => from(
+      get(
+        k,
+        this.getUseStore(csn),
+      ),
+    );
+
     return this.waitForTurn()
                .pipe(
                  switchMap(
-                   () => from(
-                     get(
+                   () => request(key, customStoreName),
+                 ),
+                 catchError(
+                   (error) => this.reportError(
+                     error,
+                     request,
+                     {
+                       customStoreName,
                        key,
-                       this.getUseStore(customStoreName),
-                     ),
+                     },
                    ),
                  ),
                  tap(() => this.isLoadingSubject.next(false)),
@@ -73,15 +113,32 @@ export class StorageService {
       }
     }
 
+    const request = (
+      k: IDBValidKey,
+      v: any,
+      csn?: string,
+    ) => from(
+      set(
+        k,
+        v,
+        this.getUseStore(csn),
+      ),
+    );
+
     return this.waitForTurn()
                .pipe(
                  switchMap(
-                   () => from(
-                     set(
+                   () => request(key, value, customStoreName),
+                 ),
+                 catchError(
+                   (error) => this.reportError(
+                     error,
+                     request,
+                     {
+                       customStoreName,
                        key,
                        value,
-                       this.getUseStore(customStoreName),
-                     ),
+                     },
                    ),
                  ),
                  tap(() => this.isLoadingSubject.next(false)),
@@ -100,6 +157,12 @@ export class StorageService {
     data: { key: IDBValidKey; value: any }[],
     customStoreName?: string,
   ): Observable<void> {
+    if (customStoreName) {
+      if (!this.stores.has(customStoreName)) {
+        throw new Error('Invalid store!');
+      }
+    }
+
     const dataEntries: [IDBValidKey, any][] = data.map(
       (dataRow: { key: IDBValidKey; value: any }) => [
         dataRow.key,
@@ -107,20 +170,29 @@ export class StorageService {
       ],
     );
 
-    if (customStoreName) {
-      if (!this.stores.has(customStoreName)) {
-        throw new Error('Invalid store!');
-      }
-    }
+    const request = (
+      d: [IDBValidKey, any][],
+      csn?: string,
+    ) => from(
+      setMany(
+        d,
+        this.getUseStore(csn),
+      ),
+    );
 
     return this.waitForTurn()
                .pipe(
                  switchMap(
-                   () => from(
-                     setMany(
+                   () => request(dataEntries, customStoreName),
+                 ),
+                 catchError(
+                   (error) => this.reportError(
+                     error,
+                     request,
+                     {
+                       customStoreName,
                        dataEntries,
-                       this.getUseStore(customStoreName),
-                     ),
+                     },
                    ),
                  ),
                  tap(() => this.isLoadingSubject.next(false)),
@@ -137,22 +209,85 @@ export class StorageService {
       }
     }
 
+    const request = (
+      k: IDBValidKey,
+      csn?: string,
+    ) => from(
+      del(
+        k,
+        this.getUseStore(csn),
+      ),
+    );
+
     return this.waitForTurn()
                .pipe(
                  switchMap(
-                   () => from(
-                     del(
+                   () => request(key, customStoreName),
+                 ),
+                 catchError(
+                   (error) => this.reportError(
+                     error,
+                     request,
+                     {
+                       customStoreName,
                        key,
-                       this.getUseStore(customStoreName),
-                     ),
+                     },
                    ),
                  ),
                  tap(() => this.isLoadingSubject.next(false)),
                );
   }
 
+  public recreateStore(
+    data: { key: IDBValidKey; value: any }[],
+    customStoreName: string,
+  ): Observable<boolean> {
+    if (!this.stores.has(customStoreName)) {
+      throw new Error('Invalid store!');
+    }
+
+    StorageService.createStore(customStoreName);
+
+    return this.massUpdate(data, customStoreName)
+               .pipe(
+                 take(1),
+                 catchError((error) => {
+                   console.error('Error @ recreateStore ', {error});
+                   return of(false);
+                 }),
+                 map(() => true),
+               );
+  }
+
   public listStores(): string[] {
     return Array.from(this.stores.keys());
+  }
+
+  private reportError(
+    error: any,
+    request: (...rArgs: any) => Observable<any>,
+    args: { customStoreName?: string; key?: IDBValidKey; value?: any; dataEntries?: [IDBValidKey, any][] },
+  ): Observable<never> {
+    console.error(
+      {
+        error,
+        request,
+        args,
+      },
+    );
+
+    this.isDbFailedSubject.next(
+      {
+        customStoreName: args.customStoreName,
+        data: {
+          key: args.key,
+          value: args.value,
+          dataEntries: args.dataEntries,
+        },
+      },
+    );
+
+    return throwError(error);
   }
 
   private getUseStore(customStoreName?: string): UseStore | undefined {
@@ -176,7 +311,7 @@ export class StorageService {
     stores.forEach(
       (storeName: string) => this.stores.set(
         storeName,
-        createStore(storeName + '-db', storeName + '-store'),
+        StorageService.createStore(storeName),
       ),
     );
   }
