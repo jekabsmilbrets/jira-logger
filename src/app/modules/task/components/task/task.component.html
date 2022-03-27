@@ -44,6 +44,7 @@
     <mat-card-actions>
       <button (click)="toggleEditMode()"
               *ngIf="!editMode"
+              [disabled]="isLoading"
               aria-label="Edit"
               mat-icon-button
               type="button">
@@ -67,6 +68,7 @@
       </button>
 
       <button (click)="onRemove(task)"
+              [disabled]="isLoading"
               aria-label="Remove"
               color="warn"
               mat-icon-button
@@ -75,6 +77,7 @@
       </button>
 
       <button (click)="onToggleTimeLog(task)"
+              [disabled]="isLoading"
               aria-label="Start Timer"
               color="primary"
               mat-icon-button
@@ -84,6 +87,7 @@
       </button>
 
       <button (click)="onOpenTimeLogsModal(task)"
+              [disabled]="isLoading"
               aria-label="Remove"
               color="warn"
               mat-icon-button

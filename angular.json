@@ -44,8 +44,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kb",
-                  "maximumError": "1mb"
+                  "maximumWarning": "1mb",
+                  "maximumError": "2mb"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -60,7 +60,8 @@
                 }
               ],
               "outputHashing": "all",
-              "baseHref": "/jira-logger/"
+              "baseHref": "/jira-logger/",
+              "vendorChunk": true
             },
             "development": {
               "buildOptimizer": false,

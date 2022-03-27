@@ -1,25 +1,25 @@
 import { formatDate }                   from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute, Params }       from '@angular/router';
+import { ActivatedRoute, ParamMap }     from '@angular/router';
 
 import { Observable, Subscription, take, combineLatest, map, delay } from 'rxjs';
 
 import { DynamicMenu }        from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
-import { Column } from '@shared/interfaces/column.interface';
-
+import { Column }       from '@shared/interfaces/column.interface';
 import { SharedModule } from '@shared/shared.module';
 
-import { ReportMenuComponent }          from '@task/components/report-menu/report-menu.component';
-import { columns as monthModelColumns } from '@task/constants/report-date-range-columns.constant';
-import { columns as totalModelColumns } from '@task/constants/report-total-columns.constant';
-import { ReportModeEnum }               from '@task/enums/report-mode.enum';
-import { TaskTagsEnum }                 from '@task/enums/task-tags.enum';
-import { Task }                         from '@task/models/task.model';
-import { TimeLog }                      from '@task/models/time-log.model';
-import { ReportService }                from '@task/services/report.service';
-import { TasksService }                 from '@task/services/tasks.service';
+import { TaskTagsEnum } from '@task/enums/task-tags.enum';
+import { Task }         from '@task/models/task.model';
+import { TimeLog }      from '@task/models/time-log.model';
+import { TasksService } from '@task/services/tasks.service';
+
+import { ReportMenuComponent }          from '@report/components/report-menu/report-menu.component';
+import { columns as monthModelColumns } from '@report/constants/report-date-range-columns.constant';
+import { columns as totalModelColumns } from '@report/constants/report-total-columns.constant';
+import { ReportModeEnum }               from '@report/enums/report-mode.enum';
+import { ReportService }                from '@report/services/report.service';
 
 @Component({
              selector: 'app-report-view',
@@ -44,13 +44,20 @@ export class ReportViewComponent implements OnInit, OnDestroy {
     private activatedRoute: ActivatedRoute,
   ) {
     this.subscriptions.push(
-      this.activatedRoute.params
+      this.activatedRoute.paramMap
           .pipe()
           .subscribe(
-            (params: Params) => {
-              const reportMode = params['reportMode'];
-              if (reportMode) {
-                this.reportService.reportMode = ReportModeEnum[reportMode as keyof typeof ReportModeEnum];
+            (params: ParamMap) => {
+              // @ts-ignore
+
+              if (params.has('reportMode')) {
+                const reportMode = params.get('reportMode') as string;
+
+                if (reportMode in ReportModeEnum) {
+                  this.reportService.reportMode = ReportModeEnum[reportMode as keyof typeof ReportModeEnum];
+                } else {
+                  this.reportService.reportMode = ReportModeEnum.total;
+                }
               }
             },
           ),
@@ -166,7 +173,7 @@ export class ReportViewComponent implements OnInit, OnDestroy {
       new DynamicMenu(
         ReportMenuComponent,
         {
-          route: '/tasks/report',
+          route: '/report',
           providers: [
             {
               provide: ReportService,

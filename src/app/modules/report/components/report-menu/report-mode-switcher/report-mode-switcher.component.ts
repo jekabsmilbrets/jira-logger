@@ -1,7 +1,7 @@
 import { Component, Output, EventEmitter, Input } from '@angular/core';
 import { FormControl }                            from '@angular/forms';
 
-import { ReportModeEnum } from '@task/enums/report-mode.enum';
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
 
 @Component({
              selector: 'app-report-mode-switcher',

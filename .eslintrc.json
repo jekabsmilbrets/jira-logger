@@ -77,6 +77,11 @@
                 "position": "after"
               },
               {
+                "pattern": "@report/**",
+                "group": "external",
+                "position": "after"
+              },
+              {
                 "pattern": "@layout/**",
                 "group": "external",
                 "position": "after"

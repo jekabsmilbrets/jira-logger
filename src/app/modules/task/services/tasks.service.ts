@@ -1,8 +1,12 @@
 import { Injectable } from '@angular/core';
 
-import { BehaviorSubject, map, Observable, of, switchMap, take, tap, catchError, throwError, from, concatAll, toArray } from 'rxjs';
+import {
+  BehaviorSubject, map, Observable, of, switchMap, take, tap, catchError, throwError, from, concatAll, toArray, filter,
+} from 'rxjs';
 
 import { StorageService } from '@core/services/storage.service';
+
+import { ErrorDialogService } from '@shared/services/error-dialog.service';
 
 import { adaptTask } from '@task/adapters/task.adapter';
 
@@ -11,6 +15,7 @@ import { Task }          from '@task/models/task.model';
 
 @Injectable()
 export class TasksService {
+  public isLoading$: Observable<boolean>;
   public tasks$: Observable<Task[]>;
 
   private tasksSubject: BehaviorSubject<Task[]> = new BehaviorSubject<Task[]>([]);
@@ -18,20 +23,20 @@ export class TasksService {
 
   constructor(
     private storage: StorageService,
+    private errorDialogService: ErrorDialogService,
   ) {
     this.tasks$ = this.tasksSubject.asObservable();
-  }
-
-  private static processError(error: any): Observable<never> {
-    console.error({error});
-    return throwError(error);
+    this.isLoading$ = this.storage.isLoading$;
   }
 
   public list(): Observable<Task[]> {
-    return this.storage.list(this.storeName)
+    return this.waitForTurn()
                .pipe(
+                 switchMap(
+                   () => this.storage.list(this.storeName),
+                 ),
                  take(1),
-                 catchError((error) => TasksService.processError(error)),
+                 catchError((error) => this.processError(error)),
                  map(
                    (tasksData) => tasksData
                      .map(
@@ -46,30 +51,39 @@ export class TasksService {
   }
 
   public create(task: Task, skipReload: boolean = false): Observable<Task> {
-    return this.storage.create(task.name, task, this.storeName)
+    return this.waitForTurn()
                .pipe(
+                 switchMap(
+                   () => this.storage.create(task.name, task, this.storeName),
+                 ),
                  take(1),
-                 catchError((error) => TasksService.processError(error)),
+                 catchError((error) => this.processError(error)),
                  switchMap(() => this.reloadList(skipReload)),
                  map((tasks: Task[]) => this.findTask(tasks, task)),
                );
   }
 
   public update(task: Task, skipReload: boolean = false): Observable<Task> {
-    return this.storage.update(task.name, task, this.storeName)
+    return this.waitForTurn()
                .pipe(
+                 switchMap(
+                   () => this.storage.update(task.name, task, this.storeName),
+                 ),
                  take(1),
-                 catchError((error) => TasksService.processError(error)),
+                 catchError((error) => this.processError(error)),
                  switchMap(() => this.reloadList(skipReload)),
                  map((tasks: Task[]) => this.findTask(tasks, task)),
                );
   }
 
   public delete(task: Task): Observable<void> {
-    return this.storage.delete(task.name, this.storeName)
+    return this.waitForTurn()
                .pipe(
+                 switchMap(
+                   () => this.storage.delete(task.name, this.storeName),
+                 ),
                  take(1),
-                 catchError((error) => TasksService.processError(error)),
+                 catchError((error) => this.processError(error)),
                  switchMap(
                    () => this.list().pipe(take(1)),
                  ),
@@ -78,8 +92,11 @@ export class TasksService {
   }
 
   public stopAllTaskWorkLogs(ignoreTask: Task): Observable<undefined | Task[]> {
-    return this.tasks$
+    return this.waitForTurn()
                .pipe(
+                 switchMap(
+                   () => this.tasks$,
+                 ),
                  take(1),
                  switchMap(
                    (tasks: Task[]) => {
@@ -100,9 +117,53 @@ export class TasksService {
                        );
                    },
                  ),
-                 catchError((error) => TasksService.processError(error)),
+                 catchError((error) => this.processError(error)),
                );
 
+  }
+
+  public importData(data: TaskInterface[]): Observable<boolean> {
+    const convertedData: { key: IDBValidKey; value: any }[] = data.map(
+      (taskData: TaskInterface) => ({
+        key: taskData._name,
+        value: taskData,
+      }),
+    );
+
+    return this.waitForTurn()
+               .pipe(
+                 switchMap(
+                   () => this.storage.recreateStore(convertedData, this.storeName),
+                 ),
+               );
+  }
+
+  private processError(error: any): Observable<never> {
+    console.error({error});
+
+    return this.tasks$
+               .pipe(
+                 take(1),
+                 switchMap(
+                   (tasks: Task[]) => this.errorDialogService.openDialog(
+                     {
+                       errorTitle: 'Error while doing db action :D',
+                       errorMessage: JSON.stringify(error),
+                       idbData: tasks,
+                     },
+                   ),
+                 ),
+                 take(1),
+                 switchMap(() => throwError(error)),
+               );
+  }
+
+  private waitForTurn(): Observable<boolean> {
+    return this.storage.isLoading$
+               .pipe(
+                 filter((isLoading) => !isLoading),
+                 take(1),
+               );
   }
 
   private reloadList(skipReload: boolean = false): Observable<Task[]> {

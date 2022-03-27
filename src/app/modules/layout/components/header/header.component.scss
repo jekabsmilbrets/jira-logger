@@ -1,19 +1,26 @@
-.app-toolbar {
-  a.app-name {
-    margin-left: 8px;
-    text-decoration: none;
-    cursor: pointer;
-    font: 500 20px/32px Roboto, "Helvetica Neue", sans-serif;
-    letter-spacing: normal;
-    color: white;
+:host {
+  .app-toolbar {
+    a.app-name {
+      margin-left: 8px;
+      cursor: pointer;
+      color: white;
+      text-decoration: none;
+      font: 500 20px/32px Roboto, "Helvetica Neue", sans-serif;
+      letter-spacing: normal;
 
-    &:hover,
-    &:active {
-      color: rgba(255, 255, 255, 0.85);
+      &:hover,
+      &:active {
+        color: rgba(255, 255, 255, 0.85);
+      }
+    }
+
+    .spacer {
+      flex: 1 1 auto;
     }
   }
 
-  .spacer {
-    flex: 1 1 auto;
+  ::ng-deep .mat-progress-bar {
+    z-index: 100;
+    margin-bottom: -4px;
   }
 }
