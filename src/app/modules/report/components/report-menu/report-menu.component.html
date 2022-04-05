@@ -1,15 +1,34 @@
-<app-report-show-weekends (showWeekendsChange)="onShowWeekendsChange($event)"
-                          [showWeekends]="showWeekends$ | async"></app-report-show-weekends>
+<ng-container *ngIf="(isSmallerThanDesktop$ | async) === false; else smallScreen">
+  <ng-template [ngTemplateOutlet]="menuItems"></ng-template>
+</ng-container>
 
-<app-report-date-selector (endDateChange)="onEndDateChange($event)"
-                          (startDateChange)="onStartDateChange($event)"
-                          *ngIf="(reportMode$ | async) === 'dateRange'"
-                          [endDate]="endDate$ | async"
-                          [reportMode]="reportMode$ | async"
-                          [startDate]="startDate$ | async"></app-report-date-selector>
+<ng-template #smallScreen>
+  <button (click)="onSmallScreenMenuToggle()"
+          mat-icon-button>
+    <mat-icon>list</mat-icon>
+  </button>
+</ng-template>
 
-<app-report-tag-filter (tagChange)="onTagChange($event)"
-                       [tags]="tags$ | async"></app-report-tag-filter>
+<ng-template #menuItems>
+  <app-report-show-weekends (showWeekendsChange)="onShowWeekendsChange($event)"
+                            [showWeekends]="showWeekends$ | async"></app-report-show-weekends>
 
-<app-report-mode-switcher (reportModeChange)="onReportModeChange($event)"
-                          [reportMode]="reportMode$ | async"></app-report-mode-switcher>
+  <app-report-date-selector (endDateChange)="onEndDateChange($event)"
+                            (startDateChange)="onStartDateChange($event)"
+                            *ngIf="(reportMode$ | async) === 'dateRange'"
+                            [endDate]="endDate$ | async"
+                            [reportMode]="reportMode$ | async"
+                            [startDate]="startDate$ | async"></app-report-date-selector>
+
+  <app-report-tag-filter (tagChange)="onTagChange($event)"
+                         [tags]="tags$ | async"></app-report-tag-filter>
+
+  <app-report-mode-switcher (reportModeChange)="onReportModeChange($event)"
+                            [reportMode]="reportMode$ | async"></app-report-mode-switcher>
+</ng-template>
+
+<ng-template #smallScreenDialog>
+  <div class="report-menu-dialog">
+    <ng-template [ngTemplateOutlet]="menuItems"></ng-template>
+  </div>
+</ng-template>

@@ -1,5 +1,6 @@
 import { NgxMatNativeDateModule, NgxMatTimepickerModule, NgxMatDatetimePickerModule } from '@angular-material-components/datetime-picker';
 import { ClipboardModule }                                                            from '@angular/cdk/clipboard';
+import { LayoutModule }                                                               from '@angular/cdk/layout';
 import { CdkTableModule }                                                             from '@angular/cdk/table';
 import { CommonModule }                                                               from '@angular/common';
 import { NgModule }                                                                   from '@angular/core';
@@ -42,6 +43,7 @@ import { ErrorDialogService } from '@shared/services/error-dialog.service';
               CommonModule,
 
               CdkTableModule,
+              LayoutModule,
 
               ClipboardModule,
 
@@ -76,6 +78,7 @@ import { ErrorDialogService } from '@shared/services/error-dialog.service';
               CommonModule,
 
               CdkTableModule,
+              LayoutModule,
 
               ClipboardModule,
 
