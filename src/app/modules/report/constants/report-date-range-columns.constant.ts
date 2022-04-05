@@ -28,4 +28,12 @@ export const columns: Column[] = [
     visible: true,
     cell: (task: Task) => (columnValue(task, 'tags') as string[]).join(', '),
   },
+  {
+    columnDef: 'lastTimeLogStartTime',
+    header: 'Last reported',
+    sortable: true,
+    visible: true,
+    pipe: 'date',
+    cell: (task: Task) => columnValue(task, 'lastTimeLogStartTime'),
+  },
 ];
