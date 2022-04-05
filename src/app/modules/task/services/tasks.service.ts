@@ -54,7 +54,7 @@ export class TasksService {
     return this.waitForTurn()
                .pipe(
                  switchMap(
-                   () => this.storage.create(task.name, task, this.storeName),
+                   () => this.storage.create(task.uuid, task, this.storeName),
                  ),
                  take(1),
                  catchError((error) => this.processError(error)),
@@ -67,7 +67,7 @@ export class TasksService {
     return this.waitForTurn()
                .pipe(
                  switchMap(
-                   () => this.storage.update(task.name, task, this.storeName),
+                   () => this.storage.update(task.uuid, task, this.storeName),
                  ),
                  take(1),
                  catchError((error) => this.processError(error)),
@@ -80,7 +80,7 @@ export class TasksService {
     return this.waitForTurn()
                .pipe(
                  switchMap(
-                   () => this.storage.delete(task.name, this.storeName),
+                   () => this.storage.delete(task.uuid, this.storeName),
                  ),
                  take(1),
                  catchError((error) => this.processError(error)),
@@ -125,7 +125,7 @@ export class TasksService {
   public importData(data: TaskInterface[]): Observable<boolean> {
     const convertedData: { key: IDBValidKey; value: any }[] = data.map(
       (taskData: TaskInterface) => ({
-        key: taskData._name,
+        key: taskData._uuid,
         value: taskData,
       }),
     );

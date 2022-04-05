@@ -1,0 +1,13 @@
+.report-menu-dialog {
+  display: flex;
+  flex-direction: column;
+
+  > * + * {
+    margin-top: 8px;
+    width: 100%;
+
+    .mat-form-field {
+      width: 100%;
+    }
+  }
+}

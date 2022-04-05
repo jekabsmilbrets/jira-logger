@@ -40,6 +40,10 @@ registerLocaleData(lv);
                 provide: LOCALE_ID,
                 useValue: 'lv-LV',
               },
+              {
+                provide: Window,
+                useValue: window,
+              },
             ],
             bootstrap: [AppComponent],
           })
