@@ -6,6 +6,10 @@ import { SharedModule } from '@shared/shared.module';
 import { TasksService } from '@task/services/tasks.service';
 
 import { ReportDateSelectorComponent } from '@report/components/report-menu/report-date-selector/report-date-selector.component';
+import {
+  ReportHideUnreportedTasksComponent,
+// eslint-disable-next-line max-len
+}                                      from '@report/components/report-menu/report-hide-unreported-tasks/report-hide-unreported-tasks.component';
 import { ReportMenuComponent }         from '@report/components/report-menu/report-menu.component';
 import { ReportModeSwitcherComponent } from '@report/components/report-menu/report-mode-switcher/report-mode-switcher.component';
 import { ReportShowWeekendsComponent } from '@report/components/report-menu/report-show-weekends/report-show-weekends.component';
@@ -23,6 +27,7 @@ import { ReportViewComponent }         from '@report/views/report/report-view.co
               ReportTagFilterComponent,
               ReportDateSelectorComponent,
               ReportShowWeekendsComponent,
+              ReportHideUnreportedTasksComponent,
             ],
             imports: [
               ReactiveFormsModule,

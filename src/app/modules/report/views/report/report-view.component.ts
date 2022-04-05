@@ -64,6 +64,10 @@ export class ReportViewComponent implements OnInit, OnDestroy {
     );
   }
 
+  private static filterTaskByDateRangeNReportedTime(task: Task, sDate: Date, eDate: Date, minReportedTime = 0): boolean {
+    return task.calcTimeLoggedForDateRange(sDate, eDate) > minReportedTime;
+  }
+
   public ngOnInit(): void {
     this.createDynamicMenu();
 
@@ -75,6 +79,7 @@ export class ReportViewComponent implements OnInit, OnDestroy {
         this.reportService.endDate$,
         this.reportService.reportMode$,
         this.reportService.showWeekends$,
+        this.reportService.hideUnreportedTasks$,
       ],
     )
       .pipe(
@@ -87,8 +92,9 @@ export class ReportViewComponent implements OnInit, OnDestroy {
              endDate,
              reportMode,
              showWeekends,
-           ]: [Task[], TaskTagsEnum[], Date, Date, ReportModeEnum, boolean]) => this.filterTasks(
-            reportMode, tasks, tags, startDate, endDate, showWeekends,
+             hideUnreportedTasks,
+           ]: [Task[], TaskTagsEnum[], Date, Date, ReportModeEnum, boolean, boolean]) => this.filterTasks(
+            reportMode, tasks, tags, startDate, endDate, showWeekends, hideUnreportedTasks,
           ),
         ),
       );
@@ -111,6 +117,7 @@ export class ReportViewComponent implements OnInit, OnDestroy {
     startDate: Date,
     endDate: Date,
     showWeekends: boolean,
+    hideUnreportedTasks: boolean,
   ): Task[] {
     tasks = [...tasks];
 
@@ -131,6 +138,13 @@ export class ReportViewComponent implements OnInit, OnDestroy {
 
         this.tableColumns[reportMode] = this.generateMonthColumns(startDate, endDate, showWeekends);
         break;
+    }
+
+    if (hideUnreportedTasks) {
+      tasks = tasks
+        .filter(
+          (task: Task) => ReportViewComponent.filterTaskByDateRangeNReportedTime(task, startDate, endDate, 0),
+        );
     }
 
     this.columns = this.tableColumns[reportMode];
