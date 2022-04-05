@@ -10,6 +10,9 @@
 </ng-template>
 
 <ng-template #menuItems>
+  <app-report-hide-unreported-tasks (hideUnreportedTasksChange)="onHideUnreportedTasksChange($event)"
+                                    [hideUnreportedTasks]="hideUnreportedTasks$ | async"></app-report-hide-unreported-tasks>
+
   <app-report-show-weekends (showWeekendsChange)="onShowWeekendsChange($event)"
                             [showWeekends]="showWeekends$ | async"></app-report-show-weekends>
 

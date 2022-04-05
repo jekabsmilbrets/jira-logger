@@ -20,9 +20,10 @@ export class ReportMenuComponent {
   public startDate$: Observable<Date>;
   public endDate$: Observable<Date>;
   public showWeekends$: Observable<boolean>;
+  public hideUnreportedTasks$: Observable<boolean>;
   public isSmallerThanDesktop$: Observable<boolean>;
 
-  private readonly smallerThanDesktopBreakpoint = '(max-width: 1023px)';
+  private readonly smallerThanDesktopBreakpoint = '(max-width: 1300px)';
 
   @ViewChild('smallScreenDialog')
   private dialogTemplate!: TemplateRef<any>;
@@ -37,6 +38,7 @@ export class ReportMenuComponent {
     this.startDate$ = this.reportService.startDate$;
     this.endDate$ = this.reportService.endDate$;
     this.showWeekends$ = this.reportService.showWeekends$;
+    this.hideUnreportedTasks$ = this.reportService.hideUnreportedTasks$;
     this.isSmallerThanDesktop$ = this.observer.observe(
                                        this.smallerThanDesktopBreakpoint,
                                      )
@@ -68,6 +70,10 @@ export class ReportMenuComponent {
 
   public onShowWeekendsChange(showWeekends: boolean): void {
     this.reportService.showWeekends = showWeekends;
+  }
+
+  public onHideUnreportedTasksChange(hideUnreportedTasks: boolean): void {
+    this.reportService.hideUnreportedTasks = hideUnreportedTasks;
   }
 
   public onSmallScreenMenuToggle(): void {
