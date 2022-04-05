@@ -100,6 +100,17 @@ export class Task implements Searchable {
     this._tags = value;
   }
 
+  public get lastTimeLogStartTime(): Date | null {
+    const mapDateTime = (timeLogs: TimeLog[]): number[] => timeLogs
+      .map(
+        (l: TimeLog) => l.startTime.getTime(),
+      );
+
+    const lastStartTime = Math.max(...mapDateTime(this.timeLogs), -1);
+
+    return lastStartTime > -1 ? new Date(lastStartTime) : null;
+  }
+
   public startTimeLog(description?: string): string {
     if (this.lastTimeLogId) {
       throw new Error(`There is running Time Log already with ID "${this.lastTimeLogId}"!`);

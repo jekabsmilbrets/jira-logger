@@ -19,7 +19,13 @@
                   *cdkCellDef="let row"
                   [ngClass]="{'mat-cell-clickable': column.isClickable}">
           <ng-container *ngIf="column.pipe">
-            <span *ngIf="column.pipe === 'readableTime'">{{ column.cell(row) | readableTime }}</span>
+            <span *ngIf="column.pipe === 'readableTime'">
+              {{ column.cell(row) | readableTime }}
+            </span>
+
+            <span *ngIf="column.pipe === 'date'">
+              {{ column.cell(row) | date: 'yyyy-MM-dd' }}
+            </span>
           </ng-container>
 
           <span *ngIf="!column.pipe">{{ column.cell(row) }}</span>
@@ -28,8 +34,9 @@
         <ng-container *ngIf="enableFooter">
           <mat-footer-cell *cdkFooterCellDef>
             <ng-container *ngIf="column.pipe">
-            <span
-              *ngIf="column.pipe === 'readableTime'">{{ (column.hasFooter ? column.footerCell(dataSource.data) : '') | readableTime }}</span>
+              <span *ngIf="column.pipe === 'readableTime'">
+                {{ (column.hasFooter ? column.footerCell(dataSource.data) : '') | readableTime }}
+              </span>
             </ng-container>
 
             <span *ngIf="!column.pipe">{{ column.hasFooter ? column.footerCell(dataSource.data) : '' }}</span>
