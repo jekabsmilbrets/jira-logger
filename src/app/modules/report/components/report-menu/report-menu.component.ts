@@ -42,7 +42,10 @@ export class ReportMenuComponent {
                                      )
                                      .pipe(
                                        map(
-                                         (results: BreakpointState) => results.matches && results.breakpoints[this.smallerThanDesktopBreakpoint],
+                                         (results: BreakpointState) => (
+                                           results.matches &&
+                                           results.breakpoints[this.smallerThanDesktopBreakpoint]
+                                         ),
                                        ),
                                      );
   }
