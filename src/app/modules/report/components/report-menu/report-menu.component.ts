@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
+import { Component, ViewChild, TemplateRef }   from '@angular/core';
+import { MatDialog }                           from '@angular/material/dialog';
 
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 
@@ -18,15 +20,31 @@ export class ReportMenuComponent {
   public startDate$: Observable<Date>;
   public endDate$: Observable<Date>;
   public showWeekends$: Observable<boolean>;
+  public isSmallerThanDesktop$: Observable<boolean>;
+
+  private readonly smallerThanDesktopBreakpoint = '(max-width: 1023px)';
+
+  @ViewChild('smallScreenDialog')
+  private dialogTemplate!: TemplateRef<any>;
 
   constructor(
+    private readonly dialog: MatDialog,
     private reportService: ReportService,
+    private observer: BreakpointObserver,
   ) {
     this.reportMode$ = this.reportService.reportMode$;
     this.tags$ = this.reportService.tags$;
     this.startDate$ = this.reportService.startDate$;
     this.endDate$ = this.reportService.endDate$;
     this.showWeekends$ = this.reportService.showWeekends$;
+    this.isSmallerThanDesktop$ = this.observer.observe(
+                                       this.smallerThanDesktopBreakpoint,
+                                     )
+                                     .pipe(
+                                       map(
+                                         (results: BreakpointState) => results.matches && results.breakpoints[this.smallerThanDesktopBreakpoint],
+                                       ),
+                                     );
   }
 
   public onReportModeChange(value: ReportModeEnum): void {
@@ -47,5 +65,9 @@ export class ReportMenuComponent {
 
   public onShowWeekendsChange(showWeekends: boolean): void {
     this.reportService.showWeekends = showWeekends;
+  }
+
+  public onSmallScreenMenuToggle(): void {
+    this.dialog.open(this.dialogTemplate);
   }
 }
