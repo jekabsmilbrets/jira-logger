@@ -1,6 +1,6 @@
 {
   "name": "jira-logger",
-  "version": "0.0.1a",
+  "version": "0.1.1-b",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
