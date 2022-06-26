@@ -1,5 +1,7 @@
+import { Clipboard }                    from '@angular/cdk/clipboard';
 import { formatDate }                   from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { MatSnackBar }                  from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap }     from '@angular/router';
 
 import { Observable, Subscription, take, combineLatest, map, delay } from 'rxjs';
@@ -7,8 +9,10 @@ import { Observable, Subscription, take, combineLatest, map, delay } from 'rxjs'
 import { DynamicMenu }        from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
-import { Column }       from '@shared/interfaces/column.interface';
-import { SharedModule } from '@shared/shared.module';
+import { Column }           from '@shared/interfaces/column.interface';
+import { Searchable }       from '@shared/interfaces/searchable.interface';
+import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
+import { SharedModule }     from '@shared/shared.module';
 
 import { TaskTagsEnum } from '@task/enums/task-tags.enum';
 import { Task }         from '@task/models/task.model';
@@ -42,6 +46,8 @@ export class ReportViewComponent implements OnInit, OnDestroy {
     private dynamicMenuService: DynamicMenuService,
     private reportService: ReportService,
     private activatedRoute: ActivatedRoute,
+    private clipboard: Clipboard,
+    private snackBar: MatSnackBar,
   ) {
     this.subscriptions.push(
       this.activatedRoute.paramMap
@@ -108,6 +114,22 @@ export class ReportViewComponent implements OnInit, OnDestroy {
 
   public ngOnDestroy(): void {
     this.subscriptions.forEach((sub: Subscription) => sub.unsubscribe());
+  }
+
+  public onCellClick([row, column]: [Searchable, Column]): void {
+    const task = row as Task;
+    const timeLogged: number = column.cell(task);
+    const readableTimePipe = new ReadableTimePipe();
+    const transformedLoggedTime = readableTimePipe.transform(timeLogged);
+
+    this.clipboard.copy(transformedLoggedTime);
+    this.snackBar.open(
+      `Copied Task ${task.name} logged time to clipboard "${transformedLoggedTime}"!`,
+      undefined,
+      {
+        duration: 5000,
+      },
+    );
   }
 
   private filterTasks(
@@ -222,6 +244,7 @@ export class ReportViewComponent implements OnInit, OnDestroy {
                      6,
                    ].includes(currentDate2.getDay())),
           pipe: 'readableTime',
+          isClickable: true,
           cell: (task: Task) => task.calcTimeLoggedForDate(currentDate2),
           hasFooter: true,
           footerCell: (tasks: Task[]) => tasks.map(
@@ -241,6 +264,7 @@ export class ReportViewComponent implements OnInit, OnDestroy {
         sortable: false,
         stickyEnd: true,
         visible: true,
+        isClickable: true,
         pipe: 'readableTime',
         cell: (task: Task) => task.calcTimeLoggedForDateRange(startDate, endDate),
         hasFooter: true,
