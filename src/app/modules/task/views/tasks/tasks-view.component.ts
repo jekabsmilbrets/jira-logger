@@ -1,5 +1,5 @@
 import { Component, OnInit }                                   from '@angular/core';
-import { AbstractControl, FormControl, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, Validators, FormGroup, FormControl } from '@angular/forms';
 
 import { iif, Observable, of, switchMap, take } from 'rxjs';
 
@@ -21,6 +21,7 @@ import { TimeLog }              from '@task/models/time-log.model';
 import { TasksSettingsService } from '@task/services/tasks-settings.service';
 import { TasksService }         from '@task/services/tasks.service';
 
+
 @Component({
              selector: 'app-tasks-view',
              templateUrl: './tasks-view.component.html',
@@ -30,10 +31,18 @@ export class TasksViewComponent implements OnInit {
   public tasks$: Observable<Task[]>;
   public isLoading$: Observable<boolean>;
 
-  public createTaskForm: FormGroup = new FormGroup(
+  public createTaskForm: FormGroup<{
+    name: FormControl<string | null>;
+    description: FormControl<string | null>;
+    tags: FormControl<TaskTagsEnum[] | null>;
+  }> = new FormGroup<{
+    name: FormControl<string | null>;
+    description: FormControl<string | null>;
+    tags: FormControl<TaskTagsEnum[] | null>;
+  }>(
     {
-      name: new FormControl(
-        undefined,
+      name: new FormControl<string | null>(
+        null,
         [Validators.required],
         [
           (control: AbstractControl) => this.tasks$
@@ -45,6 +54,7 @@ export class TasksViewComponent implements OnInit {
 
                                                   if (tasks.find(
                                                     (task) => task.name === value)) {
+                                                    // eslint-disable-next-line @typescript-eslint/naming-convention
                                                     return of({'duplicate-task': true});
                                                   }
 
@@ -54,8 +64,8 @@ export class TasksViewComponent implements OnInit {
                                             ),
         ],
       ),
-      description: new FormControl(),
-      tags: new FormControl([TaskTagsEnum.capex]),
+      description: new FormControl<string | null>(null),
+      tags: new FormControl<TaskTagsEnum[] | null>([TaskTagsEnum.capex]),
     },
   );
 
@@ -86,11 +96,7 @@ export class TasksViewComponent implements OnInit {
 
   public createTask(): void {
     const task = new Task(
-      {
-        name: this.createTaskForm.get('name')?.value,
-        description: this.createTaskForm.get('description')?.value,
-        tags: this.createTaskForm.get('tags')?.value,
-      },
+      this.createTaskForm.getRawValue() as Partial<Task>,
     );
 
     this.tasksService.create(task)

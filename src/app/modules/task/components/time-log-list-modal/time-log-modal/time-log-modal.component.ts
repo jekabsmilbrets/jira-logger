@@ -12,11 +12,19 @@ import { TimeLogModalResponseInterface } from '@task/interfaces/time-log-modal-r
            })
 export class TimeLogModalComponent implements OnInit {
 
-  public formGroup: FormGroup = new FormGroup(
+  public formGroup: FormGroup<{
+    startTime: FormControl<Date | null>;
+    endTime: FormControl<Date | null>;
+    description: FormControl<string | null>;
+  }> = new FormGroup<{
+    startTime: FormControl<Date | null>;
+    endTime: FormControl<Date | null>;
+    description: FormControl<string | null>;
+  }>(
     {
-      startTime: new FormControl(),
-      endTime: new FormControl(),
-      description: new FormControl(),
+      startTime: new FormControl<Date | null>(null),
+      endTime: new FormControl<Date | null>(null),
+      description: new FormControl<string | null>(null),
     },
   );
 
@@ -47,7 +55,7 @@ export class TimeLogModalComponent implements OnInit {
   public onSave(): void {
     const formData = this.formGroup.getRawValue();
     if (formData.endTime === undefined || formData.endTime === new Date(0)) {
-      delete formData.endTime;
+      formData.endTime = null;
     }
 
     this.dialogRef.close(

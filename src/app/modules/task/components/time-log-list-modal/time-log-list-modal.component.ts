@@ -24,7 +24,7 @@ import { TimeLog }                        from '@task/models/time-log.model';
 export class TimeLogListModalComponent {
   public columns: Column[] = timeLogListColumns;
 
-  public formControl: FormControl = new FormControl(new Date());
+  public formControl = new FormControl<Date | null>(new Date());
 
   @ViewChild('picker')
   public picker!: MatDatepicker<Date>;
