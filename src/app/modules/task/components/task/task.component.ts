@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output }      from '@angular/core';
-import { FormControl, FormGroup, Validators, AbstractControl } from '@angular/forms';
+import { Validators, AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { MatDialog, MatDialogRef }                             from '@angular/material/dialog';
 
 import { Observable, take, switchMap, of, throwError } from 'rxjs';
@@ -41,10 +41,18 @@ export class TaskComponent implements OnInit {
 
   public editMode = false;
 
-  public formGroup: FormGroup = new FormGroup(
+  public formGroup: FormGroup<{
+    name: FormControl<string | null>;
+    description: FormControl<string | null>;
+    tags: FormControl<TaskTagsEnum[] | null>;
+  }> = new FormGroup<{
+    name: FormControl<string | null>;
+    description: FormControl<string | null>;
+    tags: FormControl<TaskTagsEnum[] | null>;
+  }>(
     {
-      name: new FormControl(
-        undefined,
+      name: new FormControl<string | null>(
+        null,
         [Validators.required],
         [
           (control: AbstractControl) => this.tasks$
@@ -59,6 +67,7 @@ export class TaskComponent implements OnInit {
                                                       (task: Task) => task.name === value && this.task.uuid !== task.uuid,
                                                     )
                                                   ) {
+                                                    // eslint-disable-next-line @typescript-eslint/naming-convention
                                                     return of({'duplicate-task': true});
                                                   }
 
@@ -68,8 +77,8 @@ export class TaskComponent implements OnInit {
                                             ),
         ],
       ),
-      description: new FormControl(),
-      tags: new FormControl([TaskTagsEnum.opex]),
+      description: new FormControl<string | null>(null),
+      tags: new FormControl<TaskTagsEnum[]>([TaskTagsEnum.opex]),
     },
   );
 
@@ -101,9 +110,7 @@ export class TaskComponent implements OnInit {
   }
 
   public onUpdate(task: Task): void {
-    task.name = this.formGroup.get('name')?.value;
-    task.description = this.formGroup.get('description')?.value;
-    task.tags = this.formGroup.get('tags')?.value ?? [];
+    Object.assign(task, this.formGroup.getRawValue() as Partial<Task>);
     task.updateTimeLogged();
 
     this.update.emit(

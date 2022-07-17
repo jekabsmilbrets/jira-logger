@@ -1,5 +1,5 @@
 import { Component, Inject }                  from '@angular/core';
-import { FormControl, Validators, FormGroup } from '@angular/forms';
+import { Validators, FormGroup, FormControl } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA }      from '@angular/material/dialog';
 
 import { validateTasksInterfaceData } from '@task/data-validators/task-interface.validator';
@@ -13,9 +13,9 @@ import { TasksSettingsDialogDataInterface } from '@task/interfaces/tasks-setting
              styleUrls: ['./tasks-settings-dialog.component.scss'],
            })
 export class TasksSettingsDialogComponent {
-  public formGroup: FormGroup = new FormGroup(
+  public formGroup: FormGroup<{ json: FormControl<string | null> }> = new FormGroup<{ json: FormControl<string | null> }>(
     {
-      json: new FormControl(undefined, Validators.required),
+      json: new FormControl<string | null>(null, Validators.required),
     },
   );
   public showCurrent = false;
@@ -40,7 +40,7 @@ export class TasksSettingsDialogComponent {
     try {
       data = validateTasksInterfaceData(
         JSON.parse(
-          this.formGroup.getRawValue().json,
+          this.formGroup.getRawValue().json as string,
         ),
       );
 
