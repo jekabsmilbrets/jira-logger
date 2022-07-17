@@ -10,8 +10,8 @@ import { ReportModeEnum } from '@report/enums/report-mode.enum';
              styleUrls: ['./report-date-selector.component.scss'],
            })
 export class ReportDateSelectorComponent {
-  public startDateFormControl: FormControl = new FormControl(new Date());
-  public endDateFormControl: FormControl = new FormControl(new Date());
+  public startDateFormControl: FormControl<Date | null> = new FormControl<Date | null>(new Date());
+  public endDateFormControl: FormControl<Date | null> = new FormControl<Date | null>(new Date());
 
   @Input()
   public reportMode!: ReportModeEnum | null;
