@@ -29,7 +29,7 @@ export class ReportTagFilterComponent {
     },
   ];
 
-  public tagFormControl: FormControl = new FormControl(defaultTaskFilterTags);
+  public tagFormControl: FormControl<TaskTagsEnum[] | null> = new FormControl<TaskTagsEnum[] | null>(defaultTaskFilterTags);
 
   @Output()
   public tagChange: EventEmitter<TaskTagsEnum[]> = new EventEmitter<TaskTagsEnum[]>();
