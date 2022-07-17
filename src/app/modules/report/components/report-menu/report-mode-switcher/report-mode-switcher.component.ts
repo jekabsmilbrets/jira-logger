@@ -23,7 +23,7 @@ export class ReportModeSwitcherComponent {
     },
   ];
 
-  public reportModeFormControl: FormControl = new FormControl(ReportModeEnum.total);
+  public reportModeFormControl: FormControl<ReportModeEnum | null> = new FormControl<ReportModeEnum | null>(ReportModeEnum.total);
 
   @Output()
   public reportModeChange: EventEmitter<ReportModeEnum> = new EventEmitter<ReportModeEnum>();
