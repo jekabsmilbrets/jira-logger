@@ -1,0 +1,23 @@
+nelmio_api_doc:
+  documentation:
+    servers:
+      - url: https://jira-logger.io
+        description: API over HTTPS
+    info:
+      title: Jira-logger
+      description: This is an API for jira-logger Angular PWA
+      version: 0.0.1
+  areas: # to filter documented areas
+    path_patterns:
+      - ^/api(?!/doc$) # Accepts routes under /api except /api/doc
+  models:
+    names:
+      - { alias: TimeLogUpdateRequest, type: App\Dto\Task\TimeLog\TimeLogRequest, groups: [ 'update' ] }
+      - { alias: TimeLogCreateRequest, type: App\Dto\Task\TimeLog\TimeLogRequest, groups: [ 'create' ] }
+      - { alias: TimeLogModel, type: App\Entity\Task\TimeLog\TimeLog, groups: [ 'list' ] }
+      - { alias: TaskUpdateRequest, type: App\Dto\Task\TaskRequest, groups: [ 'update' ] }
+      - { alias: TaskCreateRequest, type: App\Dto\Task\TaskRequest, groups: [ 'create' ] }
+      - { alias: TaskModel, type: App\Entity\Task\Task, groups: [ 'list' ] }
+      - { alias: TagUpdateRequest, type: App\Dto\Tag\TagRequest, groups: [ 'update' ] }
+      - { alias: TagCreateRequest, type: App\Dto\Tag\TagRequest, groups: [ 'create' ] }
+      - { alias: TagModel, type: App\Entity\Tag\Tag, groups: [ 'list' ] }
