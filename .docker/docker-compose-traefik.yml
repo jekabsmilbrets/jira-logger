@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  traefik:
+    container_name: "jira-logger-traefik"
+    image: traefik:latest
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+
+      - --providers.docker=true
+
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
