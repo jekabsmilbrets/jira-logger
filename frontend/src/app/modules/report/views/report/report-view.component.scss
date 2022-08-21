@@ -1,0 +1,22 @@
+:host {
+  ::ng-deep app-shared-table {
+    .table-container {
+      ::ng-deep {
+        .mat-header-cell, .mat-footer-cell, .mat-cell {
+          min-width: 80px;
+          text-align: center;
+          justify-content: center;
+
+          &.cdk-column-description {
+            min-width: 250px;
+          }
+
+          &.cdk-column-timeLogged {
+            min-width: 145px;
+          }
+        }
+      }
+    }
+  }
+}
+

@@ -1,0 +1,38 @@
+<form (ngSubmit)="createTask()"
+      [formGroup]="createTaskForm">
+  <mat-form-field>
+    <mat-label>Task</mat-label>
+    <input formControlName="name"
+           matInput>
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Description</mat-label>
+    <textarea formControlName="description"
+              matInput></textarea>
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Tags</mat-label>
+    <mat-select formControlName="tags" multiple>
+      <mat-option *ngFor="let tag of tags$ | async" [value]="tag">
+        {{tag.name}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <button [disabled]="!createTaskForm.valid || (isLoading$ | async)"
+          color="primary"
+          mat-raised-button>
+    Create task
+  </button>
+</form>
+
+<app-task-list (createTimeLog)="onCreateTimeLog($event)"
+               (reload)="onReload()"
+               (remove)="onRemove($event)"
+               (removeTimeLog)="onRemoveTimeLog($event)"
+               (update)="onUpdate($event)"
+               (updateTimeLog)="onUpdateTimeLog($event)"
+               [isLoading]="isLoading$ | async"
+               [tasks]="tasks$ | async"></app-task-list>

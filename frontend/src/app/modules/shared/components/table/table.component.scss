@@ -1,0 +1,25 @@
+:host {
+  .table-container {
+    max-width: 100%;
+    width: 100%;
+    overflow: auto;
+
+    ::ng-deep {
+      .mat-table {
+        min-width: 100%;
+        width: max-content;
+      }
+
+      .mat-header-cell, .mat-footer-cell, .mat-cell {
+        min-width: 80px;
+        text-align: center;
+        justify-content: center;
+
+        &.mat-cell-clickable {
+          cursor: pointer;
+        }
+      }
+    }
+  }
+}
+

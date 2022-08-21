@@ -1,0 +1,10 @@
+<app-shared-table (cellClicked)="onCellClick($event)"
+                  [columns]="columns"
+                  [data]="tasks$ | async"
+                  [enableFooter]="true"
+                  [isSelectable]="false"
+                  [stickyFooter]="true"
+                  [stickyHeader]="true"
+                  sortDirection="desc"
+                  sortField="lastTimeLogStartTime">
+</app-shared-table>
