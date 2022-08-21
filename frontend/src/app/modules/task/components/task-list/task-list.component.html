@@ -1,0 +1,13 @@
+<ul>
+  <li *ngFor="let task of tasks">
+    <app-task (createTimeLog)="onCreateTimeLog($event)"
+              (reloadData)="onReload()"
+              (remove)="onRemove($event)"
+              (removeTimeLog)="onRemoveTimeLog($event)"
+              (update)="onUpdate($event)"
+              (updateTimeLog)="onUpdateTimeLog($event)"
+              [isLoading]="isLoading"
+              [task]="task">
+    </app-task>
+  </li>
+</ul>
