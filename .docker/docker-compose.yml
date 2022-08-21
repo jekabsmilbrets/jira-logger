@@ -1,65 +1,65 @@
-# docker-compose
-version: '3.7'
+version: '3.8'
 
 services:
-  jira-logger-reverse-proxy:
-    # The official v2 Traefik docker image
-    image: traefik:v2.6
-    # Enables the web UI and tells Traefik to listen to docker
-    command:
-      - --api.dashboard=true
-      - --api.insecure=true
-
-      - --providers.docker=true
-
-      - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
-    ports:
-      # The HTTP port
-      - "80:80"
-      # The Web UI (enabled by --api.insecure=true)
-      - "8080:8080"
+  db:
+    container_name: "jira-logger-db"
+    image: postgres:${POSTGRES_VERSION}-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      web:
+      - dbData:/var/lib/postgresql/data
+    ports:
+      - "15432:5432"
+    labels:
+      - "traefik.enable=false"
 
-  jira-logger-nginx:
-    container_name: jira-logger-nginx
-    image: nginx:latest
-    restart: unless-stopped
+  php-fpm:
+    container_name: "jira-logger-php-fpm"
+    build:
+      context: ./php-fpm
     depends_on:
-      - jira-logger-node
-    ports:
-      - "8888:80"
+      - db
+    environment:
+      - APP_ENV=${APP_ENV}
+      - APP_SECRET=${APP_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+    labels:
+      - "traefik.enable=false"
     volumes:
-      - type: bind
-        source: ./dist
-        target: /usr/share/nginx/html
-      - ./.docker/nginx-conf/nginx.conf:/etc/nginx/conf.d/node.template
-    command: 'bash -c "cat /etc/nginx/conf.d/node.template > /etc/nginx/conf.d/default.conf && nginx -g ''daemon off;''"'
+      - ./../backend/:/var/www
+      - ./../frontend/dist/jira-logger/:/var/www/public/ng
+
+  nginx:
+    container_name: "jira-logger-nginx"
+    build:
+      context: ./nginx
+    volumes:
+      - ./../backend/:/var/www
+      - ./../frontend/dist/jira-logger/:/var/www/public/ng
+      - ./nginx/sites/:/etc/nginx/sites-available
+      - ./nginx/conf.d/:/etc/nginx/conf.d
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - php-fpm
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.jira-logger-nginx.rule=Host(`jira-logger.localhost`)"
-    networks:
-      - web
+      - "traefik.http.routers.jira-logger-nginx.rule=Host(`jira-logger.io`)"
+      - "traefik.http.routers.jira-logger-nginx.tls=true"
+    ports:
+      - "8888:80"
+      - "443:443"
 
-  jira-logger-node:
-    container_name: jira-logger-node
-    hostname: jira-logger-node
-    image: node:erbium-bullseye
-    working_dir: /home/node/app
+  node:
+    container_name: "jira-logger-node"
     build:
-      context: ..
-      dockerfile: Dockerfile
+      context: ./node
+    working_dir: /home/node/app
     volumes:
-      - ./:/home/node/app
-      - node_modules:/home/node/app/node_modules
+      - ./../frontend/:/home/node/app
+    labels:
+      - "traefik.enable=false"
 
 volumes:
-  node_modules:
-
-networks:
-  web:
-    ipam:
-      driver: default
+  dbData:
