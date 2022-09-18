@@ -16,9 +16,11 @@
   <app-report-show-weekends (showWeekendsChange)="onShowWeekendsChange($event)"
                             [showWeekends]="showWeekends$ | async"></app-report-show-weekends>
 
-  <app-report-date-selector (endDateChange)="onEndDateChange($event)"
+  <app-report-date-selector (dateChange)="onDateChange($event)"
+                            (endDateChange)="onEndDateChange($event)"
                             (startDateChange)="onStartDateChange($event)"
-                            *ngIf="(reportMode$ | async) === 'dateRange'"
+                            *ngIf="showDatePicker() | async"
+                            [date]="date$ | async"
                             [endDate]="endDate$ | async"
                             [reportMode]="reportMode$ | async"
                             [startDate]="startDate$ | async"></app-report-date-selector>
