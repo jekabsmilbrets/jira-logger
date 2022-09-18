@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Utility\Traits;
 
+use App\Utility\Constants\Group;
 use DateTime;
 use DateTimeInterface;
 use Doctrine\DBAL\Types\Types;
@@ -16,7 +17,7 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 trait BaseEntityTrait
 {
     #[
-        Groups(['list']),
+        Groups([Group::LIST]),
         ORM\Id,
         ORM\GeneratedValue(
             strategy: 'CUSTOM'
@@ -30,7 +31,7 @@ trait BaseEntityTrait
     private string $id;
 
     #[
-        Groups(['list']),
+        Groups([Group::LIST]),
         ORM\Column(
             type: Types::DATETIME_MUTABLE,
             nullable: false
@@ -40,7 +41,7 @@ trait BaseEntityTrait
     private ?DateTimeInterface $createdAt = null;
 
     #[
-        Groups(['list']),
+        Groups([Group::LIST]),
         ORM\Column(
             type: Types::DATETIME_MUTABLE,
             nullable: false
