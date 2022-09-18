@@ -51,6 +51,36 @@ class TaskController extends BaseApiController
             summary: 'List Tasks',
             tags: ['Tasks'],
         ),
+        OA\Parameter(
+            name: 'date',
+            description: 'Single date to filter Task by Time Log timestamps',
+            in: 'query',
+            schema: new OA\Schema(type: 'string')
+        ),
+        OA\Parameter(
+            name: 'startDate',
+            description: 'Start date to filter Task by Time Log timestamps',
+            in: 'query',
+            schema: new OA\Schema(type: 'string')
+        ),
+        OA\Parameter(
+            name: 'endDate',
+            description: 'End date to filter Task by Time Log timestamps',
+            in: 'query',
+            schema: new OA\Schema(type: 'string')
+        ),
+        OA\Parameter(
+            name: 'tags',
+            description: 'Tag uuids`s joined by ","',
+            in: 'query',
+            schema: new OA\Schema(type: 'string')
+        ),
+        OA\Parameter(
+            name: 'hideUnreported',
+            description: 'Hide tags without Time Logs',
+            in: 'query',
+            schema: new OA\Schema(type: 'boolean')
+        ),
         OA\Response(
             response: 200,
             description: 'Returns list of tasks.',
@@ -81,14 +111,37 @@ class TaskController extends BaseApiController
             ),
         ),
     ]
-    final public function list(): JsonResponse
-    {
-        $tasks = $this->taskService->list();
+    final public function list(
+        Request $request,
+    ): JsonResponse {
+        $queryParameters = [
+            'tags',
+            'date',
+            'startDate',
+            'endDate',
+            'hideUnreported',
+        ];
+
+        $filter = array_filter(
+            array_reduce(
+                array: $queryParameters,
+                callback: static function (array $carry, string $queryParameter) use ($request): array {
+                    return array_merge(
+                        $carry,
+                        [
+                            $queryParameter => $request->query->get($queryParameter),
+                        ]
+                    );
+                },
+                initial: []
+            )
+        );
+
+        $tasks = $this->taskService->list($filter);
 
         if (empty($tasks) || [] === $tasks) {
             return $this->jsonApi(
-                errors: [self::TASKS_NOT_FOUND],
-                status: 404
+                []
             );
         }
 
