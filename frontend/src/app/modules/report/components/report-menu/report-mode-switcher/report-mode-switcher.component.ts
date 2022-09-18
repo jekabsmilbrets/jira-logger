@@ -21,6 +21,10 @@ export class ReportModeSwitcherComponent {
       viewValue: 'Total',
     },
     {
+      value: ReportModeEnum.date,
+      viewValue: 'Date',
+    },
+    {
       value: ReportModeEnum.dateRange,
       viewValue: 'Date Range',
     },
