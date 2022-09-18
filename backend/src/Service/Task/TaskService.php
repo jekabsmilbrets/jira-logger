@@ -105,7 +105,6 @@ class TaskService
         return (
             empty($tasks) || [] === $tasks
         ) ? [] : $tasks;
-
     }
 
     final public function show(
