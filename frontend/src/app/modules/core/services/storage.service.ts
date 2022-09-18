@@ -63,11 +63,11 @@ export class StorageService {
             request,
             {
               customStoreName,
-                     },
-                   ),
-                 ),
-                 tap(() => this.isLoadingSubject.next(false)),
-               );
+            },
+          ),
+        ),
+        tap(() => this.isLoadingSubject.next(false)),
+      );
   }
 
   public read(
@@ -101,12 +101,12 @@ export class StorageService {
             request,
             {
               customStoreName,
-                       key,
-                     },
-                   ),
-                 ),
-                 tap(() => this.isLoadingSubject.next(false)),
-               );
+              key,
+            },
+          ),
+        ),
+        tap(() => this.isLoadingSubject.next(false)),
+      );
   }
 
   public create(
@@ -143,13 +143,13 @@ export class StorageService {
             request,
             {
               customStoreName,
-                       key,
-                       value,
-                     },
-                   ),
-                 ),
-                 tap(() => this.isLoadingSubject.next(false)),
-               );
+              key,
+              value,
+            },
+          ),
+        ),
+        tap(() => this.isLoadingSubject.next(false)),
+      );
   }
 
   public update(
@@ -198,12 +198,12 @@ export class StorageService {
             request,
             {
               customStoreName,
-                       dataEntries,
-                     },
-                   ),
-                 ),
-                 tap(() => this.isLoadingSubject.next(false)),
-               );
+              dataEntries,
+            },
+          ),
+        ),
+        tap(() => this.isLoadingSubject.next(false)),
+      );
   }
 
   public delete(
@@ -237,12 +237,12 @@ export class StorageService {
             request,
             {
               customStoreName,
-                       key,
-                     },
-                   ),
-                 ),
-                 tap(() => this.isLoadingSubject.next(false)),
-               );
+              key,
+            },
+          ),
+        ),
+        tap(() => this.isLoadingSubject.next(false)),
+      );
   }
 
   public recreateStore(
