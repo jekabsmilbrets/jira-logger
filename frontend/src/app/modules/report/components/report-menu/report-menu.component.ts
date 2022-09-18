@@ -20,8 +20,9 @@ import { ReportService }  from '@report/services/report.service';
 export class ReportMenuComponent {
   public reportMode$: Observable<ReportModeEnum>;
   public tags$: Observable<Tag[]>;
-  public startDate$: Observable<Date>;
-  public endDate$: Observable<Date>;
+  public date$: Observable<Date | null>;
+  public startDate$: Observable<Date | null>;
+  public endDate$: Observable<Date | null>;
   public showWeekends$: Observable<boolean>;
   public hideUnreportedTasks$: Observable<boolean>;
   public isSmallerThanDesktop$: Observable<boolean>;
@@ -38,6 +39,7 @@ export class ReportMenuComponent {
   ) {
     this.reportMode$ = this.reportService.reportMode$;
     this.tags$ = this.reportService.tags$;
+    this.date$ = this.reportService.date$;
     this.startDate$ = this.reportService.startDate$;
     this.endDate$ = this.reportService.endDate$;
     this.showWeekends$ = this.reportService.showWeekends$;
@@ -63,11 +65,15 @@ export class ReportMenuComponent {
     this.reportService.tags = value;
   }
 
-  public onStartDateChange(date: Date): void {
+  public onDateChange(date: Date | null): void {
+    this.reportService.date = date;
+  }
+
+  public onStartDateChange(date: Date | null): void {
     this.reportService.startDate = date;
   }
 
-  public onEndDateChange(date: Date): void {
+  public onEndDateChange(date: Date | null): void {
     this.reportService.endDate = date;
   }
 
@@ -81,5 +87,17 @@ export class ReportMenuComponent {
 
   public onSmallScreenMenuToggle(): void {
     this.dialog.open(this.dialogTemplate);
+  }
+
+  public showDatePicker(): Observable<boolean> {
+    return this.reportMode$
+               .pipe(
+                 map(
+                   (reportMode: ReportModeEnum) => [
+                     'dateRange',
+                     'date',
+                   ].includes(reportMode),
+                 ),
+               );
   }
 }
