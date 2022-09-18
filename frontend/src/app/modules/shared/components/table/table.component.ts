@@ -7,6 +7,8 @@ import { MatTableDataSource }                                               from
 
 import { take } from 'rxjs';
 
+import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
+
 import { Column }     from '@shared/interfaces/column.interface';
 import { Searchable } from '@shared/interfaces/searchable.interface';
 
@@ -132,11 +134,11 @@ export class TableComponent implements AfterViewInit {
       return;
     }
 
-    const timeLogDate = formatDate(timeLog.date, 'yyyy-MM-dd', 'lv');
+    const timeLogDate = formatDate(timeLog.date, 'yyyy-MM-dd', appLocale, appTimeZone);
     const timeLogStartTime = timeLog.startTime;
-    const timeLogStart = timeLogStartTime ? formatDate(timeLogStartTime, 'HH:mm:ss', 'lv') : null;
+    const timeLogStart = timeLogStartTime ? formatDate(timeLogStartTime, 'HH:mm:ss', appLocale, appTimeZone) : null;
     const timeLogEndTime = timeLog.endTime;
-    const timeLogEnd = timeLogEndTime ? formatDate(timeLogEndTime, 'HH:mm:ss', 'lv') : null;
+    const timeLogEnd = timeLogEndTime ? formatDate(timeLogEndTime, 'HH:mm:ss', appLocale, appTimeZone) : null;
 
     this.areYouSureService.openDialog(
           `Time log "${timeLogDate} ${timeLogStart}-${timeLogEnd}"`,
