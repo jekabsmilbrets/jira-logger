@@ -1,3 +1,4 @@
+import { formatDate }                    from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable }                    from '@angular/core';
 
@@ -5,13 +6,16 @@ import { environment } from 'environments/environment';
 
 import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
+import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
+
 import { JsonApi } from '@core/interfaces/json-api.interface';
 
 import { StorageService } from '@core/services/storage.service';
 import { waitForTurn }    from '@core/utils/wait-for.utility';
 
-import { adaptTasks } from '@shared/adapters/task.adapter';
-import { ApiTask }    from '@shared/interfaces/api/api-task.interface';
+import { adaptTasks }     from '@shared/adapters/task.adapter';
+import { ApiTask }        from '@shared/interfaces/api/api-task.interface';
+import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 
 import { Tag }  from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
@@ -57,6 +61,49 @@ export class TasksService {
           (response: JsonApi<ApiTask[]>) => (response.data && adaptTasks(response.data)) as Task[],
         ),
         tap((tasks: Task[]) => this.tasksSubject.next(tasks)),
+        tap(() => this.isLoadingSubject.next(false)),
+      );
+  }
+
+  public filteredList(
+    filter: TaskListFilter,
+  ): Observable<Task[]> {
+    let url = `${environment.apiHost}${environment.apiBase}/${this.basePath}`;
+
+    const format = 'YYYY-MM-dd HH:mm:ss';
+    const formatDateForUri = (date: Date) => encodeURIComponent(formatDate(date, format, appLocale, appTimeZone));
+
+    url += `?hideUnreported=${filter.hideUnreported}`;
+
+    if (filter.date) {
+      url += `&date=${formatDateForUri(filter.date)}`;
+    }
+
+    if (filter.startDate) {
+      url += `&startDate=${formatDateForUri(filter.startDate)}`;
+    }
+
+    if (filter.endDate) {
+      url += `&endDate=${formatDateForUri(filter.endDate)}`;
+    }
+
+    if (filter.tags) {
+      url += `&tags=${filter.tags.join(',')}`;
+    }
+
+    return waitForTurn(this.isLoading$, this.isLoadingSubject)
+      .pipe(
+        switchMap(() => this.http.get<JsonApi<ApiTask[]>>(url)),
+        catchError((error: HttpErrorResponse) => {
+          this.isLoadingSubject.next(false);
+          if (error.status === 404) {
+            return of({data: []});
+          }
+          return this.processError(error);
+        }),
+        map(
+          (response: JsonApi<ApiTask[]>) => (response.data && adaptTasks(response.data)) as Task[],
+        ),
         tap(() => this.isLoadingSubject.next(false)),
       );
   }
