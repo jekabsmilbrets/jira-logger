@@ -42,7 +42,7 @@ class TaskController extends BaseApiController
         Route(
             path: '',
             name: 'list-tasks',
-            methods: ['GET'],
+            methods: [Request::METHOD_GET],
             stateless: true
         ),
         OA\Tag(name: 'Tasks'),
@@ -102,7 +102,7 @@ class TaskController extends BaseApiController
             path: '/{id}',
             name: 'show-task',
             requirements: ['id' => Requirement::UUID],
-            methods: ['GET'],
+            methods: [Request::METHOD_GET],
             stateless: true,
         ),
         OA\Tag(name: 'Tasks'),
@@ -154,7 +154,7 @@ class TaskController extends BaseApiController
         Route(
             path: '',
             name: 'create-task',
-            methods: ['POST'],
+            methods: [Request::METHOD_POST],
             stateless: true
         ),
         OA\Tag(name: 'Tasks'),
@@ -265,7 +265,7 @@ class TaskController extends BaseApiController
             path: '/{id}',
             name: 'edit-task',
             requirements: ['id' => Requirement::UUID],
-            methods: ['PATCH'],
+            methods: [Request::METHOD_PATCH],
             stateless: true,
         ),
         OA\Tag(name: 'Tasks'),
@@ -398,7 +398,7 @@ class TaskController extends BaseApiController
             path: '/{id}',
             name: 'delete-task',
             requirements: ['id' => Requirement::UUID],
-            methods: ['DELETE'],
+            methods: [Request::METHOD_DELETE],
             stateless: true,
         ),
         OA\Tag(name: 'Tasks'),
