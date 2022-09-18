@@ -72,18 +72,15 @@ class TimeLog implements EntityBaseInterface
     ]
     private bool $manuallyModified = false;
 
-
     #[
         Groups([Group::LIST]),
     ]
     private ?DateTimeInterface $originalStartTime = null;
 
-
     #[
         Groups([Group::LIST]),
     ]
     private ?DateTimeInterface $originalEndTime = null;
-
 
     final public function getStartTime(): ?DateTimeInterface
     {
