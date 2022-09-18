@@ -6,8 +6,12 @@ namespace App\Service\Task;
 
 use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
+use App\Entity\Task\TimeLog\TimeLog;
 use App\Factory\Task\TaskFactory;
 use App\Repository\Task\TaskRepository;
+use DateTime;
+use Doctrine\Common\Collections\ArrayCollection;
+use Exception;
 use RuntimeException;
 
 class TaskService
@@ -19,15 +23,89 @@ class TaskService
     ) {
     }
 
-    final public function list(): ?array
+    /**
+     * @throws Exception
+     */
+    final public function list(?array $filter): array
     {
-        $tasks = $this->taskRepository->findAll();
+        if ($filter) {
+            $tasks = new ArrayCollection($this->taskRepository->findByFilters($filter));
 
-        if (empty($tasks) || [] === $tasks) {
-            return null;
+            $tasks = $tasks->map(
+                function (Task $task) use ($filter) {
+                    if (
+                        isset($filter['date']) || isset($filter['startDate'], $filter['endDate'])
+                    ) {
+                        $startDate = new DateTime($filter['date'] ?? $filter['startDate']);
+                        $endDate = new DateTime($filter['date'] ?? $filter['endDate']);
+
+                        $endDate->setTime(23, 59, 59);
+
+                        $timeLogs = $task->getTimeLogs();
+
+                        $timeLogs = $timeLogs->filter(
+                            function (TimeLog $timeLog) use ($startDate, $endDate) {
+                                $startTime = $timeLog->getStartTime();
+                                $endTime = $timeLog->getEndTime();
+
+                                return ($startDate <= $startTime && $startTime <= $endDate) ||
+                                    ($startTime <= $startDate && $startTime >= $endDate) ||
+                                    ($endTime >= $startDate && $endTime <= $endDate);
+                            }
+                        );
+
+                        $timeLogs = $timeLogs->map(
+                            function (TimeLog $timeLog) use ($startDate, $endDate) {
+                                $startTime = $timeLog->getStartTime();
+                                $endTime = $timeLog->getEndTime();
+
+                                if ($startTime < $startDate) {
+                                    $timeLog->setOriginalStartTime($startTime);
+                                    $timeLog->setStartTime($startDate);
+                                    $timeLog->setManuallyModified(true);
+                                }
+
+                                if ($endTime > $endDate) {
+                                    $timeLog->setOriginalEndTime($endTime);
+                                    $timeLog->setEndTime($endDate);
+                                    $timeLog->setManuallyModified(true);
+                                }
+
+                                return $timeLog;
+                            }
+                        );
+
+                        $task->setTimeLogs(new ArrayCollection([...$timeLogs->toArray()]));
+                    }
+
+                    return $task;
+                }
+            );
+
+            $tasks = $tasks->filter(
+                function (Task $task) use ($filter) {
+                    $visible = [true];
+
+                    if (
+                        array_key_exists('hideUnreported', $filter) &&
+                        filter_var($filter['hideUnreported'], FILTER_VALIDATE_BOOLEAN)
+                    ) {
+                        $visible[] = $task->getTimeLogs()->count() > 0;
+                    }
+
+                    return (bool)array_product($visible);
+                }
+            );
+
+            $tasks = [...$tasks->toArray()];
+        } else {
+            $tasks = $this->taskRepository->findAll();
         }
 
-        return $tasks;
+        return (
+            empty($tasks) || [] === $tasks
+        ) ? [] : $tasks;
+
     }
 
     final public function show(
