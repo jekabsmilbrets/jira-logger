@@ -7,6 +7,7 @@ namespace App\Entity\Task;
 use App\Entity\Tag\Tag;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Repository\Task\TaskRepository;
+use App\Utility\Constants\Group;
 use App\Utility\Entity\EntityBaseInterface;
 use App\Utility\Traits\BaseEntityTrait;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -35,7 +36,7 @@ class Task implements EntityBaseInterface
     use BaseEntityTrait;
 
     #[
-        Groups(['list']),
+        Groups([Group::LIST]),
         ORM\Column(
             length: 255,
             unique: true
@@ -47,7 +48,7 @@ class Task implements EntityBaseInterface
     private ?string $name = null;
 
     #[
-        Groups(['list']),
+        Groups([Group::LIST]),
         ORM\Column(
             length: 255,
             nullable: true
@@ -59,7 +60,7 @@ class Task implements EntityBaseInterface
     private ?string $description = null;
 
     #[
-        Groups(['list']),
+        Groups([Group::LIST]),
         MaxDepth(1),
         ORM\OneToMany(
             mappedBy: 'task',
@@ -81,7 +82,7 @@ class Task implements EntityBaseInterface
     private Collection $timeLogs;
 
     #[
-        Groups(['list']),
+        Groups([Group::LIST]),
         MaxDepth(1),
         ORM\ManyToMany(
             targetEntity: Tag::class,
@@ -95,7 +96,7 @@ class Task implements EntityBaseInterface
     private ?Collection $tags;
 
     #[
-        Groups(['list']),
+        Groups([Group::LIST]),
         MaxDepth(1),
         OA\Property(ref: '#/components/schemas/TimeLogModel')
     ]
@@ -185,6 +186,13 @@ class Task implements EntityBaseInterface
     final public function getTimeLogs(): Collection
     {
         return $this->timeLogs;
+    }
+
+    final public function setTimeLogs(Collection $timeLogs): self
+    {
+        $this->timeLogs = $timeLogs;
+
+        return $this;
     }
 
     final public function getTags(): Collection
