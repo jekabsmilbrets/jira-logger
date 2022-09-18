@@ -41,7 +41,7 @@ class TagController extends BaseApiController
         Route(
             path: '',
             name: 'list-tags',
-            methods: ['GET'],
+            methods: [Request::METHOD_GET],
             stateless: true
         ),
         OA\Tag(name: 'Tags'),
@@ -101,7 +101,7 @@ class TagController extends BaseApiController
             path: '/{id}',
             name: 'show-tag',
             requirements: ['id' => Requirement::UUID],
-            methods: ['GET'],
+            methods: [Request::METHOD_GET],
             stateless: true,
         ),
         OA\Tag(name: 'Tags'),
@@ -153,7 +153,7 @@ class TagController extends BaseApiController
         Route(
             path: '',
             name: 'create-tag',
-            methods: ['POST'],
+            methods: [Request::METHOD_POST],
             stateless: true
         ),
         OA\Tag(name: 'Tags'),
@@ -260,7 +260,7 @@ class TagController extends BaseApiController
             path: '/{id}',
             name: 'edit-tag',
             requirements: ['id' => Requirement::UUID],
-            methods: ['PATCH'],
+            methods: [Request::METHOD_PATCH],
             stateless: true,
         ),
         OA\Tag(name: 'Tags'),
@@ -389,7 +389,7 @@ class TagController extends BaseApiController
             path: '/{id}',
             name: 'delete-tag',
             requirements: ['id' => Requirement::UUID],
-            methods: ['DELETE'],
+            methods: [Request::METHOD_DELETE],
             stateless: true,
         ),
         OA\Tag(name: 'Tags'),
