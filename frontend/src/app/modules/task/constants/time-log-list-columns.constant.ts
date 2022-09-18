@@ -1,5 +1,7 @@
 import { formatDate } from '@angular/common';
 
+import { appTimeZone, appLocale } from '@core/constants/date-time.constant';
+
 import { Column } from '@shared/interfaces/column.interface';
 
 import { TimeLog }     from '@shared/models/time-log.model';
@@ -29,7 +31,7 @@ export const columns: Column[] = [
     sortable: true,
     visible: true,
     isClickable: true,
-    cell: (timeLog: TimeLog) => timeLog.startTime && formatDate(timeLog.startTime, 'yyyy-MM-dd H:mm:s', 'lv'),
+    cell: (timeLog: TimeLog) => timeLog.startTime && formatDate(timeLog.startTime, 'yyyy-MM-dd H:mm:s', appLocale, appTimeZone),
   },
   {
     columnDef: 'endTime',
@@ -37,14 +39,14 @@ export const columns: Column[] = [
     sortable: true,
     visible: true,
     isClickable: true,
-    cell: (timeLog: TimeLog) => timeLog.endTime && formatDate(timeLog.endTime, 'yyyy-MM-dd H:mm:s', 'lv'),
+    cell: (timeLog: TimeLog) => timeLog.endTime && formatDate(timeLog.endTime, 'yyyy-MM-dd H:mm:s', appLocale, appTimeZone),
   },
   {
     columnDef: 'date',
     header: 'Date',
     sortable: true,
     visible: true,
-    cell: (timeLog: TimeLog) => timeLog.date && formatDate(timeLog.date, 'yyyy-MM-dd', 'lv'),
+    cell: (timeLog: TimeLog) => timeLog.date && formatDate(timeLog.date, 'yyyy-MM-dd', appLocale, appTimeZone),
   },
   {
     columnDef: 'year',
