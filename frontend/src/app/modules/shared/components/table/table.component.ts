@@ -53,6 +53,9 @@ export class TableComponent implements AfterViewInit {
   public cellClicked: EventEmitter<[Searchable, Column]> = new EventEmitter<[Searchable, Column]>();
 
   @Output()
+  public footerCellClicked: EventEmitter<[Searchable[], Column]> = new EventEmitter<[Searchable[], Column]>();
+
+  @Output()
   public removeAction: EventEmitter<Searchable> = new EventEmitter<Searchable>();
 
   @ViewChild(MatSort, {static: true})
@@ -121,6 +124,17 @@ export class TableComponent implements AfterViewInit {
       this.cellClicked.emit(
         [
           row,
+          column,
+        ],
+      );
+    }
+  }
+
+  public onFooterCellClicked(column: Column): void {
+    if (column.isClickable && !column.disableFooterClick) {
+      this.footerCellClicked.emit(
+        [
+          this._data,
           column,
         ],
       );
