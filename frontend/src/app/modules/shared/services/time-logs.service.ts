@@ -3,18 +3,18 @@ import { Injectable }                    from '@angular/core';
 
 import { environment } from 'environments/environment';
 
-import { catchError, map, Observable, throwError, BehaviorSubject, tap, switchMap } from 'rxjs';
+import { BehaviorSubject, catchError, map, Observable, switchMap, tap, throwError } from 'rxjs';
 
-import { JsonApi }     from '@core/interfaces/json-api.interface';
-import { waitForTurn } from '@core/utils/wait-for.utility';
+import { JsonApi }            from '@core/interfaces/json-api.interface';
+import { LoaderStateService } from '@core/services/loader-state.service';
+import { waitForTurn }        from '@core/utils/wait-for.utility';
 
 import { adaptTimeLog, adaptTimeLogs } from '@shared/adapters/time-log.adapter';
 import { ApiTimeLog }                  from '@shared/interfaces/api/api-time-log.interface';
+import { LoadableService }             from '@shared/interfaces/loadable-service.interface';
 
 import { Task }    from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
-
-
 
 
 @Injectable(
@@ -22,7 +22,7 @@ import { TimeLog } from '@shared/models/time-log.model';
     providedIn: 'root',
   },
 )
-export class TimeLogsService {
+export class TimeLogsService implements LoadableService {
   public isLoading$: Observable<boolean>;
 
   private basePath = 'task';
@@ -31,9 +31,14 @@ export class TimeLogsService {
   private isLoadingSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   constructor(
+    public readonly loaderStateService: LoaderStateService,
     private http: HttpClient,
   ) {
     this.isLoading$ = this.isLoadingSubject.asObservable();
+  }
+
+  public init(): void {
+    this.loaderStateService.addLoader(this.isLoading$, this.constructor.name);
   }
 
   public list(task: Task): Observable<TimeLog[]> {

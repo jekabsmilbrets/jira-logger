@@ -3,4 +3,6 @@ export const environment = {
 
   apiBase: '/api',
   apiHost: 'https://jira-logger.io',
+
+  debug: false,
 };

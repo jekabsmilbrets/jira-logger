@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Repository\Task;
 
 use App\Entity\Task\Task;
+use DateTime;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Exception;
 
 /**
  * @extends ServiceEntityRepository<Task>
@@ -45,6 +47,49 @@ class TaskRepository extends ServiceEntityRepository
         if ($flush) {
             $this->getEntityManager()->flush();
         }
+    }
+
+    /**
+     * @throws Exception
+     */
+    final public function findByFilters(array $filter): array
+    {
+        $queryBuilder = $this->createQueryBuilder('t')
+            ->leftJoin('t.timeLogs', 'l')
+            ->leftJoin('t.tags', 'tags');
+
+        if (
+            isset($filter['tags'])
+        ) {
+            $tags = explode(',', $filter['tags']);
+            $queryBuilder
+                ->andWhere('tags.id IN (:tagIds)')
+                ->setParameter('tagIds', $tags);
+        }
+
+        if (
+            isset($filter['date']) || isset($filter['startDate'], $filter['endDate'])
+        ) {
+            $startDate = new DateTime($filter['date'] ?? $filter['startDate']);
+            $endDate = new DateTime($filter['date'] ?? $filter['endDate']);
+
+            $endDate->setTime(23, 59, 59);
+
+            $queryBuilder
+                ->andWhere(
+                    '(
+                        (:startTime <= l.startTime AND l.startTime <= :endTime) OR 
+                        (l.startTime <= :startTime AND l.endTime >= :endTime) OR 
+                        (l.startTime >= :startTime AND l.endTime <= :endTime)
+                    )'
+                )
+                ->setParameter('startTime', $startDate)
+                ->setParameter('endTime', $endDate);
+        }
+
+        return $queryBuilder
+            ->getQuery()
+            ->getResult();
     }
 
 //    /**

@@ -1,29 +1,23 @@
 import { Clipboard }                    from '@angular/cdk/clipboard';
-import { formatDate }                   from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatSnackBar }                  from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap }     from '@angular/router';
 
-import { combineLatest, delay, map, Observable, Subscription, take } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 
 import { DynamicMenu }        from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
 import { Column }     from '@shared/interfaces/column.interface';
 import { Searchable } from '@shared/interfaces/searchable.interface';
-import { Tag }        from '@shared/models/tag.model';
 
 import { Task }             from '@shared/models/task.model';
-import { TimeLog }          from '@shared/models/time-log.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
-import { TasksService }     from '@shared/services/tasks.service';
 import { SharedModule }     from '@shared/shared.module';
 
-import { ReportMenuComponent }          from '@report/components/report-menu/report-menu.component';
-import { columns as monthModelColumns } from '@report/constants/report-date-range-columns.constant';
-import { columns as totalModelColumns } from '@report/constants/report-total-columns.constant';
-import { ReportModeEnum }               from '@report/enums/report-mode.enum';
-import { ReportService }                from '@report/services/report.service';
+import { ReportMenuComponent } from '@report/components/report-menu/report-menu.component';
+import { ReportModeEnum }      from '@report/enums/report-mode.enum';
+import { ReportService }       from '@report/services/report.service';
 
 
 @Component(
@@ -35,17 +29,10 @@ import { ReportService }                from '@report/services/report.service';
 )
 export class ReportViewComponent implements OnInit, OnDestroy {
   public tasks$!: Observable<Task[]>;
-  public columns: Column[] = [];
-
-  private tableColumns: { [key: string]: Column[] } = {
-    total: totalModelColumns,
-    month: [],
-  };
 
   private subscriptions: Subscription[] = [];
 
   constructor(
-    private tasksService: TasksService,
     private dynamicMenuService: DynamicMenuService,
     private reportService: ReportService,
     private activatedRoute: ActivatedRoute,
@@ -57,8 +44,6 @@ export class ReportViewComponent implements OnInit, OnDestroy {
           .pipe()
           .subscribe(
             (params: ParamMap) => {
-              // @ts-ignore
-
               if (params.has('reportMode')) {
                 const reportMode = params.get('reportMode') as string;
 
@@ -71,48 +56,16 @@ export class ReportViewComponent implements OnInit, OnDestroy {
             },
           ),
     );
+
+    this.tasks$ = this.reportService.tasks$;
   }
 
-  private static filterTaskByDateRangeNReportedTime(task: Task, sDate: Date, eDate: Date, minReportedTime = 0): boolean {
-    return task.calcTimeLoggedForDateRange(sDate, eDate) > minReportedTime;
+  public get columns(): Column[] {
+    return this.reportService.columns;
   }
 
   public ngOnInit(): void {
     this.createDynamicMenu();
-
-    this.tasks$ = combineLatest(
-      [
-        this.tasksService.tasks$,
-        this.reportService.tags$,
-        this.reportService.startDate$,
-        this.reportService.endDate$,
-        this.reportService.reportMode$,
-        this.reportService.showWeekends$,
-        this.reportService.hideUnreportedTasks$,
-      ],
-    )
-      .pipe(
-        delay(100), // hax :D :D
-        map(
-          ([
-             tasks,
-             tags,
-             startDate,
-             endDate,
-             reportMode,
-             showWeekends,
-             hideUnreportedTasks,
-           ]: [Task[], Tag[], Date, Date, ReportModeEnum, boolean, boolean]) => this.filterTasks(
-            reportMode, tasks, tags, startDate, endDate, showWeekends, hideUnreportedTasks,
-          ),
-        ),
-      );
-
-    this.tasksService.list()
-        .pipe(
-          take(1),
-        )
-        .subscribe();
   }
 
   public ngOnDestroy(): void {
@@ -135,78 +88,6 @@ export class ReportViewComponent implements OnInit, OnDestroy {
     );
   }
 
-  private filterTasks(
-    reportMode: ReportModeEnum,
-    tasks: Task[],
-    tags: Tag[],
-    startDate: Date,
-    endDate: Date,
-    showWeekends: boolean,
-    hideUnreportedTasks: boolean,
-  ): Task[] {
-    tasks = [...tasks];
-
-    tasks = tasks
-      .filter(
-        (task: Task) => this.filterTaskByTags(task, tags),
-      );
-
-    switch (reportMode) {
-      case ReportModeEnum.total:
-
-        break;
-      case ReportModeEnum.dateRange:
-        tasks = tasks
-          .filter(
-            (task: Task) => this.filterTaskByDateRange(task, startDate, endDate),
-          );
-
-        this.tableColumns[reportMode] = this.generateMonthColumns(startDate, endDate, showWeekends);
-        break;
-    }
-
-    if (hideUnreportedTasks) {
-      tasks = tasks
-        .filter(
-          (task: Task) => ReportViewComponent.filterTaskByDateRangeNReportedTime(task, startDate, endDate, 0),
-        );
-    }
-
-    this.columns = this.tableColumns[reportMode];
-
-    return tasks;
-  }
-
-  private filterTaskByTags(task: Task, sTags: Tag[]): boolean {
-    return sTags.length > 0 ?
-           sTags.some(
-             (sTag: Tag) => task.tags.map((tt) => tt.id).includes(sTag.id),
-           ) :
-           true;
-
-  }
-
-  private filterTaskByDateRange(task: Task, sDate: Date, eDate: Date): boolean {
-    const startDateTime = sDate.getTime();
-    const endDateTime = eDate.getTime();
-
-    return task.timeLogs.some(
-      (tl: TimeLog) => {
-        if (!tl?.startTime || !tl?.endTime) {
-          return false;
-        }
-
-        const startTime = tl.startTime?.getTime();
-        const endTime = tl.endTime?.getTime();
-
-        return (startTime >= startDateTime && endTime <= endDateTime) ||
-          (startTime >= startDateTime && endTime >= endDateTime) ||
-          (startTime <= startDateTime && endTime <= endDateTime) ||
-          (startTime <= startDateTime && endTime >= endDateTime);
-      },
-    );
-  }
-
   private createDynamicMenu(): void {
     this.dynamicMenuService.addDynamicMenu(
       new DynamicMenu(
@@ -223,63 +104,5 @@ export class ReportViewComponent implements OnInit, OnDestroy {
         },
       ),
     );
-  }
-
-  private generateMonthColumns(
-    startDate: Date,
-    endDate: Date,
-    showWeekends: boolean,
-  ): Column[] {
-    const modifiedMonthModelColumns = [...monthModelColumns];
-    const currentDate = new Date(startDate);
-
-    while (currentDate <= endDate) {
-      const curDate = currentDate.getDate();
-      const currentDate2 = new Date(currentDate.getTime());
-      modifiedMonthModelColumns.push(
-        {
-          columnDef: 'date-' + currentDate.getTime(),
-          header: formatDate(currentDate2, 'd. MMM', 'lv-LV'),
-          sortable: false,
-          visible: showWeekends ? true :
-                   !([
-                     0,
-                     6,
-                   ].includes(currentDate2.getDay())),
-          pipe: 'readableTime',
-          isClickable: true,
-          cell: (task: Task) => task.calcTimeLoggedForDate(currentDate2),
-          hasFooter: true,
-          footerCell: (tasks: Task[]) => tasks.map(
-                                                (task: Task) => task.calcTimeLoggedForDate(currentDate2),
-                                              )
-                                              .reduce((acc, value) => acc + value, 0),
-        },
-      );
-
-      currentDate.setDate(curDate + 1);
-    }
-
-    modifiedMonthModelColumns.push(
-      {
-        columnDef: 'timeLogged',
-        header: 'Total Time Logged ' + formatDate(startDate, 'yyyy MMMM', 'lv-LV'),
-        sortable: false,
-        stickyEnd: true,
-        visible: true,
-        isClickable: true,
-        pipe: 'readableTime',
-        cell: (task: Task) => task.calcTimeLoggedForDateRange(startDate, endDate),
-        hasFooter: true,
-        footerCell: (tasks: Task[]) => tasks.map(
-                                              (task: Task) => task.timeLogs.map(t => t.timeLogged())
-                                                                  .reduce((acc, value) => acc + value, 0),
-                                            )
-                                            .reduce((acc, value) => acc + value, 0),
-
-      },
-    );
-
-    return modifiedMonthModelColumns;
   }
 }
