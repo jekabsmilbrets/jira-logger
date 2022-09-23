@@ -3,12 +3,12 @@ import { Component, Output, EventEmitter } from '@angular/core';
 
 @Component(
   {
-    selector: 'app-tasks-settings-toggler',
-    templateUrl: './tasks-settings-toggler.component.html',
-    styleUrls: ['./tasks-settings-toggler.component.scss'],
+    selector: 'app-tasks-settings-toggle',
+    templateUrl: './tasks-settings-toggle.component.html',
+    styleUrls: ['./tasks-settings-toggle.component.scss'],
   },
 )
-export class TasksSettingsTogglerComponent {
+export class TasksSettingsToggleComponent {
   @Output()
   public openSettingsDialog: EventEmitter<void> = new EventEmitter<void>();
 
