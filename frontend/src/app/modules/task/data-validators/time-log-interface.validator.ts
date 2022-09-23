@@ -3,7 +3,6 @@ import { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
 
 export const validateTimeLogInterfaceData = (timeLogInterfaceData: any): ApiTimeLog => {
   [
-    '_uuid',
     '_startTime',
   ]
     .forEach(
@@ -15,12 +14,10 @@ export const validateTimeLogInterfaceData = (timeLogInterfaceData: any): ApiTime
     );
 
   return {
-    id: timeLogInterfaceData._uuid,
     startTime: timeLogInterfaceData._startTime,
     endTime: timeLogInterfaceData._endTime,
     description: timeLogInterfaceData._description,
-    createdAt: '',
-  };
+  } as ApiTimeLog;
 };
 
 export const validateTimeLogsInterfaceData = (timeLogsInterfaceData: any[]): ApiTimeLog[] => timeLogsInterfaceData

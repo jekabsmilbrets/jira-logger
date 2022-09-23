@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, AfterViewChecked } from '@angular/core';
 
-import { Observable, delay } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
@@ -12,13 +12,15 @@ import { LoaderStateService } from '@core/services/loader-state.service';
     styleUrls: ['./layout.component.scss'],
   },
 )
-export class LayoutComponent {
-  public isLoading$: Observable<boolean>;
+export class LayoutComponent implements AfterViewChecked {
+  public isLoading$!: Observable<boolean>;
 
   constructor(
     private loaderStateService: LoaderStateService,
   ) {
-    this.isLoading$ = this.loaderStateService.isLoading$
-      .pipe(delay(100));
+  }
+
+  public ngAfterViewChecked(): void {
+    this.isLoading$ = this.loaderStateService.isLoading$;
   }
 }

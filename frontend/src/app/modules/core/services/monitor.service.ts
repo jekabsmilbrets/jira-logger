@@ -12,7 +12,7 @@ import { Monitor }            from '@core/models/monitor.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { waitForTurn }        from '@core/utils/wait-for.utility';
 
-import { LoadableService }    from '@shared/interfaces/loadable-service.interface';
+import { LoadableService } from '@shared/interfaces/loadable-service.interface';
 
 
 @Injectable(

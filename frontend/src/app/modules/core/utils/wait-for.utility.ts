@@ -7,7 +7,7 @@ export const waitForTurn = (
 ) =>
   isLoading$
     .pipe(
-      filter((isLoading) => !isLoading),
+      filter((isLoading: boolean) => !isLoading),
       take(1),
       tap(() => isLoadingSubject.next(true)),
     );
