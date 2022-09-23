@@ -1,12 +1,15 @@
 import { Injectable } from '@angular/core';
 
 // eslint-disable-next-line import/named
-import { createStore, del, entries, get, set, setMany, UseStore }                                   from 'idb-keyval';
+import { createStore, del, entries, get, set, setMany, UseStore } from 'idb-keyval';
 
-import { from, Observable, BehaviorSubject, take, switchMap, tap, catchError, throwError, of, map } from 'rxjs';
+import { BehaviorSubject, catchError, from, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
-import { DbFailInterface } from '@core/interfaces/db-fail.interface';
-import { waitForTurn }     from '@core/utils/wait-for.utility';
+import { DbFailInterface }    from '@core/interfaces/db-fail.interface';
+import { LoaderStateService } from '@core/services/loader-state.service';
+import { waitForTurn }        from '@core/utils/wait-for.utility';
+
+import { LoadableService } from '@shared/interfaces/loadable-service.interface';
 
 
 @Injectable(
@@ -14,7 +17,7 @@ import { waitForTurn }     from '@core/utils/wait-for.utility';
     providedIn: 'root',
   },
 )
-export class StorageService {
+export class StorageService implements LoadableService {
   public isLoading$: Observable<boolean>;
   public isDbFailed$: Observable<DbFailInterface | undefined>;
 
@@ -24,8 +27,9 @@ export class StorageService {
   private isDbFailedSubject: BehaviorSubject<DbFailInterface | undefined> = new BehaviorSubject<DbFailInterface | undefined>(
     undefined);
 
-  constructor() {
-    this.createStores();
+  constructor(
+    public readonly loaderStateService: LoaderStateService,
+  ) {
     this.isLoading$ = this.isLoadingSubject.asObservable();
     this.isDbFailed$ = this.isDbFailedSubject.asObservable();
   }
@@ -35,6 +39,11 @@ export class StorageService {
     const storeName = `${name}-store`;
 
     return createStore(dbName, storeName);
+  }
+
+  public init(): void {
+    this.loaderStateService.addLoader(this.isLoading$);
+    this.createStores();
   }
 
   public list(

@@ -8,14 +8,16 @@ import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap,
 
 import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
 
-import { JsonApi } from '@core/interfaces/json-api.interface';
+import { JsonApi }            from '@core/interfaces/json-api.interface';
+import { LoaderStateService } from '@core/services/loader-state.service';
 
 import { StorageService } from '@core/services/storage.service';
 import { waitForTurn }    from '@core/utils/wait-for.utility';
 
-import { adaptTasks }     from '@shared/adapters/task.adapter';
-import { ApiTask }        from '@shared/interfaces/api/api-task.interface';
-import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
+import { adaptTasks }      from '@shared/adapters/task.adapter';
+import { ApiTask }         from '@shared/interfaces/api/api-task.interface';
+import { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import { TaskListFilter }  from '@shared/interfaces/task-list-filter.interface';
 
 import { Tag }  from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
@@ -23,8 +25,12 @@ import { Task } from '@shared/models/task.model';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
 
 
-@Injectable()
-export class TasksService {
+@Injectable(
+  {
+    providedIn: 'root',
+  },
+)
+export class TasksService implements LoadableService {
   public isLoading$: Observable<boolean>;
   public tasks$: Observable<Task[]>;
 
@@ -36,12 +42,17 @@ export class TasksService {
   private isLoadingSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   constructor(
+    public readonly loaderStateService: LoaderStateService,
     private http: HttpClient,
     private storage: StorageService,
     private errorDialogService: ErrorDialogService,
   ) {
     this.tasks$ = this.tasksSubject.asObservable();
     this.isLoading$ = this.isLoadingSubject.asObservable();
+  }
+
+  public init(): void {
+    this.loaderStateService.addLoader(this.isLoading$);
   }
 
   public list(): Observable<Task[]> {

@@ -3,23 +3,24 @@ import { Injectable } from '@angular/core';
 
 import { environment } from 'environments/environment';
 
-import { BehaviorSubject, catchError, map, Observable, tap, throwError, switchMap } from 'rxjs';
+import { BehaviorSubject, catchError, map, Observable, switchMap, tap, throwError } from 'rxjs';
 
-import { JsonApi }     from '@core/interfaces/json-api.interface';
-import { waitForTurn } from '@core/utils/wait-for.utility';
+import { JsonApi }            from '@core/interfaces/json-api.interface';
+import { LoaderStateService } from '@core/services/loader-state.service';
+import { waitForTurn }        from '@core/utils/wait-for.utility';
 
-import { adaptTags } from '@shared/adapters/api-tag.adapter';
-import { ApiTag }    from '@shared/interfaces/api/api-tag.interface';
+import { adaptTags }       from '@shared/adapters/api-tag.adapter';
+import { ApiTag }          from '@shared/interfaces/api/api-tag.interface';
+import { LoadableService } from '@shared/interfaces/loadable-service.interface';
 
 import { Tag } from '@shared/models/tag.model';
-
 
 @Injectable(
   {
     providedIn: 'root',
   },
 )
-export class TagsService {
+export class TagsService implements LoadableService {
   public isLoading$: Observable<boolean>;
   public tags$: Observable<Tag[]>;
 
@@ -30,10 +31,15 @@ export class TagsService {
   private isLoadingSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   constructor(
+    public readonly loaderStateService: LoaderStateService,
     private http: HttpClient,
   ) {
     this.tags$ = this.tagsSubject.asObservable();
     this.isLoading$ = this.isLoadingSubject.asObservable();
+  }
+
+  public init(): void {
+    this.loaderStateService.addLoader(this.isLoading$);
   }
 
   public fetchTags(): Observable<Tag[]> {
