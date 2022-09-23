@@ -35,7 +35,6 @@ export class TasksService implements LoadableService {
   public tasks$: Observable<Task[]>;
 
   private tasksSubject: BehaviorSubject<Task[]> = new BehaviorSubject<Task[]>([]);
-  private readonly storeName = 'task';
 
   private basePath = 'task';
 
@@ -146,7 +145,6 @@ export class TasksService implements LoadableService {
       name: task.name,
       description: task.description,
       tags: task.tags.map((tag: Tag) => tag.id),
-      lastTimeLog: task.lastTimeLog?.id,
     };
 
     return waitForTurn(this.isLoading$, this.isLoadingSubject)
@@ -171,22 +169,6 @@ export class TasksService implements LoadableService {
           () => this.list().pipe(take(1)),
         ),
         map(() => undefined),
-      );
-  }
-
-  public importData(data: ApiTask[]): Observable<boolean> {
-    const convertedData: { key: IDBValidKey; value: any }[] = data.map(
-      (taskData: ApiTask) => ({
-        key: taskData.id,
-        value: taskData,
-      }),
-    );
-
-    return waitForTurn(this.isLoading$, this.isLoadingSubject)
-      .pipe(
-        switchMap(
-          () => this.storage.recreateStore(convertedData, this.storeName),
-        ),
       );
   }
 
