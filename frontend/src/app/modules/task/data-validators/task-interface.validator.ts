@@ -1,11 +1,13 @@
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
+import { Tag }     from '@shared/models/tag.model';
 
 import { validateTimeLogsInterfaceData } from '@task/data-validators/time-log-interface.validator';
 
+import { validateTagsInterfaceData } from '@task/data-validators/validate-tag-interface-data.validator';
 
-export const validateTaskInterfaceData = (taskInterfaceData: any): ApiTask => {
+
+export const validateTaskInterfaceData = (taskInterfaceData: any, tags: Tag[]): ApiTask => {
   [
-    '_uuid',
     '_createDate',
     '_name',
     '_tags',
@@ -13,23 +15,21 @@ export const validateTaskInterfaceData = (taskInterfaceData: any): ApiTask => {
     .forEach(
       (field: string) => {
         if (!taskInterfaceData.hasOwnProperty(field)) {
-          throw new Error(`Missing Required field "${field}" for Task!`);
+          throw new Error(`Missing Required field "${field}" for Task "${taskInterfaceData?._name}"!`);
         }
       },
     );
 
   return {
-    id: taskInterfaceData._uuid,
     createdAt: taskInterfaceData._createDate,
     name: taskInterfaceData._name,
-    description: taskInterfaceData._description,
-    timeLogged: taskInterfaceData._timeLogged,
-    timeLogs: validateTimeLogsInterfaceData(taskInterfaceData._timeLogs),
-    tags: taskInterfaceData._tags,
-  };
+    description: taskInterfaceData?._description,
+    timeLogs: taskInterfaceData._timeLogs && validateTimeLogsInterfaceData(taskInterfaceData._timeLogs),
+    tags: taskInterfaceData._tags && validateTagsInterfaceData(taskInterfaceData._tags, tags),
+  } as ApiTask;
 };
 
-export const validateTasksInterfaceData = (tasksInterfaceData: any[]): ApiTask[] => tasksInterfaceData
+export const validateTasksInterfaceData = (tasksInterfaceData: any[], tags: Tag[]): ApiTask[] => tasksInterfaceData
   .map(
-    (taskInterfaceData: any) => validateTaskInterfaceData(taskInterfaceData),
+    (taskInterfaceData: any) => validateTaskInterfaceData(taskInterfaceData, tags),
   );
