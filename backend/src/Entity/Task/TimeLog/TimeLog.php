@@ -6,6 +6,7 @@ namespace App\Entity\Task\TimeLog;
 
 use App\Entity\Task\Task;
 use App\Repository\Task\TimeLog\TimeLogRepository;
+use App\Utility\Constants\Group;
 use App\Utility\Entity\EntityBaseInterface;
 use App\Utility\Traits\BaseEntityTrait;
 use DateTimeInterface;
@@ -26,7 +27,7 @@ class TimeLog implements EntityBaseInterface
     use BaseEntityTrait;
 
     #[
-        Groups(['list']),
+        Groups([Group::LIST]),
         ORM\Column(
             type: Types::DATETIME_MUTABLE
         ),
@@ -35,7 +36,7 @@ class TimeLog implements EntityBaseInterface
     private ?DateTimeInterface $startTime = null;
 
     #[
-        Groups(['list']),
+        Groups([Group::LIST]),
         ORM\Column(
             type: Types::DATETIME_MUTABLE,
             nullable: true
@@ -45,7 +46,7 @@ class TimeLog implements EntityBaseInterface
     private ?DateTimeInterface $endTime = null;
 
     #[
-        Groups(['list']),
+        Groups([Group::LIST]),
         ORM\Column(
             length: 255,
             nullable: true
@@ -65,6 +66,21 @@ class TimeLog implements EntityBaseInterface
         OA\Property(ref: '#/components/schemas/TaskModel')
     ]
     private ?Task $task = null;
+
+    #[
+        Groups([Group::LIST]),
+    ]
+    private bool $manuallyModified = false;
+
+    #[
+        Groups([Group::LIST]),
+    ]
+    private ?DateTimeInterface $originalStartTime = null;
+
+    #[
+        Groups([Group::LIST]),
+    ]
+    private ?DateTimeInterface $originalEndTime = null;
 
     final public function getStartTime(): ?DateTimeInterface
     {
@@ -110,6 +126,42 @@ class TimeLog implements EntityBaseInterface
     final public function setTask(?Task $task): self
     {
         $this->task = $task;
+
+        return $this;
+    }
+
+    final public function isManuallyModified(): bool
+    {
+        return $this->manuallyModified;
+    }
+
+    final public function setManuallyModified(bool $manuallyModified): self
+    {
+        $this->manuallyModified = $manuallyModified;
+
+        return $this;
+    }
+
+    final public function getOriginalStartTime(): ?DateTimeInterface
+    {
+        return $this->originalStartTime;
+    }
+
+    final public function setOriginalStartTime(?DateTimeInterface $originalStartTime): self
+    {
+        $this->originalStartTime = $originalStartTime;
+
+        return $this;
+    }
+
+    final public function getOriginalEndTime(): ?DateTimeInterface
+    {
+        return $this->originalEndTime;
+    }
+
+    final public function setOriginalEndTime(?DateTimeInterface $originalEndTime): self
+    {
+        $this->originalEndTime = $originalEndTime;
 
         return $this;
     }

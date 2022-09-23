@@ -6,6 +6,7 @@ namespace App\Entity\Tag;
 
 use App\Entity\Task\Task;
 use App\Repository\Tag\TagRepository;
+use App\Utility\Constants\Group;
 use App\Utility\Entity\EntityBaseInterface;
 use App\Utility\Traits\BaseEntityTrait;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -25,7 +26,7 @@ class Tag implements EntityBaseInterface
     use BaseEntityTrait;
 
     #[
-        Groups(['list']),
+        Groups([Group::LIST]),
         ORM\Column(
             length: 255,
             unique: true,
@@ -37,9 +38,9 @@ class Tag implements EntityBaseInterface
     private ?string $name = null;
 
     #[
-        Groups(['deep']),
+        Groups([Group::DEEP]),
         MaxDepth(1),
-        Ignore(),
+        Ignore,
         ORM\ManyToMany(
             targetEntity: Task::class,
             inversedBy: 'tags'

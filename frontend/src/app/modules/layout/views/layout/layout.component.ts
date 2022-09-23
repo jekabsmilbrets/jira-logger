@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 
 import { Observable, delay } from 'rxjs';
 
-import { StorageService } from '@core/services/storage.service';
+import { LoaderStateService } from '@core/services/loader-state.service';
 
 
 @Component(
@@ -16,9 +16,9 @@ export class LayoutComponent {
   public isLoading$: Observable<boolean>;
 
   constructor(
-    private storageService: StorageService,
+    private loaderStateService: LoaderStateService,
   ) {
-    this.isLoading$ = this.storageService.isLoading$
-                          .pipe(delay(10));
+    this.isLoading$ = this.loaderStateService.isLoading$
+      .pipe(delay(100));
   }
 }

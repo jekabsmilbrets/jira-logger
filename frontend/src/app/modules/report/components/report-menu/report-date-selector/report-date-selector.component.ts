@@ -13,17 +13,28 @@ import { ReportModeEnum } from '@report/enums/report-mode.enum';
   },
 )
 export class ReportDateSelectorComponent {
-  public startDateFormControl: FormControl<Date | null> = new FormControl<Date | null>(new Date());
-  public endDateFormControl: FormControl<Date | null> = new FormControl<Date | null>(new Date());
+  public dateFormControl: FormControl<Date | null> = new FormControl<Date | null>(null);
+  public startDateFormControl: FormControl<Date | null> = new FormControl<Date | null>(null);
+  public endDateFormControl: FormControl<Date | null> = new FormControl<Date | null>(null);
 
   @Input()
   public reportMode!: ReportModeEnum | null;
 
   @Output()
-  public startDateChange: EventEmitter<Date> = new EventEmitter<Date>();
+  public dateChange: EventEmitter<Date | null> = new EventEmitter<Date | null>();
 
   @Output()
-  public endDateChange: EventEmitter<Date> = new EventEmitter<Date>();
+  public startDateChange: EventEmitter<Date | null> = new EventEmitter<Date | null>();
+
+  @Output()
+  public endDateChange: EventEmitter<Date | null> = new EventEmitter<Date | null>();
+
+  @Input()
+  public set date(value: Date | null) {
+    if (value) {
+      this.dateFormControl.setValue(value, {emitEvent: false});
+    }
+  }
 
   @Input()
   public set startDate(value: Date | null) {
@@ -54,6 +65,15 @@ export class ReportDateSelectorComponent {
       endDate.setHours(23, 59, 59);
 
       this.endDateChange.emit(endDate);
+    }
+  }
+
+  public onDateChange(value: MatDatepickerInputEvent<unknown, unknown | null>): void {
+    if (value.value !== null) {
+      const startDate = value.value as Date;
+      startDate.setHours(0, 0, 0, 0);
+
+      this.dateChange.emit(startDate);
     }
   }
 }

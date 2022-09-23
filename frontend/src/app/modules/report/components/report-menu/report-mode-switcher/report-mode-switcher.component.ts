@@ -1,6 +1,8 @@
 import { Component, Output, EventEmitter, Input } from '@angular/core';
 import { FormControl }                            from '@angular/forms';
 
+import { reportModes } from '@report/constants/report-modes.constant';
+
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
 
 
@@ -15,16 +17,7 @@ export class ReportModeSwitcherComponent {
   public reportModes: {
     value: ReportModeEnum;
     viewValue: string;
-  }[] = [
-    {
-      value: ReportModeEnum.total,
-      viewValue: 'Total',
-    },
-    {
-      value: ReportModeEnum.dateRange,
-      viewValue: 'Date Range',
-    },
-  ];
+  }[] = reportModes;
 
   public reportModeFormControl: FormControl<ReportModeEnum | null> = new FormControl<ReportModeEnum | null>(ReportModeEnum.total);
 
