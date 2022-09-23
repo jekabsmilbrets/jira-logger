@@ -16,7 +16,7 @@ export class Base {
   }
 
   public set createdAt(value: Date) {
-    this._createdAt = value.getTime();
+    this._createdAt = value?.getTime();
   }
 
   public get updatedAt(): Date | undefined {

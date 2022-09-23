@@ -1,11 +1,13 @@
 import { Component } from '@angular/core';
 
-import { take, switchMap, of } from 'rxjs';
+import { of, switchMap, take } from 'rxjs';
 
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { Task }    from '@shared/models/task.model';
 
 import { TasksService } from '@shared/services/tasks.service';
+
+import { TaskImportService } from '@task/services/task-import.service';
 
 import { TasksSettingsService } from '@task/services/tasks-settings.service';
 
@@ -21,6 +23,7 @@ export class TasksMenuComponent {
   constructor(
     private tasksService: TasksService,
     private tasksSettingsService: TasksSettingsService,
+    private taskImportService: TaskImportService,
   ) {
   }
 
@@ -32,7 +35,7 @@ export class TasksMenuComponent {
           take(1),
           switchMap(
             (result: ApiTask[] | undefined) => result ?
-                                               this.tasksService.importData(result)
+                                               this.taskImportService.importData(result)
                                                    .pipe(
                                                      take(1),
                                                      switchMap(() => this.tasksService.list()),

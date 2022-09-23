@@ -1,8 +1,12 @@
 import { Component, Inject }                  from '@angular/core';
-import { Validators, FormGroup, FormControl } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA }      from '@angular/material/dialog';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { MAT_DIALOG_DATA, MatDialogRef }      from '@angular/material/dialog';
 
-import { ApiTask } from '@shared/interfaces/api/api-task.interface';
+import { take } from 'rxjs';
+
+import { ApiTask }     from '@shared/interfaces/api/api-task.interface';
+import { Tag }         from '@shared/models/tag.model';
+import { TagsService } from '@shared/services/tags.service';
 
 import { validateTasksInterfaceData }       from '@task/data-validators/task-interface.validator';
 import { TasksSettingsDialogDataInterface } from '@task/interfaces/tasks-settings-dialog-data.interface';
@@ -26,6 +30,7 @@ export class TasksSettingsDialogComponent {
   constructor(
     private dialogRef: MatDialogRef<TasksSettingsDialogComponent, ApiTask[] | undefined>,
     @Inject(MAT_DIALOG_DATA) public data: TasksSettingsDialogDataInterface,
+    private tagsService: TagsService,
   ) {
   }
 
@@ -41,13 +46,22 @@ export class TasksSettingsDialogComponent {
     let data: ApiTask[];
 
     try {
-      data = validateTasksInterfaceData(
-        JSON.parse(
-          this.formGroup.getRawValue().json as string,
-        ),
-      );
+      this.tagsService.tags$
+          .pipe(
+            take(1),
+          )
+          .subscribe(
+            (tags: Tag[]) => {
+              data = validateTasksInterfaceData(
+                JSON.parse(
+                  this.formGroup.getRawValue().json as string,
+                ),
+                tags,
+              );
 
-      this.dialogRef.close(data);
+              this.dialogRef.close(data);
+            },
+          );
     }
     catch (e) {
       console.error({e});
