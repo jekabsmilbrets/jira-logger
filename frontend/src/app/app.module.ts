@@ -17,6 +17,8 @@ import { TagsService }                        from '@shared/services/tags.servic
 import { TasksService }                       from '@shared/services/tasks.service';
 import { TimeLogsService }                    from '@shared/services/time-logs.service';
 
+import { TaskImportService }                  from '@task/services/task-import.service';
+
 import { LayoutModule } from '@layout/layout.module';
 
 import { AppRoutingModule } from './app-routing.module';
@@ -67,6 +69,7 @@ registerLocaleData(lv);
           TimeLogsService,
           MonitorService,
           StorageService,
+          TaskImportService,
         ],
         multi: true,
       },
