@@ -138,14 +138,20 @@ class TimeLogController extends BaseApiController
         string $taskId,
         string $id
     ): JsonResponse {
-        $this->timeLogService->show(
+        $timeLog = $this->timeLogService->show(
             taskId: $taskId,
             id: $id
         );
 
+        if (!$timeLog instanceof TimeLog) {
+            return $this->jsonApi(
+                errors: [self::TIME_LOGS_NOT_FOUND],
+                status: 404
+            );
+        }
+
         return $this->jsonApi(
-            errors: [self::TIME_LOG_NOT_FOUND],
-            status: 404
+            $timeLog
         );
     }
 
