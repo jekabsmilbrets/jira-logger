@@ -15,9 +15,9 @@ export const validateTagInterfaceData = (tagInterfaceData: any, tags: Tag[]): Ap
 };
 
 export const validateTagsInterfaceData = (tagsInterfaceData: any[], tags: Tag[]): ApiTag[] => tagsInterfaceData
-    .map(
-      (tagInterfaceData: any) => validateTagInterfaceData(tagInterfaceData, tags),
-    )
-    .filter((tag: ApiTag | undefined): boolean => tag !== undefined)
-    .map((tagInterfaceData: ApiTag | undefined) => tagInterfaceData as ApiTag);
+  .map(
+    (tagInterfaceData: any) => validateTagInterfaceData(tagInterfaceData, tags),
+  )
+  .filter((tag: ApiTag | undefined): boolean => tag !== undefined)
+  .map((tagInterfaceData: ApiTag | undefined) => tagInterfaceData as ApiTag);
 
