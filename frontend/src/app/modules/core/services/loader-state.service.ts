@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
 
-import { environment }                                                     from 'environments/environment';
-import { BehaviorSubject, combineLatest, map, Observable, switchMap, tap } from 'rxjs';
+import { environment } from 'environments/environment';
 
-import { debounceDistinct } from '@core/utils/debounce-distinct.utility';
+import { BehaviorSubject, combineLatest, map, Observable, switchMap, tap, debounceTime, distinctUntilChanged } from 'rxjs';
 
 
 @Injectable(
@@ -26,7 +25,8 @@ export class LoaderStateService {
                             switchMap(
                               (marks: Map<string, Observable<boolean>>) => combineLatest([...marks.values()]),
                             ),
-                            debounceDistinct(this.debounceDelay),
+                            debounceTime(this.debounceDelay),
+                            distinctUntilChanged(),
                             map(
                               (marks: boolean[]) => marks.includes(true),
                             ),
