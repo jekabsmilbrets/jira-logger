@@ -300,6 +300,8 @@ export class ReportService {
                    ].includes(currentDate2.getDay())),
           pipe: 'readableTime',
           isClickable: true,
+          cellClickType: 'readableTime',
+          footerCellClickType: 'readableTime',
           cell: (task: Task) => task.calcTimeLoggedForDate(currentDate2),
           hasFooter: true,
           footerCell: (tasks: Task[]) => tasks.map(
@@ -315,13 +317,15 @@ export class ReportService {
     modifiedMonthModelColumns.push(
       {
         columnDef: 'timeLogged',
-        header: 'Total Time Logged ' + formatDate(startDate, 'yyyy MMMM', appLocale, appTimeZone),
+        header: 'Total Time Logged',
         sortable: false,
         stickyEnd: true,
         visible: true,
         isClickable: true,
+        cellClickType: 'readableTime',
+        footerCellClickType: 'readableTime',
         pipe: 'readableTime',
-        cell: (task: Task) => task.calcTimeLoggedForDateRange(startDate, endDate),
+        cell: (task: Task) => task.calcTimeLogged(),
         hasFooter: true,
         footerCell: (tasks: Task[]) => tasks.map(
                                               (task: Task) => task.timeLogs.map(t => t.timeLogged())
