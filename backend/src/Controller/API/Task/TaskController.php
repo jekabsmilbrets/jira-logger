@@ -142,7 +142,8 @@ class TaskController extends BaseApiController
 
         if (empty($tasks) || [] === $tasks) {
             return $this->jsonApi(
-                []
+                errors: [self::TASKS_NOT_FOUND],
+                status: 404
             );
         }
 
