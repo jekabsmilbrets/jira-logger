@@ -74,13 +74,61 @@ export class ReportViewComponent implements OnInit, OnDestroy {
 
   public onCellClick([row, column]: [Searchable, Column]): void {
     const task = row as Task;
-    const timeLogged: number = column.cell(task);
-    const readableTimePipe = new ReadableTimePipe();
-    const transformedLoggedTime = readableTimePipe.transform(timeLogged);
+    let outputValue;
+    let message;
 
-    this.clipboard.copy(transformedLoggedTime);
+    switch (column.cellClickType) {
+      case 'readableTime':
+        const timeLogged: number = column.cell(task);
+        const readableTimePipe = new ReadableTimePipe();
+
+        outputValue = readableTimePipe.transform(timeLogged);
+        message = `Copied Task "${task.name}" logged time to clipboard "${outputValue}"!`;
+        break;
+
+      case 'string':
+      case undefined:
+      default:
+        outputValue = column.cell(task);
+        message = `Copied Task "${task.name}" field "${column.header}" value to clipboard "${outputValue}"!`;
+        break;
+    }
+
+    this.clipboard.copy(outputValue);
     this.snackBar.open(
-      `Copied Task ${task.name} logged time to clipboard "${transformedLoggedTime}"!`,
+      message,
+      undefined,
+      {
+        duration: 5000,
+      },
+    );
+  }
+
+  public onFooterCellClicked([rows, column]: [Searchable[], Column]): void {
+    const tasks = rows as Task[];
+    let outputValue;
+    let message;
+
+    switch (column.footerCellClickType) {
+      case 'readableTime':
+        const timeLogged: number = column.footerCell(tasks);
+        const readableTimePipe = new ReadableTimePipe();
+
+        outputValue = readableTimePipe.transform(timeLogged);
+        message = `Copied logged time to clipboard "${outputValue}"!`;
+        break;
+
+      case 'concatenatedString':
+      case undefined:
+      default:
+        outputValue = tasks.map((task: Task) => column.cell(task)).join(', ');
+        message = `Copied field "${column.header}" value to clipboard "${outputValue}"!`;
+        break;
+    }
+
+    this.clipboard.copy(outputValue);
+    this.snackBar.open(
+      message,
       undefined,
       {
         duration: 5000,

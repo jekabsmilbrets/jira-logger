@@ -1,4 +1,5 @@
 <app-shared-table (cellClicked)="onCellClick($event)"
+                  (footerCellClicked)="onFooterCellClicked($event)"
                   [columns]="columns"
                   [data]="tasks$ | async"
                   [enableFooter]="true"
