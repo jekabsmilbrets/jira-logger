@@ -11,6 +11,8 @@ export const columns: Column[] = [
     header: 'Name',
     sortable: true,
     visible: true,
+    isClickable: true,
+    disableFooterClick: true,
     cell: (task: Task) => columnValue(task, 'name'),
     hasFooter: true,
     footerCell: () => 'Total',
