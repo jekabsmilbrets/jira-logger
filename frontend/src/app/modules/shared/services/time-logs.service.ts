@@ -1,9 +1,12 @@
+import { formatDate }                    from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable }                    from '@angular/core';
 
 import { environment } from 'environments/environment';
 
 import { BehaviorSubject, catchError, map, Observable, switchMap, tap, throwError } from 'rxjs';
+
+import { appLocale, appTimeZone, appTimeLogDateTimeFormat } from '@core/constants/date-time.constant';
 
 import { JsonApi }            from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
@@ -64,8 +67,8 @@ export class TimeLogsService implements LoadableService {
 
     const body = {
       id: timeLog.id,
-      startTime: timeLog.startTime,
-      endTime: timeLog.endTime,
+      startTime: timeLog.startTime && formatDate(timeLog.startTime, appTimeLogDateTimeFormat, appLocale, appTimeZone),
+      endTime: timeLog.endTime && formatDate(timeLog.endTime, appTimeLogDateTimeFormat, appLocale, appTimeZone),
       description: timeLog.description,
       task: task.id,
     };
@@ -85,8 +88,8 @@ export class TimeLogsService implements LoadableService {
 
     const body = {
       id: timeLog.id,
-      startTime: timeLog.startTime,
-      endTime: timeLog.endTime,
+      startTime: timeLog.startTime && formatDate(timeLog.startTime, appTimeLogDateTimeFormat, appLocale, appTimeZone),
+      endTime: timeLog.endTime && formatDate(timeLog.endTime, appTimeLogDateTimeFormat, appLocale, appTimeZone),
       description: timeLog.description,
       task: task.id,
     };
