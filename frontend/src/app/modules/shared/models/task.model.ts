@@ -41,10 +41,6 @@ export class Task extends Base implements Searchable {
     this._lastTimeLog = value;
   }
 
-  public get isTimeLogRunning(): boolean {
-    return !!this.lastTimeLog;
-  }
-
   public get timeLogs(): TimeLog[] {
     return this._timeLogs;
   }
@@ -78,14 +74,9 @@ export class Task extends Base implements Searchable {
   }
 
   public get lastTimeLogStartTime(): Date | null {
-    const mapDateTime = (timeLogs: TimeLog[]): number[] => timeLogs
-      .map(
-        (l: TimeLog) => l.startTime.getTime(),
-      );
+    const lastStartTime = this.lastTimeLog?.startTime.getTime();
 
-    const lastStartTime = Math.max(...mapDateTime(this.timeLogs), -1);
-
-    return lastStartTime > -1 ? new Date(lastStartTime) : null;
+    return lastStartTime && lastStartTime > -1 ? new Date(lastStartTime) : null;
   }
 
 
@@ -105,23 +96,6 @@ export class Task extends Base implements Searchable {
     if (this.tags.includes(tag)) {
       this.tags = this.tags.filter(eTag => eTag !== tag);
     }
-  }
-
-  public calcTimeLoggedForDateRange(startDate: Date, endDate: Date): number {
-    const [startDateYear, startDateMonth, startDateDate] = getDateParts(startDate);
-    const [endDateYear, endDateMonth, endDateDate] = getDateParts(endDate);
-    const timeLogs: TimeLog[] = (this.timeLogs ?? [])
-      .filter(
-        (timeLog: TimeLog) => {
-          const [startTimeYear, startTimeMonth, startTimeDate] = getDateParts(timeLog.startTime);
-
-          return (startTimeYear >= startDateYear && startTimeYear <= endDateYear) &&
-            (startTimeMonth >= startDateMonth && startTimeMonth <= endDateMonth) &&
-            (startTimeDate >= startDateDate && startTimeDate <= endDateDate);
-        },
-      ) ?? [];
-
-    return this.calcTimeLogged(timeLogs);
   }
 
   public calcTimeLoggedForDate(date: Date): number {
