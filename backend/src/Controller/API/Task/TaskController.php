@@ -38,6 +38,9 @@ class TaskController extends BaseApiController
     ) {
     }
 
+    /**
+     * @throws Exception
+     */
     #[
         Route(
             path: '',
@@ -125,14 +128,12 @@ class TaskController extends BaseApiController
         $filter = array_filter(
             array_reduce(
                 array: $queryParameters,
-                callback: static function (array $carry, string $queryParameter) use ($request): array {
-                    return array_merge(
-                        $carry,
-                        [
-                            $queryParameter => $request->query->get($queryParameter),
-                        ]
-                    );
-                },
+                callback: static fn(array $carry, string $queryParameter): array => array_merge(
+                    $carry,
+                    [
+                        $queryParameter => $request->query->get($queryParameter),
+                    ]
+                ),
                 initial: []
             )
         );
