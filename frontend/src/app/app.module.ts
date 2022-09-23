@@ -1,16 +1,21 @@
 import { APP_BASE_HREF, registerLocaleData }    from '@angular/common';
 import lv                                       from '@angular/common/locales/lv';
-import { LOCALE_ID, NgModule, APP_INITIALIZER } from '@angular/core';
+import { APP_INITIALIZER, LOCALE_ID, NgModule } from '@angular/core';
 import { BrowserModule }                        from '@angular/platform-browser';
 import { BrowserAnimationsModule }              from '@angular/platform-browser/animations';
 import { ServiceWorkerModule }                  from '@angular/service-worker';
 
 import { environment } from 'environments/environment';
 
-import { CoreModule } from '@core/core.module';
+import { CoreModule }     from '@core/core.module';
+import { MonitorService } from '@core/services/monitor.service';
+import { StorageService } from '@core/services/storage.service';
 
-import { tagsProviderFactory } from '@shared/factories/tags-provider-factory';
-import { TagsService }         from '@shared/services/tags.service';
+import { loadableServicesInitializerFactory } from '@shared/factories/loadable-services-initializer.factory';
+import { tagsPreloaderFactory }               from '@shared/factories/tags-preloader.factory';
+import { TagsService }                        from '@shared/services/tags.service';
+import { TasksService }                       from '@shared/services/tasks.service';
+import { TimeLogsService }                    from '@shared/services/time-logs.service';
 
 import { LayoutModule } from '@layout/layout.module';
 
@@ -53,10 +58,21 @@ registerLocaleData(lv);
         provide: Window,
         useValue: window,
       },
-      TagsService,
       {
         provide: APP_INITIALIZER,
-        useFactory: tagsProviderFactory,
+        useFactory: loadableServicesInitializerFactory,
+        deps: [
+          TagsService,
+          TasksService,
+          TimeLogsService,
+          MonitorService,
+          StorageService,
+        ],
+        multi: true,
+      },
+      {
+        provide: APP_INITIALIZER,
+        useFactory: tagsPreloaderFactory,
         deps: [TagsService],
         multi: true,
       },
