@@ -6,6 +6,8 @@ export const environment = {
   production: false,
   apiBase: '/api',
   apiHost: 'https://jira-logger.io',
+
+  debug: true,
 };
 
 /*

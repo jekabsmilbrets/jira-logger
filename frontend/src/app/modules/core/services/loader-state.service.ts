@@ -1,5 +1,6 @@
-import { Injectable }                                                                       from '@angular/core';
-import { BehaviorSubject, combineLatest, distinctUntilChanged, map, Observable, switchMap } from 'rxjs';
+import { Injectable }                                                                            from '@angular/core';
+import { environment }                                                                           from 'environments/environment';
+import { BehaviorSubject, combineLatest, distinctUntilChanged, map, Observable, switchMap, tap } from 'rxjs';
 
 
 @Injectable(
@@ -10,13 +11,15 @@ import { BehaviorSubject, combineLatest, distinctUntilChanged, map, Observable, 
 export class LoaderStateService {
   public isLoading$: Observable<boolean>;
 
-  private loaderMarks: BehaviorSubject<Observable<boolean>[]> = new BehaviorSubject<Observable<boolean>[]>([]);
+  private loaderMarks: BehaviorSubject<Map<string, Observable<boolean>>> = new BehaviorSubject<Map<string, Observable<boolean>>>(
+    new Map<string, Observable<boolean>>([])
+  );
 
   constructor() {
     this.isLoading$ = this.loaderMarks.asObservable()
                           .pipe(
                             switchMap(
-                              (marks: Observable<boolean>[]) => combineLatest(marks),
+                              (marks: Map<string, Observable<boolean>>) => combineLatest([...marks.values()]),
                             ),
                             distinctUntilChanged(),
                             map(
@@ -25,10 +28,23 @@ export class LoaderStateService {
                           );
   }
 
-  public addLoader(loader: Observable<boolean>): void {
-    const loaderMarks: Observable<boolean>[] = this.loaderMarks.getValue();
+  public addLoader(loader: Observable<boolean>, name?: string): void {
+    const loaderMarks: Map<string, Observable<boolean>> = this.loaderMarks.getValue();
 
-    loaderMarks.push(loader);
+    if (!name) {
+      name = [...loaderMarks.keys()].length.toString();
+    }
+
+    loaderMarks.set(
+      name,
+      loader.pipe(
+          tap((isLoading: boolean) => {
+            if (!environment.production && environment.debug) {
+              console.log(`${name} is ${isLoading ? 'Loading' : 'Done loading'}!`);
+            }
+          })
+        )
+    );
 
     this.loaderMarks.next(loaderMarks);
   }

@@ -52,7 +52,7 @@ export class TasksService implements LoadableService {
   }
 
   public init(): void {
-    this.loaderStateService.addLoader(this.isLoading$);
+    this.loaderStateService.addLoader(this.isLoading$, this.constructor.name);
   }
 
   public list(): Observable<Task[]> {
