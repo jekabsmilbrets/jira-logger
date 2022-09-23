@@ -15,4 +15,6 @@ export interface Column {
   disableFooterClick?: boolean;
   hasFooter?: boolean;
   footerCell?: any;
+  cellClickType?: 'string' | 'readableTime' | 'concatenatedString';
+  footerCellClickType?: 'readableTime' | 'concatenatedString';
 }
