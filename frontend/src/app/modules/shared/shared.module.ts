@@ -13,7 +13,6 @@ import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
 
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
-import { TasksService }       from '@shared/services/tasks.service';
 
 
 @NgModule(
@@ -41,7 +40,6 @@ import { TasksService }       from '@shared/services/tasks.service';
     providers: [
       AreYouSureService,
       ErrorDialogService,
-      TasksService,
     ],
   },
 )
