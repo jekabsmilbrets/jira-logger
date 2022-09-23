@@ -8,6 +8,7 @@ use App\Controller\API\BaseApiController;
 use DateTime;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route(
@@ -20,7 +21,7 @@ class MonitorController extends BaseApiController
         Route(
             path: '/monitor',
             name: 'monitor',
-            methods: ['GET'],
+            methods: [Request::METHOD_GET],
             stateless: true,
         ),
         OA\Tag(name: 'Monitor'),

@@ -18,9 +18,8 @@ use Symfony\Component\Serializer\Serializer;
 
 class ModelNormalizer implements NormalizerInterface
 {
-
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     final public function normalize(
         mixed  $object,
@@ -59,7 +58,9 @@ class ModelNormalizer implements NormalizerInterface
                 'createdAt' => $dateCallback,
                 'updatedAt' => $dateCallback,
                 'startTime' => $dateCallback,
+                'originalStartTime' => $dateCallback,
                 'endTime' => $dateCallback,
+                'originalEndTime' => $dateCallback,
             ],
         ];
 
@@ -80,7 +81,7 @@ class ModelNormalizer implements NormalizerInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     final public function supportsNormalization(mixed $data, string $format = null): bool
     {
