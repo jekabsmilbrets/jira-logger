@@ -2,7 +2,12 @@ import { ApiTag } from '@shared/interfaces/api/api-tag.interface';
 import { Tag }    from '@shared/models/tag.model';
 
 export const validateTagInterfaceData = (tagInterfaceData: any, tags: Tag[]): ApiTag | undefined => {
-  const existingTag = tags.find(t => t.name.toLowerCase() === tagInterfaceData.toLowerCase());
+  let existingTag;
+  if (tagInterfaceData !== null && typeof tagInterfaceData === 'object') {
+    existingTag = tags.find(t => t.id === tagInterfaceData?.id);
+  } else {
+    existingTag = tags.find(t => t.name.toLowerCase() === tagInterfaceData.toLowerCase());
+  }
 
   if (existingTag) {
     return {

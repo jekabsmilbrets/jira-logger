@@ -8,8 +8,8 @@ import { validateTimeLogsInterfaceData } from '@task/data-validators/time-log-in
 
 export const validateTaskInterfaceData = (taskInterfaceData: any, tags: Tag[]): ApiTask => {
   [
-    '_createDate',
     '_name',
+    '_timeLogs',
     '_tags',
   ]
     .forEach(
@@ -21,7 +21,6 @@ export const validateTaskInterfaceData = (taskInterfaceData: any, tags: Tag[]): 
     );
 
   return {
-    createdAt: taskInterfaceData._createDate,
     name: taskInterfaceData._name,
     description: taskInterfaceData._description,
     timeLogs: taskInterfaceData._timeLogs && validateTimeLogsInterfaceData(taskInterfaceData._timeLogs),
