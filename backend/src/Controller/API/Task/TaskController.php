@@ -38,11 +38,14 @@ class TaskController extends BaseApiController
     ) {
     }
 
+    /**
+     * @throws Exception
+     */
     #[
         Route(
             path: '',
             name: 'list-tasks',
-            methods: ['GET'],
+            methods: [Request::METHOD_GET],
             stateless: true
         ),
         OA\Tag(name: 'Tasks'),
@@ -50,6 +53,36 @@ class TaskController extends BaseApiController
             operationId: 'list-tasks',
             summary: 'List Tasks',
             tags: ['Tasks'],
+        ),
+        OA\Parameter(
+            name: 'date',
+            description: 'Single date to filter Task by Time Log timestamps',
+            in: 'query',
+            schema: new OA\Schema(type: 'string')
+        ),
+        OA\Parameter(
+            name: 'startDate',
+            description: 'Start date to filter Task by Time Log timestamps',
+            in: 'query',
+            schema: new OA\Schema(type: 'string')
+        ),
+        OA\Parameter(
+            name: 'endDate',
+            description: 'End date to filter Task by Time Log timestamps',
+            in: 'query',
+            schema: new OA\Schema(type: 'string')
+        ),
+        OA\Parameter(
+            name: 'tags',
+            description: 'Tag uuids`s joined by ","',
+            in: 'query',
+            schema: new OA\Schema(type: 'string')
+        ),
+        OA\Parameter(
+            name: 'hideUnreported',
+            description: 'Hide tags without Time Logs',
+            in: 'query',
+            schema: new OA\Schema(type: 'boolean')
         ),
         OA\Response(
             response: 200,
@@ -81,14 +114,35 @@ class TaskController extends BaseApiController
             ),
         ),
     ]
-    final public function list(): JsonResponse
-    {
-        $tasks = $this->taskService->list();
+    final public function list(
+        Request $request,
+    ): JsonResponse {
+        $queryParameters = [
+            'tags',
+            'date',
+            'startDate',
+            'endDate',
+            'hideUnreported',
+        ];
+
+        $filter = array_filter(
+            array_reduce(
+                array: $queryParameters,
+                callback: static fn(array $carry, string $queryParameter): array => array_merge(
+                    $carry,
+                    [
+                        $queryParameter => $request->query->get($queryParameter),
+                    ]
+                ),
+                initial: []
+            )
+        );
+
+        $tasks = $this->taskService->list($filter);
 
         if (empty($tasks) || [] === $tasks) {
             return $this->jsonApi(
-                errors: [self::TASKS_NOT_FOUND],
-                status: 404
+                []
             );
         }
 
@@ -102,7 +156,7 @@ class TaskController extends BaseApiController
             path: '/{id}',
             name: 'show-task',
             requirements: ['id' => Requirement::UUID],
-            methods: ['GET'],
+            methods: [Request::METHOD_GET],
             stateless: true,
         ),
         OA\Tag(name: 'Tasks'),
@@ -154,7 +208,7 @@ class TaskController extends BaseApiController
         Route(
             path: '',
             name: 'create-task',
-            methods: ['POST'],
+            methods: [Request::METHOD_POST],
             stateless: true
         ),
         OA\Tag(name: 'Tasks'),
@@ -265,7 +319,7 @@ class TaskController extends BaseApiController
             path: '/{id}',
             name: 'edit-task',
             requirements: ['id' => Requirement::UUID],
-            methods: ['PATCH'],
+            methods: [Request::METHOD_PATCH],
             stateless: true,
         ),
         OA\Tag(name: 'Tasks'),
@@ -398,7 +452,7 @@ class TaskController extends BaseApiController
             path: '/{id}',
             name: 'delete-task',
             requirements: ['id' => Requirement::UUID],
-            methods: ['DELETE'],
+            methods: [Request::METHOD_DELETE],
             stateless: true,
         ),
         OA\Tag(name: 'Tasks'),
