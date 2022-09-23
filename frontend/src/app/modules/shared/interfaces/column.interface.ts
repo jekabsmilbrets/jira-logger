@@ -12,6 +12,9 @@ export interface Column {
   index?: number;
   pipe?: string;
   isClickable?: boolean;
+  disableFooterClick?: boolean;
   hasFooter?: boolean;
   footerCell?: any;
+  cellClickType?: 'string' | 'readableTime' | 'concatenatedString';
+  footerCellClickType?: 'readableTime' | 'concatenatedString';
 }
