@@ -32,7 +32,9 @@
         </mat-cell>
 
         <ng-container *ngIf="enableFooter">
-          <mat-footer-cell *cdkFooterCellDef>
+          <mat-footer-cell (click)="onFooterCellClicked(column)"
+                           *cdkFooterCellDef
+                           [ngClass]="{'mat-cell-clickable': column.isClickable && !column.disableFooterClick}">
             <ng-container *ngIf="column.pipe">
               <span *ngIf="column.pipe === 'readableTime'">
                 {{ (column.hasFooter ? column.footerCell(dataSource.data) : '') | readableTime }}

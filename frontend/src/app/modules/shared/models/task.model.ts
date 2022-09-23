@@ -137,7 +137,7 @@ export class Task extends Base implements Searchable {
     return this.calcTimeLogged(timeLogs);
   }
 
-  private calcTimeLogged(timeLogs?: TimeLog[]): number {
+  public calcTimeLogged(timeLogs?: TimeLog[]): number {
     timeLogs = timeLogs ?? (this.timeLogs ?? []);
 
     if (timeLogs.length === 0) {
