@@ -3,10 +3,11 @@ import { Tag }    from '@shared/models/tag.model';
 
 export const validateTagInterfaceData = (tagInterfaceData: any, tags: Tag[]): ApiTag | undefined => {
   let existingTag;
-  if (tagInterfaceData !== null && typeof tagInterfaceData === 'object') {
-    existingTag = tags.find(t => t.id === tagInterfaceData?.id);
-  } else {
+
+  if (typeof tagInterfaceData === 'string') {
     existingTag = tags.find(t => t.name.toLowerCase() === tagInterfaceData.toLowerCase());
+  } else {
+    existingTag = tags.find(t => t.id === tagInterfaceData?.id || t.id === tagInterfaceData?._id);
   }
 
   if (existingTag) {
