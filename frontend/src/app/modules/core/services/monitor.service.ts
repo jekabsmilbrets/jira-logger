@@ -55,6 +55,7 @@ export class MonitorService implements LoadableService {
         catchError((error) => {
           console.error(error);
           this.hasIssuesSubject.next(true);
+          this.isLoadingSubject.next(false);
           return throwError(() => new Error('Monitor unavailable'));
         }),
         tap(() => this.isLoadingSubject.next(false)),
