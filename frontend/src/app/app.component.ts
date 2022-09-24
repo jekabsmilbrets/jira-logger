@@ -1,9 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit }                  from '@angular/core';
+import { MatSnackBar, MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
 
-import { interval, switchMap } from 'rxjs';
+import { interval, switchMap, catchError, retry, throwError, take, Subscription, tap } from 'rxjs';
 
 import { MonitorService } from '@core/services/monitor.service';
-
 
 
 @Component(
@@ -13,22 +13,63 @@ import { MonitorService } from '@core/services/monitor.service';
     styleUrls: ['./app.component.scss'],
   },
 )
-export class AppComponent {
+export class AppComponent implements OnDestroy, OnInit {
   title = 'jira-logger';
+
+  private snackBarRef!: MatSnackBarRef<TextOnlySnackBar> | undefined;
+
+  private monitorInterval = 10000;
+
+  private houseCallSubscription!: Subscription;
 
   constructor(
     private window: Window,
     private monitorService: MonitorService,
+    private snackBar: MatSnackBar,
   ) {
     this.window?.navigator?.storage?.persist()
         .then(
           (persistent: boolean) => console.log('IndexedDB will be persistent ' + persistent),
         );
+  }
 
-    interval(10000)
+  public ngOnInit(): void {
+    this.houseCallSubscription = interval(this.monitorInterval)
       .pipe(
-        switchMap(() => this.monitorService.callMonitor()),
+        switchMap(() => this.monitorService.callMonitor()
+                            .pipe(
+                              catchError((error) => {
+                                if (!this.snackBarRef) {
+                                  this.snackBarRef = this.snackBar.open(
+                                    'Failed to call JiraLogger service, will retry!',
+                                    'Dismiss',
+                                    {
+                                      politeness: 'assertive',
+                                      duration: this.monitorInterval,
+                                    },
+                                  );
+
+                                  this.snackBarRef.afterDismissed()
+                                      .pipe(take(1))
+                                      .subscribe(() => this.snackBarRef = undefined);
+                                }
+                                return throwError(() => error);
+                              }),
+                              retry(
+                                {
+                                  count: 1,
+                                  delay: this.monitorInterval * 2,
+                                },
+                              ),
+                              tap(() => this.snackBarRef ? this.snackBarRef.dismiss() : undefined),
+                            )),
       )
-      .subscribe((response) => console.log(response));
+      .subscribe();
+  }
+
+  public ngOnDestroy(): void {
+    if (this.houseCallSubscription) {
+      this.houseCallSubscription.unsubscribe();
+    }
   }
 }
