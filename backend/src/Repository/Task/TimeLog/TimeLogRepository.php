@@ -15,16 +15,22 @@ use Doctrine\Persistence\ManagerRegistry;
  * @method TimeLog|null findOneBy(array $criteria, array $orderBy = null)
  * @method TimeLog[]    findAll()
  * @method TimeLog[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ *
  * @noinspection MethodShouldBeFinalInspection
  */
 class TimeLogRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $managerRegistry)
+    public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($managerRegistry, TimeLog::class);
+        parent::__construct($registry, TimeLog::class);
     }
 
     final public function add(TimeLog $timeLog, bool $flush = false): void
+    {
+        $this->save($timeLog, $flush);
+    }
+
+    final public function save(TimeLog $timeLog, bool $flush = false): void
     {
         $this->getEntityManager()->persist($timeLog);
 
