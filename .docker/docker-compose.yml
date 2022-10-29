@@ -14,6 +14,8 @@ services:
       - "15432:5432"
     labels:
       - "traefik.enable=false"
+    networks:
+      - internalNetwork
 
   php-fpm:
     container_name: "jira-logger-php-fpm"
@@ -30,6 +32,8 @@ services:
     volumes:
       - ./../backend/:/var/www
       - ./../frontend/dist/jira-logger/:/var/www/public/ng
+    networks:
+      - internalNetwork
 
   nginx:
     container_name: "jira-logger-nginx"
@@ -44,12 +48,16 @@ services:
     depends_on:
       - php-fpm
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jira-logger-nginx.rule=Host(`jira-logger.io`)"
-      - "traefik.http.routers.jira-logger-nginx.tls=true"
+      traefik.enable: true
+      traefik.http.routers.jira-logger-nginx.rule: Host(`jira-logger.io`)
+      traefik.http.routers.jira-logger-nginx.entrypoints: websecure
+      traefik.http.routers.jira-logger-nginx.tls: true
+      traefik.http.services.jira-logger-nginx.loadbalancer.server.port: 80
     ports:
-      - "8888:80"
-      - "443:443"
+      - "80"
+    networks:
+      - internalNetwork
+      - jiraLoggerNetwork
 
   node:
     container_name: "jira-logger-node"
@@ -60,6 +68,15 @@ services:
       - ./../frontend/:/home/node/app
     labels:
       - "traefik.enable=false"
+    networks:
+      - internalNetwork
 
 volumes:
   dbData:
+
+networks:
+  internalNetwork:
+    external: false
+
+  jiraLoggerNetwork:
+    external: true
