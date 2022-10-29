@@ -26,6 +26,7 @@
     "symfony/asset": "6.1.*",
     "symfony/console": "6.1.*",
     "symfony/dotenv": "6.1.*",
+    "symfony/event-dispatcher": "6.1.*",
     "symfony/flex": "^2",
     "symfony/framework-bundle": "6.1.*",
     "symfony/mime": "6.1.*",
@@ -92,7 +93,7 @@
       "@auto-scripts"
     ],
     "php-cs-fixer": "php-cs-fixer fix src",
-    "php-stan": "phpstan analyse src"
+    "php-stan": "phpstan analyse src --memory-limit 1024M"
   },
   "conflict": {
     "symfony/symfony": "*"
