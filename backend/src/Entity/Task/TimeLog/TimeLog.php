@@ -55,6 +55,15 @@ class TimeLog implements EntityBaseInterface
     private ?string $description = null;
 
     #[
+        Groups([Group::LIST]),
+        ORM\Column(
+            length: 255,
+            nullable: true
+        )
+    ]
+    private ?string $workLogId = null;
+
+    #[
         MaxDepth(1),
         ORM\ManyToOne(
             targetEntity: Task::class,
@@ -162,6 +171,18 @@ class TimeLog implements EntityBaseInterface
     final public function setOriginalEndTime(?DateTimeInterface $originalEndTime): self
     {
         $this->originalEndTime = $originalEndTime;
+
+        return $this;
+    }
+
+    final public function getWorkLogId(): ?string
+    {
+        return $this->workLogId;
+    }
+
+    final public function setWorkLogId(?string $workLogId): self
+    {
+        $this->workLogId = $workLogId;
 
         return $this;
     }
