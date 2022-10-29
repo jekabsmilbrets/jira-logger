@@ -14,22 +14,27 @@ when@dev:
         path: "%kernel.logs_dir%/%kernel.environment%/app.log"
         #                level: debug
         channels: [ "!event", "!deprecation", "!request", "!doctrine", "!jira-api-service" ]
+
       event:
         type: stream
         path: "%kernel.logs_dir%/%kernel.environment%/event.log"
         channels: [ "event" ]
+
       deprecation:
         type: stream
         path: "%kernel.logs_dir%/%kernel.environment%/deprecation.log"
         channels: [ "deprecation" ]
+
       request:
         type: stream
         path: "%kernel.logs_dir%/%kernel.environment%/request.log"
         channels: [ "request" ]
+
       doctrine:
         type: stream
         path: "%kernel.logs_dir%/%kernel.environment%/doctrine.log"
         channels: [ "doctrine" ]
+
       jira-api-service:
         type: stream
         path: "%kernel.logs_dir%/%kernel.environment%/jira-api-service.log"
