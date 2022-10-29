@@ -11,6 +11,10 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Annotation\Route;
 
+#[Route(
+    path: '/',
+    stateless: true
+)]
 class AngularController extends AbstractController
 {
     #[
