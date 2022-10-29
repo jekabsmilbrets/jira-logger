@@ -83,7 +83,7 @@ class ModelNormalizer implements NormalizerInterface
     /**
      * {@inheritDoc}
      */
-    final public function supportsNormalization(mixed $data, string $format = null): bool
+    final public function supportsNormalization(mixed $data, string $format = null, array $context = []): bool
     {
         return true;
     }

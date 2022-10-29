@@ -13,7 +13,7 @@ when@dev:
         type: stream
         path: "%kernel.logs_dir%/%kernel.environment%/app.log"
         #                level: debug
-        channels: [ "!event", "!deprecation", "!request", "!doctrine", "!jira-api-service" ]
+        channels: [ "!event", "!deprecation", "!request", "!doctrine", "!jira-api-service", "!console" ]
 
       event:
         type: stream
@@ -39,6 +39,11 @@ when@dev:
         type: stream
         path: "%kernel.logs_dir%/%kernel.environment%/jira-api-service.log"
         channels: [ "jira-api-service" ]
+
+      console:
+        type: stream
+        path: "%kernel.logs_dir%/%kernel.environment%/console.log"
+        channels: [ "console" ]
       # uncomment to get logging in your browser
       # you may have to allow bigger header sizes in your Web server configuration
       #firephp:
@@ -53,10 +58,10 @@ when@dev:
         # log error-level messages and higher
         level: error
 
-      console:
-        type: console
-        process_psr_3_messages: false
-        channels: [ "!event", "!doctrine", "!console" ]
+#      console:
+#        type: console
+#        process_psr_3_messages: false
+#        channels: [ "!event", "!doctrine", "!console" ]
 
 when@test:
   monolog:
