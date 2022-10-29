@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit }                  from '@angular/core';
 import { MatSnackBar, MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
 
-import { interval, switchMap, catchError, retry, throwError, take, Subscription, tap } from 'rxjs';
+import { interval, switchMap, catchError, retry, throwError, take, Subscription, tap, startWith } from 'rxjs';
 
 import { MonitorService } from '@core/services/monitor.service';
 
@@ -18,7 +18,7 @@ export class AppComponent implements OnDestroy, OnInit {
 
   private snackBarRef!: MatSnackBarRef<TextOnlySnackBar> | undefined;
 
-  private monitorInterval = 10000;
+  private monitorInterval = 60000;
 
   private houseCallSubscription!: Subscription;
 
@@ -36,6 +36,7 @@ export class AppComponent implements OnDestroy, OnInit {
   public ngOnInit(): void {
     this.houseCallSubscription = interval(this.monitorInterval)
       .pipe(
+        startWith(null),
         switchMap(() => this.monitorService.callMonitor()
                             .pipe(
                               catchError((error) => {

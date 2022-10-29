@@ -1,5 +1,9 @@
 {
-  "name": "jira-logger",
+  "name": "jira-logger-fe",
+  "author": {
+    "name": "Jēkabs Milbrets",
+    "email": "jekabs.milbrets@me.com"
+  },
   "version": "0.2.0",
   "scripts": {
     "ng": "ng",
