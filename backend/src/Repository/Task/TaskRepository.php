@@ -17,16 +17,22 @@ use Exception;
  * @method Task|null findOneBy(array $criteria, array $orderBy = null)
  * @method Task[]    findAll()
  * @method Task[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ *
  * @noinspection MethodShouldBeFinalInspection
  */
 class TaskRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $managerRegistry)
+    public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($managerRegistry, Task::class);
+        parent::__construct($registry, Task::class);
     }
 
     final public function add(Task $task, bool $flush = false): void
+    {
+        $this->save($task, $flush);
+    }
+
+    final public function save(Task $task, bool $flush = false): void
     {
         $this->getEntityManager()->persist($task);
 
