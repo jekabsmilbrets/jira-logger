@@ -1,48 +1,51 @@
-<form (ngSubmit)="onUpdate(task)"
+<form (ngSubmit)="onUpdate()"
       [formGroup]="formGroup">
   <mat-card>
-    <mat-card-title>
-      <ng-container *ngIf="!editMode">
+    <ng-container *ngIf="!editMode">
+      <mat-card-title>
         <span>{{task.name}}</span>
+
         <mat-chip-list aria-label="Task tags">
           <mat-chip *ngFor="let tag of task.tags">{{tag.name}}</mat-chip>
         </mat-chip-list>
-      </ng-container>
+      </mat-card-title>
 
-      <mat-form-field *ngIf="editMode">
-        <mat-label>Task</mat-label>
-        <input formControlName="name"
-               matInput>
-      </mat-form-field>
+      <mat-card-subtitle>
+        <span>{{task.description}}</span><br/>
 
-      <mat-form-field *ngIf="editMode">
-        <mat-label>Tags</mat-label>
-        <mat-select [compareWith]="isSameTag" formControlName="tags" multiple>
-          <mat-option *ngFor="let tag of tags$ | async" [value]="tag">
-            {{tag.name}}
-          </mat-option>
-        </mat-select>
-      </mat-form-field>
-    </mat-card-title>
+        <span>Total Time Worked: {{ task.timeLogged | readableTime }}</span>
+      </mat-card-subtitle>
+    </ng-container>
 
-    <mat-card-content>
-      <ng-container *ngIf="!editMode">
-        {{task.description}}
-      </ng-container>
+    <ng-container *ngIf="editMode">
+      <mat-card-title>
+        <mat-form-field>
+          <mat-label>Task</mat-label>
+          <input formControlName="name"
+                 matInput>
+        </mat-form-field>
 
-      <mat-form-field *ngIf="editMode">
-        <mat-label>Description</mat-label>
-        <textarea formControlName="description"
-                  matInput></textarea>
-      </mat-form-field>
+        <mat-form-field>
+          <mat-label>Tags</mat-label>
+          <mat-select [compareWith]="isSameTag" formControlName="tags" multiple>
+            <mat-option *ngFor="let tag of tags$ | async" [value]="tag">
+              {{tag.name}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </mat-card-title>
 
-      <span *ngIf="task.timeLogged > 59">
-        Total Time Worked: {{ task.timeLogged | readableTime }}
-      </span>
-    </mat-card-content>
+      <mat-card-subtitle>
+        <mat-form-field>
+          <mat-label>Description</mat-label>
+          <textarea formControlName="description"
+                    matInput></textarea>
+        </mat-form-field>
+      </mat-card-subtitle>
+    </ng-container>
 
     <mat-card-actions>
-      <button (click)="toggleEditMode()"
+      <button (click)="onToggleEditMode()"
               *ngIf="!editMode"
               [disabled]="isLoading"
               aria-label="Edit"
@@ -51,7 +54,7 @@
         <mat-icon>edit</mat-icon>
       </button>
 
-      <button (click)="toggleEditMode()"
+      <button (click)="onToggleEditMode()"
               *ngIf="editMode"
               aria-label="Edit"
               mat-icon-button
@@ -60,14 +63,14 @@
       </button>
 
       <button *ngIf="editMode"
-              [disabled]="!formGroup.valid"
+              [disabled]="false"
               aria-label="Update"
               mat-icon-button
               type="submit">
         <mat-icon>save</mat-icon>
       </button>
 
-      <button (click)="onRemove(task)"
+      <button (click)="onRemove()"
               [disabled]="isLoading"
               aria-label="Remove"
               color="warn"
@@ -76,17 +79,17 @@
         <mat-icon>delete</mat-icon>
       </button>
 
-      <button (click)="onToggleTimeLog(task)"
+      <button (click)="onToggleTimeLogging()"
               [disabled]="isLoading"
               aria-label="Start Timer"
               color="primary"
               mat-icon-button
               type="button">
         <mat-icon>timer</mat-icon>
-        <mat-icon>{{isTimeLogRunning(task) ? 'pause' : 'play_arrow'}}</mat-icon>
+        <mat-icon>{{isTimeLogRunning() ? 'pause' : 'play_arrow'}}</mat-icon>
       </button>
 
-      <button (click)="onOpenTimeLogsModal(task)"
+      <button (click)="onOpenTimeLogsModal()"
               [disabled]="isLoading"
               aria-label="Remove"
               color="warn"

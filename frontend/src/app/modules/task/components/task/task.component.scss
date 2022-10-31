@@ -1,17 +1,25 @@
 :host {
-  .mat-card-title {
-    display: flex;
-    flex-direction: row;
+  mat-card {
+    display: block;
 
-    span {
-      line-height: 25px;
+    @media only screen and (max-width: 600px) {
+      width: 85vw;
     }
 
-    .mat-chip {
-      padding: 4px 8px;
-      border-radius: 16px;
-      min-height: 24px;
-      font-size: 12px;
+    @media only screen and (min-width: 600px) {
+      width: calc(80vw / 2);
+    }
+
+    @media only screen and (min-width: 768px) {
+      width: calc(80vw / 3);
+    }
+
+    @media only screen and (min-width: 992px) {
+      width: calc(80vw / 4);
+    }
+
+    @media only screen and (min-width: 1200px) {
+      width: calc(80vw / 5);
     }
   }
 }
