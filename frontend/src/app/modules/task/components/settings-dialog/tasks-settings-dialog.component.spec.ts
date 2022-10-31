@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { TasksSettingsDialogComponent } from 'app/modules/task/components/settings-dialog/tasks-settings-dialog.component';
+import { TasksSettingsDialogComponent } from './tasks-settings-dialog.component';
 
 describe('TasksSettingsDialogComponent', () => {
   let component: TasksSettingsDialogComponent;

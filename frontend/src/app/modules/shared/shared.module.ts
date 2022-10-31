@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { NgModule }     from '@angular/core';
 
-import { MaterialModule } from 'app/modules/material/material.module';
 
 import { AreYouSureDialogComponent } from '@shared/components/are-you-sure-dialog/are-you-sure-dialog.component';
 
@@ -13,6 +12,8 @@ import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
 
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
+
+import { MaterialModule } from '../material/material.module';
 
 
 @NgModule(
