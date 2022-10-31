@@ -1,6 +1,6 @@
-import { Component, Inject, OnInit }     from '@angular/core';
-import { FormControl, FormGroup }        from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { Component, OnInit, Inject }          from '@angular/core';
+import { FormGroup, FormControl, Validators } from '@angular/forms';
+import { MatDialogRef, MAT_DIALOG_DATA }      from '@angular/material/dialog';
 
 import { TimeLogDialogDataInterface }    from '@task/interfaces/time-log-dialog-data.interface';
 import { TimeLogModalResponseInterface } from '@task/interfaces/time-log-modal-response.interface';
@@ -25,7 +25,7 @@ export class TimeLogModalComponent implements OnInit {
     description: FormControl<string | null>;
   }>(
     {
-      startTime: new FormControl<Date | null>(null),
+      startTime: new FormControl<Date | null>(null, Validators.required),
       endTime: new FormControl<Date | null>(null),
       description: new FormControl<string | null>(null),
     },
@@ -60,14 +60,14 @@ export class TimeLogModalComponent implements OnInit {
     if (formData.endTime === undefined || formData.endTime === new Date(0)) {
       formData.endTime = null;
     }
+    const timeLog = this.data.timeLog;
+
+    Object.assign(timeLog, formData);
 
     this.dialogRef.close(
       {
         responseType: 'update',
-        responseData: {
-          oldTimeLog: this.data.timeLog,
-          updatedTimeLogData: formData,
-        },
+        responseData: timeLog,
       },
     );
   }
@@ -76,9 +76,6 @@ export class TimeLogModalComponent implements OnInit {
     this.dialogRef.close(
       {
         responseType: 'delete',
-        responseData: {
-          oldTimeLog: this.data.timeLog,
-        },
       },
     );
   }
