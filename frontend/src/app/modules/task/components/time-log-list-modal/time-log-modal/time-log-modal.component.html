@@ -22,8 +22,7 @@
       <input [ngxMatDatetimePicker]="startTimePicker"
              formControlName="startTime"
              matInput
-             placeholder="Ex. 2000-01-01 01:02:03"
-             readonly>
+             placeholder="Ex. 2000-01-01 01:02:03">
       <mat-datepicker-toggle [for]="$any(startTimePicker)" matSuffix></mat-datepicker-toggle>
       <ngx-mat-datetime-picker #startTimePicker
                                [showSeconds]="true"></ngx-mat-datetime-picker>
@@ -34,8 +33,7 @@
       <input [ngxMatDatetimePicker]="endTimePicker"
              formControlName="endTime"
              matInput
-             placeholder="Ex. 2222-12-31 23:59:59"
-             readonly>
+             placeholder="Ex. 2222-12-31 23:59:59">
       <mat-datepicker-toggle [for]="$any(endTimePicker)" matSuffix></mat-datepicker-toggle>
       <ngx-mat-datetime-picker #endTimePicker
                                [showSeconds]="true"></ngx-mat-datetime-picker>
@@ -46,5 +44,5 @@
 <mat-dialog-actions>
   <button (click)="onCancel()" mat-button>Cancel</button>
   <button (click)="onDelete()" color="warn" mat-button>Delete</button>
-  <button (click)="onSave()" mat-button>Save changes</button>
+  <button (click)="onSave()" [disabled]="formGroup.invalid" mat-button>Save changes</button>
 </mat-dialog-actions>
