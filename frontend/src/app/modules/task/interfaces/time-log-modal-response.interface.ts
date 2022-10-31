@@ -5,8 +5,5 @@ import { TimeLogModalResponseType } from '@task/types/time-log-modal-response.ty
 
 export interface TimeLogModalResponseInterface {
   responseType: TimeLogModalResponseType;
-  responseData?: {
-    oldTimeLog?: TimeLog;
-    updatedTimeLogData?: any;
-  };
+  responseData?: TimeLog;
 }
