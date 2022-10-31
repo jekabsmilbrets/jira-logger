@@ -79,6 +79,11 @@ export class Task extends Base implements Searchable {
     return lastStartTime && lastStartTime > -1 ? new Date(lastStartTime) : null;
   }
 
+  public get isTimeLogRunning(): boolean {
+    return !!this.lastTimeLog &&
+      !(this.lastTimeLog.endTime instanceof Date);
+  }
+
 
   public updateTimeLogged(): number {
     this.timeLogged = this.calcTimeLogged();
