@@ -1,6 +1,6 @@
-import { formatDate }                    from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable }                    from '@angular/core';
+import { formatDate }                                from '@angular/common';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { Injectable }                                from '@angular/core';
 
 import { environment } from 'environments/environment';
 
@@ -77,28 +77,14 @@ export class TasksService implements LoadableService {
 
   public filteredList(
     filter: TaskListFilter,
+    updateTaskList: boolean = false,
   ): Observable<Task[]> {
     let url = `${environment.apiHost}${environment.apiBase}/${this.basePath}`;
 
-    const format = 'YYYY-MM-dd HH:mm:ss';
-    const formatDateForUri = (date: Date) => encodeURIComponent(formatDate(date, format, appLocale, appTimeZone));
+    const outputQueryParams = this.buildQueryParams(filter);
 
-    url += `?hideUnreported=${filter.hideUnreported}`;
-
-    if (filter.date) {
-      url += `&date=${formatDateForUri(filter.date)}`;
-    }
-
-    if (filter.startDate) {
-      url += `&startDate=${formatDateForUri(filter.startDate)}`;
-    }
-
-    if (filter.endDate) {
-      url += `&endDate=${formatDateForUri(filter.endDate)}`;
-    }
-
-    if (filter.tags) {
-      url += `&tags=${filter.tags.join(',')}`;
+    if (Object.keys(outputQueryParams).length > 0) {
+      url += '?' + new HttpParams({fromObject: outputQueryParams}).toString();
     }
 
     return waitForTurn(this.isLoading$, this.isLoadingSubject)
@@ -114,6 +100,12 @@ export class TasksService implements LoadableService {
         map(
           (response: JsonApi<ApiTask[]>) => (response.data && adaptTasks(response.data)) as Task[],
         ),
+
+        tap((tasks: Task[]) => {
+          if (updateTaskList) {
+            this.tasksSubject.next(tasks);
+          }
+        }),
         tap(() => this.isLoadingSubject.next(false)),
       );
   }
@@ -170,6 +162,48 @@ export class TasksService implements LoadableService {
         ),
         map(() => undefined),
       );
+  }
+
+  private buildQueryParams(
+    filter: TaskListFilter,
+  ) {
+    const format = 'YYYY-MM-dd HH:mm:ss';
+    const formatDateForUri = (date: Date) => encodeURIComponent(formatDate(date, format, appLocale, appTimeZone));
+
+    const outputQueryParams: {
+      hideUnreported?: string;
+      date?: string;
+      startDate?: string;
+      endDate?: string;
+      tags?: string;
+      name?: string;
+    } = {};
+
+    if (filter.hideUnreported) {
+      outputQueryParams.hideUnreported = String(filter.hideUnreported);
+    }
+
+    if (filter.date) {
+      outputQueryParams.date = formatDateForUri(filter.date);
+    }
+
+    if (filter.startDate) {
+      outputQueryParams.startDate = formatDateForUri(filter.startDate);
+    }
+
+    if (filter.endDate) {
+      outputQueryParams.endDate = formatDateForUri(filter.endDate);
+    }
+
+    if (filter.tags) {
+      outputQueryParams.tags = filter.tags.join(',');
+    }
+
+    if (filter.name) {
+      outputQueryParams.name = filter.name;
+    }
+
+    return outputQueryParams;
   }
 
   private processError(error: any): Observable<never> {

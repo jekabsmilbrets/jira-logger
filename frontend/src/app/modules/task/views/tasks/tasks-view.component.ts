@@ -1,10 +1,12 @@
 import { Component, OnInit }                                   from '@angular/core';
 import { FormGroup, FormControl, Validators, AbstractControl } from '@angular/forms';
 
-import { Observable, of, switchMap, take, forkJoin, NEVER } from 'rxjs';
+import { Observable, of, switchMap, take, forkJoin, NEVER, distinctUntilChanged, catchError, startWith, debounceTime } from 'rxjs';
 
 import { DynamicMenu }        from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
+
+import { TaskListFilter }     from '@shared/interfaces/task-list-filter.interface';
 
 import { Tag }             from '@shared/models/tag.model';
 import { Task }            from '@shared/models/task.model';
@@ -74,6 +76,34 @@ export class TasksViewComponent implements OnInit {
         tags: new FormControl<Tag[] | null>([]),
       },
     );
+
+    this.createTaskForm.get('name')?.valueChanges
+        .pipe(
+          startWith(''),
+          debounceTime(300),
+          distinctUntilChanged(),
+          switchMap(
+            (value: string | null) => {
+              if (value) {
+                const filter: TaskListFilter = {
+                  name: value,
+                };
+
+                return this.tasksService.filteredList(
+                             filter,
+                             true,
+                           )
+                           .pipe(
+                             take(1),
+                             catchError(() => of(null)),
+                           );
+              }
+
+              return of(null);
+            },
+          ),
+        )
+        .subscribe();
   }
 
   public ngOnInit(): void {
