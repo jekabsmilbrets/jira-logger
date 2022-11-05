@@ -30,14 +30,14 @@
   </form>
 </app-task-list-view-header>
 
-<app-task-list>
+<app-task-list *ngIf="tasks$ | async as tasks">
   <app-task (action)="onAction($event)"
             (createTimeLog)="onCreateTimeLog($event)"
             (remove)="onRemove($event)"
             (removeTimeLog)="onRemoveTimeLog($event)"
             (update)="onUpdate($event)"
             (updateTimeLog)="onUpdateTimeLog($event)"
-            *ngFor="let task of tasks$ | async"
+            *ngFor="let task of tasks"
             [isLoading]="isLoading$ | async"
             [task]="task">
   </app-task>
