@@ -168,7 +168,7 @@ export class TasksService implements LoadableService {
     filter: TaskListFilter,
   ) {
     const format = 'YYYY-MM-dd HH:mm:ss';
-    const formatDateForUri = (date: Date) => encodeURIComponent(formatDate(date, format, appLocale, appTimeZone));
+    const formatDateForUri = (date: Date) => formatDate(date, format, appLocale, appTimeZone);
 
     const outputQueryParams: {
       hideUnreported?: string;
