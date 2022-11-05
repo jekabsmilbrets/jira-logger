@@ -24,6 +24,11 @@ const routes: Routes = [
       },
       {
         path: '**',
+        redirectTo: 'tasks',
+        pathMatch: 'full',
+      },
+      {
+        path: '**',
         component: PageNotFoundComponent,
       },
     ],

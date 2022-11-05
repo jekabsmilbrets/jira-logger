@@ -36,39 +36,7 @@ export class TasksViewComponent implements OnInit {
     name: FormControl<string | null>;
     description: FormControl<string | null>;
     tags: FormControl<Tag[] | null>;
-  }> = new FormGroup<{
-    name: FormControl<string | null>;
-    description: FormControl<string | null>;
-    tags: FormControl<Tag[] | null>;
-  }>(
-    {
-      name: new FormControl<string | null>(
-        null,
-        [Validators.required],
-        [
-          (control: AbstractControl) => this.tasks$
-                                            .pipe(
-                                              take(1),
-                                              switchMap(
-                                                (tasks: Task[]) => {
-                                                  const value = control.value;
-
-                                                  if (tasks.find(
-                                                    (task) => task.name === value)) {
-                                                    // eslint-disable-next-line @typescript-eslint/naming-convention
-                                                    return of({'duplicate-task': true});
-                                                  }
-
-                                                  return of(null);
-                                                },
-                                              ),
-                                            ),
-        ],
-      ),
-      description: new FormControl<string | null>(null),
-      tags: new FormControl<Tag[] | null>([]),
-    },
-  );
+  }>;
 
   constructor(
     private tasksService: TasksService,
@@ -89,6 +57,23 @@ export class TasksViewComponent implements OnInit {
                         ),
                       );
     this.tags$ = this.tagsService.tags$;
+    this.createTaskForm = new FormGroup<{
+      name: FormControl<string | null>;
+      description: FormControl<string | null>;
+      tags: FormControl<Tag[] | null>;
+    }>(
+      {
+        name: new FormControl<string | null>(
+          null,
+          [Validators.required],
+          [
+            this.asyncValidator,
+          ],
+        ),
+        description: new FormControl<string | null>(null),
+        tags: new FormControl<Tag[] | null>([]),
+      },
+    );
   }
 
   public ngOnInit(): void {
@@ -176,6 +161,26 @@ export class TasksViewComponent implements OnInit {
         .subscribe();
   }
 
+  private asyncValidator = (control: AbstractControl) => {
+    const duplicateCheck = (tasks: Task[]) => {
+      const value = control.value;
+
+      if (tasks.find(
+        (task: Task) => task.name === value)) {
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        return of({'duplicate-task': true});
+      }
+
+      return of(null);
+    };
+
+    return this.tasks$
+               .pipe(
+                 take(1),
+                 switchMap(duplicateCheck),
+               );
+  };
+
   private startTimeLog(
     task: Task,
   ): Observable<TimeLog> {
@@ -198,10 +203,6 @@ export class TasksViewComponent implements OnInit {
                        (oTask: Task) => {
                          if (oTask.id !== task.id) {
                            if (oTask.isTimeLogRunning && oTask.lastTimeLog instanceof TimeLog) {
-                             console.log({
-                                           oTask,
-                                           lastTimeLog: oTask.lastTimeLog,
-                                         });
                              oTask.lastTimeLog.endTime = new Date();
                              observables.push(this.timeLogsService.update(oTask, oTask.lastTimeLog));
                            }
