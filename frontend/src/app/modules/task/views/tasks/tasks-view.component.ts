@@ -1,12 +1,12 @@
-import { Component, OnInit }                                   from '@angular/core';
-import { FormGroup, FormControl, Validators, AbstractControl } from '@angular/forms';
+import { Component, OnInit } from '@angular/core';
+import { FormGroup }         from '@angular/forms';
 
 import { Observable, of, switchMap, take, forkJoin, NEVER, distinctUntilChanged, catchError, startWith, debounceTime } from 'rxjs';
 
 import { DynamicMenu }        from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
-import { TaskListFilter }     from '@shared/interfaces/task-list-filter.interface';
+import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 
 import { Tag }             from '@shared/models/tag.model';
 import { Task }            from '@shared/models/task.model';
@@ -18,6 +18,9 @@ import { SharedModule }    from '@shared/shared.module';
 
 import { TasksMenuComponent }   from '@task/components/tasks-menu/tasks-menu.component';
 import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
+
+import { CreateTaskFromGroupInterface } from '@task/interfaces/create-task-from-group.interface';
+import { TaskCreateService }            from '@task/services/task-create.service';
 
 import { TasksSettingsService } from '@task/services/tasks-settings.service';
 
@@ -34,14 +37,11 @@ export class TasksViewComponent implements OnInit {
   public isLoading$: Observable<boolean>;
   public tags$: Observable<Tag[]>;
 
-  public createTaskForm: FormGroup<{
-    name: FormControl<string | null>;
-    description: FormControl<string | null>;
-    tags: FormControl<Tag[] | null>;
-  }>;
+  public createTaskForm: FormGroup<CreateTaskFromGroupInterface>;
 
   constructor(
     private tasksService: TasksService,
+    private taskCreateService: TaskCreateService,
     private timeLogsService: TimeLogsService,
     private tasksSettingsService: TasksSettingsService,
     private dynamicMenuService: DynamicMenuService,
@@ -59,23 +59,7 @@ export class TasksViewComponent implements OnInit {
                         ),
                       );
     this.tags$ = this.tagsService.tags$;
-    this.createTaskForm = new FormGroup<{
-      name: FormControl<string | null>;
-      description: FormControl<string | null>;
-      tags: FormControl<Tag[] | null>;
-    }>(
-      {
-        name: new FormControl<string | null>(
-          null,
-          [Validators.required],
-          [
-            this.asyncValidator,
-          ],
-        ),
-        description: new FormControl<string | null>(null),
-        tags: new FormControl<Tag[] | null>([]),
-      },
-    );
+    this.createTaskForm = this.taskCreateService.createFormGroup();
 
     this.createTaskForm.get('name')?.valueChanges
         .pipe(
@@ -84,26 +68,46 @@ export class TasksViewComponent implements OnInit {
           distinctUntilChanged(),
           switchMap(
             (value: string | null) => {
-              if (value) {
-                const filter: TaskListFilter = {
-                  name: value,
-                };
+              const filter: TaskListFilter = {};
 
-                return this.tasksService.filteredList(
-                             filter,
-                             true,
-                           )
-                           .pipe(
-                             take(1),
-                             catchError(() => of(null)),
-                           );
+              if (value) {
+                filter.name = value;
               }
 
-              return of(null);
+              return this.tasksService.filteredList(
+                           filter,
+                           true,
+                         )
+                         .pipe(
+                           take(1),
+                           catchError(() => of(null)),
+                         );
             },
           ),
         )
         .subscribe();
+  }
+
+  public resetFormGroup(): void {
+    this.createTaskForm.reset(
+      {
+        tags: [],
+      },
+    );
+  }
+
+  public onCreate(): void {
+    const task = new Task(
+      this.createTaskForm.getRawValue() as Partial<Task>,
+    );
+
+    this.tasksService.create(task)
+        .pipe(
+          take(1),
+        )
+        .subscribe(
+          () => this.resetFormGroup(),
+        );
   }
 
   public ngOnInit(): void {
@@ -135,24 +139,6 @@ export class TasksViewComponent implements OnInit {
         take(1),
       )
       .subscribe();
-  }
-
-  public onCreate(): void {
-    const task = new Task(
-      this.createTaskForm.getRawValue() as Partial<Task>,
-    );
-
-    this.tasksService.create(task)
-        .pipe(
-          take(1),
-        )
-        .subscribe(
-          () => this.createTaskForm.reset(
-            {
-              tags: [],
-            },
-          ),
-        );
   }
 
   public onUpdate(task: Task): void {
@@ -190,26 +176,6 @@ export class TasksViewComponent implements OnInit {
         )
         .subscribe();
   }
-
-  private asyncValidator = (control: AbstractControl) => {
-    const duplicateCheck = (tasks: Task[]) => {
-      const value = control.value;
-
-      if (tasks.find(
-        (task: Task) => task.name === value)) {
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        return of({'duplicate-task': true});
-      }
-
-      return of(null);
-    };
-
-    return this.tasks$
-               .pipe(
-                 take(1),
-                 switchMap(duplicateCheck),
-               );
-  };
 
   private startTimeLog(
     task: Task,
