@@ -1,7 +1,7 @@
 import { NgModule }            from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 
-import { SharedModule }              from '@shared/shared.module';
+import { SharedModule } from '@shared/shared.module';
 
 import { TaskListComponent }         from '@task/components/task-list/task-list.component';
 import { TaskComponent }             from '@task/components/task-list/task/task.component';
@@ -12,6 +12,7 @@ import { TaskViewHeaderComponent }   from '@task/components/task-view-header/tas
 import { TasksSettingsDialogComponent } from '@task/components/tasks-menu/settings-dialog/tasks-settings-dialog.component';
 import { TasksMenuComponent }           from '@task/components/tasks-menu/tasks-menu.component';
 import { TasksSettingsToggleComponent } from '@task/components/tasks-menu/tasks-settings-toggler/tasks-settings-toggle.component';
+import { TaskCreateService }            from '@task/services/task-create.service';
 
 import { TaskEditService }      from '@task/services/task-edit.service';
 import { TasksSettingsService } from '@task/services/tasks-settings.service';
@@ -49,6 +50,7 @@ import { TasksViewComponent } from '@task/views/tasks/tasks-view.component';
       TasksSettingsService,
       TaskEditService,
       TimeLogEditService,
+      TaskCreateService,
     ],
   },
 )
