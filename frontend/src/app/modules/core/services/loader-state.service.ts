@@ -2,14 +2,21 @@ import { Injectable } from '@angular/core';
 
 import { environment } from 'environments/environment';
 
-import { BehaviorSubject, combineLatest, map, Observable, switchMap, tap, debounceTime, distinctUntilChanged } from 'rxjs';
+import {
+  BehaviorSubject,
+  combineLatest,
+  debounceTime,
+  distinctUntilChanged,
+  map,
+  Observable,
+  switchMap,
+  tap,
+} from 'rxjs';
 
 
-@Injectable(
-  {
-    providedIn: 'root',
-  },
-)
+@Injectable({
+  providedIn: 'root',
+})
 export class LoaderStateService {
   public isLoading$: Observable<boolean>;
 
@@ -21,16 +28,16 @@ export class LoaderStateService {
 
   constructor() {
     this.isLoading$ = this.loaderMarks.asObservable()
-                          .pipe(
-                            switchMap(
-                              (marks: Map<string, Observable<boolean>>) => combineLatest([...marks.values()]),
-                            ),
-                            debounceTime(this.debounceDelay),
-                            distinctUntilChanged(),
-                            map(
-                              (marks: boolean[]) => marks.includes(true),
-                            ),
-                          );
+      .pipe(
+        switchMap(
+          (marks: Map<string, Observable<boolean>>) => combineLatest([...marks.values()]),
+        ),
+        debounceTime(this.debounceDelay),
+        distinctUntilChanged(),
+        map(
+          (marks: boolean[]) => marks.includes(true),
+        ),
+      );
   }
 
   public addLoader(loader: Observable<boolean>, name?: string): void {
@@ -45,7 +52,7 @@ export class LoaderStateService {
       loader.pipe(
         tap((isLoading: boolean) => {
           if (!environment.production && environment.debug) {
-            console.log(`${name} is ${isLoading ? 'Loading' : 'Done loading'}!`);
+            console.log(`${ name } is ${ isLoading ? 'Loading' : 'Done loading' }!`);
           }
         }),
       ),

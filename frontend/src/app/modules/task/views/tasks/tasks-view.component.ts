@@ -1,7 +1,18 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup }         from '@angular/forms';
 
-import { Observable, of, switchMap, take, forkJoin, NEVER, distinctUntilChanged, catchError, startWith, debounceTime } from 'rxjs';
+import {
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  forkJoin,
+  NEVER,
+  Observable,
+  of,
+  startWith,
+  switchMap,
+  take,
+} from 'rxjs';
 
 import { DynamicMenu }        from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
@@ -49,43 +60,43 @@ export class TasksViewComponent implements OnInit {
   ) {
     this.isLoading$ = this.tasksService.isLoading$;
     this.tasks$ = this.tasksService.tasks$
-                      .pipe(
-                        switchMap(
-                          (tasks: Task[]) => of(
-                            [...tasks].sort(
-                              this.taskSort,
-                            ),
-                          ),
-                        ),
-                      );
+      .pipe(
+        switchMap(
+          (tasks: Task[]) => of(
+            [...tasks].sort(
+              this.taskSort,
+            ),
+          ),
+        ),
+      );
     this.tags$ = this.tagsService.tags$;
     this.createTaskForm = this.taskCreateService.createFormGroup();
 
     this.createTaskForm.get('name')?.valueChanges
-        .pipe(
-          startWith(''),
-          debounceTime(300),
-          distinctUntilChanged(),
-          switchMap(
-            (value: string | null) => {
-              const filter: TaskListFilter = {};
+      .pipe(
+        startWith(''),
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap(
+          (value: string | null) => {
+            const filter: TaskListFilter = {};
 
-              if (value) {
-                filter.name = value;
-              }
+            if (value) {
+              filter.name = value;
+            }
 
-              return this.tasksService.filteredList(
-                           filter,
-                           true,
-                         )
-                         .pipe(
-                           take(1),
-                           catchError(() => of(null)),
-                         );
-            },
-          ),
-        )
-        .subscribe();
+            return this.tasksService.filteredList(
+              filter,
+              true,
+            )
+              .pipe(
+                take(1),
+                catchError(() => of(null)),
+              );
+          },
+        ),
+      )
+      .subscribe();
   }
 
   public resetFormGroup(): void {
@@ -102,12 +113,12 @@ export class TasksViewComponent implements OnInit {
     );
 
     this.tasksService.create(task)
-        .pipe(
-          take(1),
-        )
-        .subscribe(
-          () => this.resetFormGroup(),
-        );
+      .pipe(
+        take(1),
+      )
+      .subscribe(
+        () => this.resetFormGroup(),
+      );
   }
 
   public ngOnInit(): void {
@@ -143,38 +154,38 @@ export class TasksViewComponent implements OnInit {
 
   public onUpdate(task: Task): void {
     this.tasksService.update(task)
-        .pipe(take(1))
-        .subscribe();
+      .pipe(take(1))
+      .subscribe();
   }
 
   public onRemove(task: Task): void {
     this.tasksService.delete(task)
-        .pipe(take(1))
-        .subscribe();
+      .pipe(take(1))
+      .subscribe();
   }
 
   public onCreateTimeLog([task, timeLog]: [Task, TimeLog]): void {
     this.timeLogsService.create(task, timeLog)
-        .pipe(
-          take(1),
-        )
-        .subscribe();
+      .pipe(
+        take(1),
+      )
+      .subscribe();
   }
 
   public onUpdateTimeLog([task, timeLog]: [Task, TimeLog]): void {
     this.timeLogsService.update(task, timeLog)
-        .pipe(
-          take(1),
-        )
-        .subscribe();
+      .pipe(
+        take(1),
+      )
+      .subscribe();
   }
 
   public onRemoveTimeLog([task, timeLog]: [Task, TimeLog]): void {
     this.timeLogsService.delete(task, timeLog)
-        .pipe(
-          take(1),
-        )
-        .subscribe();
+      .pipe(
+        take(1),
+      )
+      .subscribe();
   }
 
   private startTimeLog(
@@ -189,33 +200,33 @@ export class TasksViewComponent implements OnInit {
     const createTimeLog$ = this.timeLogsService.create(task, timeLog);
 
     return this.tasks$
-               .pipe(
-                 take(1),
-                 switchMap(
-                   (tasks: Task[]) => {
-                     const observables: Observable<TimeLog>[] = [];
+      .pipe(
+        take(1),
+        switchMap(
+          (tasks: Task[]) => {
+            const observables: Observable<TimeLog>[] = [];
 
-                     tasks.forEach(
-                       (oTask: Task) => {
-                         if (oTask.id !== task.id) {
-                           if (oTask.isTimeLogRunning && oTask.lastTimeLog instanceof TimeLog) {
-                             oTask.lastTimeLog.endTime = new Date();
-                             observables.push(this.timeLogsService.update(oTask, oTask.lastTimeLog));
-                           }
-                         }
-                       },
-                     );
+            tasks.forEach(
+              (oTask: Task) => {
+                if (oTask.id !== task.id) {
+                  if (oTask.isTimeLogRunning && oTask.lastTimeLog instanceof TimeLog) {
+                    oTask.lastTimeLog.endTime = new Date();
+                    observables.push(this.timeLogsService.update(oTask, oTask.lastTimeLog));
+                  }
+                }
+              },
+            );
 
-                     if (observables.length > 0) {
-                       return forkJoin(observables)
-                         .pipe(take(1));
-                     }
+            if (observables.length > 0) {
+              return forkJoin(observables)
+                .pipe(take(1));
+            }
 
-                     return of(0);
-                   },
-                 ),
-                 switchMap(() => createTimeLog$),
-               );
+            return of(0);
+          },
+        ),
+        switchMap(() => createTimeLog$),
+      );
   }
 
   private stopTimeLog(
@@ -229,10 +240,10 @@ export class TasksViewComponent implements OnInit {
 
   private reloadData(): void {
     this.tasksService.list()
-        .pipe(
-          take(1),
-        )
-        .subscribe();
+      .pipe(
+        take(1),
+      )
+      .subscribe();
   }
 
   private createDynamicMenu(): void {

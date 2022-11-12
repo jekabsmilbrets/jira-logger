@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 
 import { ReportViewComponent } from '@report/views/report/report-view.component';
 
+
 const routes: Routes = [
   {
     path: '',
@@ -17,7 +18,6 @@ const routes: Routes = [
     redirectTo: '',
   },
 ];
-
 
 @NgModule(
   {

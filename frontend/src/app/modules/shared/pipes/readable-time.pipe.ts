@@ -1,15 +1,16 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
+
 @Pipe({
-        name: 'readableTime',
-      })
+  name: 'readableTime',
+})
 export class ReadableTimePipe implements PipeTransform {
   public transform(seconds: number, withSeconds: boolean = false): string {
     if (Number.isNaN(seconds)) {
       return '0s';
     }
     if (seconds < 60) {
-      return `${seconds}s`;
+      return `${ seconds }s`;
     }
 
     const levels = [
@@ -46,7 +47,7 @@ export class ReadableTimePipe implements PipeTransform {
       if (levels[i][0] === 0) {
         continue;
       }
-      output += ` ${levels[i][0]}${levels[i][1]}`;
+      output += ` ${ levels[i][0] }${ levels[i][1] }`;
     }
 
     return output.trim();

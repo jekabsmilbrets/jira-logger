@@ -1,6 +1,6 @@
-import { Component, Input, Output, EventEmitter }                           from '@angular/core';
+import { Component, EventEmitter, Input, Output }                           from '@angular/core';
 import { FormControl }                                                      from '@angular/forms';
-import { MatDatepickerInputEvent, ExtractDateTypeFromSelection, DateRange } from '@angular/material/datepicker';
+import { DateRange, ExtractDateTypeFromSelection, MatDatepickerInputEvent } from '@angular/material/datepicker';
 
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
 

@@ -2,12 +2,20 @@ import { formatDate } from '@angular/common';
 import { Injectable } from '@angular/core';
 
 import {
-  BehaviorSubject, catchError, combineLatest, debounceTime, distinctUntilChanged, Observable, switchMap, take, tap, throwError,
+  BehaviorSubject,
+  catchError,
+  combineLatest,
+  debounceTime,
+  distinctUntilChanged,
+  Observable,
+  switchMap,
+  take,
+  tap,
+  throwError,
   withLatestFrom,
 } from 'rxjs';
 
-import { appTimeZone, appLocale } from '@core/constants/date-time.constant';
-
+import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
 
 import { StorageService } from '@core/services/storage.service';
 
@@ -116,21 +124,21 @@ export class ReportService {
 
   private getTasks(): Observable<Task[]> {
     return this.getAllChanges()
-               .pipe(
-                 switchMap(
-                   ([
-                      tags,
-                      date,
-                      startDate,
-                      endDate,
-                      reportMode,
-                      showWeekends,
-                      hideUnreportedTasks,
-                    ]: [Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean]) => this.filterTasks(
-                     reportMode, tags, date, startDate, endDate, showWeekends, hideUnreportedTasks,
-                   ),
-                 ),
-               );
+      .pipe(
+        switchMap(
+          ([
+             tags,
+             date,
+             startDate,
+             endDate,
+             reportMode,
+             showWeekends,
+             hideUnreportedTasks,
+           ]: [Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean]) => this.filterTasks(
+            reportMode, tags, date, startDate, endDate, showWeekends, hideUnreportedTasks,
+          ),
+        ),
+      );
   }
 
   private filterTasks(
@@ -207,74 +215,74 @@ export class ReportService {
 
   private initSettings(): void {
     this.storageService.read(this.settingsKey, this.customStoreName)
-        .pipe(
-          take(1),
-          withLatestFrom(this.tagsService.tags$),
-          tap(([
-                 settings,
-                 tags,
-               ]: [
-                {
-                  reportMode: ReportModeEnum;
-                  tags: string[];
-                  date: Date | null;
-                  startDate: Date | null;
-                  endDate: Date | null;
-                  showWeekends: boolean;
-                  hideUnreportedTasks: boolean;
-                },
-                Tag[],
-              ]) => {
-                this.reportModeSubject.next(settings?.reportMode ?? ReportModeEnum.total);
-                this.tagsSubject.next(tags.filter((t: Tag) => settings?.tags.includes(t.id)) ?? []);
-                this.dateSubject.next(settings?.date ?? null);
-                this.startDateSubject.next(settings?.startDate ?? null);
-                this.endDateSubject.next(settings?.endDate ?? null);
-                this.showWeekendsSubject.next(settings?.showWeekends ?? false);
-                this.hideUnreportedTasksSubject.next(settings?.hideUnreportedTasks ?? false);
-              },
-          ),
-        )
-        .subscribe();
+      .pipe(
+        take(1),
+        withLatestFrom(this.tagsService.tags$),
+        tap(([
+               settings,
+               tags,
+             ]: [
+            {
+              reportMode: ReportModeEnum;
+              tags: string[];
+              date: Date | null;
+              startDate: Date | null;
+              endDate: Date | null;
+              showWeekends: boolean;
+              hideUnreportedTasks: boolean;
+            },
+            Tag[],
+          ]) => {
+            this.reportModeSubject.next(settings?.reportMode ?? ReportModeEnum.total);
+            this.tagsSubject.next(tags.filter((t: Tag) => settings?.tags.includes(t.id)) ?? []);
+            this.dateSubject.next(settings?.date ?? null);
+            this.startDateSubject.next(settings?.startDate ?? null);
+            this.endDateSubject.next(settings?.endDate ?? null);
+            this.showWeekendsSubject.next(settings?.showWeekends ?? false);
+            this.hideUnreportedTasksSubject.next(settings?.hideUnreportedTasks ?? false);
+          },
+        ),
+      )
+      .subscribe();
   }
 
   private listenToChanges() {
     return this.getAllChanges()
-               .pipe(
-                 switchMap(
-                   ([
-                      tags,
-                      date,
-                      startDate,
-                      endDate,
-                      reportMode,
-                      showWeekends,
-                      hideUnreportedTasks,
-                    ]: [Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean]) =>
-                     this.storageService.create(
-                           this.settingsKey,
-                           {
-                             reportMode,
-                             tags: tags.map((t: Tag) => t.id),
-                             date,
-                             startDate,
-                             endDate,
-                             showWeekends,
-                             hideUnreportedTasks,
-                           },
-                           this.customStoreName,
-                         )
-                         .pipe(
-                           take(1),
-                           catchError(
-                             (error) => {
-                               console.error(error);
-                               return throwError(() => new Error(error));
-                             },
-                           ),
-                         ),
-                 ),
-               );
+      .pipe(
+        switchMap(
+          ([
+             tags,
+             date,
+             startDate,
+             endDate,
+             reportMode,
+             showWeekends,
+             hideUnreportedTasks,
+           ]: [Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean]) =>
+            this.storageService.create(
+              this.settingsKey,
+              {
+                reportMode,
+                tags: tags.map((t: Tag) => t.id),
+                date,
+                startDate,
+                endDate,
+                showWeekends,
+                hideUnreportedTasks,
+              },
+              this.customStoreName,
+            )
+              .pipe(
+                take(1),
+                catchError(
+                  (error) => {
+                    console.error(error);
+                    return throwError(() => new Error(error));
+                  },
+                ),
+              ),
+        ),
+      );
   }
 
   private generateMonthColumns(
@@ -294,10 +302,10 @@ export class ReportService {
           header: formatDate(currentDate2, 'd. MMM', appLocale, appTimeZone),
           sortable: false,
           visible: showWeekends ? true :
-                   !([
-                     0,
-                     6,
-                   ].includes(currentDate2.getDay())),
+            !([
+              0,
+              6,
+            ].includes(currentDate2.getDay())),
           pipe: 'readableTime',
           isClickable: true,
           cellClickType: 'readableTime',
@@ -305,9 +313,9 @@ export class ReportService {
           cell: (task: Task) => task.calcTimeLoggedForDate(currentDate2),
           hasFooter: true,
           footerCell: (tasks: Task[]) => tasks.map(
-                                                (task: Task) => task.calcTimeLoggedForDate(currentDate2),
-                                              )
-                                              .reduce((acc, value) => acc + value, 0),
+            (task: Task) => task.calcTimeLoggedForDate(currentDate2),
+          )
+            .reduce((acc, value) => acc + value, 0),
         },
       );
 
@@ -328,10 +336,10 @@ export class ReportService {
         cell: (task: Task) => task.calcTimeLogged(),
         hasFooter: true,
         footerCell: (tasks: Task[]) => tasks.map(
-                                              (task: Task) => task.timeLogs.map(t => t.timeLogged())
-                                                                  .reduce((acc, value) => acc + value, 0),
-                                            )
-                                            .reduce((acc, value) => acc + value, 0),
+          (task: Task) => task.timeLogs.map(t => t.timeLogged())
+            .reduce((acc, value) => acc + value, 0),
+        )
+          .reduce((acc, value) => acc + value, 0),
 
       },
     );

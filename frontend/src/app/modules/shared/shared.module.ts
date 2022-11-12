@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { NgModule }     from '@angular/core';
 
-
 import { AreYouSureDialogComponent } from '@shared/components/are-you-sure-dialog/are-you-sure-dialog.component';
 
 import { ErrorDialogComponent } from '@shared/components/error-dialog/error-dialog.component';

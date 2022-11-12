@@ -4,6 +4,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent }       from './views/layout/layout.component';
 import { PageNotFoundComponent } from './views/page-not-found/page-not-found.component';
 
+
 const routes: Routes = [
   {
     path: '',
@@ -34,7 +35,6 @@ const routes: Routes = [
     ],
   },
 ];
-
 
 @NgModule(
   {

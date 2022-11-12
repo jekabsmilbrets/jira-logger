@@ -1,5 +1,6 @@
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
 
+
 export const reportModes: {
   value: ReportModeEnum;
   viewValue: string;

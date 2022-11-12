@@ -6,7 +6,7 @@ import { environment } from 'environments/environment';
 
 import { BehaviorSubject, catchError, map, Observable, switchMap, tap, throwError } from 'rxjs';
 
-import { appLocale, appTimeZone, appTimeLogDateTimeFormat } from '@core/constants/date-time.constant';
+import { appLocale, appTimeLogDateTimeFormat, appTimeZone } from '@core/constants/date-time.constant';
 
 import { JsonApi }            from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
@@ -20,11 +20,9 @@ import { Task }    from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 
 
-@Injectable(
-  {
-    providedIn: 'root',
-  },
-)
+@Injectable({
+  providedIn: 'root',
+})
 export class TimeLogsService implements LoadableService {
   public isLoading$: Observable<boolean>;
 
@@ -45,8 +43,8 @@ export class TimeLogsService implements LoadableService {
   }
 
   public list(task: Task): Observable<TimeLog[]> {
-    const url = `${environment.apiHost}${environment.apiBase}/${this.basePath}` +
-      `/${task.id}/${this.baseTimeLogPath}`;
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }` +
+      `/${ task.id }/${ this.baseTimeLogPath }`;
 
     return waitForTurn(this.isLoading$, this.isLoadingSubject)
       .pipe(
@@ -62,8 +60,8 @@ export class TimeLogsService implements LoadableService {
   }
 
   public create(task: Task, timeLog: TimeLog): Observable<TimeLog> {
-    const url = `${environment.apiHost}${environment.apiBase}/${this.basePath}` +
-      `/${task.id}/${this.baseTimeLogPath}`;
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }` +
+      `/${ task.id }/${ this.baseTimeLogPath }`;
 
     const body = {
       id: timeLog.id,
@@ -83,8 +81,8 @@ export class TimeLogsService implements LoadableService {
   }
 
   public update(task: Task, timeLog: TimeLog): Observable<TimeLog> {
-    const url = `${environment.apiHost}${environment.apiBase}/${this.basePath}` +
-      `/${task.id}/${this.baseTimeLogPath}/${timeLog.id}`;
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }` +
+      `/${ task.id }/${ this.baseTimeLogPath }/${ timeLog.id }`;
 
     const body = {
       id: timeLog.id,
@@ -104,8 +102,8 @@ export class TimeLogsService implements LoadableService {
   }
 
   public delete(task: Task, timeLog: TimeLog): Observable<void> {
-    const url = `${environment.apiHost}${environment.apiBase}/${this.basePath}` +
-      `/${task.id}/${this.baseTimeLogPath}/${timeLog.id}`;
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }` +
+      `/${ task.id }/${ this.baseTimeLogPath }/${ timeLog.id }`;
 
     return waitForTurn(this.isLoading$, this.isLoadingSubject)
       .pipe(

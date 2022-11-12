@@ -5,11 +5,9 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { DynamicMenu } from '@core/models/dynamic-menu';
 
 
-@Injectable(
-  {
-    providedIn: 'root',
-  },
-)
+@Injectable({
+  providedIn: 'root',
+})
 export class DynamicMenuService {
   public dynamicMenus$: Observable<DynamicMenu[]>;
 

@@ -25,11 +25,9 @@ import { Task } from '@shared/models/task.model';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
 
 
-@Injectable(
-  {
-    providedIn: 'root',
-  },
-)
+@Injectable({
+  providedIn: 'root',
+})
 export class TasksService implements LoadableService {
   public isLoading$: Observable<boolean>;
   public tasks$: Observable<Task[]>;
@@ -55,7 +53,7 @@ export class TasksService implements LoadableService {
   }
 
   public list(): Observable<Task[]> {
-    const url = `${environment.apiHost}${environment.apiBase}/${this.basePath}`;
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }`;
 
     return waitForTurn(this.isLoading$, this.isLoadingSubject)
       .pipe(
@@ -79,7 +77,7 @@ export class TasksService implements LoadableService {
     filter: TaskListFilter,
     updateTaskList: boolean = false,
   ): Observable<Task[]> {
-    let url = `${environment.apiHost}${environment.apiBase}/${this.basePath}`;
+    let url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }`;
 
     const outputQueryParams = this.buildQueryParams(filter);
 
@@ -111,7 +109,7 @@ export class TasksService implements LoadableService {
   }
 
   public create(task: Task, skipReload: boolean = false): Observable<Task> {
-    const url = `${environment.apiHost}${environment.apiBase}/${this.basePath}`;
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }`;
 
     const body = {
       name: task.name,
@@ -130,7 +128,7 @@ export class TasksService implements LoadableService {
   }
 
   public update(task: Task, skipReload: boolean = false): Observable<Task> {
-    const url = `${environment.apiHost}${environment.apiBase}/${this.basePath}/${task.id}`;
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }/${ task.id }`;
 
     const body = {
       id: task.id,
@@ -150,7 +148,7 @@ export class TasksService implements LoadableService {
   }
 
   public delete(task: Task): Observable<void> {
-    const url = `${environment.apiHost}${environment.apiBase}/${this.basePath}/${task.id}`;
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }/${ task.id }`;
 
     return waitForTurn(this.isLoading$, this.isLoadingSubject)
       .pipe(
@@ -211,26 +209,26 @@ export class TasksService implements LoadableService {
     this.isLoadingSubject.next(false);
 
     return this.tasks$
-               .pipe(
-                 take(1),
-                 switchMap(
-                   (tasks: Task[]) => this.errorDialogService.openDialog(
-                     {
-                       errorTitle: 'Error while doing db action :D',
-                       errorMessage: JSON.stringify(error),
-                       idbData: tasks,
-                     },
-                   ),
-                 ),
-                 take(1),
-                 switchMap(() => throwError(() => error)),
-               );
+      .pipe(
+        take(1),
+        switchMap(
+          (tasks: Task[]) => this.errorDialogService.openDialog(
+            {
+              errorTitle: 'Error while doing db action :D',
+              errorMessage: JSON.stringify(error),
+              idbData: tasks,
+            },
+          ),
+        ),
+        take(1),
+        switchMap(() => throwError(() => error)),
+      );
   }
 
   private reloadList(skipReload: boolean = false): Observable<Task[]> {
     return skipReload ?
-           this.tasks$.pipe(take(1)) :
-           this.list().pipe(take(1));
+      this.tasks$.pipe(take(1)) :
+      this.list().pipe(take(1));
   }
 
   private findTask(tasks: Task[], task: Task): Task {
@@ -239,7 +237,7 @@ export class TasksService implements LoadableService {
     );
 
     if (!foundTask) {
-      throw new Error(`Problems creating task "${task.name}"!`);
+      throw new Error(`Problems creating task "${ task.name }"!`);
     }
 
     return foundTask;

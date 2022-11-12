@@ -1,109 +1,109 @@
 <div class="table-container">
-  <mat-table [dataSource]="dataSource"
-             [matSortActive]="sortField"
-             [matSortDirection]="sortDirection"
-             matSort
-             matSortDisableClear>
-    <ng-container *ngFor="let column of columns"
-                  [cdkColumnDef]="column.columnDef"
-                  [stickyEnd]="column.stickyEnd"
-                  [sticky]="column.sticky">
-      <ng-container *ngIf="column.visible">
-        <mat-header-cell *cdkHeaderCellDef
-                         [disabled]="!column.sortable"
-                         [mat-sort-header]="column.columnDef">
-          {{ column.header }}
-        </mat-header-cell>
+    <mat-table [dataSource]="dataSource"
+               [matSortActive]="sortField"
+               [matSortDirection]="sortDirection"
+               matSort
+               matSortDisableClear>
+        <ng-container *ngFor="let column of columns"
+                      [cdkColumnDef]="column.columnDef"
+                      [stickyEnd]="column.stickyEnd"
+                      [sticky]="column.sticky">
+            <ng-container *ngIf="column.visible">
+                <mat-header-cell *cdkHeaderCellDef
+                                 [disabled]="!column.sortable"
+                                 [mat-sort-header]="column.columnDef">
+                    {{ column.header }}
+                </mat-header-cell>
 
-        <mat-cell (click)="onCellClick(row, column)"
-                  *cdkCellDef="let row"
-                  [ngClass]="{'mat-cell-clickable': column.isClickable}">
-          <ng-container *ngIf="column.pipe">
+                <mat-cell (click)="onCellClick(row, column)"
+                          *cdkCellDef="let row"
+                          [ngClass]="{'mat-cell-clickable': column.isClickable}">
+                    <ng-container *ngIf="column.pipe">
             <span *ngIf="column.pipe === 'readableTime'">
               {{ column.cell(row) | readableTime }}
             </span>
 
-            <span *ngIf="column.pipe === 'date'">
+                        <span *ngIf="column.pipe === 'date'">
               {{ column.cell(row) | date: 'yyyy-MM-dd' }}
             </span>
-          </ng-container>
+                    </ng-container>
 
-          <span *ngIf="!column.pipe">{{ column.cell(row) }}</span>
-        </mat-cell>
+                    <span *ngIf="!column.pipe">{{ column.cell(row) }}</span>
+                </mat-cell>
 
-        <ng-container *ngIf="enableFooter">
-          <mat-footer-cell (click)="onFooterCellClicked(column)"
-                           *cdkFooterCellDef
-                           [ngClass]="{'mat-cell-clickable': column.isClickable && !column.disableFooterClick}">
-            <ng-container *ngIf="column.pipe">
+                <ng-container *ngIf="enableFooter">
+                    <mat-footer-cell (click)="onFooterCellClicked(column)"
+                                     *cdkFooterCellDef
+                                     [ngClass]="{'mat-cell-clickable': column.isClickable && !column.disableFooterClick}">
+                        <ng-container *ngIf="column.pipe">
               <span *ngIf="column.pipe === 'readableTime'">
                 {{ (column.hasFooter ? column.footerCell(dataSource.data) : '') | readableTime }}
               </span>
+                        </ng-container>
+
+                        <span *ngIf="!column.pipe">{{ column.hasFooter ? column.footerCell(dataSource.data) : '' }}</span>
+                    </mat-footer-cell>
+                </ng-container>
             </ng-container>
-
-            <span *ngIf="!column.pipe">{{ column.hasFooter ? column.footerCell(dataSource.data) : '' }}</span>
-          </mat-footer-cell>
         </ng-container>
-      </ng-container>
-    </ng-container>
 
-    <ng-container cdkColumnDef="select">
-      <mat-header-cell *cdkHeaderCellDef>
-        <mat-checkbox (change)="$event ? masterToggle() : null"
-                      [checked]="selection.hasValue() && isAllSelected()"
-                      [indeterminate]="selection.hasValue() && !isAllSelected()">
-        </mat-checkbox>
-      </mat-header-cell>
+        <ng-container cdkColumnDef="select">
+            <mat-header-cell *cdkHeaderCellDef>
+                <mat-checkbox (change)="$event ? masterToggle() : null"
+                              [checked]="selection.hasValue() && isAllSelected()"
+                              [indeterminate]="selection.hasValue() && !isAllSelected()">
+                </mat-checkbox>
+            </mat-header-cell>
 
-      <mat-cell *cdkCellDef="let row">
-        <mat-checkbox (change)="$event ? selection.toggle(row) : null"
-                      (click)="$event.stopPropagation()"
-                      [checked]="selection.isSelected(row)">
-        </mat-checkbox>
-      </mat-cell>
+            <mat-cell *cdkCellDef="let row">
+                <mat-checkbox (change)="$event ? selection.toggle(row) : null"
+                              (click)="$event.stopPropagation()"
+                              [checked]="selection.isSelected(row)">
+                </mat-checkbox>
+            </mat-cell>
 
-      <ng-container *ngIf="enableFooter">
-        <mat-footer-cell *cdkFooterCellDef>
-        </mat-footer-cell>
-      </ng-container>
-    </ng-container>
+            <ng-container *ngIf="enableFooter">
+                <mat-footer-cell *cdkFooterCellDef>
+                </mat-footer-cell>
+            </ng-container>
+        </ng-container>
 
-    <ng-container cdkColumnDef="remove">
-      <mat-header-cell *cdkHeaderCellDef>
-        Remove
-      </mat-header-cell>
+        <ng-container cdkColumnDef="remove">
+            <mat-header-cell *cdkHeaderCellDef>
+                Remove
+            </mat-header-cell>
 
-      <mat-cell *cdkCellDef="let row">
-        <button (click)="onRemoveAction(row)"
-                color="warn"
-                mat-icon-button>
-          <mat-icon>delete</mat-icon>
-        </button>
-      </mat-cell>
+            <mat-cell *cdkCellDef="let row">
+                <button (click)="onRemoveAction(row)"
+                        color="warn"
+                        mat-icon-button>
+                    <mat-icon>delete</mat-icon>
+                </button>
+            </mat-cell>
 
-      <ng-container *ngIf="enableFooter">
-        <mat-footer-cell *cdkFooterCellDef>
-        </mat-footer-cell>
-      </ng-container>
-    </ng-container>
+            <ng-container *ngIf="enableFooter">
+                <mat-footer-cell *cdkFooterCellDef>
+                </mat-footer-cell>
+            </ng-container>
+        </ng-container>
 
-    <mat-header-row *cdkHeaderRowDef="displayedColumns; sticky: stickyHeader"></mat-header-row>
+        <mat-header-row *cdkHeaderRowDef="displayedColumns; sticky: stickyHeader"></mat-header-row>
 
-    <ng-container *ngIf="enableFooter">
-      <mat-header-row *cdkFooterRowDef="displayedColumns; sticky: stickyFooter"></mat-header-row>
-    </ng-container>
+        <ng-container *ngIf="enableFooter">
+            <mat-header-row *cdkFooterRowDef="displayedColumns; sticky: stickyFooter"></mat-header-row>
+        </ng-container>
 
-    <ng-container *ngIf="!isSelectable">
-      <mat-row *cdkRowDef="let row; columns: displayedColumns"></mat-row>
-    </ng-container>
+        <ng-container *ngIf="!isSelectable">
+            <mat-row *cdkRowDef="let row; columns: displayedColumns"></mat-row>
+        </ng-container>
 
-    <ng-container *ngIf="isSelectable">
-      <mat-row (click)="selection.toggle(row)"
-               *matRowDef="let row; columns: displayedColumns;"
-               [ngClass]="{'selected': selection.isSelected(row)}">
-      </mat-row>
-    </ng-container>
-  </mat-table>
+        <ng-container *ngIf="isSelectable">
+            <mat-row (click)="selection.toggle(row)"
+                     *matRowDef="let row; columns: displayedColumns;"
+                     [ngClass]="{'selected': selection.isSelected(row)}">
+            </mat-row>
+        </ng-container>
+    </mat-table>
 </div>
 
 <mat-paginator [pageSizeOptions]="[5, 10, 20]"
