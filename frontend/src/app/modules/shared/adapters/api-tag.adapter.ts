@@ -1,6 +1,7 @@
 import { ApiTag } from '@shared/interfaces/api/api-tag.interface';
 import { Tag }    from '@shared/models/tag.model';
 
+
 export const adaptTag = (apiTag: ApiTag): Tag => new Tag(
   {
     id: apiTag.id,

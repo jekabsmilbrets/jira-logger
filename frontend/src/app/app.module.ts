@@ -21,11 +21,12 @@ import { TaskImportService } from '@task/services/task-import.service';
 
 import { LayoutModule } from '@layout/layout.module';
 
+
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent }     from './app.component';
 
-registerLocaleData(lv);
 
+registerLocaleData(lv);
 
 @NgModule(
   {

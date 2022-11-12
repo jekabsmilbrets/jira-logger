@@ -17,7 +17,7 @@ import { TimeLogsModalResponseInterface } from '@task/interfaces/time-logs-modal
 @Injectable()
 export class TimeLogEditService {
   constructor(
-      private dialog: MatDialog,
+    private dialog: MatDialog,
   ) {
   }
 

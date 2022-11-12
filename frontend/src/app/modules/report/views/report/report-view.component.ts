@@ -41,20 +41,20 @@ export class ReportViewComponent implements OnInit, OnDestroy {
   ) {
     this.subscriptions.push(
       this.activatedRoute.paramMap
-          .pipe()
-          .subscribe(
-            (params: ParamMap) => {
-              if (params.has('reportMode')) {
-                const reportMode = params.get('reportMode') as string;
+        .pipe()
+        .subscribe(
+          (params: ParamMap) => {
+            if (params.has('reportMode')) {
+              const reportMode = params.get('reportMode') as string;
 
-                if (reportMode in ReportModeEnum) {
-                  this.reportService.reportMode = ReportModeEnum[reportMode as keyof typeof ReportModeEnum];
-                } else {
-                  this.reportService.reportMode = ReportModeEnum.total;
-                }
+              if (reportMode in ReportModeEnum) {
+                this.reportService.reportMode = ReportModeEnum[reportMode as keyof typeof ReportModeEnum];
+              } else {
+                this.reportService.reportMode = ReportModeEnum.total;
               }
-            },
-          ),
+            }
+          },
+        ),
     );
 
     this.tasks$ = this.reportService.tasks$;
@@ -83,14 +83,14 @@ export class ReportViewComponent implements OnInit, OnDestroy {
         const readableTimePipe = new ReadableTimePipe();
 
         outputValue = readableTimePipe.transform(timeLogged);
-        message = `Copied Task "${task.name}" logged time to clipboard "${outputValue}"!`;
+        message = `Copied Task "${ task.name }" logged time to clipboard "${ outputValue }"!`;
         break;
 
       case 'string':
       case undefined:
       default:
         outputValue = column.cell(task);
-        message = `Copied Task "${task.name}" field "${column.header}" value to clipboard "${outputValue}"!`;
+        message = `Copied Task "${ task.name }" field "${ column.header }" value to clipboard "${ outputValue }"!`;
         break;
     }
 
@@ -115,14 +115,14 @@ export class ReportViewComponent implements OnInit, OnDestroy {
         const readableTimePipe = new ReadableTimePipe();
 
         outputValue = readableTimePipe.transform(timeLogged);
-        message = `Copied logged time to clipboard "${outputValue}"!`;
+        message = `Copied logged time to clipboard "${ outputValue }"!`;
         break;
 
       case 'concatenatedString':
       case undefined:
       default:
         outputValue = tasks.map((task: Task) => column.cell(task)).join(', ');
-        message = `Copied field "${column.header}" value to clipboard "${outputValue}"!`;
+        message = `Copied field "${ column.header }" value to clipboard "${ outputValue }"!`;
         break;
     }
 

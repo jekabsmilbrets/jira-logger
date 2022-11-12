@@ -2,15 +2,16 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ReportTagFilterComponent } from './report-tag-filter.component';
 
+
 describe('ReportTagFilterComponent', () => {
   let component: ReportTagFilterComponent;
   let fixture: ComponentFixture<ReportTagFilterComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-                                           declarations: [ReportTagFilterComponent],
-                                         })
-                 .compileComponents();
+      declarations: [ReportTagFilterComponent],
+    })
+      .compileComponents();
   });
 
   beforeEach(() => {

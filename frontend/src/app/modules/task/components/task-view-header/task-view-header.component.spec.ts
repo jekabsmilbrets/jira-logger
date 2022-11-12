@@ -2,15 +2,16 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { TaskViewHeaderComponent } from './task-view-header.component';
 
+
 describe('TaskViewHeaderComponent', () => {
   let component: TaskViewHeaderComponent;
   let fixture: ComponentFixture<TaskViewHeaderComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-                   declarations: [TaskViewHeaderComponent],
-                 })
-                 .compileComponents();
+      declarations: [TaskViewHeaderComponent],
+    })
+      .compileComponents();
 
     fixture = TestBed.createComponent(TaskViewHeaderComponent);
     component = fixture.componentInstance;

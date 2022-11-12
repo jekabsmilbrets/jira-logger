@@ -47,23 +47,22 @@ export class TasksSettingsDialogComponent {
 
     try {
       this.tagsService.tags$
-          .pipe(
-            take(1),
-          )
-          .subscribe(
-            (tags: Tag[]) => {
-              data = validateTasksInterfaceData(
-                JSON.parse(
-                  this.formGroup.getRawValue().json as string,
-                ),
-                tags,
-              );
+        .pipe(
+          take(1),
+        )
+        .subscribe(
+          (tags: Tag[]) => {
+            data = validateTasksInterfaceData(
+              JSON.parse(
+                this.formGroup.getRawValue().json as string,
+              ),
+              tags,
+            );
 
-              this.dialogRef.close(data);
-            },
-          );
-    }
-    catch (e) {
+            this.dialogRef.close(data);
+          },
+        );
+    } catch (e) {
       console.error({e});
     }
   }

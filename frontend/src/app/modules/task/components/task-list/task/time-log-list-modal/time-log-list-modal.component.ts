@@ -1,7 +1,7 @@
-import { Component, ViewChild, Inject }  from '@angular/core';
+import { Component, Inject, ViewChild }  from '@angular/core';
 import { FormControl }                   from '@angular/forms';
 import { MatDatepicker }                 from '@angular/material/datepicker';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import { take, throwError } from 'rxjs';
 
@@ -64,27 +64,27 @@ export class TimeLogListModalComponent {
 
   public onCellClick([timeLog, column]: [Searchable, Column]): void {
     this.timeLogEditService.openTimeLogDialog(
-          timeLog as TimeLog,
-        )
-        .pipe(take(1))
-        .subscribe(
-          (response: TimeLogModalResponseInterface | undefined) => {
-            if (response) {
-              switch (response.responseType) {
-                case 'cancel':
-                  break;
-                case 'update':
-                  if (response.responseData) {
-                    this.onUpdateAction(response.responseData);
-                  }
-                  break;
-                case 'delete':
-                  this.onRemoveAction(timeLog as TimeLog);
-                  break;
-              }
+      timeLog as TimeLog,
+    )
+      .pipe(take(1))
+      .subscribe(
+        (response: TimeLogModalResponseInterface | undefined) => {
+          if (response) {
+            switch (response.responseType) {
+              case 'cancel':
+                break;
+              case 'update':
+                if (response.responseData) {
+                  this.onUpdateAction(response.responseData);
+                }
+                break;
+              case 'delete':
+                this.onRemoveAction(timeLog as TimeLog);
+                break;
             }
-          },
-        );
+          }
+        },
+      );
   }
 
   public onCreateAction(timeLog: TimeLog): void {
@@ -106,7 +106,7 @@ export class TimeLogListModalComponent {
     );
 
     if (indexOfTimeLog < 0) {
-      throwError(() => new Error(`Could not locate time log ${timeLogUuid}`));
+      throwError(() => new Error(`Could not locate time log ${ timeLogUuid }`));
     }
 
     timeLogs.splice(indexOfTimeLog, 1);
@@ -127,7 +127,7 @@ export class TimeLogListModalComponent {
     );
 
     if (indexOfTimeLog < 0) {
-      throwError(() => new Error(`Could not locate time log ${timeLogUuid}`));
+      throwError(() => new Error(`Could not locate time log ${ timeLogUuid }`));
     }
 
     timeLogs.splice(indexOfTimeLog, 1);
@@ -144,23 +144,23 @@ export class TimeLogListModalComponent {
     );
 
     this.timeLogEditService.openTimeLogDialog(
-          timeLog,
-        )
-        .pipe(take(1))
-        .subscribe(
-          (response: TimeLogModalResponseInterface | undefined) => {
-            if (response) {
-              switch (response.responseType) {
-                case 'cancel':
-                  break;
-                case 'update':
-                  if (response.responseData) {
-                    this.onCreateAction(response.responseData);
-                  }
-                  break;
-              }
+      timeLog,
+    )
+      .pipe(take(1))
+      .subscribe(
+        (response: TimeLogModalResponseInterface | undefined) => {
+          if (response) {
+            switch (response.responseType) {
+              case 'cancel':
+                break;
+              case 'update':
+                if (response.responseData) {
+                  this.onCreateAction(response.responseData);
+                }
+                break;
             }
-          },
-        );
+          }
+        },
+      );
   }
 }

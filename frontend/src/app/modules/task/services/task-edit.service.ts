@@ -71,9 +71,9 @@ export class TaskEditService {
     };
 
     return this.tasks$
-               .pipe(
-                 take(1),
-                 switchMap(switchMapFn),
-               );
+      .pipe(
+        take(1),
+        switchMap(switchMapFn),
+      );
   };
 }

@@ -1,6 +1,6 @@
 import { FormControl } from '@angular/forms';
 
-import { Tag }         from '@shared/models/tag.model';
+import { Tag } from '@shared/models/tag.model';
 
 
 export interface CreateTaskFromGroupInterface {

@@ -1,7 +1,7 @@
 import { Injectable }                                                            from '@angular/core';
-import { AbstractControl, FormControl, FormGroup, Validators, ValidationErrors } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 
-import { of, switchMap, take, catchError, Observable, skip } from 'rxjs';
+import { catchError, Observable, of, skip, switchMap, take } from 'rxjs';
 
 import { Tag }          from '@shared/models/tag.model';
 import { Task }         from '@shared/models/task.model';
@@ -50,12 +50,12 @@ export class TaskCreateService {
     };
 
     return this.tasksService.tasks$
-               .pipe(
-                 skip(1),
-                 take(1),
-                 catchError(() => of(null)),
-                 switchMap(duplicateCheck(control.value)),
-               );
+      .pipe(
+        skip(1),
+        take(1),
+        catchError(() => of(null)),
+        switchMap(duplicateCheck(control.value)),
+      );
   }
 
 }

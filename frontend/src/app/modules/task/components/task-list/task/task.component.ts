@@ -1,7 +1,7 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormGroup }                                      from '@angular/forms';
 
-import { take, Observable } from 'rxjs';
+import { Observable, take } from 'rxjs';
 
 import { Tag } from '@shared/models/tag.model';
 
@@ -86,17 +86,17 @@ export class TaskComponent implements OnInit {
   }
 
   public onRemove(): void {
-    this.areYouSureService.openDialog(`Task "${this.task.name}"`)
-        .pipe(
-          take(1),
-        )
-        .subscribe(
-          (response: boolean | undefined) => {
-            if (response === true) {
-              this.remove.emit(this.task);
-            }
-          },
-        );
+    this.areYouSureService.openDialog(`Task "${ this.task.name }"`)
+      .pipe(
+        take(1),
+      )
+      .subscribe(
+        (response: boolean | undefined) => {
+          if (response === true) {
+            this.remove.emit(this.task);
+          }
+        },
+      );
   }
 
   public onToggleEditMode(): void {
@@ -109,7 +109,7 @@ export class TaskComponent implements OnInit {
 
   public onToggleTimeLogging(): void {
     const action = this.isTimeLogRunning() ?
-                   TaskUpdateActionEnum.stopWorkLog : TaskUpdateActionEnum.startWorkLog;
+      TaskUpdateActionEnum.stopWorkLog : TaskUpdateActionEnum.startWorkLog;
 
     this.action.emit(
       [
@@ -121,16 +121,16 @@ export class TaskComponent implements OnInit {
 
   public onOpenTimeLogsModal(): void {
     this.timeLogEditService.openTimeLogsListDialog(this.task)
-        .pipe(take(1))
-        .subscribe(
-          (response: TimeLogsModalResponseInterface | undefined) => {
-            if (response) {
-              this.createTimeLogs(response.created);
-              this.updateTimeLogs(response.updated);
-              this.deleteTimeLogs(response.deleted);
-            }
-          },
-        );
+      .pipe(take(1))
+      .subscribe(
+        (response: TimeLogsModalResponseInterface | undefined) => {
+          if (response) {
+            this.createTimeLogs(response.created);
+            this.updateTimeLogs(response.updated);
+            this.deleteTimeLogs(response.deleted);
+          }
+        },
+      );
   }
 
   private createTimeLogs(
@@ -138,12 +138,12 @@ export class TaskComponent implements OnInit {
   ): void {
     timeLogs.forEach(
       (timeLog: TimeLog) => this.createTimeLog
-                                .emit(
-                                  [
-                                    this.task,
-                                    timeLog,
-                                  ],
-                                ),
+        .emit(
+          [
+            this.task,
+            timeLog,
+          ],
+        ),
     );
   }
 
@@ -152,12 +152,12 @@ export class TaskComponent implements OnInit {
   ): void {
     timeLogs.forEach(
       (timeLog: TimeLog) => this.updateTimeLog
-                                .emit(
-                                  [
-                                    this.task,
-                                    timeLog,
-                                  ],
-                                ),
+        .emit(
+          [
+            this.task,
+            timeLog,
+          ],
+        ),
     );
   }
 
@@ -166,12 +166,12 @@ export class TaskComponent implements OnInit {
   ): void {
     timeLogs.forEach(
       (timeLog: TimeLog) => this.removeTimeLog
-                                .emit(
-                                  [
-                                    this.task,
-                                    timeLog,
-                                  ],
-                                ),
+        .emit(
+          [
+            this.task,
+            timeLog,
+          ],
+        ),
     );
   }
 }

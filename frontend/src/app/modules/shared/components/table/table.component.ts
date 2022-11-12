@@ -1,6 +1,6 @@
 import { SelectionModel }                                                   from '@angular/cdk/collections';
 import { formatDate }                                                       from '@angular/common';
-import { AfterViewInit, Component, Input, ViewChild, Output, EventEmitter } from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { MatPaginator }                                                     from '@angular/material/paginator';
 import { MatSort, SortDirection }                                           from '@angular/material/sort';
 import { MatTableDataSource }                                               from '@angular/material/table';
@@ -83,8 +83,8 @@ export class TableComponent implements AfterViewInit {
 
   public get displayedColumns(): string[] {
     const columns = this.columns
-                        .filter((column: Column) => column.visible)
-                        .map((column: Column) => column.columnDef);
+      .filter((column: Column) => column.visible)
+      .map((column: Column) => column.columnDef);
 
     if (this.enableRemoveAction) {
       columns.push('remove');
@@ -155,17 +155,17 @@ export class TableComponent implements AfterViewInit {
     const timeLogEnd = timeLogEndTime ? formatDate(timeLogEndTime, 'HH:mm:ss', appLocale, appTimeZone) : null;
 
     this.areYouSureService.openDialog(
-          `Time log "${timeLogDate} ${timeLogStart}-${timeLogEnd}"`,
-        )
-        .pipe(
-          take(1),
-        )
-        .subscribe(
-          (response: boolean | undefined) => {
-            if (response === true) {
-              this.removeAction.emit(timeLog);
-            }
-          },
-        );
+      `Time log "${ timeLogDate } ${ timeLogStart }-${ timeLogEnd }"`,
+    )
+      .pipe(
+        take(1),
+      )
+      .subscribe(
+        (response: boolean | undefined) => {
+          if (response === true) {
+            this.removeAction.emit(timeLog);
+          }
+        },
+      );
   }
 }

@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit }                  from '@angular/core';
 import { MatSnackBar, MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
 
-import { interval, switchMap, catchError, retry, throwError, take, Subscription, tap, startWith } from 'rxjs';
+import { catchError, interval, retry, startWith, Subscription, switchMap, take, tap, throwError } from 'rxjs';
 
 import { MonitorService } from '@core/services/monitor.service';
 
@@ -27,9 +27,9 @@ export class AppComponent implements OnDestroy, OnInit {
     private snackBar: MatSnackBar,
   ) {
     this.window?.navigator?.storage?.persist()
-        .then(
-          (persistent: boolean) => console.log('IndexedDB will be persistent ' + persistent),
-        );
+      .then(
+        (persistent: boolean) => console.log('IndexedDB will be persistent ' + persistent),
+      );
   }
 
   public ngOnInit(): void {
@@ -37,32 +37,32 @@ export class AppComponent implements OnDestroy, OnInit {
       .pipe(
         startWith(null),
         switchMap(() => this.monitorService.callMonitor()
-                            .pipe(
-                              catchError((error) => {
-                                if (!this.snackBarRef) {
-                                  this.snackBarRef = this.snackBar.open(
-                                    'Failed to call JiraLogger service, will retry!',
-                                    'Dismiss',
-                                    {
-                                      politeness: 'assertive',
-                                      duration: this.monitorInterval,
-                                    },
-                                  );
+          .pipe(
+            catchError((error) => {
+              if (!this.snackBarRef) {
+                this.snackBarRef = this.snackBar.open(
+                  'Failed to call JiraLogger service, will retry!',
+                  'Dismiss',
+                  {
+                    politeness: 'assertive',
+                    duration: this.monitorInterval,
+                  },
+                );
 
-                                  this.snackBarRef.afterDismissed()
-                                      .pipe(take(1))
-                                      .subscribe(() => this.snackBarRef = undefined);
-                                }
-                                return throwError(() => error);
-                              }),
-                              retry(
-                                {
-                                  count: 1,
-                                  delay: this.monitorInterval * 2,
-                                },
-                              ),
-                              tap(() => this.snackBarRef ? this.snackBarRef.dismiss() : undefined),
-                            )),
+                this.snackBarRef.afterDismissed()
+                  .pipe(take(1))
+                  .subscribe(() => this.snackBarRef = undefined);
+              }
+              return throwError(() => error);
+            }),
+            retry(
+              {
+                count: 1,
+                delay: this.monitorInterval * 2,
+              },
+            ),
+            tap(() => this.snackBarRef ? this.snackBarRef.dismiss() : undefined),
+          )),
       )
       .subscribe();
   }

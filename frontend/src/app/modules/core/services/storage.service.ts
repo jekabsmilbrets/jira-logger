@@ -12,11 +12,9 @@ import { waitForTurn }        from '@core/utils/wait-for.utility';
 import { LoadableService } from '@shared/interfaces/loadable-service.interface';
 
 
-@Injectable(
-  {
-    providedIn: 'root',
-  },
-)
+@Injectable({
+  providedIn: 'root',
+})
 export class StorageService implements LoadableService {
   public isLoading$: Observable<boolean>;
   public isDbFailed$: Observable<DbFailInterface | undefined>;
@@ -35,8 +33,8 @@ export class StorageService implements LoadableService {
   }
 
   private static createStore(name: string): UseStore {
-    const dbName = `${name}-db`;
-    const storeName = `${name}-store`;
+    const dbName = `${ name }-db`;
+    const storeName = `${ name }-store`;
 
     return createStore(dbName, storeName);
   }
@@ -265,14 +263,14 @@ export class StorageService implements LoadableService {
     StorageService.createStore(customStoreName);
 
     return this.massUpdate(data, customStoreName)
-               .pipe(
-                 take(1),
-                 catchError((error) => {
-                   console.error('Error @ recreateStore ', {error});
-                   return of(false);
-                 }),
-                 map(() => true),
-               );
+      .pipe(
+        take(1),
+        catchError((error) => {
+          console.error('Error @ recreateStore ', {error});
+          return of(false);
+        }),
+        map(() => true),
+      );
   }
 
   public listStores(): string[] {
