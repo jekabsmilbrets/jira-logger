@@ -119,6 +119,7 @@ class TaskController extends BaseApiController
     ): JsonResponse {
         $queryParameters = [
             'tags',
+            'name',
             'date',
             'startDate',
             'endDate',

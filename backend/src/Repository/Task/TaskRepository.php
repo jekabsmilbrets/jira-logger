@@ -9,6 +9,7 @@ use DateTime;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Exception;
+use Ramsey\Uuid\Uuid;
 
 /**
  * @extends ServiceEntityRepository<Task>
@@ -68,9 +69,22 @@ class TaskRepository extends ServiceEntityRepository
             isset($filter['tags'])
         ) {
             $tags = explode(',', $filter['tags']);
-            $queryBuilder
-                ->andWhere('tags.id IN (:tagIds)')
-                ->setParameter('tagIds', $tags);
+            $map_fn = static fn(string $tag): string => trim($tag);
+            $filter_fn = static fn(string $uuid) => Uuid::isValid($uuid);
+
+            $tags = array_filter(
+                array: array_map(
+                    callback: $map_fn,
+                    array: $tags
+                ),
+                callback: $filter_fn,
+            );
+
+            if (count($tags) > 0) {
+                $queryBuilder
+                    ->andWhere('tags.id IN (:tagIds)')
+                    ->setParameter('tagIds', $tags);
+            }
         }
 
         if (
@@ -91,6 +105,16 @@ class TaskRepository extends ServiceEntityRepository
                 )
                 ->setParameter('startTime', $startDate)
                 ->setParameter('endTime', $endDate);
+        }
+
+        if (isset($filter['name'])) {
+            $name = trim($filter['name']);
+
+            if (!empty($name)) {
+                $queryBuilder
+                    ->andWhere('lower(t.name) LIKE lower(:name)')
+                    ->setParameter('name', '%' . $name . '%');
+            }
         }
 
         return $queryBuilder

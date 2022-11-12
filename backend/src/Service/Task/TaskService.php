@@ -186,4 +186,19 @@ class TaskService
 
         return true;
     }
+
+    final public function findByName(string $name): bool
+    {
+        $task = $this->taskRepository->findOneBy(
+            [
+                'name' => $name,
+            ]
+        );
+
+        if (!$task instanceof Task) {
+            return false;
+        }
+
+        return true;
+    }
 }
