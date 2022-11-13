@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Service\Task\TimeLog;
 
 use App\Dto\Task\TimeLog\TimeLogRequest;
+use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Factory\Task\TimeLog\TimeLogFactory;
 use App\Repository\Task\TimeLog\TimeLogRepository;
+use DateTime;
 use Exception;
 use RuntimeException;
 
@@ -53,6 +55,23 @@ class TimeLogService
     /**
      * @throws Exception
      */
+    final public function startTaskTimeLog(
+        Task $task,
+        bool $flush = true,
+    ): ?TimeLog {
+        $timeLog = new TimeLog();
+        $timeLog->setTask($task)
+            ->setStartTime(new DateTime());
+
+        return $this->new(
+            timeLog: $timeLog,
+            flush: $flush
+        );
+    }
+
+    /**
+     * @throws Exception
+     */
     final public function new(
         ?TimeLogRequest $timeLogRequest = null,
         ?TimeLog        $timeLog = null,
@@ -72,6 +91,32 @@ class TimeLogService
         );
 
         return $timeLog;
+    }
+
+    /**
+     * @throws Exception
+     */
+    final public function stopTaskTimeLog(
+        Task $task,
+        bool $flush = true,
+    ): ?TimeLog {
+        $timeLog = $task->getLastTimeLog();
+
+        if (
+            !$timeLog instanceof TimeLog |
+            null !== $timeLog->getEndTime()
+        ) {
+            return null;
+        }
+
+        $timeLog->setEndTime(new DateTime());
+
+        return $this->edit(
+            taskId: $task->getId(),
+            id: $timeLog->getId(),
+            timeLog: $timeLog,
+            flush: $flush
+        );
     }
 
     /**
