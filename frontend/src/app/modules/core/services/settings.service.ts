@@ -75,7 +75,7 @@ export class SettingsService implements LoadableService {
 
     const body = {
       name: setting.name,
-      value: setting.value,
+      value: String(setting.value),
     };
 
     return this.waitForTurn()
@@ -94,7 +94,7 @@ export class SettingsService implements LoadableService {
     const body = {
       id: setting.id,
       name: setting.name,
-      value: setting.value,
+      value: String(setting.value),
     };
 
     return this.waitForTurn()
