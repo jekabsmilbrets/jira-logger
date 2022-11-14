@@ -8,6 +8,7 @@ import {
   debounceTime,
   distinctUntilChanged,
   Observable,
+  shareReplay,
   switchMap,
   take,
   tap,
@@ -32,7 +33,9 @@ import { columns as totalModelColumns } from '@report/constants/report-total-col
 import { ReportModeEnum }               from '@report/enums/report-mode.enum';
 
 
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
 export class ReportService {
   public tasks$!: Observable<Task[]>;
   public reportMode$: Observable<ReportModeEnum>;
@@ -61,13 +64,13 @@ export class ReportService {
     private tagsService: TagsService,
     private tasksService: TasksService,
   ) {
-    this.reportMode$ = this.reportModeSubject.asObservable();
-    this.tags$ = this.tagsSubject.asObservable();
-    this.date$ = this.dateSubject.asObservable();
-    this.startDate$ = this.startDateSubject.asObservable();
-    this.endDate$ = this.endDateSubject.asObservable();
-    this.showWeekends$ = this.showWeekendsSubject.asObservable();
-    this.hideUnreportedTasks$ = this.hideUnreportedTasksSubject.asObservable();
+    this.reportMode$ = this.reportModeSubject.asObservable().pipe(shareReplay());
+    this.tags$ = this.tagsSubject.asObservable().pipe(shareReplay());
+    this.date$ = this.dateSubject.asObservable().pipe(shareReplay());
+    this.startDate$ = this.startDateSubject.asObservable().pipe(shareReplay());
+    this.endDate$ = this.endDateSubject.asObservable().pipe(shareReplay());
+    this.showWeekends$ = this.showWeekendsSubject.asObservable().pipe(shareReplay());
+    this.hideUnreportedTasks$ = this.hideUnreportedTasksSubject.asObservable().pipe(shareReplay());
 
     this.initSettings();
 
