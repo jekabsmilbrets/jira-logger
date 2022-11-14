@@ -34,9 +34,6 @@ import { ReportViewComponent }                from '@report/views/report/report-
 
       SharedModule,
     ],
-    providers: [
-      ReportService,
-    ],
   },
 )
 export class ReportModule {
