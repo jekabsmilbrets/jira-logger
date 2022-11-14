@@ -25,6 +25,11 @@ export class SidenavComponent {
       icon: 'report',
       name: 'Report',
     },
+    {
+      route: '/settings',
+      icon: 'settings',
+      name: 'Settings',
+    },
   ];
 
   public onSidenavClose(): void {

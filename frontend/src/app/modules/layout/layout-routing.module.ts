@@ -24,6 +24,10 @@ const routes: Routes = [
         loadChildren: () => import('@report/report.module').then(m => m.ReportModule),
       },
       {
+        path: 'settings',
+        loadChildren: () => import('@settings/settings.module').then(m => m.SettingsModule),
+      },
+      {
         path: '**',
         redirectTo: 'tasks',
         pathMatch: 'full',
