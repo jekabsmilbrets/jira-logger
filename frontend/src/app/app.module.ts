@@ -7,9 +7,10 @@ import { ServiceWorkerModule }                  from '@angular/service-worker';
 
 import { environment } from 'environments/environment';
 
-import { CoreModule }     from '@core/core.module';
-import { MonitorService } from '@core/services/monitor.service';
-import { StorageService } from '@core/services/storage.service';
+import { CoreModule }      from '@core/core.module';
+import { MonitorService }  from '@core/services/monitor.service';
+import { SettingsService } from '@core/services/settings.service';
+import { StorageService }  from '@core/services/storage.service';
 
 import { loadableServicesInitializerFactory } from '@shared/factories/loadable-services-initializer.factory';
 import { tagsPreloaderFactory }               from '@shared/factories/tags-preloader.factory';
@@ -20,7 +21,6 @@ import { TimeLogsService }                    from '@shared/services/time-logs.s
 import { TaskImportService } from '@task/services/task-import.service';
 
 import { LayoutModule } from '@layout/layout.module';
-
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent }     from './app.component';
@@ -71,6 +71,7 @@ registerLocaleData(lv);
           MonitorService,
           StorageService,
           TaskImportService,
+          SettingsService,
         ],
         multi: true,
       },
