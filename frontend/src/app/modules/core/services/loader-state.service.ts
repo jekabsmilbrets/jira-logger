@@ -9,6 +9,7 @@ import {
   distinctUntilChanged,
   map,
   Observable,
+  share,
   switchMap,
   tap,
 } from 'rxjs';
@@ -37,6 +38,7 @@ export class LoaderStateService {
         map(
           (marks: boolean[]) => marks.includes(true),
         ),
+        share(),
       );
   }
 
