@@ -30,6 +30,19 @@ export class ReportDateSelectorComponent {
   public endDateChange: EventEmitter<Date | null> = new EventEmitter<Date | null>();
 
   @Input()
+  public set disabled(disabled: boolean | null) {
+    if (disabled) {
+      this.dateFormControl.disable();
+      this.startDateFormControl.disable();
+      this.endDateFormControl.disable();
+    } else {
+      this.dateFormControl.enable();
+      this.startDateFormControl.enable();
+      this.endDateFormControl.enable();
+    }
+  }
+
+  @Input()
   public set date(value: Date | null) {
     if (value) {
       this.dateFormControl.setValue(value, {emitEvent: false});

@@ -25,6 +25,15 @@ export class ReportModeSwitcherComponent {
   public reportModeChange: EventEmitter<ReportModeEnum> = new EventEmitter<ReportModeEnum>();
 
   @Input()
+  public set disabled(disabled: boolean | null) {
+    if (disabled) {
+      this.reportModeFormControl.disable();
+    } else {
+      this.reportModeFormControl.enable();
+    }
+  }
+
+  @Input()
   public set reportMode(reportMode: ReportModeEnum | null) {
     if (reportMode) {
       this.reportModeFormControl.setValue(
