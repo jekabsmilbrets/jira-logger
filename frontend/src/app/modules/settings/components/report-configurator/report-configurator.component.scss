@@ -1,0 +1,13 @@
+:host {
+  display: block;
+
+  .mat-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    ::ng-deep mat-form-field {
+      width: 100%;
+    }
+  }
+}
