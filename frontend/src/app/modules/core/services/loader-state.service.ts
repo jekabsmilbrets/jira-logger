@@ -24,7 +24,7 @@ export class LoaderStateService {
     new Map<string, Observable<boolean>>([]),
   );
 
-  private debounceDelay = 100;
+  private debounceDelay = 50;
 
   constructor() {
     this.isLoading$ = this.loaderMarks.asObservable()
