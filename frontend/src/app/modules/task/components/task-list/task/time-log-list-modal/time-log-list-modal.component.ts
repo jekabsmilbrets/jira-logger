@@ -99,17 +99,8 @@ export class TimeLogListModalComponent {
   public onUpdateAction(timeLog: TimeLog): void {
     this.updatedTimeLogs.push(timeLog);
 
-    const timeLogs = [...this.data.task.timeLogs];
-    const timeLogUuid = timeLog.id;
-    const indexOfTimeLog = this.data.task.timeLogs.findIndex(
-      (t: TimeLog) => t.id === timeLog.id,
-    );
+    const timeLogs = this.findTimeLogSpliceAndReturnTimeLogs(timeLog);
 
-    if (indexOfTimeLog < 0) {
-      throwError(() => new Error(`Could not locate time log ${ timeLogUuid }`));
-    }
-
-    timeLogs.splice(indexOfTimeLog, 1);
     timeLogs.push(timeLog);
 
     this.data.task.timeLogs = timeLogs;
@@ -120,19 +111,7 @@ export class TimeLogListModalComponent {
       this.deletedTimeLogs.push(timeLog as TimeLog);
     }
 
-    const timeLogs = [...this.data.task.timeLogs];
-    const timeLogUuid = timeLog.id;
-    const indexOfTimeLog = this.data.task.timeLogs.findIndex(
-      (t: TimeLog) => t.id === timeLog.id,
-    );
-
-    if (indexOfTimeLog < 0) {
-      throwError(() => new Error(`Could not locate time log ${ timeLogUuid }`));
-    }
-
-    timeLogs.splice(indexOfTimeLog, 1);
-
-    this.data.task.timeLogs = timeLogs;
+    this.data.task.timeLogs = this.findTimeLogSpliceAndReturnTimeLogs(timeLog as TimeLog);
   }
 
   public onAddTimeLogClick(): void {
@@ -162,5 +141,21 @@ export class TimeLogListModalComponent {
           }
         },
       );
+  }
+
+  private findTimeLogSpliceAndReturnTimeLogs(timeLog: TimeLog) {
+    const timeLogs = [...this.data.task.timeLogs];
+    const timeLogUuid = timeLog.id;
+    const indexOfTimeLog = this.data.task.timeLogs.findIndex(
+      (t: TimeLog) => t.id === timeLog.id,
+    );
+
+    if (indexOfTimeLog < 0) {
+      throwError(() => new Error(`Could not locate time log ${ timeLogUuid }`));
+    }
+
+    timeLogs.splice(indexOfTimeLog, 1);
+
+    return timeLogs;
   }
 }
