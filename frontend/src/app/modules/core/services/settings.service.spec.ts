@@ -9,7 +9,7 @@ import { adaptSetting, adaptSettings } from '@core/adapters/api-setting.adapter'
 import { ApiSetting } from '@core/interfaces/api/api-setting.interface';
 import { Setting }    from '@core/models/setting.model';
 
-import { LoaderStateService }       from '@core/services/loader-state.service';
+import { LoaderStateService } from '@core/services/loader-state.service';
 
 import { ErrorDialogDataInterface } from '@shared/interfaces/error-dialog-data.interface';
 import { ErrorDialogService }       from '@shared/services/error-dialog.service';
@@ -86,8 +86,9 @@ describe('SettingsService', () => {
   );
 
   it(
-    'should call method "addLoader" on LoaderStateService on method "init" call',
+    'should call method "list" and "addLoader" on LoaderStateService on method "init" call',
     () => {
+      spyOn(service, 'list').and.returnValue(of([]));
       spyOn(loaderStateService, 'addLoader').and.callThrough();
 
       service.init();
@@ -264,13 +265,14 @@ describe('SettingsService', () => {
 
           service.list()
             .pipe(take(1))
-            .subscribe(
-              (response: Setting[]) => fail('should have failed'),
-              (error: HttpErrorResponse) => {
-                expect(waitForTurnSpy).toHaveBeenCalled();
-                expect(isLoadingSubjectSpy).toHaveBeenCalled();
-                expect(processErrorSpy).toHaveBeenCalled();
-                expect(error.status).toEqual(500);
+            .subscribe({
+                next: (response: Setting[]) => fail('should have failed'),
+                error: (error: HttpErrorResponse) => {
+                  expect(waitForTurnSpy).toHaveBeenCalled();
+                  expect(isLoadingSubjectSpy).toHaveBeenCalled();
+                  expect(processErrorSpy).toHaveBeenCalled();
+                  expect(error.status).toEqual(500);
+                },
               },
             );
 
@@ -343,13 +345,14 @@ describe('SettingsService', () => {
 
           service.create(testCreateSetting)
             .pipe(take(1))
-            .subscribe(
-              () => fail('should have failed'),
-              (error: HttpErrorResponse) => {
-                expect(waitForTurnSpy).toHaveBeenCalled();
-                expect(isLoadingSubjectSpy).toHaveBeenCalled();
-                expect(processErrorSpy).toHaveBeenCalled();
-                expect(error.status).toEqual(500);
+            .subscribe({
+                next: () => fail('should have failed'),
+                error: (error: HttpErrorResponse) => {
+                  expect(waitForTurnSpy).toHaveBeenCalled();
+                  expect(isLoadingSubjectSpy).toHaveBeenCalled();
+                  expect(processErrorSpy).toHaveBeenCalled();
+                  expect(error.status).toEqual(500);
+                },
               },
             );
 
@@ -422,13 +425,14 @@ describe('SettingsService', () => {
 
           service.update(testUpdateSetting)
             .pipe(take(1))
-            .subscribe(
-              () => fail('should have failed'),
-              (error: HttpErrorResponse) => {
-                expect(waitForTurnSpy).toHaveBeenCalled();
-                expect(isLoadingSubjectSpy).toHaveBeenCalled();
-                expect(processErrorSpy).toHaveBeenCalled();
-                expect(error.status).toEqual(500);
+            .subscribe({
+                next: () => fail('should have failed'),
+                error: (error: HttpErrorResponse) => {
+                  expect(waitForTurnSpy).toHaveBeenCalled();
+                  expect(isLoadingSubjectSpy).toHaveBeenCalled();
+                  expect(processErrorSpy).toHaveBeenCalled();
+                  expect(error.status).toEqual(500);
+                },
               },
             );
 
@@ -488,13 +492,14 @@ describe('SettingsService', () => {
 
           service.delete(testDeleteSetting)
             .pipe(take(1))
-            .subscribe(
-              () => fail('should have failed'),
-              (error: HttpErrorResponse) => {
-                expect(waitForTurnSpy).toHaveBeenCalled();
-                expect(isLoadingSubjectSpy).toHaveBeenCalled();
-                expect(processErrorSpy).toHaveBeenCalled();
-                expect(error.status).toEqual(500);
+            .subscribe({
+                next: () => fail('should have failed'),
+                error: (error: HttpErrorResponse) => {
+                  expect(waitForTurnSpy).toHaveBeenCalled();
+                  expect(isLoadingSubjectSpy).toHaveBeenCalled();
+                  expect(processErrorSpy).toHaveBeenCalled();
+                  expect(error.status).toEqual(500);
+                },
               },
             );
 
