@@ -29,6 +29,15 @@ export class ReportTagFilterComponent {
   }
 
   @Input()
+  public set disabled(disabled: boolean | null) {
+    if (disabled) {
+      this.tagFormControl.disable();
+    } else {
+      this.tagFormControl.enable();
+    }
+  }
+
+  @Input()
   public set tags(tags: Tag[] | null) {
     if (tags) {
       this.tagFormControl.setValue(

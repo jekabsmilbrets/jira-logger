@@ -11,6 +11,9 @@ import { MatSlideToggleChange }                   from '@angular/material/slide-
 )
 export class ReportShowWeekendsComponent {
   @Input()
+  public disabled: boolean | null = false;
+
+  @Input()
   public showWeekends!: boolean | null;
 
   @Output()

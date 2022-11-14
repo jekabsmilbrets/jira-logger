@@ -11,6 +11,9 @@ import { MatSlideToggleChange }                   from '@angular/material/slide-
 )
 export class ReportHideUnreportedTasksComponent {
   @Input()
+  public disabled: boolean | null = false;
+
+  @Input()
   public hideUnreportedTasks!: boolean | null;
 
   @Output()
