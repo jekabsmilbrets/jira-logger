@@ -44,6 +44,9 @@ export class SettingsService implements LoadableService {
 
   public init(): void {
     this.loaderStateService.addLoader(this.isLoading$, this.constructor.name);
+    this.list()
+      .pipe(take(1))
+      .subscribe();
   }
 
   public list(): Observable<Setting[]> {
