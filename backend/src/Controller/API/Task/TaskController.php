@@ -7,9 +7,7 @@ namespace App\Controller\API\Task;
 use App\Controller\API\BaseApiController;
 use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
-use App\Entity\Task\TimeLog\TimeLog;
 use App\Service\Task\TaskService;
-use App\Service\Task\TimeLog\TimeLogService;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
 use OpenApi\Attributes as OA;
@@ -37,8 +35,7 @@ class TaskController extends BaseApiController
     final public const DUPLICATE_TASK_NAME = 'Duplicate Task name';
 
     public function __construct(
-        private readonly TaskService    $taskService,
-        private readonly TimeLogService $timeLogService,
+        private readonly TaskService $taskService,
     ) {
     }
 
@@ -567,103 +564,6 @@ class TaskController extends BaseApiController
 
         return $this->jsonApi(
             status: $foundTask ? Response::HTTP_CONFLICT : Response::HTTP_NO_CONTENT,
-        );
-    }
-
-    /**
-     * @throws Exception
-     */
-    #[
-        Route(
-            path: '/{id}/start',
-            name: 'start-task',
-            requirements: ['id' => Requirement::UUID],
-            methods: [Request::METHOD_GET],
-            stateless: true
-        ),
-        OA\Tag(name: 'Tasks'),
-        OA\Get(
-            operationId: 'start-task',
-            summary: 'Start Task TimeLog',
-            tags: ['Tasks'],
-        ),
-        OA\Response(
-            response: Response::HTTP_NO_CONTENT,
-            description: 'Task TimeLog started!',
-        ),
-        OA\Response(
-            response: Response::HTTP_CONFLICT,
-            description: 'Problems starting Task TimeLog!',
-        ),
-    ]
-    final public function startTaskTimeLog(
-        string $id,
-    ): JsonResponse {
-        $task = $this->taskService->show($id);
-
-        if (!$task instanceof Task) {
-            return $this->jsonApi(
-                errors: [self::TASK_NOT_FOUND],
-                status: Response::HTTP_NOT_FOUND
-            );
-        }
-
-        $timeLog = $this->timeLogService->startTaskTimeLog($task);
-
-        return $this->jsonApi(
-            status: $timeLog ? Response::HTTP_NO_CONTENT : Response::HTTP_CONFLICT,
-        );
-    }
-
-    /**
-     * @throws Exception
-     */
-    #[
-        Route(
-            path: '/{id}/stop',
-            name: 'stop-task',
-            requirements: ['id' => Requirement::UUID],
-            methods: [Request::METHOD_GET],
-            stateless: true
-        ),
-        OA\Tag(name: 'Tasks'),
-        OA\Get(
-            operationId: 'stop-task',
-            summary: 'Stop Task TimeLog',
-            tags: ['Tasks'],
-        ),
-        OA\Response(
-            response: Response::HTTP_NO_CONTENT,
-            description: 'Task TimeLog stopped!',
-        ),
-        OA\Response(
-            response: Response::HTTP_CONFLICT,
-            description: 'Problems stopping Task TimeLog!',
-        ),
-    ]
-    final public function stopTaskTimeLog(
-        string $id,
-    ): JsonResponse {
-        $task = $this->taskService->show($id);
-
-        if (!$task instanceof Task) {
-            return $this->jsonApi(
-                errors: [self::TASK_NOT_FOUND],
-                status: Response::HTTP_NOT_FOUND
-            );
-        }
-
-        $timeLog = $this->timeLogService->stopTaskTimeLog($task);
-
-        if (!$timeLog instanceof TimeLog) {
-            return $this->jsonApi(
-                errors: ['Problems stopping Task TimeLog!'],
-                status: Response::HTTP_CONFLICT
-            );
-        }
-
-        return $this->jsonApi(
-            status: $timeLog ? Response::HTTP_NO_CONTENT : Response::HTTP_CONFLICT,
         );
     }
 }
