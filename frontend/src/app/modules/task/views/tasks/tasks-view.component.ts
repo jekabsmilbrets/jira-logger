@@ -6,7 +6,7 @@ import {
   debounceTime,
   distinctUntilChanged,
   forkJoin,
-  NEVER,
+  map,
   Observable,
   of,
   startWith,
@@ -127,7 +127,7 @@ export class TasksViewComponent implements OnInit {
   }
 
   public onAction([task, action]: [Task, TaskUpdateActionEnum]): void {
-    let action$: Observable<TimeLog> = NEVER;
+    let action$: Observable<boolean> = of(false);
     switch (action) {
       case TaskUpdateActionEnum.startWorkLog:
         action$ = this.startTimeLog(task);
@@ -135,7 +135,7 @@ export class TasksViewComponent implements OnInit {
 
       case TaskUpdateActionEnum.stopWorkLog:
         if (task.isTimeLogRunning && task.lastTimeLog instanceof TimeLog) {
-          action$ = this.stopTimeLog(task, task.lastTimeLog);
+          action$ = this.stopTimeLog(task);
         }
         break;
 
@@ -168,6 +168,8 @@ export class TasksViewComponent implements OnInit {
     this.timeLogsService.create(task, timeLog)
       .pipe(
         take(1),
+        switchMap(() => this.tasksService.list()),
+        take(1),
       )
       .subscribe();
   }
@@ -175,6 +177,8 @@ export class TasksViewComponent implements OnInit {
   public onUpdateTimeLog([task, timeLog]: [Task, TimeLog]): void {
     this.timeLogsService.update(task, timeLog)
       .pipe(
+        take(1),
+        switchMap(() => this.tasksService.list()),
         take(1),
       )
       .subscribe();
@@ -184,34 +188,28 @@ export class TasksViewComponent implements OnInit {
     this.timeLogsService.delete(task, timeLog)
       .pipe(
         take(1),
+        switchMap(() => this.tasksService.list()),
+        take(1),
       )
       .subscribe();
   }
 
   private startTimeLog(
     task: Task,
-  ): Observable<TimeLog> {
-    const timeLog: TimeLog = new TimeLog(
-      {
-        startTime: new Date(),
-      },
-    );
-
-    const createTimeLog$ = this.timeLogsService.create(task, timeLog);
-
+  ): Observable<boolean> {
     return this.tasks$
       .pipe(
         take(1),
         switchMap(
           (tasks: Task[]) => {
-            const observables: Observable<TimeLog>[] = [];
+            const observables: Observable<void>[] = [];
 
             tasks.forEach(
               (oTask: Task) => {
                 if (oTask.id !== task.id) {
                   if (oTask.isTimeLogRunning && oTask.lastTimeLog instanceof TimeLog) {
                     oTask.lastTimeLog.endTime = new Date();
-                    observables.push(this.timeLogsService.update(oTask, oTask.lastTimeLog));
+                    observables.push(this.timeLogsService.stop(oTask));
                   }
                 }
               },
@@ -219,23 +217,27 @@ export class TasksViewComponent implements OnInit {
 
             if (observables.length > 0) {
               return forkJoin(observables)
-                .pipe(take(1));
+                .pipe(
+                  take(1),
+                  map(() => true),
+                );
             }
 
-            return of(0);
+            return of(true);
           },
         ),
-        switchMap(() => createTimeLog$),
+        switchMap(() => this.timeLogsService.start(task)),
+        map(() => true),
       );
   }
 
   private stopTimeLog(
     task: Task,
-    timeLog: TimeLog,
-  ): Observable<TimeLog> {
-    timeLog.endTime = new Date();
-
-    return this.timeLogsService.update(task, timeLog);
+  ): Observable<boolean> {
+    return this.timeLogsService.stop(task)
+      .pipe(
+        map(() => true),
+      );
   }
 
   private reloadData(): void {

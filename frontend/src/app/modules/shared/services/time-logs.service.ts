@@ -1,10 +1,10 @@
-import { formatDate }                    from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable }                    from '@angular/core';
+import { formatDate } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
 
 import { environment } from 'environments/environment';
 
-import { BehaviorSubject, catchError, map, Observable, switchMap, tap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, map, Observable, of, switchMap, tap, throwError } from 'rxjs';
 
 import { appLocale, appTimeLogDateTimeFormat, appTimeZone } from '@core/constants/date-time.constant';
 
@@ -43,26 +43,15 @@ export class TimeLogsService implements LoadableService {
   }
 
   public list(task: Task): Observable<TimeLog[]> {
-    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }` +
-      `/${ task.id }/${ this.baseTimeLogPath }`;
-
-    return waitForTurn(this.isLoading$, this.isLoadingSubject)
+    return this.makeRequest(
+      task,
+    )
       .pipe(
-        switchMap(() => this.http.get<JsonApi<ApiTimeLog[]>>(url)),
-        catchError((error) => {
-          console.error(error);
-          this.isLoadingSubject.next(false);
-          return throwError(() => new Error(error));
-        }),
-        tap(() => this.isLoadingSubject.next(false)),
         map((response: JsonApi<ApiTimeLog[]>): TimeLog[] => (response.data && adaptTimeLogs(response.data)) as TimeLog[]),
       );
   }
 
   public create(task: Task, timeLog: TimeLog): Observable<TimeLog> {
-    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }` +
-      `/${ task.id }/${ this.baseTimeLogPath }`;
-
     const body = {
       id: timeLog.id,
       startTime: timeLog.startTime && formatDate(timeLog.startTime, appTimeLogDateTimeFormat, appLocale, appTimeZone),
@@ -71,19 +60,18 @@ export class TimeLogsService implements LoadableService {
       task: task.id,
     };
 
-    return waitForTurn(this.isLoading$, this.isLoadingSubject)
+    return this.makeRequest(
+      task,
+      'post',
+      timeLog.id,
+      body,
+    )
       .pipe(
-        switchMap(() => this.http.post<JsonApi<ApiTimeLog>>(url, body)),
-        catchError(this.reportErrors),
-        tap(() => this.isLoadingSubject.next(false)),
         map((response: JsonApi<ApiTimeLog>): TimeLog => (response.data && adaptTimeLog(response.data)) as TimeLog),
       );
   }
 
   public update(task: Task, timeLog: TimeLog): Observable<TimeLog> {
-    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }` +
-      `/${ task.id }/${ this.baseTimeLogPath }/${ timeLog.id }`;
-
     const body = {
       id: timeLog.id,
       startTime: timeLog.startTime && formatDate(timeLog.startTime, appTimeLogDateTimeFormat, appLocale, appTimeZone),
@@ -92,30 +80,85 @@ export class TimeLogsService implements LoadableService {
       task: task.id,
     };
 
-    return waitForTurn(this.isLoading$, this.isLoadingSubject)
+    return this.makeRequest(
+      task,
+      'patch',
+      timeLog.id,
+      body,
+    )
       .pipe(
-        switchMap(() => this.http.patch<JsonApi<ApiTimeLog>>(url, body)),
-        catchError(this.reportErrors),
-        tap(() => this.isLoadingSubject.next(false)),
         map((response: JsonApi<ApiTimeLog>): TimeLog => (response.data && adaptTimeLog(response.data)) as TimeLog),
       );
   }
 
   public delete(task: Task, timeLog: TimeLog): Observable<void> {
-    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }` +
-      `/${ task.id }/${ this.baseTimeLogPath }/${ timeLog.id }`;
+    return this.makeRequest(
+      task,
+      'delete',
+      timeLog.id,
+    );
+  }
+
+  public start(task: Task): Observable<void> {
+    return this.makeRequest(
+      task,
+      'get',
+      'start',
+    );
+  }
+
+  public stop(task: Task): Observable<void> {
+    return this.makeRequest(
+      task,
+      'get',
+      'stop',
+    );
+  }
+
+  private makeRequest(
+    task: Task,
+    method: 'get' | 'post' | 'patch' | 'delete' = 'get',
+    path: string                                = '',
+    body: any                                   = null,
+    reportError: boolean                        = false,
+  ): Observable<any> {
+    let url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }` +
+      `/${ task.id }/${ this.baseTimeLogPath }`;
+
+    if (path) {
+      url += `/${ path }`;
+    }
+
+    let request$: Observable<any> = of({});
+
+    switch (method) {
+      case 'post':
+        request$ = this.http.post(url, body);
+        break;
+
+      case 'patch':
+        request$ = this.http.patch(url, body);
+        break;
+
+      case 'delete':
+        request$ = this.http.delete(url);
+        break;
+
+      case 'get':
+      default:
+        request$ = this.http.get(url);
+        break;
+    }
 
     return waitForTurn(this.isLoading$, this.isLoadingSubject)
       .pipe(
-        switchMap(() => this.http.delete<void>(url)),
-        catchError(this.reportErrors),
+        switchMap(() => request$),
+        catchError((error) => {
+          console.error(error);
+          this.isLoadingSubject.next(false);
+          return throwError(() => error);
+        }),
         tap(() => this.isLoadingSubject.next(false)),
       );
-  }
-
-  private reportErrors(error: HttpErrorResponse): Observable<never> {
-    console.error(error);
-    this.isLoadingSubject.next(false);
-    return throwError(() => new Error(error.message));
   }
 }
