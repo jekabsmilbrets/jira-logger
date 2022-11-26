@@ -34,8 +34,7 @@ class JiraWorkLogController extends BaseApiController
 
     public function __construct(
         private readonly JiraWorkLogService $jiraWorkLogService,
-    )
-    {
+    ) {
     }
 
     #[
@@ -135,8 +134,7 @@ class JiraWorkLogController extends BaseApiController
     ]
     final public function show(
         string $id
-    ): JsonResponse
-    {
+    ): JsonResponse {
         $jiraWorkLog = $this->jiraWorkLogService->show($id);
 
         if (!$jiraWorkLog instanceof JiraWorkLog) {
@@ -209,11 +207,10 @@ class JiraWorkLogController extends BaseApiController
         ),
     ]
     final public function new(
-        ValidatorInterface  $validator,
+        ValidatorInterface $validator,
         SerializerInterface $serializer,
-        Request             $request,
-    ): JsonResponse
-    {
+        Request $request,
+    ): JsonResponse {
         try {
             $jiraWorkLogRequest = $serializer->deserialize(
                 data: $request->getContent(),
@@ -232,7 +229,7 @@ class JiraWorkLogController extends BaseApiController
             groups: ['create']
         );
 
-        if (count($errors) > 0) {
+        if (\count($errors) > 0) {
             return $this->validationErrorJsonApi(
                 constraintViolationList: $errors,
                 status: 406
@@ -333,12 +330,11 @@ class JiraWorkLogController extends BaseApiController
         ),
     ]
     final public function edit(
-        string              $id,
-        ValidatorInterface  $validator,
+        string $id,
+        ValidatorInterface $validator,
         SerializerInterface $serializer,
-        Request             $request,
-    ): JsonResponse
-    {
+        Request $request,
+    ): JsonResponse {
         try {
             $jiraWorkLogRequest = $serializer->deserialize(
                 data: $request->getContent(),
@@ -357,7 +353,7 @@ class JiraWorkLogController extends BaseApiController
             groups: ['update']
         );
 
-        if (count($errors) > 0) {
+        if (\count($errors) > 0) {
             return $this->validationErrorJsonApi(
                 constraintViolationList: $errors,
                 status: 406
@@ -441,8 +437,7 @@ class JiraWorkLogController extends BaseApiController
     ]
     final public function delete(
         string $id
-    ): JsonResponse
-    {
+    ): JsonResponse {
         try {
             $status = $this->jiraWorkLogService->delete($id);
         } catch (Exception) {

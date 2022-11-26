@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Dto\JsonApi;
 
-use JsonSerializable;
 use OpenApi\Attributes as OA;
 use Symfony\Component\Validator\Constraints as Assert;
 
-class JsonApi implements JsonSerializable
+class JsonApi implements \JsonSerializable
 {
     #[
         Assert\Type(type: 'mixed'),

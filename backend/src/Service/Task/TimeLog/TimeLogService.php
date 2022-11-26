@@ -9,9 +9,6 @@ use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Factory\Task\TimeLog\TimeLogFactory;
 use App\Repository\Task\TimeLog\TimeLogRepository;
-use DateTime;
-use Exception;
-use RuntimeException;
 
 class TimeLogService
 {
@@ -53,7 +50,7 @@ class TimeLogService
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     final public function startTaskTimeLog(
         Task $task,
@@ -61,7 +58,7 @@ class TimeLogService
     ): ?TimeLog {
         $timeLog = new TimeLog();
         $timeLog->setTask($task)
-            ->setStartTime(new DateTime());
+            ->setStartTime(new \DateTime());
 
         return $this->new(
             timeLog: $timeLog,
@@ -70,15 +67,15 @@ class TimeLogService
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     final public function new(
-        ?TimeLogRequest $timeLogRequest = null,
-        ?TimeLog        $timeLog = null,
-        bool            $flush = true,
+        TimeLogRequest $timeLogRequest = null,
+        TimeLog $timeLog = null,
+        bool $flush = true,
     ): TimeLog {
         if (!$timeLogRequest && !$timeLog) {
-            throw new RuntimeException(self::NO_DATA_PROVIDED);
+            throw new \RuntimeException(self::NO_DATA_PROVIDED);
         }
 
         if ($timeLogRequest && !$timeLog) {
@@ -94,7 +91,7 @@ class TimeLogService
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     final public function stopTaskTimeLog(
         Task $task,
@@ -109,7 +106,7 @@ class TimeLogService
             return null;
         }
 
-        $timeLog->setEndTime(new DateTime());
+        $timeLog->setEndTime(new \DateTime());
 
         return $this->edit(
             taskId: $task->getId(),
@@ -120,18 +117,18 @@ class TimeLogService
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     final public function edit(
-        string          $taskId,
-        string          $id,
-        ?TimeLogRequest $timeLogRequest = null,
-        ?TimeLog        $timeLog = null,
-        bool            $flush = true,
+        string $taskId,
+        string $id,
+        TimeLogRequest $timeLogRequest = null,
+        TimeLog $timeLog = null,
+        bool $flush = true,
     ): ?TimeLog {
         switch (true) {
             case !$timeLogRequest && !$timeLog:
-                throw new RuntimeException(self::NO_DATA_PROVIDED);
+                throw new \RuntimeException(self::NO_DATA_PROVIDED);
             case (!$timeLogRequest && $timeLog) && !$timeLog instanceof TimeLog:
                 return null;
 
@@ -174,7 +171,7 @@ class TimeLogService
     final public function delete(
         string $taskId,
         string $id,
-        bool   $flush = true,
+        bool $flush = true,
     ): bool {
         $timeLog = $this->timeLogRepository->findOneBy(
             [

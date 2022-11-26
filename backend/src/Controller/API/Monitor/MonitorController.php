@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controller\API\Monitor;
 
 use App\Controller\API\BaseApiController;
-use DateTime;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -53,7 +52,7 @@ class MonitorController extends BaseApiController
     {
         return $this->jsonApi(
             [
-                'time' => (new DateTime())->format('Y-m-d\TH:i:sp'),
+                'time' => (new \DateTime())->format('Y-m-d\TH:i:sp'),
                 'message' => 'Welcome to Jira-logger API!',
             ]
         );

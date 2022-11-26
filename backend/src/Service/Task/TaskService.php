@@ -9,10 +9,7 @@ use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Factory\Task\TaskFactory;
 use App\Repository\Task\TaskRepository;
-use DateTime;
 use Doctrine\Common\Collections\ArrayCollection;
-use Exception;
-use RuntimeException;
 
 class TaskService
 {
@@ -24,7 +21,7 @@ class TaskService
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     final public function list(?array $filter): array
     {
@@ -36,8 +33,8 @@ class TaskService
                     if (
                         isset($filter['date']) || isset($filter['startDate'], $filter['endDate'])
                     ) {
-                        $startDate = new DateTime($filter['date'] ?? $filter['startDate']);
-                        $endDate = new DateTime($filter['date'] ?? $filter['endDate']);
+                        $startDate = new \DateTime($filter['date'] ?? $filter['startDate']);
+                        $endDate = new \DateTime($filter['date'] ?? $filter['endDate']);
 
                         $endDate->setTime(23, 59, 59);
 
@@ -87,13 +84,13 @@ class TaskService
                     $visible = [true];
 
                     if (
-                        array_key_exists('hideUnreported', $filter) &&
-                        filter_var($filter['hideUnreported'], FILTER_VALIDATE_BOOLEAN)
+                        \array_key_exists('hideUnreported', $filter) &&
+                        filter_var($filter['hideUnreported'], \FILTER_VALIDATE_BOOLEAN)
                     ) {
                         $visible[] = $task->getTimeLogs()->count() > 0;
                     }
 
-                    return (bool)array_product($visible);
+                    return (bool) array_product($visible);
                 }
             );
 
@@ -116,12 +113,12 @@ class TaskService
     }
 
     final public function new(
-        ?TaskRequest $taskRequest = null,
-        ?Task        $task = null,
-        bool         $flush = true,
+        TaskRequest $taskRequest = null,
+        Task $task = null,
+        bool $flush = true,
     ): Task {
         if (!$taskRequest && !$task) {
-            throw new RuntimeException(self::NO_DATA_PROVIDED);
+            throw new \RuntimeException(self::NO_DATA_PROVIDED);
         }
 
         if ($taskRequest && !$task) {
@@ -137,14 +134,14 @@ class TaskService
     }
 
     final public function edit(
-        string       $id,
-        ?TaskRequest $taskRequest = null,
-        ?Task        $task = null,
-        bool         $flush = true,
+        string $id,
+        TaskRequest $taskRequest = null,
+        Task $task = null,
+        bool $flush = true,
     ): ?Task {
         switch (true) {
             case !$taskRequest && !$task:
-                throw new RuntimeException(self::NO_DATA_PROVIDED);
+                throw new \RuntimeException(self::NO_DATA_PROVIDED);
             case (!$taskRequest && $task) && !$task instanceof Task:
                 return null;
 
@@ -171,7 +168,7 @@ class TaskService
 
     final public function delete(
         string $id,
-        bool   $flush = true,
+        bool $flush = true,
     ): bool {
         $task = $this->taskRepository->find($id);
 

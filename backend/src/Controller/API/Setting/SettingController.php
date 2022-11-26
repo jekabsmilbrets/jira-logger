@@ -207,9 +207,9 @@ class SettingController extends BaseApiController
         ),
     ]
     final public function new(
-        ValidatorInterface  $validator,
+        ValidatorInterface $validator,
         SerializerInterface $serializer,
-        Request             $request,
+        Request $request,
     ): JsonResponse {
         try {
             $settingRequest = $serializer->deserialize(
@@ -229,7 +229,7 @@ class SettingController extends BaseApiController
             groups: ['create']
         );
 
-        if (count($errors) > 0) {
+        if (\count($errors) > 0) {
             return $this->validationErrorJsonApi(
                 constraintViolationList: $errors,
                 status: 406
@@ -330,10 +330,10 @@ class SettingController extends BaseApiController
         ),
     ]
     final public function edit(
-        string              $id,
-        ValidatorInterface  $validator,
+        string $id,
+        ValidatorInterface $validator,
         SerializerInterface $serializer,
-        Request             $request,
+        Request $request,
     ): JsonResponse {
         try {
             $settingRequest = $serializer->deserialize(
@@ -353,7 +353,7 @@ class SettingController extends BaseApiController
             groups: ['update']
         );
 
-        if (count($errors) > 0) {
+        if (\count($errors) > 0) {
             return $this->validationErrorJsonApi(
                 constraintViolationList: $errors,
                 status: 406

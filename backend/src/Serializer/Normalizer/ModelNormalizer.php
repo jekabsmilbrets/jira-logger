@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace App\Serializer\Normalizer;
 
-use ArrayObject;
-use DateTime;
-use DateTimeInterface;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
 use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
@@ -22,10 +19,10 @@ class ModelNormalizer implements NormalizerInterface
      * {@inheritDoc}
      */
     final public function normalize(
-        mixed  $object,
+        mixed $object,
         string $format = null,
-        array  $context = []
-    ): float|int|bool|ArrayObject|array|string|null {
+        array $context = []
+    ): float|int|bool|\ArrayObject|array|string|null {
         $dateCallback = static function (
             $innerObject,
             $outerObject,
@@ -33,7 +30,7 @@ class ModelNormalizer implements NormalizerInterface
             string $format = null,
             array $context = []
         ): ?string {
-            return $innerObject instanceof DateTime ? $innerObject->format(DateTimeInterface::ATOM) : null;
+            return $innerObject instanceof \DateTime ? $innerObject->format(\DateTimeInterface::ATOM) : null;
         };
 
         $defaultContext = [
@@ -45,7 +42,7 @@ class ModelNormalizer implements NormalizerInterface
                 string $format = null,
                 array $context = []
             ): ?string {
-                return is_object($innerObject) ? $innerObject->getId() : null;
+                return \is_object($innerObject) ? $innerObject->getId() : null;
             },
             AbstractNormalizer::CIRCULAR_REFERENCE_HANDLER => static function (
                 $object,
@@ -64,7 +61,7 @@ class ModelNormalizer implements NormalizerInterface
             ],
         ];
 
-        if (array_key_exists('groups', $context)) {
+        if (\array_key_exists('groups', $context)) {
             $defaultContext[AbstractNormalizer::GROUPS] = $context['groups'];
         }
 

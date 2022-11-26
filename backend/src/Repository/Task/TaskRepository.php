@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace App\Repository\Task;
 
 use App\Entity\Task\Task;
-use DateTime;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
-use Exception;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -57,7 +55,7 @@ class TaskRepository extends ServiceEntityRepository
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     final public function findByFilters(array $filter): array
     {
@@ -69,8 +67,8 @@ class TaskRepository extends ServiceEntityRepository
             isset($filter['tags'])
         ) {
             $tags = explode(',', $filter['tags']);
-            $map_fn = static fn(string $tag): string => trim($tag);
-            $filter_fn = static fn(string $uuid) => Uuid::isValid($uuid);
+            $map_fn = static fn (string $tag): string => trim($tag);
+            $filter_fn = static fn (string $uuid) => Uuid::isValid($uuid);
 
             $tags = array_filter(
                 array: array_map(
@@ -80,7 +78,7 @@ class TaskRepository extends ServiceEntityRepository
                 callback: $filter_fn,
             );
 
-            if (count($tags) > 0) {
+            if (\count($tags) > 0) {
                 $queryBuilder
                     ->andWhere('tags.id IN (:tagIds)')
                     ->setParameter('tagIds', $tags);
@@ -90,16 +88,16 @@ class TaskRepository extends ServiceEntityRepository
         if (
             isset($filter['date']) || isset($filter['startDate'], $filter['endDate'])
         ) {
-            $startDate = new DateTime($filter['date'] ?? $filter['startDate']);
-            $endDate = new DateTime($filter['date'] ?? $filter['endDate']);
+            $startDate = new \DateTime($filter['date'] ?? $filter['startDate']);
+            $endDate = new \DateTime($filter['date'] ?? $filter['endDate']);
 
             $endDate->setTime(23, 59, 59);
 
             $queryBuilder
                 ->andWhere(
                     '(
-                        (:startTime <= l.startTime AND l.startTime <= :endTime) OR 
-                        (l.startTime <= :startTime AND l.endTime >= :endTime) OR 
+                        (:startTime <= l.startTime AND l.startTime <= :endTime) OR
+                        (l.startTime <= :startTime AND l.endTime >= :endTime) OR
                         (l.startTime >= :startTime AND l.endTime <= :endTime)
                     )'
                 )
@@ -113,7 +111,7 @@ class TaskRepository extends ServiceEntityRepository
             if (!empty($name)) {
                 $queryBuilder
                     ->andWhere('lower(t.name) LIKE lower(:name)')
-                    ->setParameter('name', '%' . $name . '%');
+                    ->setParameter('name', '%'.$name.'%');
             }
         }
 

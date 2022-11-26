@@ -37,7 +37,7 @@ class TimeLogController extends BaseApiController
 
     public function __construct(
         private readonly TimeLogService $timeLogService,
-        private readonly TaskService    $taskService,
+        private readonly TaskService $taskService,
     ) {
     }
 
@@ -160,11 +160,11 @@ class TimeLogController extends BaseApiController
         ),
     ]
     final public function new(
-        string              $taskId,
-        ValidatorInterface  $validator,
+        string $taskId,
+        ValidatorInterface $validator,
         SerializerInterface $serializer,
-        Request             $request,
-        TaskService         $taskService,
+        Request $request,
+        TaskService $taskService,
     ): JsonResponse {
         try {
             $timeLogRequest = new TimeLogRequest(
@@ -194,7 +194,7 @@ class TimeLogController extends BaseApiController
             groups: ['create']
         );
 
-        if (count($errors) > 0) {
+        if (\count($errors) > 0) {
             return $this->validationErrorJsonApi(
                 constraintViolationList: $errors,
                 status: Response::HTTP_NOT_ACCEPTABLE
@@ -290,12 +290,12 @@ class TimeLogController extends BaseApiController
         ),
     ]
     final public function edit(
-        string              $taskId,
-        string              $id,
-        ValidatorInterface  $validator,
+        string $taskId,
+        string $id,
+        ValidatorInterface $validator,
         SerializerInterface $serializer,
-        Request             $request,
-        TaskService         $taskService
+        Request $request,
+        TaskService $taskService
     ): JsonResponse {
         try {
             $timeLogRequest = new TimeLogRequest(
@@ -321,7 +321,7 @@ class TimeLogController extends BaseApiController
             groups: ['update']
         );
 
-        if ((is_countable($errors) ? count($errors) : 0) > 0) {
+        if ((is_countable($errors) ? \count($errors) : 0) > 0) {
             return $this->validationErrorJsonApi(
                 constraintViolationList: $errors,
                 status: Response::HTTP_NOT_ACCEPTABLE
@@ -433,7 +433,7 @@ class TimeLogController extends BaseApiController
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     #[
         Route(
@@ -535,7 +535,7 @@ class TimeLogController extends BaseApiController
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     #[
         Route(

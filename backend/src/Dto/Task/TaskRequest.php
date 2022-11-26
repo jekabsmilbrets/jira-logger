@@ -15,22 +15,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 class TaskRequest
 {
     #[
-        Groups(['update']),
-        Assert\NotNull(groups: ['update']),
-        Assert\Type(
-            type: 'string',
-            groups: ['update'],
-        ),
-        OA\Property(
-            property: 'id',
-            type: 'uuid',
-            example: '9dab258b-46ff-4ad7-a8a0-b9f2b6f84aa1',
-            nullable: false,
-        )
-    ]
-    public ?string $id = null;
-
-    #[
         Groups(['create', 'update']),
         Assert\NotNull(groups: ['create', 'update']),
         Assert\NotBlank(groups: ['create', 'update']),
@@ -121,28 +105,16 @@ class TaskRequest
         foreach ($this->tagService->list() as $tag) {
             $tagInTags = $tags->contains($tag);
 
-            if (in_array($tag->getId(), $tagIds, true)) {
+            if (\in_array($tag->getId(), $tagIds, true)) {
                 if (!$tagInTags) {
                     $tags->add($tag);
                 }
-            } else if ($tagInTags) {
+            } elseif ($tagInTags) {
                 $tags->removeElement($tag);
             }
         }
 
         $this->tags = $tags;
-
-        return $this;
-    }
-
-    final public function getId(): ?string
-    {
-        return $this->id;
-    }
-
-    final public function setId(string $id): self
-    {
-        $this->id = $id;
 
         return $this;
     }

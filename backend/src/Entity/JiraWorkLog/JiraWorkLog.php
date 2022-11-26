@@ -59,7 +59,7 @@ class JiraWorkLog implements EntityBaseInterface
 
     #[
         Groups([Group::LIST]),
-        ORM\Column(),
+        ORM\Column,
         OA\Property(type: 'integer')
     ]
     private ?int $timeSpentSeconds = null;
@@ -67,9 +67,9 @@ class JiraWorkLog implements EntityBaseInterface
     #[
         Groups([Group::LIST]),
         ORM\Column(type: Types::DATE_MUTABLE),
-        Context([DateTimeNormalizer::FORMAT_KEY => DateTimeInterface::ATOM])
+        Context([DateTimeNormalizer::FORMAT_KEY => \DateTimeInterface::ATOM])
     ]
-    private ?DateTimeInterface $startTime = null;
+    private ?\DateTimeInterface $startTime = null;
 
     final public function getTask(): ?Task
     {
@@ -119,12 +119,12 @@ class JiraWorkLog implements EntityBaseInterface
         return $this;
     }
 
-    final public function getStartTime(): ?DateTimeInterface
+    final public function getStartTime(): ?\DateTimeInterface
     {
         return $this->startTime;
     }
 
-    final public function setStartTime(DateTimeInterface $startTime): self
+    final public function setStartTime(\DateTimeInterface $startTime): self
     {
         $this->startTime = $startTime;
 

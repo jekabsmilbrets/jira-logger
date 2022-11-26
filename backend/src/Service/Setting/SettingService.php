@@ -9,7 +9,6 @@ use App\Entity\Setting\Setting;
 use App\Factory\Setting\SettingFactory;
 use App\Repository\Setting\SettingRepository;
 use Doctrine\Common\Collections\ArrayCollection;
-use RuntimeException;
 
 class SettingService
 {
@@ -51,12 +50,12 @@ class SettingService
     }
 
     final public function new(
-        ?SettingRequest $settingRequest = null,
-        ?Setting        $setting = null,
-        bool            $flush = true,
+        SettingRequest $settingRequest = null,
+        Setting $setting = null,
+        bool $flush = true,
     ): Setting {
         if (!$settingRequest && !$setting) {
-            throw new RuntimeException(self::NO_DATA_PROVIDED);
+            throw new \RuntimeException(self::NO_DATA_PROVIDED);
         }
 
         if ($settingRequest && !$setting) {
@@ -72,14 +71,14 @@ class SettingService
     }
 
     final public function edit(
-        string          $id,
-        ?SettingRequest $settingRequest = null,
-        ?Setting        $setting = null,
-        bool            $flush = true,
+        string $id,
+        SettingRequest $settingRequest = null,
+        Setting $setting = null,
+        bool $flush = true,
     ): ?Setting {
         switch (true) {
             case !$settingRequest && !$setting:
-                throw new RuntimeException(self::NO_DATA_PROVIDED);
+                throw new \RuntimeException(self::NO_DATA_PROVIDED);
             case (!$settingRequest && $setting) && !$setting instanceof Setting:
                 return null;
 
@@ -106,7 +105,7 @@ class SettingService
 
     final public function delete(
         string $id,
-        bool   $flush = true,
+        bool $flush = true,
     ): bool {
         $setting = $this->settingRepository->find($id);
 
