@@ -39,6 +39,9 @@ services:
   App\Dto\Task\TimeLog\TimeLogRequest:
     arguments:
       - '@App\Service\Task\TaskService'
+  App\Dto\JiraWorkLog\JiraWorkLogRequest:
+    arguments:
+      - '@App\Service\Task\TaskService'
   App\Dto\Task\TaskRequest:
     arguments:
       - '@App\Service\Tag\TagService'

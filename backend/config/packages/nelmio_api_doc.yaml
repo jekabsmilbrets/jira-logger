@@ -27,3 +27,7 @@ nelmio_api_doc:
       - { alias: SettingUpdateRequest, type: App\Dto\Setting\SettingRequest, groups: [ 'update' ] }
       - { alias: SettingCreateRequest, type: App\Dto\Setting\SettingRequest, groups: [ 'create' ] }
       - { alias: SettingModel, type: App\Entity\Setting\Setting, groups: [ 'list' ] }
+
+      - { alias: JiraWorkLogModel, type: App\Entity\JiraWorkLog\JiraWorkLog, groups: [ 'list' ] }
+      - { alias: JiraWorkLogUpdateRequest, type: App\Dto\JiraWorkLog\JiraWorkLogRequest, groups: [ 'update' ] }
+      - { alias: JiraWorkLogCreateRequest, type: App\Dto\JiraWorkLog\JiraWorkLogRequest, groups: [ 'create' ] }
