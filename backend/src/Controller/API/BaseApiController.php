@@ -16,7 +16,7 @@ class BaseApiController extends AbstractController
 
     final public function validationErrorJsonApi(
         ConstraintViolationListInterface $constraintViolationList,
-        int                              $status = 400,
+        int $status = 400,
     ): JsonResponse {
         $outputErrors = [];
 
@@ -34,7 +34,7 @@ class BaseApiController extends AbstractController
         mixed $data = null,
         mixed $errors = null,
         mixed $meta = null,
-        int   $status = 200,
+        int $status = 200,
         array $headers = [],
         array $context = []
     ): JsonResponse {

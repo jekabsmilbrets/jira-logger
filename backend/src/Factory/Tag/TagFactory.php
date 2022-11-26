@@ -11,7 +11,7 @@ class TagFactory
 {
     final public static function create(
         TagRequest $tagRequest,
-        ?Tag       $tag = null,
+        Tag $tag = null,
     ): Tag {
         if (null === $tag) {
             $tag = new Tag();

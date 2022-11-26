@@ -11,9 +11,8 @@ class JiraWorkLogFactory
 {
     final public static function create(
         JiraWorkLogRequest $jiraWorkLogRequest,
-        ?JiraWorkLog       $jiraWorkLog = null,
-    ): JiraWorkLog
-    {
+        JiraWorkLog $jiraWorkLog = null,
+    ): JiraWorkLog {
         if (null === $jiraWorkLog) {
             $jiraWorkLog = new JiraWorkLog();
         }

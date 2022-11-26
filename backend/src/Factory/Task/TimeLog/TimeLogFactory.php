@@ -6,28 +6,26 @@ namespace App\Factory\Task\TimeLog;
 
 use App\Dto\Task\TimeLog\TimeLogRequest;
 use App\Entity\Task\TimeLog\TimeLog;
-use DateTime;
-use Exception;
 
 class TimeLogFactory
 {
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     final public static function create(
         TimeLogRequest $timeLogRequest,
-        ?TimeLog       $timeLog = null,
+        TimeLog $timeLog = null,
     ): TimeLog {
         if (null === $timeLog) {
             $timeLog = new TimeLog();
         }
 
         if (null !== ($startTime = $timeLogRequest->getStartTime())) {
-            $timeLog->setStartTime(new DateTime($startTime));
+            $timeLog->setStartTime(new \DateTime($startTime));
         }
 
         if (null !== ($endTime = $timeLogRequest->getEndTime())) {
-            $timeLog->setEndTime(new DateTime($endTime));
+            $timeLog->setEndTime(new \DateTime($endTime));
         }
 
         if (null !== ($description = $timeLogRequest->getDescription())) {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity\Task;
 
+use App\Entity\JiraWorkLog\JiraWorkLog;
 use App\Entity\Tag\Tag;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Repository\Task\TaskRepository;
@@ -102,10 +103,26 @@ class Task implements EntityBaseInterface
     ]
     private ?TimeLog $lastTimeLog = null;
 
+    #[
+        Groups([Group::LIST]),
+        MaxDepth(1),
+        ORM\OneToMany(
+            mappedBy: 'task',
+            targetEntity: JiraWorkLog::class,
+            orphanRemoval: true
+        ),
+        OA\Property(
+            type: 'array',
+            items: new OA\Items(ref: '#/components/schemas/JiraWorkLogModel')
+        )
+    ]
+    private Collection $jiraWorkLogs;
+
     public function __construct()
     {
         $this->timeLogs = new ArrayCollection();
         $this->tags = new ArrayCollection();
+        $this->jiraWorkLogs = new ArrayCollection();
     }
 
     final public function addTimeLog(TimeLog $timeLog): self
@@ -145,18 +162,6 @@ class Task implements EntityBaseInterface
         }
 
         return $this;
-    }
-
-    final public function toArray(): array
-    {
-        return [
-            'id' => $this->getId(),
-            'name' => $this->getName(),
-            'description' => $this->getDescription(),
-            'timeLogs' => $this->getTimeLogs(),
-            'tags' => $this->getTags(),
-            'lastTimeLog' => $this->getLastTimeLog(),
-        ];
     }
 
     final public function getName(): ?string
@@ -213,5 +218,45 @@ class Task implements EntityBaseInterface
         $timeLog = $this->timeLogs->matching($criteria)->first();
 
         return $timeLog instanceof TimeLog ? $timeLog : null;
+    }
+
+    final public function getJiraWorkLogs(): Collection
+    {
+        return $this->jiraWorkLogs;
+    }
+
+    final public function addJiraWorkLog(JiraWorkLog $jiraWorkLog): self
+    {
+        if (!$this->jiraWorkLogs->contains($jiraWorkLog)) {
+            $this->jiraWorkLogs->add($jiraWorkLog);
+            $jiraWorkLog->setTask($this);
+        }
+
+        return $this;
+    }
+
+    final public function removeJiraWorkLog(JiraWorkLog $jiraWorkLog): self
+    {
+        if ($this->jiraWorkLogs->removeElement($jiraWorkLog)) {
+            // set the owning side to null (unless already changed)
+            if ($jiraWorkLog->getTask() === $this) {
+                $jiraWorkLog->setTask(null);
+            }
+        }
+
+        return $this;
+    }
+
+    final public function toArray(): array
+    {
+        return [
+            'id' => $this->getId(),
+            'name' => $this->getName(),
+            'description' => $this->getDescription(),
+            'timeLogs' => $this->getTimeLogs(),
+            'tags' => $this->getTags(),
+            'lastTimeLog' => $this->getLastTimeLog(),
+            'jiraWorkLogs' => $this->getJiraWorkLogs(),
+        ];
     }
 }

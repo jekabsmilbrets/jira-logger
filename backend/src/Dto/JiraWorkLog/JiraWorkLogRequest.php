@@ -62,8 +62,7 @@ class JiraWorkLogRequest
 
     public function __construct(
         private readonly TaskService $taskService,
-    )
-    {
+    ) {
     }
 
     final public function getDescription(): ?string

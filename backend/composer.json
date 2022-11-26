@@ -92,7 +92,7 @@
     "post-update-cmd": [
       "@auto-scripts"
     ],
-    "php-cs-fixer": "php-cs-fixer fix src",
+    "php-cs-fixer": "php-cs-fixer fix src -v",
     "php-stan": "phpstan analyse src --memory-limit 1024M"
   },
   "conflict": {
