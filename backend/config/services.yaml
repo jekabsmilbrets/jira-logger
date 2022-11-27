@@ -50,3 +50,4 @@ services:
     arguments:
       - '@monolog.logger.jira-api-service'
       - '@App\Service\Setting\SettingService'
+      - '@App\Service\JiraWorkLog\JiraWorkLogService'
