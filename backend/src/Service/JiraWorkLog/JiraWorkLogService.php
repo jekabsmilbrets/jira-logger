@@ -30,6 +30,16 @@ class JiraWorkLogService
         return new ArrayCollection($jiraWorkLogs);
     }
 
+    final public function findOneBy(
+        array $criteria
+    ): ?JiraWorkLog {
+        $jiraWorkLog = $this->jiraWorkLogRepository->findOneBy(
+            $criteria
+        );
+
+        return $jiraWorkLog ?? null;
+    }
+
     final public function findByName(string $name): ?JiraWorkLog
     {
         $jiraWorkLog = $this->jiraWorkLogRepository->findOneBy(
