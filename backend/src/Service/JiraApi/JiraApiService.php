@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace App\Service\JiraApi;
 
+use App\Entity\JiraWorkLog\JiraWorkLog;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Exception\JiraApiServiceException;
+use App\Service\JiraWorkLog\JiraWorkLogService;
 use App\Service\Setting\SettingService;
+use Doctrine\Common\Collections\Collection;
 use JiraRestApi\Configuration\ArrayConfiguration;
 use JiraRestApi\Issue\IssueService;
 use JiraRestApi\Issue\Worklog;
 use JiraRestApi\JiraException;
-use JsonMapper_Exception;
 use Psr\Log\LoggerInterface;
 
 class JiraApiService
@@ -23,7 +25,9 @@ class JiraApiService
     final public const INIT_ERROR_MSG = 'Failed to initialize IssueService: %s';
     final public const MIN_SECOND_REPORT_ERROR_MSG = 'Cannot report less than %s second!';
     final public const MISSING_HOST_TOKEN_ERROR_MSG = 'No host or personal access token found!';
+    final public const JIRA_DISABLED_MSG = 'JIRA sync not enabled!';
 
+    final public const JIRA_ENABLED_KEY = 'jira.enabled';
     final public const JIRA_HOST_SETTING_KEY = 'jira.host';
     final public const JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY = 'jira.personal-access-token';
 
@@ -31,26 +35,31 @@ class JiraApiService
 
     private readonly IssueService $client;
 
+    public function __construct(
+        private readonly LoggerInterface $logger,
+        private readonly SettingService $settingService,
+        private readonly JiraWorkLogService $jiraWorkLogService,
+    ) {
+    }
+
     /**
      * @throws JiraApiServiceException
      */
-    public function __construct(
-        private readonly LoggerInterface $logger,
-        private readonly SettingService  $settingService,
-    ) {
+    final public function init(): void
+    {
         $this->client = $this->initClient();
     }
 
     /**
      * @throws JiraApiServiceException
      */
-    final public function createWorkLog(
-        Task    $task,
+    final public function createWorkLogWithTimeLog(
+        Task $task,
         TimeLog $timeLog,
     ): Worklog {
         try {
             $issueKey = $task->getName();
-            $timeSpentSeconds = $this->calculateTimeSpentInSeconds($timeLog);
+            $timeSpentSeconds = $this->calculateTimeSpentInSecondsSingleTimeLog($timeLog);
 
             $workLog = new Worklog();
 
@@ -62,36 +71,72 @@ class JiraApiService
                 issueIdOrKey: $issueKey,
                 worklog: $workLog,
             );
-        } catch (JiraException|JsonMapper_Exception|JiraApiServiceException $e) {
+        } catch (JiraException|\JsonMapper_Exception|JiraApiServiceException $e) {
             $this->logger->error(
                 message: sprintf(
                     self::CREATE_ERROR_MSG,
                     $timeLog->getDescription(),
-                    (string)($timeSpentSeconds ?? '?'),
+                    (string) ($timeSpentSeconds ?? '?'),
                     $issueKey,
                     $e->getMessage(),
                 )
             );
 
-            throw new JiraApiServiceException(
-                message: $e->getMessage(),
-                code: $e->getCode(),
-                previous: $e,
-            );
+            throw new JiraApiServiceException(message: $e->getMessage(), code: $e->getCode(), previous: $e);
         }
     }
 
     /**
      * @throws JiraApiServiceException
      */
-    final public function updateWorkLog(
-        Task    $task,
-        TimeLog $timeLog,
-        int  $workLogId,
+    final public function createWorkLogWithTimeSpent(
+        Task $task,
+        \DateTime $startTime,
+        int $timeSpentSeconds,
+        string $description = null,
     ): Worklog {
         try {
             $issueKey = $task->getName();
-            $timeSpentSeconds = $this->calculateTimeSpentInSeconds($timeLog);
+
+            $description = $description ?? $task->getDescription();
+
+            $workLog = $this->prepareWorkLog(
+                task: $task,
+                startTime: $startTime,
+                timeSpentSeconds: $timeSpentSeconds,
+                description: $description,
+            );
+
+            return $this->client->addWorklog(
+                issueIdOrKey: $issueKey,
+                worklog: $workLog,
+            );
+        } catch (JiraException|\JsonMapper_Exception|JiraApiServiceException $e) {
+            $this->logger->error(
+                message: sprintf(
+                    self::CREATE_ERROR_MSG,
+                    $description,
+                    (string) ($timeSpentSeconds ?? '?'),
+                    $issueKey,
+                    $e->getMessage(),
+                )
+            );
+
+            throw new JiraApiServiceException(message: $e->getMessage(), code: $e->getCode(), previous: $e);
+        }
+    }
+
+    /**
+     * @throws JiraApiServiceException
+     */
+    final public function updateWorkLogWithTimeLog(
+        Task $task,
+        int $workLogId,
+        TimeLog $timeLog,
+    ): Worklog {
+        try {
+            $issueKey = $task->getName();
+            $timeSpentSeconds = $this->calculateTimeSpentInSecondsSingleTimeLog($timeLog);
 
             $workLog = new Worklog();
 
@@ -104,7 +149,7 @@ class JiraApiService
                 worklog: $workLog,
                 worklogId: $workLogId,
             );
-        } catch (JiraException|JsonMapper_Exception|JiraApiServiceException $e) {
+        } catch (JiraException|\JsonMapper_Exception|JiraApiServiceException $e) {
             $this->logger->error(
                 message: sprintf(
                     self::UPDATE_ERROR_MSG,
@@ -115,19 +160,132 @@ class JiraApiService
                 )
             );
 
-            throw new JiraApiServiceException(
-                message: $e->getMessage(),
-                code: $e->getCode(),
-                previous: $e,
-            );
+            throw new JiraApiServiceException(message: $e->getMessage(), code: $e->getCode(), previous: $e);
         }
     }
 
     /**
      * @throws JiraApiServiceException
      */
+    final public function updateWorkLogWithTimeSpent(
+        Task $task,
+        int $workLogId,
+        \DateTime $startTime,
+        int $timeSpentSeconds,
+        string $description = null,
+    ): Worklog {
+        try {
+            $issueKey = $task->getName();
+
+            $description = $description ?? $task->getDescription();
+
+            $workLog = $this->prepareWorkLog(
+                task: $task,
+                startTime: $startTime,
+                timeSpentSeconds: $timeSpentSeconds,
+                description: $description,
+            );
+
+            return $this->client->editWorklog(
+                issueIdOrKey: $issueKey,
+                worklog: $workLog,
+                worklogId: $workLogId,
+            );
+        } catch (JiraException|\JsonMapper_Exception|JiraApiServiceException $e) {
+            $this->logger->error(
+                message: sprintf(
+                    self::UPDATE_ERROR_MSG,
+                    $description,
+                    $workLogId,
+                    $issueKey,
+                    $e->getMessage(),
+                )
+            );
+
+            throw new JiraApiServiceException(message: $e->getMessage(), code: $e->getCode(), previous: $e);
+        }
+    }
+
+    /**
+     * @throws JiraApiServiceException
+     */
+    final public function sync(
+        Task $task,
+        \DateTime $date
+    ): bool {
+        $date->setTime(hour: 0, minute: 0);
+        $startDate = $date;
+        $endDate = new \DateTime($date->format(\DateTimeInterface::ATOM));
+        $endDate->setTime(23, 59, 59);
+
+        $jiraWorkLog = $this->jiraWorkLogService->findOneBy(
+            [
+                'task' => $task,
+                'startTime' => $date,
+            ]
+        );
+
+        if (!$jiraWorkLog instanceof JiraWorkLog) {
+            $jiraWorkLog = new JiraWorkLog();
+            $jiraWorkLog->setTask($task);
+        }
+
+        $timeLogs = $task->getTimeLogs();
+
+        [$timeSpentSeconds, $descriptions] = $this->calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection(
+            collection: $timeLogs,
+            startDate: $startDate,
+            endDate: $endDate
+        );
+
+        $jiraWorkLog->setTimeSpentSeconds($timeSpentSeconds);
+
+        $currentDate = new \DateTime('now');
+        $startDate->setTime(
+            hour: 17,
+            minute: 0,
+        );
+
+        $jiraWorkLog->setStartTime($date);
+
+        if (!empty($workLogId = $jiraWorkLog->getWorkLogId())) {
+            $this->updateWorkLogWithTimeSpent(
+                task: $task,
+                workLogId: (int) ($workLogId ?? 0),
+                startTime: $startDate,
+                timeSpentSeconds: $timeSpentSeconds,
+                description: implode(', ', $descriptions),
+            );
+        } else {
+            $jiraApiWorkLog = $this->createWorkLogWithTimeSpent(
+                task: $task,
+                startTime: $startDate,
+                timeSpentSeconds: $timeSpentSeconds,
+                description: implode(', ', $descriptions),
+            );
+
+            $jiraWorkLog->setWorkLogId((string) $jiraApiWorkLog->id);
+        }
+
+        if (empty($jiraWorkLogId = $jiraWorkLog->getId())) {
+            $this->jiraWorkLogService->new(
+                jiraWorkLog: $jiraWorkLog,
+            );
+        } else {
+            $this->jiraWorkLogService->edit(
+                id: $jiraWorkLogId,
+                jiraWorkLog: $jiraWorkLog,
+            );
+        }
+
+        return true;
+    }
+
+    /**
+     * @throws JiraApiServiceException
+     */
     final public function deleteWorkLog(
-        Task   $task,
+        Task $task,
         int $workLogId,
     ): bool {
         try {
@@ -147,12 +305,30 @@ class JiraApiService
                 )
             );
 
-            throw new JiraApiServiceException(
-                message: $e->getMessage(),
-                code: $e->getCode(),
-                previous: $e,
-            );
+            throw new JiraApiServiceException(message: $e->getMessage(), code: $e->getCode(), previous: $e);
         }
+    }
+
+    /**
+     * @throws JiraApiServiceException
+     */
+    private function prepareWorkLog(
+        Task $task,
+        \DateTime $startTime,
+        int $timeSpentSeconds,
+        string $description = null,
+    ): Worklog {
+        if ($timeSpentSeconds < self::MIN_REPORT_SECONDS) {
+            throw new JiraApiServiceException(message: sprintf(self::MIN_SECOND_REPORT_ERROR_MSG, self::MIN_REPORT_SECONDS));
+        }
+
+        $workLog = new Worklog();
+
+        $workLog->setComment($description ?? $task->getDescription())
+            ->setStartedDateTime($startTime)
+            ->setTimeSpentSeconds($timeSpentSeconds);
+
+        return $workLog;
     }
 
     /**
@@ -161,6 +337,17 @@ class JiraApiService
     private function initClient(): IssueService
     {
         try {
+            $jiraSyncEnabled = filter_var(
+                value: $this->settingService->findByName(
+                    self::JIRA_ENABLED_KEY
+                )?->getValue(),
+                filter: \FILTER_VALIDATE_BOOLEAN
+            );
+
+            if (!$jiraSyncEnabled) {
+                throw new JiraApiServiceException(self::JIRA_DISABLED_MSG);
+            }
+
             $jiraHost = $this->settingService->findByName(
                 self::JIRA_HOST_SETTING_KEY
             )?->getValue();
@@ -178,10 +365,10 @@ class JiraApiService
             return new IssueService(
                 configuration: new ArrayConfiguration(
                     [
-                        'jiraHost' => $jiraHost, // 'https://jira.demo.goedit.io',
+                        'jiraHost' => $jiraHost,
 
                         'useTokenBasedAuth' => true,
-                        'personalAccessToken' => $personalAccessToken, // 'NzQyOTk4MDI0MzUxOq351RNlfRqRPcotDdxIfgCUX7JC',
+                        'personalAccessToken' => $personalAccessToken,
                     ],
                 ),
                 logger: $this->logger,
@@ -194,18 +381,14 @@ class JiraApiService
                 )
             );
 
-            throw new JiraApiServiceException(
-                message: $e->getMessage(),
-                code: $e->getCode(),
-                previous: $e,
-            );
+            throw new JiraApiServiceException(message: $e->getMessage(), code: $e->getCode(), previous: $e);
         }
     }
 
     /**
      * @throws JiraApiServiceException
      */
-    private function calculateTimeSpentInSeconds(
+    private function calculateTimeSpentInSecondsSingleTimeLog(
         TimeLog $timeLog,
     ): int {
         $startTime = $timeLog->getStartTime();
@@ -216,14 +399,68 @@ class JiraApiService
         ) : 0;
 
         if ($timeSpentSeconds < self::MIN_REPORT_SECONDS) {
-            throw new JiraApiServiceException(
-                message: sprintf(
-                    self::MIN_SECOND_REPORT_ERROR_MSG,
-                    self::MIN_REPORT_SECONDS,
-                )
-            );
+            throw new JiraApiServiceException(message: sprintf(self::MIN_SECOND_REPORT_ERROR_MSG, self::MIN_REPORT_SECONDS));
         }
 
         return $timeSpentSeconds;
+    }
+
+    private function calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection(
+        Collection $collection,
+        \DateTime $startDate,
+        \DateTime $endDate,
+    ): array {
+        $timeLogs = $collection->filter(
+            function (TimeLog $timeLog) use ($startDate, $endDate) {
+                $startTime = $timeLog->getStartTime();
+                $endTime = $timeLog->getEndTime();
+
+                return ($startDate <= $startTime && $startTime <= $endDate) ||
+                    ($startTime <= $startDate && $startTime >= $endDate) ||
+                    ($endTime >= $startDate && $endTime <= $endDate);
+            }
+        );
+
+        $timeLogs = $timeLogs->map(
+            function (TimeLog $timeLog) use ($startDate, $endDate) {
+                $startTime = $timeLog->getStartTime();
+                $endTime = $timeLog->getEndTime();
+
+                if ($startTime < $startDate) {
+                    $timeLog->setOriginalStartTime($startTime);
+                    $timeLog->setStartTime($startDate);
+                    $timeLog->setManuallyModified(true);
+                }
+
+                if ($endTime > $endDate) {
+                    $timeLog->setOriginalEndTime($endTime);
+                    $timeLog->setEndTime($endDate);
+                    $timeLog->setManuallyModified(true);
+                }
+
+                return $timeLog;
+            }
+        );
+
+        $timeSpentSeconds = 0;
+        $descriptions = [];
+
+        foreach ($timeLogs->toArray() as $timeLog) {
+            $startTime = $timeLog->getStartTime();
+            $endTime = $timeLog->getEndTime();
+
+            if ($startTime && $endTime) {
+                $timeSpentSeconds += $endTime->getTimestamp() - $startTime->getTimestamp();
+
+                if (!empty($description = $timeLog->getDescription())) {
+                    $descriptions[] = $description;
+                }
+            }
+        }
+
+        return [
+            $timeSpentSeconds,
+            $descriptions,
+        ];
     }
 }

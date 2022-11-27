@@ -96,7 +96,7 @@ class JiraWorkLogRequest
         return $this->timeSpentSeconds;
     }
 
-    final public function setTimeSpentSeconds(?int $timeSpentSeconds): JiraWorkLogRequest
+    final public function setTimeSpentSeconds(?int $timeSpentSeconds): self
     {
         $this->timeSpentSeconds = $timeSpentSeconds;
 
