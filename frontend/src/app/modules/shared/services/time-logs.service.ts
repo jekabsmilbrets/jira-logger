@@ -42,7 +42,9 @@ export class TimeLogsService implements LoadableService {
     this.loaderStateService.addLoader(this.isLoading$, this.constructor.name);
   }
 
-  public list(task: Task): Observable<TimeLog[]> {
+  public list(
+    task: Task,
+  ): Observable<TimeLog[]> {
     return this.makeRequest(
       task,
     )
@@ -51,7 +53,10 @@ export class TimeLogsService implements LoadableService {
       );
   }
 
-  public create(task: Task, timeLog: TimeLog): Observable<TimeLog> {
+  public create(
+    task: Task,
+    timeLog: TimeLog,
+  ): Observable<TimeLog> {
     const body = {
       id: timeLog.id,
       startTime: timeLog.startTime && formatDate(timeLog.startTime, appTimeLogDateTimeFormat, appLocale, appTimeZone),
@@ -71,7 +76,10 @@ export class TimeLogsService implements LoadableService {
       );
   }
 
-  public update(task: Task, timeLog: TimeLog): Observable<TimeLog> {
+  public update(
+    task: Task,
+    timeLog: TimeLog,
+  ): Observable<TimeLog> {
     const body = {
       id: timeLog.id,
       startTime: timeLog.startTime && formatDate(timeLog.startTime, appTimeLogDateTimeFormat, appLocale, appTimeZone),
@@ -91,7 +99,10 @@ export class TimeLogsService implements LoadableService {
       );
   }
 
-  public delete(task: Task, timeLog: TimeLog): Observable<void> {
+  public delete(
+    task: Task,
+    timeLog: TimeLog,
+  ): Observable<void> {
     return this.makeRequest(
       task,
       'delete',
@@ -99,7 +110,9 @@ export class TimeLogsService implements LoadableService {
     );
   }
 
-  public start(task: Task): Observable<void> {
+  public start(
+    task: Task,
+  ): Observable<void> {
     return this.makeRequest(
       task,
       'get',
@@ -107,7 +120,9 @@ export class TimeLogsService implements LoadableService {
     );
   }
 
-  public stop(task: Task): Observable<void> {
+  public stop(
+    task: Task,
+  ): Observable<void> {
     return this.makeRequest(
       task,
       'get',
@@ -118,7 +133,7 @@ export class TimeLogsService implements LoadableService {
   private makeRequest(
     task: Task,
     method: 'get' | 'post' | 'patch' | 'delete' = 'get',
-    path: string                                = '',
+    path: string | null                         = null,
     body: any                                   = null,
     reportError: boolean                        = false,
   ): Observable<any> {

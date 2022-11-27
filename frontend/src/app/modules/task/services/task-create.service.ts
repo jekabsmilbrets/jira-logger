@@ -1,10 +1,9 @@
 import { Injectable }                                                            from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 
-import { catchError, Observable, of, skip, switchMap, take } from 'rxjs';
+import { catchError, Observable, of, take } from 'rxjs';
 
 import { Tag }          from '@shared/models/tag.model';
-import { Task }         from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
 
 import { CreateTaskFromGroupInterface } from '@task/interfaces/create-task-from-group.interface';
@@ -34,27 +33,14 @@ export class TaskCreateService {
     );
   }
 
-  private asyncValidator(control: AbstractControl): Observable<ValidationErrors | null> {
-    const duplicateCheck = (value: string) => (tasks: Task[] | null) => {
-      if (
-        tasks &&
-        tasks.find(
-          (task: Task) => task.name === value,
-        )
-      ) {
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        return of({'duplicate-task': true});
-      }
-
-      return of(null);
-    };
-
-    return this.tasksService.tasks$
+  private asyncValidator(
+    control: AbstractControl
+  ): Observable<ValidationErrors | null> {
+    return this.tasksService.taskExist(control.value)
       .pipe(
-        skip(1),
         take(1),
-        catchError(() => of(null)),
-        switchMap(duplicateCheck(control.value)),
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        catchError(() => of<ValidationErrors>({'duplicate-task': true})),
       );
   }
 
