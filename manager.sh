@@ -18,7 +18,7 @@ Help()
    echo "a     set action [start|down|build]"
    echo "m     set mode [ng-build|ng-build-dev]"
    echo "b     run docker containers in background"
-   echi "t     run with Traefik"
+   echo "t     run with Traefik"
    echo
 }
 
