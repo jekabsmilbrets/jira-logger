@@ -21,7 +21,8 @@ class BaseApiController extends AbstractController
         $outputErrors = [];
 
         foreach ($constraintViolationList as $singleConstraintViolationList) {
-            $outputErrors[$singleConstraintViolationList->getPropertyPath()] = $singleConstraintViolationList->getMessage();
+            $outputErrors[$singleConstraintViolationList->getPropertyPath(
+            )] = $singleConstraintViolationList->getMessage();
         }
 
         return $this->jsonApi(

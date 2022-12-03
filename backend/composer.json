@@ -43,6 +43,7 @@
     "twig/twig": "^2.12|^3.0"
   },
   "require-dev": {
+    "brainmaestro/composer-git-hooks": "dev-master",
     "friendsofphp/php-cs-fixer": "^3.9",
     "phpstan/phpstan": "^1.8",
     "roave/security-advisories": "dev-latest",
@@ -87,11 +88,14 @@
       "assets:install %PUBLIC_DIR%": "symfony-cmd"
     },
     "post-install-cmd": [
-      "@auto-scripts"
+      "@auto-scripts",
+      "cghooks add --ignore-lock --git-dir='../.git'"
     ],
     "post-update-cmd": [
-      "@auto-scripts"
+      "@auto-scripts",
+      "cghooks update --git-dir='../.git'"
     ],
+    "cghooks": "vendor/bin/cghooks",
     "php-cs-fixer": "php-cs-fixer fix src -v",
     "php-stan": "phpstan analyse src --memory-limit 1024M"
   },
@@ -102,6 +106,15 @@
     "symfony": {
       "allow-contrib": false,
       "require": "6.1.*"
+    },
+    "hooks": {
+      "pre-commit": [
+        "CURRENT_DIRECTORY=`pwd`",
+        "cd ./backend",
+        "composer php-cs-fixer",
+        "cd $CURRENT_DIRECTORY",
+        "git add ./backend/src"
+      ]
     }
   }
 }

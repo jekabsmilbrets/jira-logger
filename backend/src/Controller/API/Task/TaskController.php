@@ -131,7 +131,7 @@ class TaskController extends BaseApiController
         ];
 
         $filter = array_filter(
-            array_reduce(
+            array: array_reduce(
                 array: $queryParameters,
                 callback: static fn (array $carry, string $queryParameter): array => array_merge(
                     $carry,
@@ -140,7 +140,11 @@ class TaskController extends BaseApiController
                     ]
                 ),
                 initial: []
-            )
+            ),
+            callback: static function ($value, $key): bool {
+                return null !== $value;
+            },
+            mode: \ARRAY_FILTER_USE_BOTH
         );
 
         $tasks = $this->taskService->list($filter);
