@@ -237,46 +237,28 @@ class JiraApiService
             startDate: $startDate,
             endDate: $endDate
         );
-
-        $jiraWorkLog->setTimeSpentSeconds($timeSpentSeconds);
-
         $currentDate = new \DateTime('now');
         $startDate->setTime(
             hour: 17,
             minute: 0,
         );
+        $workLogId = $jiraWorkLog->getWorkLogId();
+        $jiraApiWorkLog = $this->createUpdateRecreateWorkLogWithTimeSpent(
+            jiraWorkLog: $jiraWorkLog,
+            task: $task,
+            startDate: $startDate,
+            timeSpentSeconds: $timeSpentSeconds,
+            descriptions: $descriptions,
+        );
 
+        $jiraWorkLog->setTimeSpentSeconds($timeSpentSeconds);
         $jiraWorkLog->setStartTime($date);
+        $jiraWorkLog->setWorkLogId((string) $jiraApiWorkLog->id);
 
-        if (!empty($workLogId = $jiraWorkLog->getWorkLogId())) {
-            $this->updateWorkLogWithTimeSpent(
-                task: $task,
-                workLogId: (int) ($workLogId ?? 0),
-                startTime: $startDate,
-                timeSpentSeconds: $timeSpentSeconds,
-                description: implode(', ', $descriptions),
-            );
-        } else {
-            $jiraApiWorkLog = $this->createWorkLogWithTimeSpent(
-                task: $task,
-                startTime: $startDate,
-                timeSpentSeconds: $timeSpentSeconds,
-                description: implode(', ', $descriptions),
-            );
-
-            $jiraWorkLog->setWorkLogId((string) $jiraApiWorkLog->id);
-        }
-
-        if (empty($jiraWorkLogId = $jiraWorkLog->getId())) {
-            $this->jiraWorkLogService->new(
-                jiraWorkLog: $jiraWorkLog,
-            );
-        } else {
-            $this->jiraWorkLogService->edit(
-                id: $jiraWorkLogId,
-                jiraWorkLog: $jiraWorkLog,
-            );
-        }
+        $this->createUpdateJiraWorkLog(
+            jiraWorkLog: $jiraWorkLog,
+            workLogId: $workLogId
+        );
 
         return true;
     }
@@ -306,6 +288,63 @@ class JiraApiService
             );
 
             throw new JiraApiServiceException(message: $e->getMessage(), code: $e->getCode(), previous: $e);
+        }
+    }
+
+    /**
+     * @throws JiraApiServiceException
+     */
+    private function createUpdateRecreateWorkLogWithTimeSpent(
+        JiraWorkLog $jiraWorkLog,
+        Task $task,
+        \DateTime $startDate,
+        int $timeSpentSeconds,
+        array $descriptions,
+    ): Worklog {
+        if (!empty($workLogId = $jiraWorkLog->getWorkLogId())) {
+            try {
+                $workLog = $this->updateWorkLogWithTimeSpent(
+                    task: $task,
+                    workLogId: (int) ($workLogId ?? 0),
+                    startTime: $startDate,
+                    timeSpentSeconds: $timeSpentSeconds,
+                    description: implode(', ', $descriptions),
+                );
+            } catch (JiraApiServiceException $e) {
+                $workLog = $this->createWorkLogWithTimeSpent(
+                    task: $task,
+                    startTime: $startDate,
+                    timeSpentSeconds: $timeSpentSeconds,
+                    description: implode(', ', $descriptions),
+                );
+
+                $jiraWorkLog->setWorkLogId((string) $workLog->id);
+            }
+        } else {
+            $workLog = $this->createWorkLogWithTimeSpent(
+                task: $task,
+                startTime: $startDate,
+                timeSpentSeconds: $timeSpentSeconds,
+                description: implode(', ', $descriptions),
+            );
+        }
+
+        return $workLog;
+    }
+
+    private function createUpdateJiraWorkLog(
+        JiraWorkLog $jiraWorkLog,
+        ?string $workLogId,
+    ): void {
+        if (!$workLogId) {
+            $this->jiraWorkLogService->new(
+                jiraWorkLog: $jiraWorkLog,
+            );
+        } else {
+            $this->jiraWorkLogService->edit(
+                id: $jiraWorkLog->getId(),
+                jiraWorkLog: $jiraWorkLog,
+            );
         }
     }
 
