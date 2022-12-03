@@ -15,11 +15,10 @@ import { LoadableService } from '@shared/interfaces/loadable-service.interface';
 
 import { Tag } from '@shared/models/tag.model';
 
-@Injectable(
-  {
-    providedIn: 'root',
-  },
-)
+
+@Injectable({
+  providedIn: 'root',
+})
 export class TagsService implements LoadableService {
   public isLoading$: Observable<boolean>;
   public tags$: Observable<Tag[]>;
@@ -43,7 +42,7 @@ export class TagsService implements LoadableService {
   }
 
   public fetchTags(): Observable<Tag[]> {
-    const url = `${environment.apiHost}${environment.apiBase}/${this.basePath}`;
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }`;
 
     return waitForTurn(this.isLoading$, this.isLoadingSubject)
       .pipe(

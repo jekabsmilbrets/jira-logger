@@ -2,15 +2,16 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SidenavComponent } from './sidenav.component';
 
+
 describe('SidenavComponent', () => {
   let component: SidenavComponent;
   let fixture: ComponentFixture<SidenavComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-                   declarations: [SidenavComponent],
-                 })
-                 .compileComponents();
+      declarations: [SidenavComponent],
+    })
+      .compileComponents();
   });
 
   beforeEach(() => {

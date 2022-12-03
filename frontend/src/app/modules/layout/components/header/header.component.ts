@@ -36,16 +36,16 @@ export class HeaderComponent implements OnDestroy {
     private _injector: Injector,
   ) {
     this.routerEventsSubscription = this.router.events
-                                        .pipe(
-                                          filter(
-                                            (e): e is NavigationEnd => e instanceof NavigationEnd,
-                                          ),
-                                          delay(100), // hax :D :D without it loadingDynamicMenu causes loading empty dynamic menus
-                                          switchMap(
-                                            (navigationEndEvent: NavigationEnd) => this.loadDynamicMenu(navigationEndEvent),
-                                          ),
-                                        )
-                                        .subscribe();
+      .pipe(
+        filter(
+          (e): e is NavigationEnd => e instanceof NavigationEnd,
+        ),
+        delay(100), // hax :D :D without it loadingDynamicMenu causes loading empty dynamic menus
+        switchMap(
+          (navigationEndEvent: NavigationEnd) => this.loadDynamicMenu(navigationEndEvent),
+        ),
+      )
+      .subscribe();
   }
 
   public ngOnDestroy(): void {
@@ -54,34 +54,34 @@ export class HeaderComponent implements OnDestroy {
 
   private loadDynamicMenu(navigationEndEvent: NavigationEnd): Observable<DynamicMenu[]> {
     return this.dynamicMenuService.dynamicMenus$
-               .pipe(
-                 take(1),
-                 tap(
-                   (dynamicMenus: DynamicMenu[]) => {
-                     const dynamicMenu: DynamicMenu | undefined = dynamicMenus.find(
-                       (dM: DynamicMenu) => navigationEndEvent.urlAfterRedirects.includes(dM.data.route),
-                     );
+      .pipe(
+        take(1),
+        tap(
+          (dynamicMenus: DynamicMenu[]) => {
+            const dynamicMenu: DynamicMenu | undefined = dynamicMenus.find(
+              (dM: DynamicMenu) => navigationEndEvent.urlAfterRedirects.includes(dM.data.route),
+            );
 
-                     if (dynamicMenu) {
-                       const viewContainerRef = this.dynamicMenu.viewContainerRef;
-                       viewContainerRef.clear();
+            if (dynamicMenu) {
+              const viewContainerRef = this.dynamicMenu.viewContainerRef;
+              viewContainerRef.clear();
 
-                       viewContainerRef.createComponent<DynamicMenuInterface>(
-                         dynamicMenu.component,
-                         {
-                           injector: Injector.create(
-                             {
-                               providers: dynamicMenu.data?.providers ?? [],
-                               parent: this._injector,
-                             },
-                           ),
-                         },
-                       );
-                     } else {
-                       this.dynamicMenu.viewContainerRef.clear();
-                     }
-                   },
-                 ),
-               );
+              viewContainerRef.createComponent<DynamicMenuInterface>(
+                dynamicMenu.component,
+                {
+                  injector: Injector.create(
+                    {
+                      providers: dynamicMenu.data?.providers ?? [],
+                      parent: this._injector,
+                    },
+                  ),
+                },
+              );
+            } else {
+              this.dynamicMenu.viewContainerRef.clear();
+            }
+          },
+        ),
+      );
   }
 }

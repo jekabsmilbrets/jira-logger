@@ -2,15 +2,16 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { TasksViewComponent } from './tasks-view.component';
 
+
 describe('TasksViewComponent', () => {
   let component: TasksViewComponent;
   let fixture: ComponentFixture<TasksViewComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-                                           declarations: [TasksViewComponent],
-                                         })
-                 .compileComponents();
+      declarations: [TasksViewComponent],
+    })
+      .compileComponents();
   });
 
   beforeEach(() => {

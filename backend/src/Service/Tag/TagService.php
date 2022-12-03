@@ -9,7 +9,6 @@ use App\Entity\Tag\Tag;
 use App\Factory\Tag\TagFactory;
 use App\Repository\Tag\TagRepository;
 use Doctrine\Common\Collections\ArrayCollection;
-use RuntimeException;
 
 class TagService
 {
@@ -40,12 +39,12 @@ class TagService
     }
 
     final public function new(
-        ?TagRequest $tagRequest = null,
-        ?Tag        $tag = null,
-        bool        $flush = true,
+        TagRequest $tagRequest = null,
+        Tag $tag = null,
+        bool $flush = true,
     ): Tag {
         if (!$tagRequest && !$tag) {
-            throw new RuntimeException(self::NO_DATA_PROVIDED);
+            throw new \RuntimeException(self::NO_DATA_PROVIDED);
         }
 
         if ($tagRequest && !$tag) {
@@ -61,14 +60,14 @@ class TagService
     }
 
     final public function edit(
-        string      $id,
-        ?TagRequest $tagRequest = null,
-        ?Tag        $tag = null,
-        bool        $flush = true,
+        string $id,
+        TagRequest $tagRequest = null,
+        Tag $tag = null,
+        bool $flush = true,
     ): ?Tag {
         switch (true) {
             case !$tagRequest && !$tag:
-                throw new RuntimeException(self::NO_DATA_PROVIDED);
+                throw new \RuntimeException(self::NO_DATA_PROVIDED);
             case (!$tagRequest && $tag) && !$tag instanceof Tag:
                 return null;
 
@@ -95,7 +94,7 @@ class TagService
 
     final public function delete(
         string $id,
-        bool   $flush = true,
+        bool $flush = true,
     ): bool {
         $tag = $this->tagRepository->find($id);
 

@@ -3,11 +3,11 @@ import { RouterModule, Routes } from '@angular/router';
 
 import { ReportViewComponent } from '@report/views/report/report-view.component';
 
+
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'dateRange',
-    pathMatch: 'prefix',
+    component: ReportViewComponent,
   },
   {
     path: ':reportMode',
@@ -18,7 +18,6 @@ const routes: Routes = [
     redirectTo: '',
   },
 ];
-
 
 @NgModule(
   {

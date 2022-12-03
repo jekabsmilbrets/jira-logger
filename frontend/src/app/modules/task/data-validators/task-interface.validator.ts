@@ -15,7 +15,7 @@ export const validateTaskInterfaceData = (taskInterfaceData: any, tags: Tag[]): 
     .forEach(
       (field: string) => {
         if (!taskInterfaceData.hasOwnProperty(field)) {
-          throw new Error(`Missing Required field "${field}" for Task!`);
+          throw new Error(`Missing Required field "${ field }" for Task!`);
         }
       },
     );

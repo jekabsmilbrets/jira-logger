@@ -45,16 +45,16 @@ export class ReportMenuComponent {
     this.showWeekends$ = this.reportService.showWeekends$;
     this.hideUnreportedTasks$ = this.reportService.hideUnreportedTasks$;
     this.isSmallerThanDesktop$ = this.observer.observe(
-                                       this.smallerThanDesktopBreakpoint,
-                                     )
-                                     .pipe(
-                                       map(
-                                         (results: BreakpointState) => (
-                                           results.matches &&
-                                           results.breakpoints[this.smallerThanDesktopBreakpoint]
-                                         ),
-                                       ),
-                                     );
+      this.smallerThanDesktopBreakpoint,
+    )
+      .pipe(
+        map(
+          (results: BreakpointState) => (
+            results.matches &&
+            results.breakpoints[this.smallerThanDesktopBreakpoint]
+          ),
+        ),
+      );
   }
 
   public onReportModeChange(value: ReportModeEnum): void {
@@ -91,13 +91,13 @@ export class ReportMenuComponent {
 
   public showDatePicker(): Observable<boolean> {
     return this.reportMode$
-               .pipe(
-                 map(
-                   (reportMode: ReportModeEnum) => [
-                     'dateRange',
-                     'date',
-                   ].includes(reportMode),
-                 ),
-               );
+      .pipe(
+        map(
+          (reportMode: ReportModeEnum) => [
+            'dateRange',
+            'date',
+          ].includes(reportMode),
+        ),
+      );
   }
 }

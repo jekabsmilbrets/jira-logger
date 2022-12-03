@@ -1,5 +1,5 @@
 import { Injectable }              from '@angular/core';
-import { MatDialogRef, MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 
 import { Observable } from 'rxjs';
 

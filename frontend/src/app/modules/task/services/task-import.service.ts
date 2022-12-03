@@ -15,11 +15,9 @@ import { TasksService }    from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
 
-@Injectable(
-  {
-    providedIn: 'root',
-  },
-)
+@Injectable({
+  providedIn: 'root',
+})
 export class TaskImportService implements LoadableService {
   public isLoading$: Observable<boolean>;
 
@@ -41,19 +39,19 @@ export class TaskImportService implements LoadableService {
       (task: Task) => {
         observables.push(
           this.tasksService.create(task)
-              .pipe(
-                switchMap(
-                  (updatedTask: Task) =>
-                    concat(
-                      ...task.timeLogs.map(
-                        (timeLog: TimeLog) => this.timeLogsService.create(updatedTask, timeLog),
-                      ),
-                    )
-                      .pipe(
-                        switchMap(() => of(updatedTask)),
-                      ),
-                ),
+            .pipe(
+              switchMap(
+                (updatedTask: Task) =>
+                  concat(
+                    ...task.timeLogs.map(
+                      (timeLog: TimeLog) => this.timeLogsService.create(updatedTask, timeLog),
+                    ),
+                  )
+                    .pipe(
+                      switchMap(() => of(updatedTask)),
+                    ),
               ),
+            ),
         );
       },
     );

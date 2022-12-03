@@ -1,0 +1,25 @@
+:host {
+  mat-card {
+    display: block;
+
+    @media only screen and (max-width: 600px) {
+      width: 85vw;
+    }
+
+    @media only screen and (min-width: 600px) {
+      width: calc(80vw / 2);
+    }
+
+    @media only screen and (min-width: 768px) {
+      width: calc(80vw / 3);
+    }
+
+    @media only screen and (min-width: 992px) {
+      width: calc(80vw / 4);
+    }
+
+    @media only screen and (min-width: 1200px) {
+      width: calc(80vw / 5);
+    }
+  }
+}

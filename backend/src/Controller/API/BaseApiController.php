@@ -16,12 +16,13 @@ class BaseApiController extends AbstractController
 
     final public function validationErrorJsonApi(
         ConstraintViolationListInterface $constraintViolationList,
-        int                              $status = 400,
+        int $status = 400,
     ): JsonResponse {
         $outputErrors = [];
 
         foreach ($constraintViolationList as $singleConstraintViolationList) {
-            $outputErrors[$singleConstraintViolationList->getPropertyPath()] = $singleConstraintViolationList->getMessage();
+            $outputErrors[$singleConstraintViolationList->getPropertyPath(
+            )] = $singleConstraintViolationList->getMessage();
         }
 
         return $this->jsonApi(
@@ -34,7 +35,7 @@ class BaseApiController extends AbstractController
         mixed $data = null,
         mixed $errors = null,
         mixed $meta = null,
-        int   $status = 200,
+        int $status = 200,
         array $headers = [],
         array $context = []
     ): JsonResponse {

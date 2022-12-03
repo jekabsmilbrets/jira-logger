@@ -29,21 +29,21 @@ export class TasksMenuComponent {
 
   public onOpenSettingsDialog(): void {
     this.tasksService.tasks$
-        .pipe(
-          take(1),
-          switchMap((tasks: Task[]) => this.tasksSettingsService.openDialog(tasks)),
-          take(1),
-          switchMap(
-            (result: ApiTask[] | undefined) => result ?
-                                               this.taskImportService.importData(result)
-                                                   .pipe(
-                                                     take(1),
-                                                     switchMap(() => this.tasksService.list()),
-                                                     take(1),
-                                                   ) :
-                                               of(false),
-          ),
-        )
-        .subscribe();
+      .pipe(
+        take(1),
+        switchMap((tasks: Task[]) => this.tasksSettingsService.openDialog(tasks)),
+        take(1),
+        switchMap(
+          (result: ApiTask[] | undefined) => result ?
+            this.taskImportService.importData(result)
+              .pipe(
+                take(1),
+                switchMap(() => this.tasksService.list()),
+                take(1),
+              ) :
+            of(false),
+        ),
+      )
+      .subscribe();
   }
 }
