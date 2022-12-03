@@ -105,10 +105,10 @@ class TaskRepository extends ServiceEntityRepository
                 ->setParameter('endTime', $endDate);
         }
 
-        if (isset($filter['name'])) {
+        if (\array_key_exists('name', $filter)) {
             $name = trim($filter['name']);
 
-            if (!empty($name)) {
+            if ('' !== $name) {
                 $queryBuilder
                     ->andWhere('lower(t.name) LIKE lower(:name)')
                     ->setParameter('name', '%'.$name.'%');
