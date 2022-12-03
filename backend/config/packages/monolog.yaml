@@ -12,7 +12,6 @@ when@dev:
       main:
         type: stream
         path: "%kernel.logs_dir%/%kernel.environment%/app.log"
-        excluded_http_codes: [ 404, 405 ]
         channels: [ "!event", "!deprecation", "!request", "!doctrine", "!jira-api-service", "!console" ]
 
       event:
@@ -84,7 +83,6 @@ when@prod:
       main:
         type: stream
         path: "%kernel.logs_dir%/%kernel.environment%/app.log"
-        excluded_http_codes: [ 404, 405 ]
         channels: [ "!event", "!deprecation", "!request", "!doctrine", "!jira-api-service", "!console" ]
 
       event:
