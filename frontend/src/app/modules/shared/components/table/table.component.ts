@@ -1,6 +1,6 @@
 import { SelectionModel }                                                   from '@angular/cdk/collections';
 import { formatDate }                                                       from '@angular/common';
-import { AfterViewInit, Component, Input, ViewChild, Output, EventEmitter } from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { MatPaginator }                                                     from '@angular/material/paginator';
 import { MatSort, SortDirection }                                           from '@angular/material/sort';
 import { MatTableDataSource }                                               from '@angular/material/table';
@@ -11,6 +11,7 @@ import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
 
 import { Column }     from '@shared/interfaces/column.interface';
 import { Searchable } from '@shared/interfaces/searchable.interface';
+import { Task }       from '@shared/models/task.model';
 
 import { TimeLog }           from '@shared/models/time-log.model';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
@@ -30,6 +31,9 @@ export class TableComponent implements AfterViewInit {
 
   @Input()
   public enableRemoveAction = false;
+
+  @Input()
+  public enableSyncAction = false;
 
   @Input()
   public stickyHeader = true;
@@ -58,6 +62,9 @@ export class TableComponent implements AfterViewInit {
   @Output()
   public removeAction: EventEmitter<Searchable> = new EventEmitter<Searchable>();
 
+  @Output()
+  public syncAction: EventEmitter<Searchable> = new EventEmitter<Searchable>();
+
   @ViewChild(MatSort, {static: true})
   public sort!: MatSort;
 
@@ -83,11 +90,15 @@ export class TableComponent implements AfterViewInit {
 
   public get displayedColumns(): string[] {
     const columns = this.columns
-                        .filter((column: Column) => column.visible)
-                        .map((column: Column) => column.columnDef);
+      .filter((column: Column) => column.visible)
+      .map((column: Column) => column.columnDef);
 
     if (this.enableRemoveAction) {
       columns.push('remove');
+    }
+
+    if (this.enableSyncAction) {
+      columns.push('sync');
     }
 
     if (this.isSelectable) {
@@ -155,17 +166,22 @@ export class TableComponent implements AfterViewInit {
     const timeLogEnd = timeLogEndTime ? formatDate(timeLogEndTime, 'HH:mm:ss', appLocale, appTimeZone) : null;
 
     this.areYouSureService.openDialog(
-          `Time log "${timeLogDate} ${timeLogStart}-${timeLogEnd}"`,
-        )
-        .pipe(
-          take(1),
-        )
-        .subscribe(
-          (response: boolean | undefined) => {
-            if (response === true) {
-              this.removeAction.emit(timeLog);
-            }
-          },
-        );
+      `Time log "${ timeLogDate } ${ timeLogStart }-${ timeLogEnd }"`,
+    )
+      .pipe(
+        take(1),
+      )
+      .subscribe(
+        (response: boolean | undefined) => {
+          if (response === true) {
+            this.removeAction.emit(timeLog);
+          }
+        },
+      );
+  }
+
+  public onSyncAction(row: Searchable): void {
+    const task: Task | undefined = row as Task;
+    this.syncAction.emit(task);
   }
 }

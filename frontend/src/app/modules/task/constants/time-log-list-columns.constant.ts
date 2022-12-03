@@ -1,6 +1,6 @@
 import { formatDate } from '@angular/common';
 
-import { appTimeZone, appLocale } from '@core/constants/date-time.constant';
+import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
 
 import { Column } from '@shared/interfaces/column.interface';
 
@@ -99,6 +99,6 @@ export const columns: Column[] = [
     cell: (timeLog: TimeLog) => timeLog.timeLogged(),
     hasFooter: true,
     footerCell: (timeLogs: TimeLog[]) => timeLogs.map(t => t.timeLogged())
-                                                 .reduce((acc, value) => acc + value, 0),
+      .reduce((acc, value) => acc + value, 0),
   },
 ];

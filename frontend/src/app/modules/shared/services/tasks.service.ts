@@ -1,6 +1,6 @@
-import { formatDate }                    from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable }                    from '@angular/core';
+import { formatDate }                                from '@angular/common';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { Injectable }                                from '@angular/core';
 
 import { environment } from 'environments/environment';
 
@@ -25,11 +25,9 @@ import { Task } from '@shared/models/task.model';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
 
 
-@Injectable(
-  {
-    providedIn: 'root',
-  },
-)
+@Injectable({
+  providedIn: 'root',
+})
 export class TasksService implements LoadableService {
   public isLoading$: Observable<boolean>;
   public tasks$: Observable<Task[]>;
@@ -55,13 +53,14 @@ export class TasksService implements LoadableService {
   }
 
   public list(): Observable<Task[]> {
-    const url = `${environment.apiHost}${environment.apiBase}/${this.basePath}`;
-
-    return waitForTurn(this.isLoading$, this.isLoadingSubject)
+    return this.makeRequest(
+      'get',
+      null,
+      null,
+      false,
+    )
       .pipe(
-        switchMap(() => this.http.get<JsonApi<ApiTask[]>>(url)),
         catchError((error: HttpErrorResponse) => {
-          this.isLoadingSubject.next(false);
           if (error.status === 404) {
             return of({data: []});
           }
@@ -71,41 +70,28 @@ export class TasksService implements LoadableService {
           (response: JsonApi<ApiTask[]>) => (response.data && adaptTasks(response.data)) as Task[],
         ),
         tap((tasks: Task[]) => this.tasksSubject.next(tasks)),
-        tap(() => this.isLoadingSubject.next(false)),
       );
   }
 
   public filteredList(
     filter: TaskListFilter,
+    updateTaskList: boolean = false,
   ): Observable<Task[]> {
-    let url = `${environment.apiHost}${environment.apiBase}/${this.basePath}`;
+    const outputQueryParams = this.buildQueryParams(filter);
+    let path;
 
-    const format = 'YYYY-MM-dd HH:mm:ss';
-    const formatDateForUri = (date: Date) => encodeURIComponent(formatDate(date, format, appLocale, appTimeZone));
-
-    url += `?hideUnreported=${filter.hideUnreported}`;
-
-    if (filter.date) {
-      url += `&date=${formatDateForUri(filter.date)}`;
+    if (Object.keys(outputQueryParams).length > 0) {
+      path = '?' + new HttpParams({fromObject: outputQueryParams}).toString();
     }
 
-    if (filter.startDate) {
-      url += `&startDate=${formatDateForUri(filter.startDate)}`;
-    }
-
-    if (filter.endDate) {
-      url += `&endDate=${formatDateForUri(filter.endDate)}`;
-    }
-
-    if (filter.tags) {
-      url += `&tags=${filter.tags.join(',')}`;
-    }
-
-    return waitForTurn(this.isLoading$, this.isLoadingSubject)
+    return this.makeRequest(
+      'get',
+      path,
+      null,
+      false,
+    )
       .pipe(
-        switchMap(() => this.http.get<JsonApi<ApiTask[]>>(url)),
         catchError((error: HttpErrorResponse) => {
-          this.isLoadingSubject.next(false);
           if (error.status === 404) {
             return of({data: []});
           }
@@ -114,32 +100,41 @@ export class TasksService implements LoadableService {
         map(
           (response: JsonApi<ApiTask[]>) => (response.data && adaptTasks(response.data)) as Task[],
         ),
-        tap(() => this.isLoadingSubject.next(false)),
+
+        tap((tasks: Task[]) => {
+          if (updateTaskList) {
+            this.tasksSubject.next(tasks);
+          }
+        }),
       );
   }
 
-  public create(task: Task, skipReload: boolean = false): Observable<Task> {
-    const url = `${environment.apiHost}${environment.apiBase}/${this.basePath}`;
-
+  public create(
+    task: Task,
+    skipReload: boolean = false,
+  ): Observable<Task> {
     const body = {
       name: task.name,
       description: task.description,
       tags: task.tags.map((tag: Tag) => tag.id),
     };
 
-    return waitForTurn(this.isLoading$, this.isLoadingSubject)
+    return this.makeRequest(
+      'post',
+      null,
+      body,
+      true,
+    )
       .pipe(
-        switchMap(() => this.http.post<JsonApi<ApiTask[]>>(url, body)),
-        catchError((error) => this.processError(error)),
-        tap(() => this.isLoadingSubject.next(false)),
         switchMap(() => this.reloadList(skipReload)),
         map((tasks: Task[]) => this.findTask(tasks, task)),
       );
   }
 
-  public update(task: Task, skipReload: boolean = false): Observable<Task> {
-    const url = `${environment.apiHost}${environment.apiBase}/${this.basePath}/${task.id}`;
-
+  public update(
+    task: Task,
+    skipReload: boolean = false,
+  ): Observable<Task> {
     const body = {
       id: task.id,
       name: task.name,
@@ -147,24 +142,28 @@ export class TasksService implements LoadableService {
       tags: task.tags.map((tag: Tag) => tag.id),
     };
 
-    return waitForTurn(this.isLoading$, this.isLoadingSubject)
+    return this.makeRequest(
+      'patch',
+      task.id,
+      body,
+      true,
+    )
       .pipe(
-        switchMap(() => this.http.patch<JsonApi<ApiTask[]>>(url, body)),
-        catchError((error) => this.processError(error)),
-        tap(() => this.isLoadingSubject.next(false)),
         switchMap(() => this.reloadList(skipReload)),
         map((tasks: Task[]) => this.findTask(tasks, task)),
       );
   }
 
-  public delete(task: Task): Observable<void> {
-    const url = `${environment.apiHost}${environment.apiBase}/${this.basePath}/${task.id}`;
-
-    return waitForTurn(this.isLoading$, this.isLoadingSubject)
+  public delete(
+    task: Task,
+  ): Observable<void> {
+    return this.makeRequest(
+      'delete',
+      task.id,
+      null,
+      true,
+    )
       .pipe(
-        switchMap(() => this.http.delete<void>(url)),
-        catchError((error) => this.processError(error)),
-        tap(() => this.isLoadingSubject.next(false)),
         switchMap(
           () => this.list().pipe(take(1)),
         ),
@@ -172,42 +171,177 @@ export class TasksService implements LoadableService {
       );
   }
 
-  private processError(error: any): Observable<never> {
+  public taskExist(
+    name: string,
+  ): Observable<null> {
+    return this.makeRequest(
+      'get',
+      `exist/${ name }`,
+    )
+      .pipe(
+        catchError(this.processError),
+        map(() => null),
+      );
+  }
+
+  public syncDateToJiraApi(
+    task: Task,
+    date: Date,
+  ): Observable<boolean> {
+    const formattedDate = formatDate(
+      date,
+      'yyyy-MM-dd',
+      'lv',
+    );
+    const path = `${ task.id }/${ formattedDate }`;
+
+    return this.makeRequest(
+      'get',
+      path,
+    )
+      .pipe(
+        catchError(this.processError),
+        map(() => true),
+      );
+  }
+
+  private buildQueryParams(
+    filter: TaskListFilter,
+  ) {
+    const format = 'YYYY-MM-dd HH:mm:ss';
+    const formatDateForUri = (date: Date) => formatDate(date, format, appLocale, appTimeZone);
+
+    const outputQueryParams: {
+      hideUnreported?: string;
+      date?: string;
+      startDate?: string;
+      endDate?: string;
+      tags?: string;
+      name?: string;
+    } = {};
+
+    if (filter.hideUnreported) {
+      outputQueryParams.hideUnreported = String(filter.hideUnreported);
+    }
+
+    if (filter.date) {
+      outputQueryParams.date = formatDateForUri(filter.date);
+    }
+
+    if (filter.startDate) {
+      outputQueryParams.startDate = formatDateForUri(filter.startDate);
+    }
+
+    if (filter.endDate) {
+      outputQueryParams.endDate = formatDateForUri(filter.endDate);
+    }
+
+    if (filter.tags) {
+      outputQueryParams.tags = filter.tags.join(',');
+    }
+
+    if (filter.name) {
+      outputQueryParams.name = filter.name;
+    }
+
+    return outputQueryParams;
+  }
+
+  private processError(
+    error: any,
+  ): Observable<never> {
     console.error({error});
     this.isLoadingSubject.next(false);
 
     return this.tasks$
-               .pipe(
-                 take(1),
-                 switchMap(
-                   (tasks: Task[]) => this.errorDialogService.openDialog(
-                     {
-                       errorTitle: 'Error while doing db action :D',
-                       errorMessage: JSON.stringify(error),
-                       idbData: tasks,
-                     },
-                   ),
-                 ),
-                 take(1),
-                 switchMap(() => throwError(() => error)),
-               );
+      .pipe(
+        take(1),
+        switchMap(
+          (tasks: Task[]) => this.errorDialogService.openDialog(
+            {
+              errorTitle: 'Error while doing db action :D',
+              errorMessage: JSON.stringify(error),
+              idbData: tasks,
+            },
+          ),
+        ),
+        take(1),
+        switchMap(() => throwError(() => error)),
+      );
   }
 
-  private reloadList(skipReload: boolean = false): Observable<Task[]> {
+  private reloadList(
+    skipReload: boolean = false,
+  ): Observable<Task[]> {
     return skipReload ?
-           this.tasks$.pipe(take(1)) :
-           this.list().pipe(take(1));
+      this.tasks$.pipe(take(1)) :
+      this.list().pipe(take(1));
   }
 
-  private findTask(tasks: Task[], task: Task): Task {
+  private findTask(
+    tasks: Task[],
+    task: Task,
+  ): Task {
     const foundTask: Task | undefined = tasks.find(
       (t: Task) => (task.id && t.id === task.id) || t.name === task.name,
     );
 
     if (!foundTask) {
-      throw new Error(`Problems creating task "${task.name}"!`);
+      throw new Error(`Problems creating task "${ task.name }"!`);
     }
 
     return foundTask;
+  }
+
+  private makeRequest(
+    method: 'get' | 'post' | 'patch' | 'delete' = 'get',
+    path: string | null                         = null,
+    body: any                                   = null,
+    reportError: boolean                        = false,
+  ): Observable<any> {
+    let url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }`;
+
+    if (path) {
+      if (path.startsWith('?')) {
+        url += `${ path }`;
+      } else {
+        url += `/${ path }`;
+      }
+    }
+
+    let request$: Observable<any> = of({});
+
+    switch (method) {
+      case 'post':
+        request$ = this.http.post(url, body);
+        break;
+
+      case 'patch':
+        request$ = this.http.patch(url, body);
+        break;
+
+      case 'delete':
+        request$ = this.http.delete(url);
+        break;
+
+      case 'get':
+      default:
+        request$ = this.http.get(url);
+        break;
+    }
+
+    return waitForTurn(this.isLoading$, this.isLoadingSubject)
+      .pipe(
+        switchMap(() => request$),
+        catchError((error) => {
+          if (reportError) {
+            return this.processError(error);
+          }
+
+          this.isLoadingSubject.next(false);
+          return throwError(() => error);
+        }),
+        tap(() => this.isLoadingSubject.next(false)),
+      );
   }
 }

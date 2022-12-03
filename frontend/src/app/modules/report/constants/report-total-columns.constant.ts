@@ -50,9 +50,9 @@ export const columns: Column[] = [
     cell: (task: Task) => columnValue(task, 'timeLogged'),
     hasFooter: true,
     footerCell: (tasks: Task[]) => tasks.map(
-                                          (task: Task) => task.timeLogs.map(t => t.timeLogged())
-                                                              .reduce((acc, value) => acc + value, 0),
-                                        )
-                                        .reduce((acc, value) => acc + value, 0),
+      (task: Task) => task.timeLogs.map(t => t.timeLogged())
+        .reduce((acc, value) => acc + value, 0),
+    )
+      .reduce((acc, value) => acc + value, 0),
   },
 ];

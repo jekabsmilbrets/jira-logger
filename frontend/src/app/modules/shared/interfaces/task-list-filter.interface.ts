@@ -4,4 +4,5 @@ export interface TaskListFilter {
   endDate?: Date | null;
   startDate?: Date | null;
   tags?: string[];
+  name?: string;
 }

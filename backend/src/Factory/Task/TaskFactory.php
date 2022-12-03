@@ -11,7 +11,7 @@ class TaskFactory
 {
     final public static function create(
         TaskRequest $taskRequest,
-        ?Task       $task = null
+        Task $task = null
     ): Task {
         if (null === $task) {
             $task = new Task();

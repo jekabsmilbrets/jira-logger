@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 
 import { TasksViewComponent } from './views/tasks/tasks-view.component';
 
+
 const routes: Routes = [
   {
     path: '',
@@ -18,7 +19,6 @@ const routes: Routes = [
     redirectTo: '',
   },
 ];
-
 
 @NgModule(
   {

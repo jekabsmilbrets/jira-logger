@@ -2,15 +2,16 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ReportMenuComponent } from './report-menu.component';
 
+
 describe('ReportMenuComponent', () => {
   let component: ReportMenuComponent;
   let fixture: ComponentFixture<ReportMenuComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-                                           declarations: [ReportMenuComponent],
-                                         })
-                 .compileComponents();
+      declarations: [ReportMenuComponent],
+    })
+      .compileComponents();
   });
 
   beforeEach(() => {

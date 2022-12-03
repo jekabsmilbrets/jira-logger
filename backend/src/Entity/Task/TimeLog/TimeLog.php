@@ -31,9 +31,9 @@ class TimeLog implements EntityBaseInterface
         ORM\Column(
             type: Types::DATETIME_MUTABLE
         ),
-        Context([DateTimeNormalizer::FORMAT_KEY => DateTimeInterface::ATOM])
+        Context([DateTimeNormalizer::FORMAT_KEY => \DateTimeInterface::ATOM])
     ]
-    private ?DateTimeInterface $startTime = null;
+    private ?\DateTimeInterface $startTime = null;
 
     #[
         Groups([Group::LIST]),
@@ -41,9 +41,9 @@ class TimeLog implements EntityBaseInterface
             type: Types::DATETIME_MUTABLE,
             nullable: true
         ),
-        Context([DateTimeNormalizer::FORMAT_KEY => DateTimeInterface::ATOM])
+        Context([DateTimeNormalizer::FORMAT_KEY => \DateTimeInterface::ATOM])
     ]
-    private ?DateTimeInterface $endTime = null;
+    private ?\DateTimeInterface $endTime = null;
 
     #[
         Groups([Group::LIST]),
@@ -75,31 +75,31 @@ class TimeLog implements EntityBaseInterface
     #[
         Groups([Group::LIST]),
     ]
-    private ?DateTimeInterface $originalStartTime = null;
+    private ?\DateTimeInterface $originalStartTime = null;
 
     #[
         Groups([Group::LIST]),
     ]
-    private ?DateTimeInterface $originalEndTime = null;
+    private ?\DateTimeInterface $originalEndTime = null;
 
-    final public function getStartTime(): ?DateTimeInterface
+    final public function getStartTime(): ?\DateTimeInterface
     {
         return $this->startTime;
     }
 
-    final public function setStartTime(DateTimeInterface $dateTime): self
+    final public function setStartTime(\DateTimeInterface $dateTime): self
     {
         $this->startTime = $dateTime;
 
         return $this;
     }
 
-    final public function getEndTime(): ?DateTimeInterface
+    final public function getEndTime(): ?\DateTimeInterface
     {
         return $this->endTime;
     }
 
-    final public function setEndTime(?DateTimeInterface $dateTime): self
+    final public function setEndTime(?\DateTimeInterface $dateTime): self
     {
         $this->endTime = $dateTime;
 
@@ -142,24 +142,24 @@ class TimeLog implements EntityBaseInterface
         return $this;
     }
 
-    final public function getOriginalStartTime(): ?DateTimeInterface
+    final public function getOriginalStartTime(): ?\DateTimeInterface
     {
         return $this->originalStartTime;
     }
 
-    final public function setOriginalStartTime(?DateTimeInterface $originalStartTime): self
+    final public function setOriginalStartTime(?\DateTimeInterface $originalStartTime): self
     {
         $this->originalStartTime = $originalStartTime;
 
         return $this;
     }
 
-    final public function getOriginalEndTime(): ?DateTimeInterface
+    final public function getOriginalEndTime(): ?\DateTimeInterface
     {
         return $this->originalEndTime;
     }
 
-    final public function setOriginalEndTime(?DateTimeInterface $originalEndTime): self
+    final public function setOriginalEndTime(?\DateTimeInterface $originalEndTime): self
     {
         $this->originalEndTime = $originalEndTime;
 

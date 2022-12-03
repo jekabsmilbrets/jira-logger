@@ -29,9 +29,25 @@ services:
   App\Controller\API\Task\TimeLog\TimeLogController:
     arguments:
       - '@App\Service\Task\TimeLog\TimeLogService'
+  App\Controller\API\Tag\TagController:
+    arguments:
+      - '@App\Service\Tag\TagService'
+  App\Controller\API\Setting\SettingController:
+    arguments:
+      - '@App\Service\Setting\SettingService'
+
   App\Dto\Task\TimeLog\TimeLogRequest:
+    arguments:
+      - '@App\Service\Task\TaskService'
+  App\Dto\JiraWorkLog\JiraWorkLogRequest:
     arguments:
       - '@App\Service\Task\TaskService'
   App\Dto\Task\TaskRequest:
     arguments:
       - '@App\Service\Tag\TagService'
+
+  App\Service\JiraApi\JiraApiService:
+    arguments:
+      - '@monolog.logger.jira-api-service'
+      - '@App\Service\Setting\SettingService'
+      - '@App\Service\JiraWorkLog\JiraWorkLogService'

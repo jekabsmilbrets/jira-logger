@@ -15,11 +15,9 @@ import { waitForTurn }        from '@core/utils/wait-for.utility';
 import { LoadableService } from '@shared/interfaces/loadable-service.interface';
 
 
-@Injectable(
-  {
-    providedIn: 'root',
-  },
-)
+@Injectable({
+  providedIn: 'root',
+})
 export class MonitorService implements LoadableService {
   public isLoading$: Observable<boolean>;
   public monitor$: Observable<Monitor | undefined>;
@@ -45,7 +43,7 @@ export class MonitorService implements LoadableService {
   }
 
   public callMonitor(): Observable<Monitor> {
-    const url = `${environment.apiHost}${environment.apiBase}/${this.basePath}`;
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }`;
 
     this.hasIssuesSubject.next(false);
 

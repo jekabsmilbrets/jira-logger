@@ -1,4 +1,4 @@
-import { Task } from 'app/modules/shared/models/task.model';
+import { Task } from './task.model';
 
 
 describe('Task', () => {

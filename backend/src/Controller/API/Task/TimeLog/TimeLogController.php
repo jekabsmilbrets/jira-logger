@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Controller\API\Task\TimeLog;
 
 use App\Controller\API\BaseApiController;
+use App\Controller\API\Task\TaskController;
 use App\Dto\Task\TimeLog\TimeLogRequest;
+use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
@@ -13,6 +15,7 @@ use Exception;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
@@ -34,6 +37,7 @@ class TimeLogController extends BaseApiController
 
     public function __construct(
         private readonly TimeLogService $timeLogService,
+        private readonly TaskService $taskService,
     ) {
     }
 
@@ -52,7 +56,7 @@ class TimeLogController extends BaseApiController
             tags: ['Time logs'],
         ),
         OA\Response(
-            response: 200,
+            response: Response::HTTP_OK,
             description: 'Returns list of time-logs.',
             content: new OA\JsonContent(
                 properties: [
@@ -65,7 +69,7 @@ class TimeLogController extends BaseApiController
             ),
         ),
         OA\Response(
-            response: 404,
+            response: Response::HTTP_NOT_FOUND,
             description: self::TIME_LOGS_NOT_FOUND,
             content: new OA\JsonContent(
                 properties: [
@@ -89,69 +93,12 @@ class TimeLogController extends BaseApiController
         if (empty($timeLogs) || [] === $timeLogs) {
             return $this->jsonApi(
                 errors: [self::TIME_LOGS_NOT_FOUND],
-                status: 404
+                status: Response::HTTP_NOT_FOUND
             );
         }
 
         return $this->jsonApi(
             $timeLogs
-        );
-    }
-
-    #[
-        Route(
-            path: '/{id}',
-            name: 'show-time-log',
-            requirements: ['id' => Requirement::UUID],
-            methods: [Request::METHOD_GET],
-            stateless: true,
-        ),
-        OA\Tag(name: 'Time logs'),
-        OA\Get(
-            operationId: 'show-time-log',
-            summary: 'Show TimeLog',
-            tags: ['Time logs'],
-        ),
-        OA\Response(
-            response: 200,
-            description: 'Returns TimeLog',
-            content: new OA\JsonContent(ref: '#/components/schemas/TimeLogModel'),
-        ),
-        OA\Response(
-            response: 404,
-            description: self::TIME_LOG_NOT_FOUND,
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(
-                        property: 'errors',
-                        type: 'array',
-                        items: new OA\Items(
-                            type: 'string',
-                            example: self::TIME_LOG_NOT_FOUND
-                        )
-                    ),
-                ]
-            ),
-        ),
-    ]
-    final public function show(
-        string $taskId,
-        string $id
-    ): JsonResponse {
-        $timeLog = $this->timeLogService->show(
-            taskId: $taskId,
-            id: $id
-        );
-
-        if (!$timeLog instanceof TimeLog) {
-            return $this->jsonApi(
-                errors: [self::TIME_LOGS_NOT_FOUND],
-                status: 404
-            );
-        }
-
-        return $this->jsonApi(
-            $timeLog
         );
     }
 
@@ -172,12 +119,12 @@ class TimeLogController extends BaseApiController
             content: new OA\JsonContent(ref: '#/components/schemas/TimeLogCreateRequest')
         ),
         OA\Response(
-            response: 200,
+            response: Response::HTTP_OK,
             description: 'Task created successfully',
             content: new OA\JsonContent(ref: '#/components/schemas/TimeLogModel'),
         ),
         OA\Response(
-            response: 400,
+            response: Response::HTTP_BAD_REQUEST,
             description: self::BAD_REQUEST,
             content: new OA\JsonContent(
                 properties: [
@@ -193,7 +140,7 @@ class TimeLogController extends BaseApiController
             )
         ),
         OA\Response(
-            response: 406,
+            response: Response::HTTP_NOT_ACCEPTABLE,
             description: 'Validation failed',
             content: new OA\JsonContent(
                 properties: [
@@ -213,11 +160,11 @@ class TimeLogController extends BaseApiController
         ),
     ]
     final public function new(
-        string              $taskId,
-        ValidatorInterface  $validator,
+        string $taskId,
+        ValidatorInterface $validator,
         SerializerInterface $serializer,
-        Request             $request,
-        TaskService         $taskService,
+        Request $request,
+        TaskService $taskService,
     ): JsonResponse {
         try {
             $timeLogRequest = new TimeLogRequest(
@@ -234,7 +181,7 @@ class TimeLogController extends BaseApiController
         } catch (UnexpectedValueException) {
             return $this->jsonApi(
                 errors: [self::BAD_REQUEST],
-                status: 400
+                status: Response::HTTP_BAD_REQUEST
             );
         }
 
@@ -247,10 +194,10 @@ class TimeLogController extends BaseApiController
             groups: ['create']
         );
 
-        if (count($errors) > 0) {
+        if (\count($errors) > 0) {
             return $this->validationErrorJsonApi(
                 constraintViolationList: $errors,
-                status: 406
+                status: Response::HTTP_NOT_ACCEPTABLE
             );
         }
 
@@ -259,7 +206,7 @@ class TimeLogController extends BaseApiController
         } catch (Exception) {
             return $this->jsonApi(
                 errors: [self::CANNOT_CREATE_TIME_LOG],
-                status: 400
+                status: Response::HTTP_BAD_REQUEST
             );
         }
 
@@ -286,12 +233,12 @@ class TimeLogController extends BaseApiController
             content: new OA\JsonContent(ref: '#/components/schemas/TimeLogUpdateRequest')
         ),
         OA\Response(
-            response: 200,
+            response: Response::HTTP_OK,
             description: 'Returns TimeLog',
             content: new OA\JsonContent(ref: '#/components/schemas/TimeLogModel'),
         ),
         OA\Response(
-            response: 400,
+            response: Response::HTTP_BAD_REQUEST,
             description: self::BAD_REQUEST,
             content: new OA\JsonContent(
                 properties: [
@@ -307,7 +254,7 @@ class TimeLogController extends BaseApiController
             )
         ),
         OA\Response(
-            response: 404,
+            response: Response::HTTP_NOT_FOUND,
             description: self::TIME_LOG_NOT_FOUND,
             content: new OA\JsonContent(
                 properties: [
@@ -323,7 +270,7 @@ class TimeLogController extends BaseApiController
             ),
         ),
         OA\Response(
-            response: 406,
+            response: Response::HTTP_NOT_ACCEPTABLE,
             description: 'Validation failed',
             content: new OA\JsonContent(
                 properties: [
@@ -343,12 +290,12 @@ class TimeLogController extends BaseApiController
         ),
     ]
     final public function edit(
-        string              $taskId,
-        string              $id,
-        ValidatorInterface  $validator,
+        string $taskId,
+        string $id,
+        ValidatorInterface $validator,
         SerializerInterface $serializer,
-        Request             $request,
-        TaskService         $taskService
+        Request $request,
+        TaskService $taskService
     ): JsonResponse {
         try {
             $timeLogRequest = new TimeLogRequest(
@@ -365,7 +312,7 @@ class TimeLogController extends BaseApiController
         } catch (UnexpectedValueException) {
             return $this->jsonApi(
                 errors: [self::BAD_REQUEST],
-                status: 400
+                status: Response::HTTP_BAD_REQUEST
             );
         }
 
@@ -374,10 +321,10 @@ class TimeLogController extends BaseApiController
             groups: ['update']
         );
 
-        if ((is_countable($errors) ? count($errors) : 0) > 0) {
+        if ((is_countable($errors) ? \count($errors) : 0) > 0) {
             return $this->validationErrorJsonApi(
                 constraintViolationList: $errors,
-                status: 406
+                status: Response::HTTP_NOT_ACCEPTABLE
             );
         }
 
@@ -390,14 +337,14 @@ class TimeLogController extends BaseApiController
         } catch (Exception) {
             return $this->jsonApi(
                 errors: [self::CANNOT_UPDATE_TIME_LOG],
-                status: 400
+                status: Response::HTTP_BAD_REQUEST
             );
         }
 
         if (!$timeLog instanceof TimeLog) {
             return $this->jsonApi(
                 errors: [self::TIME_LOG_NOT_FOUND],
-                status: 404
+                status: Response::HTTP_NOT_FOUND
             );
         }
 
@@ -421,11 +368,11 @@ class TimeLogController extends BaseApiController
             tags: ['Time logs'],
         ),
         OA\Response(
-            response: 204,
+            response: Response::HTTP_NO_CONTENT,
             description: 'TimeLog deleted',
         ),
         OA\Response(
-            response: 400,
+            response: Response::HTTP_BAD_REQUEST,
             description: self::BAD_REQUEST,
             content: new OA\JsonContent(
                 properties: [
@@ -441,7 +388,7 @@ class TimeLogController extends BaseApiController
             ),
         ),
         OA\Response(
-            response: 404,
+            response: Response::HTTP_NOT_FOUND,
             description: self::TIME_LOG_NOT_FOUND,
             content: new OA\JsonContent(
                 properties: [
@@ -469,19 +416,173 @@ class TimeLogController extends BaseApiController
         } catch (Exception) {
             return $this->jsonApi(
                 errors: [self::CANNOT_DELETE_TIME_LOG],
-                status: 400
+                status: Response::HTTP_BAD_REQUEST
             );
         }
 
         if (!$status) {
             return $this->jsonApi(
                 errors: [self::TIME_LOG_NOT_FOUND],
-                status: 404
+                status: Response::HTTP_NOT_FOUND
             );
         }
 
         return $this->jsonApi(
-            status: 204
+            status: Response::HTTP_NO_CONTENT
+        );
+    }
+
+    /**
+     * @throws \Exception
+     */
+    #[
+        Route(
+            path: '/start',
+            name: 'start-task',
+            requirements: ['id' => Requirement::UUID],
+            methods: [Request::METHOD_GET],
+            stateless: true
+        ),
+        OA\Tag(name: 'Tasks'),
+        OA\Get(
+            operationId: 'start-task',
+            summary: 'Start Task TimeLog',
+            tags: ['Tasks'],
+        ),
+        OA\Response(
+            response: Response::HTTP_NO_CONTENT,
+            description: 'Task TimeLog started!',
+        ),
+        OA\Response(
+            response: Response::HTTP_CONFLICT,
+            description: 'Problems starting Task TimeLog!',
+        ),
+    ]
+    final public function startNewTimeLog(
+        string $taskId,
+    ): JsonResponse {
+        $task = $this->taskService->show($taskId);
+
+        if (!$task instanceof Task) {
+            return $this->jsonApi(
+                errors: [TaskController::TASK_NOT_FOUND],
+                status: Response::HTTP_NOT_FOUND
+            );
+        }
+
+        $timeLog = $this->timeLogService->startTaskTimeLog($task);
+
+        return $this->jsonApi(
+            status: $timeLog ? Response::HTTP_NO_CONTENT : Response::HTTP_CONFLICT,
+        );
+    }
+
+    #[
+        Route(
+            path: '/{id}',
+            name: 'show-time-log',
+            requirements: ['id' => Requirement::UUID],
+            methods: [Request::METHOD_GET],
+            stateless: true,
+        ),
+        OA\Tag(name: 'Time logs'),
+        OA\Get(
+            operationId: 'show-time-log',
+            summary: 'Show TimeLog',
+            tags: ['Time logs'],
+        ),
+        OA\Response(
+            response: Response::HTTP_OK,
+            description: 'Returns TimeLog',
+            content: new OA\JsonContent(ref: '#/components/schemas/TimeLogModel'),
+        ),
+        OA\Response(
+            response: Response::HTTP_NOT_FOUND,
+            description: self::TIME_LOG_NOT_FOUND,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(
+                        property: 'errors',
+                        type: 'array',
+                        items: new OA\Items(
+                            type: 'string',
+                            example: self::TIME_LOG_NOT_FOUND
+                        )
+                    ),
+                ]
+            ),
+        ),
+    ]
+    final public function show(
+        string $taskId,
+        string $id
+    ): JsonResponse {
+        $timeLog = $this->timeLogService->show(
+            taskId: $taskId,
+            id: $id
+        );
+
+        if (!$timeLog instanceof TimeLog) {
+            return $this->jsonApi(
+                errors: [self::TIME_LOGS_NOT_FOUND],
+                status: Response::HTTP_NOT_FOUND
+            );
+        }
+
+        return $this->jsonApi(
+            $timeLog
+        );
+    }
+
+    /**
+     * @throws \Exception
+     */
+    #[
+        Route(
+            path: '/stop',
+            name: 'stop-task',
+            requirements: ['id' => Requirement::UUID],
+            methods: [Request::METHOD_GET],
+            stateless: true
+        ),
+        OA\Tag(name: 'Tasks'),
+        OA\Get(
+            operationId: 'stop-task',
+            summary: 'Stop Task TimeLog',
+            tags: ['Tasks'],
+        ),
+        OA\Response(
+            response: Response::HTTP_NO_CONTENT,
+            description: 'Task TimeLog stopped!',
+        ),
+        OA\Response(
+            response: Response::HTTP_CONFLICT,
+            description: 'Problems stopping Task TimeLog!',
+        ),
+    ]
+    final public function stopExistingTimeLog(
+        string $taskId,
+    ): JsonResponse {
+        $task = $this->taskService->show($taskId);
+
+        if (!$task instanceof Task) {
+            return $this->jsonApi(
+                errors: [TaskController::TASK_NOT_FOUND],
+                status: Response::HTTP_NOT_FOUND
+            );
+        }
+
+        $timeLog = $this->timeLogService->stopTaskTimeLog($task);
+
+        if (!$timeLog instanceof TimeLog) {
+            return $this->jsonApi(
+                errors: ['Problems stopping Task TimeLog!'],
+                status: Response::HTTP_CONFLICT
+            );
+        }
+
+        return $this->jsonApi(
+            status: Response::HTTP_NO_CONTENT,
         );
     }
 }

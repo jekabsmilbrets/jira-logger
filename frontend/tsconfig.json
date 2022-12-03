@@ -39,6 +39,9 @@
       "@layout/*": [
         "app/modules/layout/*"
       ],
+      "@settings/*": [
+        "app/modules/settings/*"
+      ],
     }
   },
   "angularCompilerOptions": {

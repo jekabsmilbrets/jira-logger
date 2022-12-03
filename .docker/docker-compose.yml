@@ -40,16 +40,19 @@ services:
       - ./../frontend/dist/jira-logger/:/var/www/public/ng
       - ./nginx/sites/:/etc/nginx/sites-available
       - ./nginx/conf.d/:/etc/nginx/conf.d
+      - ./certs/:/etc/ssl/certs/
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - php-fpm
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jira-logger-nginx.rule=Host(`jira-logger.io`)"
-      - "traefik.http.routers.jira-logger-nginx.tls=true"
+      traefik.enable: true
+      traefik.http.routers.jira-logger-nginx.rule: Host(`jira-logger.io`)
+      traefik.http.routers.jira-logger-nginx.entrypoints: websecure
+      traefik.http.routers.jira-logger-nginx.tls: true
+      traefik.http.services.jira-logger-nginx.loadbalancer.server.port: 80
     ports:
-      - "8888:80"
-      - "443:443"
+      - "80"
+      - "4433:443"
 
   node:
     container_name: "jira-logger-node"

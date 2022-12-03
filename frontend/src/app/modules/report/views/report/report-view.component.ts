@@ -1,9 +1,10 @@
 import { Clipboard }                    from '@angular/cdk/clipboard';
+import { HttpErrorResponse }            from '@angular/common/http';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatSnackBar }                  from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap }     from '@angular/router';
 
-import { Observable, Subscription } from 'rxjs';
+import { filter, map, Observable, Subscription, switchMap, take } from 'rxjs';
 
 import { DynamicMenu }        from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
@@ -13,6 +14,7 @@ import { Searchable } from '@shared/interfaces/searchable.interface';
 
 import { Task }             from '@shared/models/task.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
+import { TasksService }     from '@shared/services/tasks.service';
 import { SharedModule }     from '@shared/shared.module';
 
 import { ReportMenuComponent } from '@report/components/report-menu/report-menu.component';
@@ -35,26 +37,27 @@ export class ReportViewComponent implements OnInit, OnDestroy {
   constructor(
     private dynamicMenuService: DynamicMenuService,
     private reportService: ReportService,
+    private tasksService: TasksService,
     private activatedRoute: ActivatedRoute,
     private clipboard: Clipboard,
     private snackBar: MatSnackBar,
   ) {
     this.subscriptions.push(
       this.activatedRoute.paramMap
-          .pipe()
-          .subscribe(
-            (params: ParamMap) => {
-              if (params.has('reportMode')) {
-                const reportMode = params.get('reportMode') as string;
+        .pipe()
+        .subscribe(
+          (params: ParamMap) => {
+            if (params.has('reportMode')) {
+              const reportMode = params.get('reportMode') as string;
 
-                if (reportMode in ReportModeEnum) {
-                  this.reportService.reportMode = ReportModeEnum[reportMode as keyof typeof ReportModeEnum];
-                } else {
-                  this.reportService.reportMode = ReportModeEnum.total;
-                }
+              if (reportMode in ReportModeEnum) {
+                this.reportService.reportMode = ReportModeEnum[reportMode as keyof typeof ReportModeEnum];
+              } else {
+                this.reportService.reportMode = ReportModeEnum.total;
               }
-            },
-          ),
+            }
+          },
+        ),
     );
 
     this.tasks$ = this.reportService.tasks$;
@@ -62,6 +65,10 @@ export class ReportViewComponent implements OnInit, OnDestroy {
 
   public get columns(): Column[] {
     return this.reportService.columns;
+  }
+
+  public get reportMode$(): Observable<ReportModeEnum> {
+    return this.reportService.reportMode$;
   }
 
   public ngOnInit(): void {
@@ -83,14 +90,14 @@ export class ReportViewComponent implements OnInit, OnDestroy {
         const readableTimePipe = new ReadableTimePipe();
 
         outputValue = readableTimePipe.transform(timeLogged);
-        message = `Copied Task "${task.name}" logged time to clipboard "${outputValue}"!`;
+        message = `Copied Task "${ task.name }" logged time to clipboard "${ outputValue }"!`;
         break;
 
       case 'string':
       case undefined:
       default:
         outputValue = column.cell(task);
-        message = `Copied Task "${task.name}" field "${column.header}" value to clipboard "${outputValue}"!`;
+        message = `Copied Task "${ task.name }" field "${ column.header }" value to clipboard "${ outputValue }"!`;
         break;
     }
 
@@ -104,6 +111,42 @@ export class ReportViewComponent implements OnInit, OnDestroy {
     );
   }
 
+  public onSyncClick(row: Searchable): void {
+    const task = row as Task;
+    this.reportService.date$
+      .pipe(
+        filter((date: Date | null) => date instanceof Date),
+        take(1),
+        map((date: Date | null): Date => date as Date),
+        switchMap(
+          (date: Date) => this.tasksService.syncDateToJiraApi(task, date),
+        ),
+        take(1),
+      )
+      .subscribe(
+        {
+          next: () => {
+            this.snackBar.open(
+              `Task "${ task.name }" synced successfully!`,
+              undefined,
+              {
+                duration: 5000,
+              },
+            );
+          },
+          error: (error: HttpErrorResponse) => {
+            this.snackBar.open(
+              `Task "${ task.name }" failed synced! ${error.error.join(', ')}`,
+              undefined,
+              {
+                duration: 5000,
+              },
+            );
+          },
+        },
+      );
+  }
+
   public onFooterCellClicked([rows, column]: [Searchable[], Column]): void {
     const tasks = rows as Task[];
     let outputValue;
@@ -115,14 +158,14 @@ export class ReportViewComponent implements OnInit, OnDestroy {
         const readableTimePipe = new ReadableTimePipe();
 
         outputValue = readableTimePipe.transform(timeLogged);
-        message = `Copied logged time to clipboard "${outputValue}"!`;
+        message = `Copied logged time to clipboard "${ outputValue }"!`;
         break;
 
       case 'concatenatedString':
       case undefined:
       default:
         outputValue = tasks.map((task: Task) => column.cell(task)).join(', ');
-        message = `Copied field "${column.header}" value to clipboard "${outputValue}"!`;
+        message = `Copied field "${ column.header }" value to clipboard "${ outputValue }"!`;
         break;
     }
 
