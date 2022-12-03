@@ -87,6 +87,25 @@
             </ng-container>
         </ng-container>
 
+        <ng-container cdkColumnDef="sync">
+            <mat-header-cell *cdkHeaderCellDef>
+                Sync
+            </mat-header-cell>
+
+            <mat-cell *cdkCellDef="let row">
+                <button (click)="onSyncAction(row)"
+                        color="warn"
+                        mat-icon-button>
+                    <mat-icon>sync</mat-icon>
+                </button>
+            </mat-cell>
+
+            <ng-container *ngIf="enableFooter">
+                <mat-footer-cell *cdkFooterCellDef>
+                </mat-footer-cell>
+            </ng-container>
+        </ng-container>
+
         <mat-header-row *cdkHeaderRowDef="displayedColumns; sticky: stickyHeader"></mat-header-row>
 
         <ng-container *ngIf="enableFooter">

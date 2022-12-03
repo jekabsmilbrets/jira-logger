@@ -11,6 +11,7 @@ import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
 
 import { Column }     from '@shared/interfaces/column.interface';
 import { Searchable } from '@shared/interfaces/searchable.interface';
+import { Task }       from '@shared/models/task.model';
 
 import { TimeLog }           from '@shared/models/time-log.model';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
@@ -30,6 +31,9 @@ export class TableComponent implements AfterViewInit {
 
   @Input()
   public enableRemoveAction = false;
+
+  @Input()
+  public enableSyncAction = false;
 
   @Input()
   public stickyHeader = true;
@@ -57,6 +61,9 @@ export class TableComponent implements AfterViewInit {
 
   @Output()
   public removeAction: EventEmitter<Searchable> = new EventEmitter<Searchable>();
+
+  @Output()
+  public syncAction: EventEmitter<Searchable> = new EventEmitter<Searchable>();
 
   @ViewChild(MatSort, {static: true})
   public sort!: MatSort;
@@ -88,6 +95,10 @@ export class TableComponent implements AfterViewInit {
 
     if (this.enableRemoveAction) {
       columns.push('remove');
+    }
+
+    if (this.enableSyncAction) {
+      columns.push('sync');
     }
 
     if (this.isSelectable) {
@@ -167,5 +178,10 @@ export class TableComponent implements AfterViewInit {
           }
         },
       );
+  }
+
+  public onSyncAction(row: Searchable): void {
+    const task: Task | undefined = row as Task;
+    this.syncAction.emit(task);
   }
 }
