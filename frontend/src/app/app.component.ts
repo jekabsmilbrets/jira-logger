@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit }                  from '@angular/core';
 import { MatSnackBar, MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
 
-import { catchError, interval, retry, startWith, Subscription, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, interval, retry, startWith, Subscription, switchMap, take, tap, throwError, timer } from 'rxjs';
 
 import { MonitorService } from '@core/services/monitor.service';
 
@@ -57,8 +57,8 @@ export class AppComponent implements OnDestroy, OnInit {
             }),
             retry(
               {
-                count: 1,
-                delay: this.monitorInterval * 2,
+                count: 10,
+                delay: (_: any, retryCount: number) => timer(Math.pow(2, retryCount) * 250),
               },
             ),
             tap(() => this.snackBarRef ? this.snackBarRef.dismiss() : undefined),
