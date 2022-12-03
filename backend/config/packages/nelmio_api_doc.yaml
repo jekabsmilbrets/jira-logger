@@ -15,9 +15,19 @@ nelmio_api_doc:
       - { alias: TimeLogUpdateRequest, type: App\Dto\Task\TimeLog\TimeLogRequest, groups: [ 'update' ] }
       - { alias: TimeLogCreateRequest, type: App\Dto\Task\TimeLog\TimeLogRequest, groups: [ 'create' ] }
       - { alias: TimeLogModel, type: App\Entity\Task\TimeLog\TimeLog, groups: [ 'list' ] }
+
       - { alias: TaskUpdateRequest, type: App\Dto\Task\TaskRequest, groups: [ 'update' ] }
       - { alias: TaskCreateRequest, type: App\Dto\Task\TaskRequest, groups: [ 'create' ] }
       - { alias: TaskModel, type: App\Entity\Task\Task, groups: [ 'list' ] }
+
       - { alias: TagUpdateRequest, type: App\Dto\Tag\TagRequest, groups: [ 'update' ] }
       - { alias: TagCreateRequest, type: App\Dto\Tag\TagRequest, groups: [ 'create' ] }
       - { alias: TagModel, type: App\Entity\Tag\Tag, groups: [ 'list' ] }
+
+      - { alias: SettingUpdateRequest, type: App\Dto\Setting\SettingRequest, groups: [ 'update' ] }
+      - { alias: SettingCreateRequest, type: App\Dto\Setting\SettingRequest, groups: [ 'create' ] }
+      - { alias: SettingModel, type: App\Entity\Setting\Setting, groups: [ 'list' ] }
+
+      - { alias: JiraWorkLogModel, type: App\Entity\JiraWorkLog\JiraWorkLog, groups: [ 'list' ] }
+      - { alias: JiraWorkLogUpdateRequest, type: App\Dto\JiraWorkLog\JiraWorkLogRequest, groups: [ 'update' ] }
+      - { alias: JiraWorkLogCreateRequest, type: App\Dto\JiraWorkLog\JiraWorkLogRequest, groups: [ 'create' ] }

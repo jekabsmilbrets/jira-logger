@@ -1,13 +1,13 @@
 <mat-toolbar class="app-toolbar" color="primary">
-  <button (click)="sidenav.toggle()" mat-icon-button>
-    <mat-icon>menu</mat-icon>
-  </button>
+    <button (click)="sidenav.toggle()" mat-icon-button>
+        <mat-icon>menu</mat-icon>
+    </button>
 
-  <a class="app-name" routerLink="/">Jira Time Logger</a>
+    <a class="app-name" routerLink="/">Jira Time Logger</a>
 
-  <span class="spacer"></span>
+    <span class="spacer"></span>
 
-  <ng-template appDynamicMenu></ng-template>
+    <ng-template appDynamicMenu></ng-template>
 </mat-toolbar>
 
 <mat-progress-bar *ngIf="isLoading"

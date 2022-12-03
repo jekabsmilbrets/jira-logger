@@ -18,7 +18,7 @@ Help()
    echo "a     set action [start|down|build]"
    echo "m     set mode [ng-build|ng-build-dev]"
    echo "b     run docker containers in background"
-   echi "t     run with Traefik"
+   echo "t     run with Traefik"
    echo
 }
 
@@ -63,14 +63,19 @@ case $Action in
   build)
     echo "Running action $Action"
     cp ../backend/.env .env
+    cd ./certs/
+    bash cert.sh jira-logger.io
+    cd ..
     docker-compose -f docker-compose.yml build
     ;;
 
   start)
     echo "Running action $Action"
     cp ../backend/.env .env
+    cd ./certs/
+    bash cert.sh jira-logger.io
+    cd ..
     docker-compose -f docker-compose.yml $Traefik up $Background
-    docker cp jira-logger-nginx:/etc/ssl/certs/nginx-selfsigned.crt ./nginx-selfsigned.crt
 
     case $Mode in
       ng-build-dev)

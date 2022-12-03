@@ -8,7 +8,7 @@ export const validateTimeLogInterfaceData = (timeLogInterfaceData: any): ApiTime
     .forEach(
       (field: string) => {
         if (!timeLogInterfaceData.hasOwnProperty(field)) {
-          throw new Error(`Missing Required field "${field}" for Time Log!`);
+          throw new Error(`Missing Required field "${ field }" for Time Log!`);
         }
       },
     );

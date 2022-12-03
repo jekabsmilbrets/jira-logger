@@ -21,9 +21,14 @@ export class SidenavComponent {
       name: 'Task List',
     },
     {
-      route: '/report/dateRange',
+      route: '/report',
       icon: 'report',
       name: 'Report',
+    },
+    {
+      route: '/settings',
+      icon: 'settings',
+      name: 'Settings',
     },
   ];
 

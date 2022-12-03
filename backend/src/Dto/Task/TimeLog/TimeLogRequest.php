@@ -20,7 +20,10 @@ class TimeLogRequest
             type: 'string',
             groups: ['create', 'update'],
         ),
-        OA\Property(example: '2022-08-02T13:05:00Z')
+        OA\Property(
+            type: 'string',
+            format: 'date-time',
+        )
     ]
     private ?string $startTime = null;
 
@@ -30,7 +33,10 @@ class TimeLogRequest
             type: 'string',
             groups: ['create', 'update'],
         ),
-        OA\Property(example: '2022-08-02T13:05:00Z')
+        OA\Property(
+            type: 'string',
+            format: 'date-time',
+        )
     ]
     private ?string $endTime = null;
 

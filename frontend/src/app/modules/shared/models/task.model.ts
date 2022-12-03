@@ -79,6 +79,10 @@ export class Task extends Base implements Searchable {
     return lastStartTime && lastStartTime > -1 ? new Date(lastStartTime) : null;
   }
 
+  public get isTimeLogRunning(): boolean {
+    return !!this.lastTimeLog &&
+      !(this.lastTimeLog.endTime instanceof Date);
+  }
 
   public updateTimeLogged(): number {
     this.timeLogged = this.calcTimeLogged();
@@ -128,16 +132,16 @@ export class Task extends Base implements Searchable {
       const [endTime, startTime]: number[] = [...times];
 
       return (
-               !endTime || !startTime
-             ) ? prev : Math.ceil(
+        !endTime || !startTime
+      ) ? prev : Math.ceil(
         prev + ((endTime - startTime) / 1000),
       );
     };
 
     return (
       timeLogs.filter(filterFn)
-              .map(mapFn)
-              .reduce(reduceFn, 0)
+        .map(mapFn)
+        .reduce(reduceFn, 0)
     ) ?? 0;
   }
 }

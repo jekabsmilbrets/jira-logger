@@ -7,12 +7,15 @@ namespace App\Controller\API\Task;
 use App\Controller\API\BaseApiController;
 use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
+use App\Exception\JiraApiServiceException;
+use App\Service\JiraApi\JiraApiService;
 use App\Service\Task\TaskService;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
@@ -35,11 +38,12 @@ class TaskController extends BaseApiController
 
     public function __construct(
         private readonly TaskService $taskService,
+        private readonly JiraApiService $jiraApiService,
     ) {
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     #[
         Route(
@@ -85,7 +89,7 @@ class TaskController extends BaseApiController
             schema: new OA\Schema(type: 'boolean')
         ),
         OA\Response(
-            response: 200,
+            response: Response::HTTP_OK,
             description: 'Returns list of tasks.',
             content: new OA\JsonContent(
                 properties: [
@@ -98,7 +102,7 @@ class TaskController extends BaseApiController
             ),
         ),
         OA\Response(
-            response: 404,
+            response: Response::HTTP_NOT_FOUND,
             description: self::TASKS_NOT_FOUND,
             content: new OA\JsonContent(
                 properties: [
@@ -119,6 +123,7 @@ class TaskController extends BaseApiController
     ): JsonResponse {
         $queryParameters = [
             'tags',
+            'name',
             'date',
             'startDate',
             'endDate',
@@ -126,16 +131,20 @@ class TaskController extends BaseApiController
         ];
 
         $filter = array_filter(
-            array_reduce(
+            array: array_reduce(
                 array: $queryParameters,
-                callback: static fn(array $carry, string $queryParameter): array => array_merge(
+                callback: static fn (array $carry, string $queryParameter): array => array_merge(
                     $carry,
                     [
                         $queryParameter => $request->query->get($queryParameter),
                     ]
                 ),
                 initial: []
-            )
+            ),
+            callback: static function ($value, $key): bool {
+                return null !== $value;
+            },
+            mode: \ARRAY_FILTER_USE_BOTH
         );
 
         $tasks = $this->taskService->list($filter);
@@ -143,7 +152,7 @@ class TaskController extends BaseApiController
         if (empty($tasks) || [] === $tasks) {
             return $this->jsonApi(
                 errors: [self::TASKS_NOT_FOUND],
-                status: 404
+                status: Response::HTTP_NOT_FOUND
             );
         }
 
@@ -167,12 +176,12 @@ class TaskController extends BaseApiController
             tags: ['Tasks']
         ),
         OA\Response(
-            response: 200,
+            response: Response::HTTP_OK,
             description: 'Returns task',
             content: new OA\JsonContent(ref: '#/components/schemas/TaskModel'),
         ),
         OA\Response(
-            response: 404,
+            response: Response::HTTP_NOT_FOUND,
             description: self::TASK_NOT_FOUND,
             content: new OA\JsonContent(
                 properties: [
@@ -196,7 +205,7 @@ class TaskController extends BaseApiController
         if (!$task instanceof Task) {
             return $this->jsonApi(
                 errors: [self::TASK_NOT_FOUND],
-                status: 404
+                status: Response::HTTP_NOT_FOUND
             );
         }
 
@@ -222,12 +231,12 @@ class TaskController extends BaseApiController
             content: new OA\JsonContent(ref: '#/components/schemas/TaskCreateRequest')
         ),
         OA\Response(
-            response: 200,
+            response: Response::HTTP_OK,
             description: 'Task created successfully',
             content: new OA\JsonContent(ref: '#/components/schemas/TaskModel'),
         ),
         OA\Response(
-            response: 400,
+            response: Response::HTTP_BAD_REQUEST,
             description: self::BAD_REQUEST,
             content: new OA\JsonContent(
                 properties: [
@@ -243,7 +252,7 @@ class TaskController extends BaseApiController
             )
         ),
         OA\Response(
-            response: 406,
+            response: Response::HTTP_NOT_ACCEPTABLE,
             description: 'Validation failed',
             content: new OA\JsonContent(
                 properties: [
@@ -263,10 +272,10 @@ class TaskController extends BaseApiController
         ),
     ]
     final public function new(
-        ValidatorInterface  $validator,
+        ValidatorInterface $validator,
         SerializerInterface $serializer,
-        Request             $request,
-        TaskRequest         $taskRequest,
+        Request $request,
+        TaskRequest $taskRequest,
     ): JsonResponse {
         try {
             $taskRequest = $serializer->deserialize(
@@ -280,7 +289,7 @@ class TaskController extends BaseApiController
         } catch (UnexpectedValueException) {
             return $this->jsonApi(
                 errors: [self::BAD_REQUEST],
-                status: 400
+                status: Response::HTTP_BAD_REQUEST
             );
         }
 
@@ -289,10 +298,10 @@ class TaskController extends BaseApiController
             groups: ['create']
         );
 
-        if (count($errors) > 0) {
+        if (\count($errors) > 0) {
             return $this->validationErrorJsonApi(
                 constraintViolationList: $errors,
-                status: 406
+                status: Response::HTTP_NOT_ACCEPTABLE
             );
         }
 
@@ -301,12 +310,12 @@ class TaskController extends BaseApiController
         } /* @noinspection PhpRedundantCatchClauseInspection */ catch (UniqueConstraintViolationException) {
             return $this->jsonApi(
                 errors: [self::DUPLICATE_TASK_NAME],
-                status: 400
+                status: Response::HTTP_BAD_REQUEST
             );
         } catch (Exception) {
             return $this->jsonApi(
                 errors: [self::CANNOT_CREATE_TASK],
-                status: 400
+                status: Response::HTTP_BAD_REQUEST
             );
         }
 
@@ -333,12 +342,12 @@ class TaskController extends BaseApiController
             content: new OA\JsonContent(ref: '#/components/schemas/TaskUpdateRequest')
         ),
         OA\Response(
-            response: 200,
+            response: Response::HTTP_OK,
             description: 'Returns task',
             content: new OA\JsonContent(ref: '#/components/schemas/TaskModel'),
         ),
         OA\Response(
-            response: 400,
+            response: Response::HTTP_BAD_REQUEST,
             description: self::BAD_REQUEST,
             content: new OA\JsonContent(
                 properties: [
@@ -354,7 +363,7 @@ class TaskController extends BaseApiController
             )
         ),
         OA\Response(
-            response: 404,
+            response: Response::HTTP_NOT_FOUND,
             description: self::TASK_NOT_FOUND,
             content: new OA\JsonContent(
                 properties: [
@@ -370,7 +379,7 @@ class TaskController extends BaseApiController
             ),
         ),
         OA\Response(
-            response: 406,
+            response: Response::HTTP_NOT_ACCEPTABLE,
             description: 'Validation failed',
             content: new OA\JsonContent(
                 properties: [
@@ -390,11 +399,11 @@ class TaskController extends BaseApiController
         ),
     ]
     final public function edit(
-        string              $id,
-        ValidatorInterface  $validator,
+        string $id,
+        ValidatorInterface $validator,
         SerializerInterface $serializer,
-        Request             $request,
-        TaskRequest         $taskRequest,
+        Request $request,
+        TaskRequest $taskRequest,
     ): JsonResponse {
         try {
             $taskRequest = $serializer->deserialize(
@@ -408,7 +417,7 @@ class TaskController extends BaseApiController
         } catch (UnexpectedValueException) {
             return $this->jsonApi(
                 errors: [self::BAD_REQUEST],
-                status: 400
+                status: Response::HTTP_BAD_REQUEST
             );
         }
 
@@ -417,10 +426,10 @@ class TaskController extends BaseApiController
             groups: ['update']
         );
 
-        if (count($errors) > 0) {
+        if (\count($errors) > 0) {
             return $this->validationErrorJsonApi(
                 constraintViolationList: $errors,
-                status: 406
+                status: Response::HTTP_NOT_ACCEPTABLE
             );
         }
 
@@ -432,14 +441,14 @@ class TaskController extends BaseApiController
         } catch (Exception) {
             return $this->jsonApi(
                 errors: [self::CANNOT_UPDATE_TASK],
-                status: 400
+                status: Response::HTTP_BAD_REQUEST
             );
         }
 
         if (!$task instanceof Task) {
             return $this->jsonApi(
                 errors: [self::TASK_NOT_FOUND],
-                status: 404
+                status: Response::HTTP_NOT_FOUND
             );
         }
 
@@ -463,11 +472,11 @@ class TaskController extends BaseApiController
             tags: ['Tasks'],
         ),
         OA\Response(
-            response: 204,
+            response: Response::HTTP_NO_CONTENT,
             description: 'Task deleted',
         ),
         OA\Response(
-            response: 400,
+            response: Response::HTTP_BAD_REQUEST,
             description: self::BAD_REQUEST,
             content: new OA\JsonContent(
                 properties: [
@@ -483,7 +492,7 @@ class TaskController extends BaseApiController
             ),
         ),
         OA\Response(
-            response: 404,
+            response: Response::HTTP_NOT_FOUND,
             description: self::TASK_NOT_FOUND,
             content: new OA\JsonContent(
                 properties: [
@@ -507,19 +516,146 @@ class TaskController extends BaseApiController
         } catch (Exception) {
             return $this->jsonApi(
                 errors: [self::CANNOT_DELETE_TASK],
-                status: 400
+                status: Response::HTTP_BAD_REQUEST
             );
         }
 
         if (!$status) {
             return $this->jsonApi(
                 errors: [self::TASK_NOT_FOUND],
-                status: 404
+                status: Response::HTTP_NOT_FOUND
             );
         }
 
         return $this->jsonApi(
-            status: 204
+            status: Response::HTTP_NO_CONTENT
+        );
+    }
+
+    /**
+     * @throws \Exception
+     */
+    #[
+        Route(
+            path: '/exist/{name}',
+            name: 'task-exist',
+            requirements: ['name' => Requirement::CATCH_ALL],
+            methods: [Request::METHOD_GET],
+            stateless: true
+        ),
+        OA\Tag(name: 'Tasks'),
+        OA\Get(
+            operationId: 'task-exist',
+            summary: 'Task exist check',
+            tags: ['Tasks'],
+        ),
+        OA\Parameter(
+            name: 'name',
+            description: 'Name to check for existence',
+            in: 'path',
+            schema: new OA\Schema(type: 'string')
+        ),
+        OA\Response(
+            response: Response::HTTP_NO_CONTENT,
+            description: 'Task does not exist!',
+        ),
+        OA\Response(
+            response: Response::HTTP_CONFLICT,
+            description: 'Task exists!',
+        ),
+    ]
+    final public function taskExists(
+        string $name,
+    ): JsonResponse {
+        $foundTask = $this->taskService->findByName($name);
+
+        return $this->jsonApi(
+            status: $foundTask ? Response::HTTP_CONFLICT : Response::HTTP_NO_CONTENT,
+        );
+    }
+
+    /**
+     * @throws \Exception
+     */
+    #[
+        Route(
+            path: '/{id}/{date}',
+            name: 'sync-task-with-jira',
+            requirements: [
+                'id' => Requirement::UUID,
+                'date' => Requirement::DATE_YMD,
+            ],
+            methods: [Request::METHOD_GET],
+            stateless: true
+        ),
+        OA\Tag(name: 'Tasks'),
+        OA\Get(
+            operationId: 'sync-task-with-jira',
+            summary: 'Sync Task with JIRA',
+            tags: ['Tasks'],
+        ),
+        OA\Parameter(
+            name: 'id',
+            description: 'Task UUID',
+            in: 'path',
+            schema: new OA\Schema(type: 'string')
+        ),
+        OA\Parameter(
+            name: 'date',
+            description: 'Sync Date',
+            in: 'path',
+            schema: new OA\Schema(type: 'string')
+        ),
+        OA\Response(
+            response: Response::HTTP_NO_CONTENT,
+            description: 'Task at specified date has been synced with JIRA successfully!',
+        ),
+        OA\Response(
+            response: Response::HTTP_CONFLICT,
+            description: 'Problems syncing with JIRA!',
+        ),
+        OA\Response(
+            response: Response::HTTP_NOT_FOUND,
+            description: self::TASK_NOT_FOUND,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(
+                        property: 'errors',
+                        type: 'array',
+                        items: new OA\Items(
+                            type: 'string',
+                            example: self::TASK_NOT_FOUND
+                        )
+                    ),
+                ]
+            ),
+        ),
+    ]
+    final public function syncWithJira(
+        string $id,
+        \DateTime $date,
+    ): JsonResponse {
+        $task = $this->taskService->show($id);
+
+        if (!$task instanceof Task) {
+            return $this->jsonApi(
+                errors: [self::TASK_NOT_FOUND],
+                status: Response::HTTP_NOT_FOUND
+            );
+        }
+
+        try {
+            $this->jiraApiService->init();
+            $synced = $this->jiraApiService->sync($task, $date);
+        } catch (JiraApiServiceException $e) {
+            return $this->jsonApi(
+                errors: ['Problems syncing with JIRA!', $e->getMessage()],
+                status: Response::HTTP_CONFLICT
+            );
+        }
+
+        return $this->jsonApi(
+            status: !$synced ? Response::HTTP_CONFLICT : Response::HTTP_NO_CONTENT,
         );
     }
 }

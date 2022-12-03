@@ -11,6 +11,10 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Annotation\Route;
 
+#[Route(
+    path: '/',
+    stateless: true
+)]
 class AngularController extends AbstractController
 {
     #[
@@ -25,7 +29,7 @@ class AngularController extends AbstractController
     final public function index(): Response
     {
         $projectDir = $this->getParameter('kernel.project_dir');
-        $file = new File($projectDir . '/public/ng/index.html');
+        $file = new File($projectDir.'/public/ng/index.html');
 
         return $this->file(
             file: $file,
