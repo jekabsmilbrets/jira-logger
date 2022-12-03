@@ -1,7 +1,14 @@
-import { Injectable }                                                            from '@angular/core';
-import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
+import { Injectable } from '@angular/core';
+import {
+  AbstractControl,
+  AsyncValidatorFn,
+  FormControl,
+  FormGroup,
+  ValidationErrors,
+  Validators,
+}                     from '@angular/forms';
 
-import { catchError, Observable, of, take } from 'rxjs';
+import { catchError, lastValueFrom, of, take } from 'rxjs';
 
 import { Tag }          from '@shared/models/tag.model';
 import { TasksService } from '@shared/services/tasks.service';
@@ -17,6 +24,18 @@ export class TaskCreateService {
   ) {
   }
 
+  private static createAsyncValidator(tasksService: TasksService): AsyncValidatorFn {
+    return (control: AbstractControl): Promise<ValidationErrors | null> => lastValueFrom(
+      tasksService
+      .taskExist(control.value)
+      .pipe(
+        take(1),
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        catchError(() => of<ValidationErrors>({'duplicate-task': true})),
+      )
+    );
+  }
+
   public createFormGroup(): FormGroup<CreateTaskFromGroupInterface> {
     return new FormGroup<CreateTaskFromGroupInterface>(
       {
@@ -24,7 +43,7 @@ export class TaskCreateService {
           null,
           [Validators.required],
           [
-            this.asyncValidator.bind(this),
+            TaskCreateService.createAsyncValidator(this.tasksService),
           ],
         ),
         description: new FormControl<string | null>(null),
@@ -32,16 +51,4 @@ export class TaskCreateService {
       },
     );
   }
-
-  private asyncValidator(
-    control: AbstractControl
-  ): Observable<ValidationErrors | null> {
-    return this.tasksService.taskExist(control.value)
-      .pipe(
-        take(1),
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        catchError(() => of<ValidationErrors>({'duplicate-task': true})),
-      );
-  }
-
 }
