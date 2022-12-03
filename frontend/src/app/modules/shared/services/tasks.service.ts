@@ -184,6 +184,27 @@ export class TasksService implements LoadableService {
       );
   }
 
+  public syncDateToJiraApi(
+    task: Task,
+    date: Date,
+  ): Observable<boolean> {
+    const formattedDate = formatDate(
+      date,
+      'yyyy-MM-dd',
+      'lv',
+    );
+    const path = `${ task.id }/${ formattedDate }`;
+
+    return this.makeRequest(
+      'get',
+      path,
+    )
+      .pipe(
+        catchError(this.processError),
+        map(() => true),
+      );
+  }
+
   private buildQueryParams(
     filter: TaskListFilter,
   ) {
