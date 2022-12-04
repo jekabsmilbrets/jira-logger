@@ -126,7 +126,7 @@ export class ReportViewComponent implements OnInit, OnDestroy {
             this.reportService.reload();
           },
           error: (error: HttpErrorResponse) => this.openSnackBar(
-            `Task "${ task.name }" failed synced! ${ error.error.join(', ') }`,
+            `Task "${ task.name }" failed synced! ${ error.error.errors.join(', ') }`,
           ),
         },
       );

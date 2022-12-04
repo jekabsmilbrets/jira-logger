@@ -200,7 +200,6 @@ export class TasksService implements LoadableService {
       path,
     )
       .pipe(
-        catchError(this.processError),
         map(() => true),
       );
   }
