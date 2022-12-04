@@ -1,4 +1,5 @@
-import { adaptTags } from '@shared/adapters/api-tag.adapter';
+import { adaptTags }         from '@shared/adapters/api-tag.adapter';
+import { adaptJiraWorkLogs } from '@shared/adapters/jira-work-log.adapter';
 
 import { adaptTimeLog, adaptTimeLogs } from '@shared/adapters/time-log.adapter';
 
@@ -12,6 +13,7 @@ export const adaptTask = (dbTask: ApiTask): Task => new Task(
     name: dbTask.name,
     lastTimeLog: dbTask.lastTimeLog && adaptTimeLog(dbTask.lastTimeLog),
     timeLogs: (dbTask.timeLogs && adaptTimeLogs(dbTask.timeLogs)) ?? [],
+    jiraWorkLogs: (dbTask.jiraWorkLogs && adaptJiraWorkLogs(dbTask.jiraWorkLogs)) ?? [],
     description: dbTask.description,
     timeLogged: dbTask.timeLogged,
     tags: (dbTask.tags && adaptTags(dbTask.tags)) ?? [],

@@ -76,7 +76,9 @@ export class ReportViewComponent implements OnInit, OnDestroy {
   }
 
   public ngOnDestroy(): void {
-    this.subscriptions.forEach((sub: Subscription) => sub.unsubscribe());
+    this.subscriptions.forEach(
+      (sub: Subscription) => sub.unsubscribe(),
+    );
   }
 
   public onCellClick([row, column]: [Searchable, Column]): void {
@@ -102,13 +104,7 @@ export class ReportViewComponent implements OnInit, OnDestroy {
     }
 
     this.clipboard.copy(outputValue);
-    this.snackBar.open(
-      message,
-      undefined,
-      {
-        duration: 5000,
-      },
-    );
+    this.openSnackBar(message);
   }
 
   public onSyncClick(row: Searchable): void {
@@ -126,23 +122,12 @@ export class ReportViewComponent implements OnInit, OnDestroy {
       .subscribe(
         {
           next: () => {
-            this.snackBar.open(
-              `Task "${ task.name }" synced successfully!`,
-              undefined,
-              {
-                duration: 5000,
-              },
-            );
+            this.openSnackBar(`Task "${ task.name }" synced successfully!`);
+            this.reportService.reload();
           },
-          error: (error: HttpErrorResponse) => {
-            this.snackBar.open(
-              `Task "${ task.name }" failed synced! ${error.error.join(', ')}`,
-              undefined,
-              {
-                duration: 5000,
-              },
-            );
-          },
+          error: (error: HttpErrorResponse) => this.openSnackBar(
+            `Task "${ task.name }" failed synced! ${ error.error.join(', ') }`,
+          ),
         },
       );
   }
@@ -170,6 +155,13 @@ export class ReportViewComponent implements OnInit, OnDestroy {
     }
 
     this.clipboard.copy(outputValue);
+    this.openSnackBar(message);
+  }
+
+  private openSnackBar(
+    message: string,
+    duration: number = 5000,
+  ): void {
     this.snackBar.open(
       message,
       undefined,
