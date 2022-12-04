@@ -1,8 +1,9 @@
 import { Base }         from '@core/models/base.model';
 import { getDateParts } from '@core/utils/get-date-parts.utility';
 
-import { Searchable } from '@shared/interfaces/searchable.interface';
-import { Tag }        from '@shared/models/tag.model';
+import { Searchable }  from '@shared/interfaces/searchable.interface';
+import { JiraWorkLog } from '@shared/models/jira-work-log.model';
+import { Tag }         from '@shared/models/tag.model';
 
 import { TimeLog } from '@shared/models/time-log.model';
 
@@ -13,6 +14,7 @@ export class Task extends Base implements Searchable {
 
   private _lastTimeLog?: TimeLog;
   private _timeLogs: TimeLog[] = [];
+  private _jiraWorkLogs: JiraWorkLog[] = [];
 
   private _timeLogged = 0;
 
@@ -23,6 +25,14 @@ export class Task extends Base implements Searchable {
     Object.assign(this, data);
 
     this.updateTimeLogged();
+  }
+
+  public get jiraWorkLogs(): JiraWorkLog[] {
+    return this._jiraWorkLogs;
+  }
+
+  public set jiraWorkLogs(value: JiraWorkLog[]) {
+    this._jiraWorkLogs = value;
   }
 
   public get name(): string {
@@ -143,5 +153,20 @@ export class Task extends Base implements Searchable {
         .map(mapFn)
         .reduce(reduceFn, 0)
     ) ?? 0;
+  }
+
+  public calcTimeSynced(startDate: Date): number {
+    const date = new Date(startDate.getTime());
+    date.setHours(0, 0, 0, 0);
+
+    const jiraWorkLog: JiraWorkLog | undefined = this._jiraWorkLogs.find(
+      (_jiraWorkLog: JiraWorkLog) => _jiraWorkLog.startTime.getTime() === date.getTime(),
+    );
+
+    if (!jiraWorkLog) {
+      return 0;
+    }
+
+    return jiraWorkLog.timeSpentSeconds;
   }
 }
