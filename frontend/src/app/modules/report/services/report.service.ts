@@ -44,6 +44,7 @@ export class ReportService {
   public endDate$: Observable<Date | null>;
   public showWeekends$: Observable<boolean>;
   public hideUnreportedTasks$: Observable<boolean>;
+  public reload$: Observable<void>;
 
   public columns: Column[] = [];
 
@@ -54,6 +55,7 @@ export class ReportService {
   private endDateSubject: BehaviorSubject<Date | null> = new BehaviorSubject<Date | null>(null);
   private showWeekendsSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   private hideUnreportedTasksSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  private reloadSubject: BehaviorSubject<void> = new BehaviorSubject<void>(undefined);
 
   private settingsKey: IDBValidKey = 'report';
   private customStoreName = 'settings';
@@ -70,6 +72,7 @@ export class ReportService {
     this.endDate$ = this.endDateSubject.asObservable();
     this.showWeekends$ = this.showWeekendsSubject.asObservable();
     this.hideUnreportedTasks$ = this.hideUnreportedTasksSubject.asObservable();
+    this.reload$ = this.reloadSubject.asObservable();
 
     this.initSettings();
 
@@ -106,7 +109,11 @@ export class ReportService {
     this.hideUnreportedTasksSubject.next(hideUnreportedTasks);
   }
 
-  private getAllChanges(): Observable<[Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean]> {
+  public reload(): void {
+    this.reloadSubject.next();
+  }
+
+  private getAllChanges(): Observable<[Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean, void]> {
     return combineLatest(
       [
         this.tags$,
@@ -116,6 +123,7 @@ export class ReportService {
         this.reportMode$,
         this.showWeekends$,
         this.hideUnreportedTasks$,
+        this.reload$,
       ],
     )
       .pipe(
@@ -136,7 +144,8 @@ export class ReportService {
              reportMode,
              showWeekends,
              hideUnreportedTasks,
-           ]: [Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean]) => this.filterTasks(
+             reload,
+           ]: [Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean, void]) => this.filterTasks(
             reportMode, tags, date, startDate, endDate, showWeekends, hideUnreportedTasks,
           ),
         ),
@@ -198,6 +207,7 @@ export class ReportService {
           date as Date,
           date as Date,
           showWeekends,
+          reportMode,
         );
         break;
 
@@ -208,6 +218,7 @@ export class ReportService {
           startDate as Date,
           endDate as Date,
           showWeekends,
+          reportMode,
         );
         break;
     }
@@ -261,7 +272,8 @@ export class ReportService {
              reportMode,
              showWeekends,
              hideUnreportedTasks,
-           ]: [Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean]) =>
+             reload,
+           ]: [Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean, void]) =>
             this.storageService.create(
               this.settingsKey,
               {
@@ -292,6 +304,7 @@ export class ReportService {
     startDate: Date,
     endDate: Date,
     showWeekends: boolean,
+    reportMode: ReportModeEnum,
   ): Column[] {
     const modifiedMonthModelColumns = [...monthModelColumns];
     const currentDate = new Date(startDate);
@@ -346,6 +359,26 @@ export class ReportService {
 
       },
     );
+
+    if (reportMode === ReportModeEnum.date) {
+      modifiedMonthModelColumns.push(
+        {
+          columnDef: 'synced',
+          header: 'Synced',
+          sortable: false,
+          stickyEnd: true,
+          visible: true,
+          pipe: 'readableTime',
+          footerCellClickType: 'readableTime',
+          cell: (task: Task) => task.calcTimeSynced(startDate),
+          hasFooter: true,
+          footerCell: (tasks: Task[]) => tasks.map(
+            (task: Task) => task.calcTimeSynced(startDate),
+          )
+            .reduce((acc, value) => acc + value, 0),
+        },
+      );
+    }
 
     return modifiedMonthModelColumns;
   }
