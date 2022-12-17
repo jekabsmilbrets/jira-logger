@@ -123,7 +123,6 @@ export class TasksViewComponent implements OnInit {
 
   public ngOnInit(): void {
     this.createDynamicMenu();
-    this.reloadData();
   }
 
   public onAction([task, action]: [Task, TaskUpdateActionEnum]): void {
@@ -238,14 +237,6 @@ export class TasksViewComponent implements OnInit {
       .pipe(
         map(() => true),
       );
-  }
-
-  private reloadData(): void {
-    this.tasksService.list()
-      .pipe(
-        take(1),
-      )
-      .subscribe();
   }
 
   private createDynamicMenu(): void {
