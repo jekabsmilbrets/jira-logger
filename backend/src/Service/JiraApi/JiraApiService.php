@@ -233,11 +233,10 @@ class JiraApiService
         $timeLogs = $task->getTimeLogs();
 
         [$timeSpentSeconds, $descriptions] = $this->calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection(
-            collection: $timeLogs,
+            timeLogs: $timeLogs,
             startDate: $startDate,
             endDate: $endDate
         );
-        $currentDate = new \DateTime('now');
         $startDate->setTime(
             hour: 17,
             minute: 0,
@@ -445,22 +444,48 @@ class JiraApiService
     }
 
     private function calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection(
-        Collection $collection,
+        Collection $timeLogs,
         \DateTime $startDate,
         \DateTime $endDate,
     ): array {
-        $timeLogs = $collection->filter(
+        return $this->collectTimeSpentSecondsNDescriptions(
+            $this->adjustTimeLogsInDateRange(
+                $this->filterTimeLogsInDateRange(
+                    $timeLogs,
+                    $startDate,
+                    $endDate
+                ),
+                $startDate,
+                $endDate
+            )
+        );
+    }
+
+    private function filterTimeLogsInDateRange(
+        Collection $timeLogs,
+        \DateTime $startDate,
+        \DateTime $endDate,
+    ): Collection {
+        return $timeLogs->filter(
             function (TimeLog $timeLog) use ($startDate, $endDate) {
                 $startTime = $timeLog->getStartTime();
                 $endTime = $timeLog->getEndTime();
 
-                return ($startDate <= $startTime && $startTime <= $endDate) ||
+                return ($startTime && $endTime) && (
+                    ($startDate <= $startTime && $startTime <= $endDate) ||
                     ($startTime <= $startDate && $startTime >= $endDate) ||
-                    ($endTime >= $startDate && $endTime <= $endDate);
+                    ($endTime >= $startDate && $endTime <= $endDate)
+                );
             }
         );
+    }
 
-        $timeLogs = $timeLogs->map(
+    private function adjustTimeLogsInDateRange(
+        Collection $timeLogs,
+        \DateTime $startDate,
+        \DateTime $endDate,
+    ): Collection {
+        return $timeLogs->map(
             function (TimeLog $timeLog) use ($startDate, $endDate) {
                 $startTime = $timeLog->getStartTime();
                 $endTime = $timeLog->getEndTime();
@@ -480,10 +505,15 @@ class JiraApiService
                 return $timeLog;
             }
         );
+    }
 
+    private function collectTimeSpentSecondsNDescriptions(
+        Collection $timeLogs,
+    ): array {
         $timeSpentSeconds = 0;
         $descriptions = [];
 
+        /** @var TimeLog $timeLog */
         foreach ($timeLogs->toArray() as $timeLog) {
             $startTime = $timeLog->getStartTime();
             $endTime = $timeLog->getEndTime();
