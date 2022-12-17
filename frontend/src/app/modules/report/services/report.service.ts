@@ -8,10 +8,10 @@ import {
   debounceTime,
   distinctUntilChanged,
   Observable,
+  of,
   switchMap,
   take,
   tap,
-  throwError,
   withLatestFrom,
 } from 'rxjs';
 
@@ -82,14 +82,17 @@ export class ReportService {
   }
 
   public set date(date: Date | null) {
+    date?.setHours(0,0,0,0);
     this.dateSubject.next(date);
   }
 
   public set startDate(startDate: Date | null) {
+    startDate?.setHours(0,0,0,0);
     this.startDateSubject.next(startDate);
   }
 
   public set endDate(endDate: Date | null) {
+    endDate?.setHours(23,59,59);
     this.endDateSubject.next(endDate);
   }
 
@@ -273,8 +276,7 @@ export class ReportService {
              showWeekends,
              hideUnreportedTasks,
              reload,
-           ]: [Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean, void]) =>
-            this.storageService.create(
+           ]: [Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean, void]) => this.storageService.create(
               this.settingsKey,
               {
                 reportMode,
@@ -292,7 +294,16 @@ export class ReportService {
                 catchError(
                   (error) => {
                     console.error(error);
-                    return throwError(() => new Error(error));
+                    return of([
+                      tags,
+                      date,
+                      startDate,
+                      endDate,
+                      reportMode,
+                      showWeekends,
+                      hideUnreportedTasks,
+                      reload,
+                    ]);
                   },
                 ),
               ),
@@ -308,20 +319,23 @@ export class ReportService {
   ): Column[] {
     const modifiedMonthModelColumns = [...monthModelColumns];
     const currentDate = new Date(startDate);
+    const weekendIndexes = [0, 6];
+    const reduceFn = (acc: number, value: number) => acc + value;
 
     while (currentDate <= endDate) {
       const curDate = currentDate.getDate();
       const currentDate2 = new Date(currentDate.getTime());
+      const shouldShowWeekends = showWeekends ?
+        false :
+        weekendIndexes.includes(
+          currentDate2.getDay(),
+        );
       modifiedMonthModelColumns.push(
         {
           columnDef: 'date-' + currentDate.getTime(),
           header: formatDate(currentDate2, 'd. MMM', appLocale, appTimeZone),
           sortable: false,
-          visible: showWeekends ? true :
-            !([
-              0,
-              6,
-            ].includes(currentDate2.getDay())),
+          hidden: reportMode !== ReportModeEnum.date ? shouldShowWeekends : false,
           pipe: 'readableTime',
           isClickable: true,
           cellClickType: 'readableTime',
@@ -331,43 +345,51 @@ export class ReportService {
           footerCell: (tasks: Task[]) => tasks.map(
             (task: Task) => task.calcTimeLoggedForDate(currentDate2),
           )
-            .reduce((acc, value) => acc + value, 0),
+            .reduce(reduceFn, 0),
         },
       );
 
       currentDate.setDate(curDate + 1);
     }
 
-    modifiedMonthModelColumns.push(
-      {
-        columnDef: 'timeLogged',
-        header: 'Total Time Logged',
-        sortable: false,
-        stickyEnd: true,
-        visible: true,
-        isClickable: true,
-        cellClickType: 'readableTime',
-        footerCellClickType: 'readableTime',
-        pipe: 'readableTime',
-        cell: (task: Task) => task.calcTimeLogged(),
-        hasFooter: true,
-        footerCell: (tasks: Task[]) => tasks.map(
-          (task: Task) => task.timeLogs.map(t => t.timeLogged())
-            .reduce((acc, value) => acc + value, 0),
-        )
-          .reduce((acc, value) => acc + value, 0),
+    if (reportMode !== ReportModeEnum.date) {
+      modifiedMonthModelColumns.push(
+        {
+          columnDef: 'timeLogged',
+          header: 'Total Time Logged',
+          sortable: false,
+          stickyEnd: true,
+          hidden: false,
+          isClickable: true,
+          cellClickType: 'readableTime',
+          footerCellClickType: 'readableTime',
+          pipe: 'readableTime',
+          cell: (task: Task) => task.calcTimeLogged(),
+          hasFooter: true,
+          footerCell: (tasks: Task[]) => tasks.map(
+            (task: Task) => task.calcTimeLogged(),
+          )
+            .reduce(reduceFn, 0),
 
-      },
-    );
+        },
+      );
+    }
 
     if (reportMode === ReportModeEnum.date) {
+      const taskSynced = (task: Task) => (
+        task.calcTimeLogged() > 0 &&
+        task.calcTimeLogged() === task.calcTimeSynced(startDate)
+      );
+
       modifiedMonthModelColumns.push(
         {
           columnDef: 'synced',
           header: 'Synced',
           sortable: false,
           stickyEnd: true,
-          visible: true,
+          excludeFromLoop: false,
+          hidden: false,
+          taskSynced,
           pipe: 'readableTime',
           footerCellClickType: 'readableTime',
           cell: (task: Task) => task.calcTimeSynced(startDate),
@@ -375,7 +397,18 @@ export class ReportService {
           footerCell: (tasks: Task[]) => tasks.map(
             (task: Task) => task.calcTimeSynced(startDate),
           )
-            .reduce((acc, value) => acc + value, 0),
+            .reduce(reduceFn, 0),
+        },
+      );
+
+      modifiedMonthModelColumns.push(
+        {
+          columnDef: 'sync',
+          header: 'Sync',
+          excludeFromLoop: false,
+          hidden: false,
+          taskSynced,
+          cell: (task: Task) => undefined,
         },
       );
     }
