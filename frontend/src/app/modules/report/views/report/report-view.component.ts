@@ -97,6 +97,7 @@ export class ReportViewComponent implements OnInit {
                 .pipe(
                   catchError(() => of(null)),
                   switchMap(() => syncDateToJiraApi$),
+                  switchMap(() => this.timeLogsService.start(task)),
                 );
             }
 
@@ -112,7 +113,7 @@ export class ReportViewComponent implements OnInit {
             this.reportService.reload();
           },
           error: (error: HttpErrorResponse) => this.openSnackBar(
-            `Task "${ task.name }" failed synced! ${ error.error.errors.join(', ') }`,
+            `Task "${ task.name }" failed synced! ${ error?.error?.errors?.join(', ') }`,
           ),
         },
       );
