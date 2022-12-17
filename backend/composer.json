@@ -17,6 +17,7 @@
     "doctrine/doctrine-bundle": "^2.7",
     "doctrine/doctrine-migrations-bundle": "^3.2",
     "doctrine/orm": "^2.12",
+    "evotodi/seed-bundle": "^6.0",
     "lesstif/php-jira-rest-client": "^5.1",
     "nelmio/api-doc-bundle": "^4.9",
     "phpdocumentor/reflection-docblock": "^5.3",
@@ -112,8 +113,7 @@
         "CURRENT_DIRECTORY=`pwd`",
         "cd ./backend",
         "composer php-cs-fixer",
-        "cd $CURRENT_DIRECTORY",
-        "git add ./backend/src"
+        "cd $CURRENT_DIRECTORY"
       ]
     }
   }
