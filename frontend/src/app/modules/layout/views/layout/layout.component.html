@@ -1,6 +1,7 @@
 <div class="base-container mat-typography">
-    <app-header [isLoading]="isLoading$ | async"
-                [sidenav]="sidenav">
+    <app-header [isLoading]="(isLoading$ | async) || false"
+                [sidenav]="sidenav"
+                [timeLoggedToday]="(timeLoggedToday$ | async) || 0">
     </app-header>
 
     <mat-sidenav-container [style.marginTop.px]="0"
