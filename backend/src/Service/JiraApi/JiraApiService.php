@@ -96,7 +96,7 @@ class JiraApiService
         string $description = null,
     ): Worklog {
         try {
-            $issueKey = $task->getName();
+            $issueKey = $this->getIssueNameFromTask($task);
 
             $description = $description ?? $task->getDescription();
 
@@ -175,7 +175,7 @@ class JiraApiService
         string $description = null,
     ): Worklog {
         try {
-            $issueKey = $task->getName();
+            $issueKey = $this->getIssueNameFromTask($task);
 
             $description = $description ?? $task->getDescription();
 
@@ -242,6 +242,11 @@ class JiraApiService
             minute: 0,
         );
         $workLogId = $jiraWorkLog->getWorkLogId();
+
+        if (str_contains($taskName = $task->getName(), '-#-')) {
+            $descriptions = [trim(explode('-#-', $taskName)[1])];
+        }
+
         $jiraApiWorkLog = $this->createUpdateRecreateWorkLogWithTimeSpent(
             jiraWorkLog: $jiraWorkLog,
             task: $task,
@@ -300,6 +305,8 @@ class JiraApiService
         int $timeSpentSeconds,
         array $descriptions,
     ): Worklog {
+        $descriptionsConcatenated = implode(', ', $descriptions);
+
         if (!empty($workLogId = $jiraWorkLog->getWorkLogId())) {
             try {
                 $workLog = $this->updateWorkLogWithTimeSpent(
@@ -307,14 +314,14 @@ class JiraApiService
                     workLogId: (int) ($workLogId ?? 0),
                     startTime: $startDate,
                     timeSpentSeconds: $timeSpentSeconds,
-                    description: implode(', ', $descriptions),
+                    description: $descriptionsConcatenated,
                 );
             } catch (JiraApiServiceException $e) {
                 $workLog = $this->createWorkLogWithTimeSpent(
                     task: $task,
                     startTime: $startDate,
                     timeSpentSeconds: $timeSpentSeconds,
-                    description: implode(', ', $descriptions),
+                    description: $descriptionsConcatenated,
                 );
 
                 $jiraWorkLog->setWorkLogId((string) $workLog->id);
@@ -324,7 +331,7 @@ class JiraApiService
                 task: $task,
                 startTime: $startDate,
                 timeSpentSeconds: $timeSpentSeconds,
-                description: implode(', ', $descriptions),
+                description: $descriptionsConcatenated,
             );
         }
 
@@ -367,60 +374,6 @@ class JiraApiService
             ->setTimeSpentSeconds($timeSpentSeconds);
 
         return $workLog;
-    }
-
-    /**
-     * @throws JiraApiServiceException
-     */
-    private function initClient(): IssueService
-    {
-        try {
-            $jiraSyncEnabled = filter_var(
-                value: $this->settingService->findByName(
-                    self::JIRA_ENABLED_KEY
-                )?->getValue(),
-                filter: \FILTER_VALIDATE_BOOLEAN
-            );
-
-            if (!$jiraSyncEnabled) {
-                throw new JiraApiServiceException(self::JIRA_DISABLED_MSG);
-            }
-
-            $jiraHost = $this->settingService->findByName(
-                self::JIRA_HOST_SETTING_KEY
-            )?->getValue();
-            $personalAccessToken = $this->settingService->findByName(
-                self::JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY
-            )?->getValue();
-
-            if (
-                !$jiraHost ||
-                !$personalAccessToken
-            ) {
-                throw new JiraApiServiceException(self::MISSING_HOST_TOKEN_ERROR_MSG);
-            }
-
-            return new IssueService(
-                configuration: new ArrayConfiguration(
-                    [
-                        'jiraHost' => $jiraHost,
-
-                        'useTokenBasedAuth' => true,
-                        'personalAccessToken' => $personalAccessToken,
-                    ],
-                ),
-                logger: $this->logger,
-            );
-        } catch (JiraException|JiraApiServiceException $e) {
-            $this->logger->error(
-                message: sprintf(
-                    self::INIT_ERROR_MSG,
-                    $e->getMessage(),
-                )
-            );
-
-            throw new JiraApiServiceException(message: $e->getMessage(), code: $e->getCode(), previous: $e);
-        }
     }
 
     /**
@@ -531,5 +484,64 @@ class JiraApiService
             $timeSpentSeconds,
             $descriptions,
         ];
+    }
+
+    /**
+     * @throws JiraApiServiceException
+     */
+    private function initClient(): IssueService
+    {
+        try {
+            $jiraSyncEnabled = filter_var(
+                value: $this->settingService->findByName(
+                    self::JIRA_ENABLED_KEY
+                )?->getValue(),
+                filter: \FILTER_VALIDATE_BOOLEAN
+            );
+
+            if (!$jiraSyncEnabled) {
+                throw new JiraApiServiceException(self::JIRA_DISABLED_MSG);
+            }
+
+            $jiraHost = $this->settingService->findByName(
+                self::JIRA_HOST_SETTING_KEY
+            )?->getValue();
+            $personalAccessToken = $this->settingService->findByName(
+                self::JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY
+            )?->getValue();
+
+            if (
+                !$jiraHost ||
+                !$personalAccessToken
+            ) {
+                throw new JiraApiServiceException(self::MISSING_HOST_TOKEN_ERROR_MSG);
+            }
+
+            return new IssueService(
+                configuration: new ArrayConfiguration(
+                    [
+                        'jiraHost' => $jiraHost,
+
+                        'useTokenBasedAuth' => true,
+                        'personalAccessToken' => $personalAccessToken,
+                    ],
+                ),
+                logger: $this->logger,
+            );
+        } catch (JiraException|JiraApiServiceException $e) {
+            $this->logger->error(
+                message: sprintf(
+                    self::INIT_ERROR_MSG,
+                    $e->getMessage(),
+                )
+            );
+
+            throw new JiraApiServiceException(message: $e->getMessage(), code: $e->getCode(), previous: $e);
+        }
+    }
+
+    private function getIssueNameFromTask(Task $task): string
+    {
+        return trim(explode('-#-', $task->getName())[0]);
     }
 }
