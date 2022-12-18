@@ -100,6 +100,10 @@ class TaskRequest
 
     final public function setTags(array $tagIds): self
     {
+        if (empty($tagIds)) {
+            return $this;
+        }
+
         $tags = new ArrayCollection([]);
 
         foreach ($this->tagService->list() as $tag) {
