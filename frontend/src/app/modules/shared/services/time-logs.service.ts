@@ -4,7 +4,7 @@ import { Injectable }                    from '@angular/core';
 
 import { environment } from 'environments/environment';
 
-import { BehaviorSubject, catchError, map, Observable, switchMap, tap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, map, Observable, Subject, switchMap, tap, throwError } from 'rxjs';
 
 import { appLocale, appTimeLogDateTimeFormat, appTimeZone } from '@core/constants/date-time.constant';
 
@@ -26,17 +26,23 @@ import { TimeLog } from '@shared/models/time-log.model';
 })
 export class TimeLogsService implements LoadableService, MakeRequestService {
   public isLoading$: Observable<boolean>;
+  public taskStarted$: Observable<Task>;
+  public taskFinished$: Observable<Task>;
 
   private basePath = 'task';
   private baseTimeLogPath = 'time-log';
 
   private isLoadingSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  private taskStartedSubject: Subject<Task> = new Subject<Task>();
+  private taskFinishedSubject: Subject<Task> = new Subject<Task>();
 
   constructor(
     public readonly loaderStateService: LoaderStateService,
     private http: HttpClient,
   ) {
     this.isLoading$ = this.isLoadingSubject.asObservable();
+    this.taskStarted$ = this.taskStartedSubject.asObservable();
+    this.taskFinished$ = this.taskFinishedSubject.asObservable();
   }
 
   public init(): void {
@@ -113,7 +119,7 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
   ): Observable<void> {
     const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }` +
       `/${ task.id }/${ this.baseTimeLogPath }/${ timeLog.id }`;
-    return this.makeRequest(
+    return this.makeRequest<void>(
       url,
       'delete',
     );
@@ -124,10 +130,13 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
   ): Observable<void> {
     const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }` +
       `/${ task.id }/${ this.baseTimeLogPath }/start`;
-    return this.makeRequest(
+    return this.makeRequest<void>(
       url,
       'get',
-    );
+    )
+      .pipe(
+        tap(() => this.taskStartedSubject.next(task)),
+      );
   }
 
   public stop(
@@ -135,10 +144,13 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
   ): Observable<void> {
     const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }` +
       `/${ task.id }/${ this.baseTimeLogPath }/stop`;
-    return this.makeRequest(
+    return this.makeRequest<void>(
       url,
       'get',
-    );
+    )
+      .pipe(
+        tap(() => this.taskFinishedSubject.next(task)),
+      );
   }
 
   public makeRequest<T>(
