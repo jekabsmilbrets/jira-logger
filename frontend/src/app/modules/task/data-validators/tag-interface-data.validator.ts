@@ -8,7 +8,11 @@ export const validateTagInterfaceData = (tagInterfaceData: any, tags: Tag[]): Ap
   if (typeof tagInterfaceData === 'string') {
     existingTag = tags.find(t => t.name.toLowerCase() === tagInterfaceData.toLowerCase());
   } else {
-    existingTag = tags.find(t => t.id === tagInterfaceData?.id || t.id === tagInterfaceData?._id);
+    existingTag = tags.find(t => (
+      t.id === tagInterfaceData?.id ||
+      t.id === tagInterfaceData?._id ||
+      t.name === (tagInterfaceData?._name ?? tagInterfaceData?.name)
+    ));
   }
 
   if (existingTag) {

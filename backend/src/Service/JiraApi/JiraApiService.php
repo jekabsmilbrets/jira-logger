@@ -96,7 +96,7 @@ class JiraApiService
         string $description = null,
     ): Worklog {
         try {
-            $issueKey = $task->getName();
+            $issueKey = $this->getIssueNameFromTask($task);
 
             $description = $description ?? $task->getDescription();
 
@@ -175,7 +175,7 @@ class JiraApiService
         string $description = null,
     ): Worklog {
         try {
-            $issueKey = $task->getName();
+            $issueKey = $this->getIssueNameFromTask($task);
 
             $description = $description ?? $task->getDescription();
 
@@ -233,16 +233,20 @@ class JiraApiService
         $timeLogs = $task->getTimeLogs();
 
         [$timeSpentSeconds, $descriptions] = $this->calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection(
-            collection: $timeLogs,
+            timeLogs: $timeLogs,
             startDate: $startDate,
             endDate: $endDate
         );
-        $currentDate = new \DateTime('now');
         $startDate->setTime(
             hour: 17,
             minute: 0,
         );
         $workLogId = $jiraWorkLog->getWorkLogId();
+
+        if (str_contains($taskName = $task->getName(), '-#-')) {
+            $descriptions = [trim(explode('-#-', $taskName)[1])];
+        }
+
         $jiraApiWorkLog = $this->createUpdateRecreateWorkLogWithTimeSpent(
             jiraWorkLog: $jiraWorkLog,
             task: $task,
@@ -301,6 +305,8 @@ class JiraApiService
         int $timeSpentSeconds,
         array $descriptions,
     ): Worklog {
+        $descriptionsConcatenated = implode(', ', $descriptions);
+
         if (!empty($workLogId = $jiraWorkLog->getWorkLogId())) {
             try {
                 $workLog = $this->updateWorkLogWithTimeSpent(
@@ -308,14 +314,14 @@ class JiraApiService
                     workLogId: (int) ($workLogId ?? 0),
                     startTime: $startDate,
                     timeSpentSeconds: $timeSpentSeconds,
-                    description: implode(', ', $descriptions),
+                    description: $descriptionsConcatenated,
                 );
             } catch (JiraApiServiceException $e) {
                 $workLog = $this->createWorkLogWithTimeSpent(
                     task: $task,
                     startTime: $startDate,
                     timeSpentSeconds: $timeSpentSeconds,
-                    description: implode(', ', $descriptions),
+                    description: $descriptionsConcatenated,
                 );
 
                 $jiraWorkLog->setWorkLogId((string) $workLog->id);
@@ -325,7 +331,7 @@ class JiraApiService
                 task: $task,
                 startTime: $startDate,
                 timeSpentSeconds: $timeSpentSeconds,
-                description: implode(', ', $descriptions),
+                description: $descriptionsConcatenated,
             );
         }
 
@@ -368,6 +374,116 @@ class JiraApiService
             ->setTimeSpentSeconds($timeSpentSeconds);
 
         return $workLog;
+    }
+
+    /**
+     * @throws JiraApiServiceException
+     */
+    private function calculateTimeSpentInSecondsSingleTimeLog(
+        TimeLog $timeLog,
+    ): int {
+        $startTime = $timeLog->getStartTime();
+        $endTime = $timeLog->getEndTime();
+
+        $timeSpentSeconds = ($endTime && $startTime) ? (
+            $endTime->getTimestamp() - $startTime->getTimestamp()
+        ) : 0;
+
+        if ($timeSpentSeconds < self::MIN_REPORT_SECONDS) {
+            throw new JiraApiServiceException(message: sprintf(self::MIN_SECOND_REPORT_ERROR_MSG, self::MIN_REPORT_SECONDS));
+        }
+
+        return $timeSpentSeconds;
+    }
+
+    private function calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection(
+        Collection $timeLogs,
+        \DateTime $startDate,
+        \DateTime $endDate,
+    ): array {
+        return $this->collectTimeSpentSecondsNDescriptions(
+            $this->adjustTimeLogsInDateRange(
+                $this->filterTimeLogsInDateRange(
+                    $timeLogs,
+                    $startDate,
+                    $endDate
+                ),
+                $startDate,
+                $endDate
+            )
+        );
+    }
+
+    private function filterTimeLogsInDateRange(
+        Collection $timeLogs,
+        \DateTime $startDate,
+        \DateTime $endDate,
+    ): Collection {
+        return $timeLogs->filter(
+            function (TimeLog $timeLog) use ($startDate, $endDate) {
+                $startTime = $timeLog->getStartTime();
+                $endTime = $timeLog->getEndTime();
+
+                return ($startTime && $endTime) && (
+                    ($startDate <= $startTime && $startTime <= $endDate) ||
+                    ($startTime <= $startDate && $startTime >= $endDate) ||
+                    ($endTime >= $startDate && $endTime <= $endDate)
+                );
+            }
+        );
+    }
+
+    private function adjustTimeLogsInDateRange(
+        Collection $timeLogs,
+        \DateTime $startDate,
+        \DateTime $endDate,
+    ): Collection {
+        return $timeLogs->map(
+            function (TimeLog $timeLog) use ($startDate, $endDate) {
+                $startTime = $timeLog->getStartTime();
+                $endTime = $timeLog->getEndTime();
+
+                if ($startTime < $startDate) {
+                    $timeLog->setOriginalStartTime($startTime);
+                    $timeLog->setStartTime($startDate);
+                    $timeLog->setManuallyModified(true);
+                }
+
+                if ($endTime > $endDate) {
+                    $timeLog->setOriginalEndTime($endTime);
+                    $timeLog->setEndTime($endDate);
+                    $timeLog->setManuallyModified(true);
+                }
+
+                return $timeLog;
+            }
+        );
+    }
+
+    private function collectTimeSpentSecondsNDescriptions(
+        Collection $timeLogs,
+    ): array {
+        $timeSpentSeconds = 0;
+        $descriptions = [];
+
+        /** @var TimeLog $timeLog */
+        foreach ($timeLogs->toArray() as $timeLog) {
+            $startTime = $timeLog->getStartTime();
+            $endTime = $timeLog->getEndTime();
+
+            if ($startTime && $endTime) {
+                $timeSpentSeconds += $endTime->getTimestamp() - $startTime->getTimestamp();
+
+                if (!empty($description = $timeLog->getDescription())) {
+                    $descriptions[] = $description;
+                }
+            }
+        }
+
+        return [
+            $timeSpentSeconds,
+            $descriptions,
+        ];
     }
 
     /**
@@ -424,82 +540,8 @@ class JiraApiService
         }
     }
 
-    /**
-     * @throws JiraApiServiceException
-     */
-    private function calculateTimeSpentInSecondsSingleTimeLog(
-        TimeLog $timeLog,
-    ): int {
-        $startTime = $timeLog->getStartTime();
-        $endTime = $timeLog->getEndTime();
-
-        $timeSpentSeconds = ($endTime && $startTime) ? (
-            $endTime->getTimestamp() - $startTime->getTimestamp()
-        ) : 0;
-
-        if ($timeSpentSeconds < self::MIN_REPORT_SECONDS) {
-            throw new JiraApiServiceException(message: sprintf(self::MIN_SECOND_REPORT_ERROR_MSG, self::MIN_REPORT_SECONDS));
-        }
-
-        return $timeSpentSeconds;
-    }
-
-    private function calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection(
-        Collection $collection,
-        \DateTime $startDate,
-        \DateTime $endDate,
-    ): array {
-        $timeLogs = $collection->filter(
-            function (TimeLog $timeLog) use ($startDate, $endDate) {
-                $startTime = $timeLog->getStartTime();
-                $endTime = $timeLog->getEndTime();
-
-                return ($startDate <= $startTime && $startTime <= $endDate) ||
-                    ($startTime <= $startDate && $startTime >= $endDate) ||
-                    ($endTime >= $startDate && $endTime <= $endDate);
-            }
-        );
-
-        $timeLogs = $timeLogs->map(
-            function (TimeLog $timeLog) use ($startDate, $endDate) {
-                $startTime = $timeLog->getStartTime();
-                $endTime = $timeLog->getEndTime();
-
-                if ($startTime < $startDate) {
-                    $timeLog->setOriginalStartTime($startTime);
-                    $timeLog->setStartTime($startDate);
-                    $timeLog->setManuallyModified(true);
-                }
-
-                if ($endTime > $endDate) {
-                    $timeLog->setOriginalEndTime($endTime);
-                    $timeLog->setEndTime($endDate);
-                    $timeLog->setManuallyModified(true);
-                }
-
-                return $timeLog;
-            }
-        );
-
-        $timeSpentSeconds = 0;
-        $descriptions = [];
-
-        foreach ($timeLogs->toArray() as $timeLog) {
-            $startTime = $timeLog->getStartTime();
-            $endTime = $timeLog->getEndTime();
-
-            if ($startTime && $endTime) {
-                $timeSpentSeconds += $endTime->getTimestamp() - $startTime->getTimestamp();
-
-                if (!empty($description = $timeLog->getDescription())) {
-                    $descriptions[] = $description;
-                }
-            }
-        }
-
-        return [
-            $timeSpentSeconds,
-            $descriptions,
-        ];
+    private function getIssueNameFromTask(Task $task): string
+    {
+        return trim(explode('-#-', $task->getName())[0]);
     }
 }

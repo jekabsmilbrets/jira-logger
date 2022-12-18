@@ -10,6 +10,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
     volumes:
       - dbData:/var/lib/postgresql/data
+      - ./postgresql/postgresql.conf:/etc/postgresql/postgresql.conf
     ports:
       - "15432:5432"
     labels:

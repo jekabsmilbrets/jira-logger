@@ -23,7 +23,10 @@ export class HeaderComponent implements OnDestroy {
   public sidenav!: MatSidenav;
 
   @Input()
-  public isLoading!: boolean | null;
+  public isLoading = false;
+
+  @Input()
+  public timeLoggedToday = 0;
 
   @ViewChild(DynamicMenuDirective, {static: true})
   private dynamicMenu!: DynamicMenuDirective;
@@ -50,6 +53,13 @@ export class HeaderComponent implements OnDestroy {
 
   public ngOnDestroy(): void {
     this.routerEventsSubscription.unsubscribe();
+  }
+
+  public reportDateLink() {
+    const date = new Date();
+    const pad = (numberToPad: number) => numberToPad.toString().padStart(2, '0');
+    const currentDate = `${ date.getFullYear() }-${ pad(date.getMonth() + 1) }-${ pad(date.getDate()) }`;
+    return `/report/date/${ currentDate }`;
   }
 
   private loadDynamicMenu(navigationEndEvent: NavigationEnd): Observable<DynamicMenu[]> {

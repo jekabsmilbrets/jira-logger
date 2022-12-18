@@ -1,9 +1,20 @@
-<mat-toolbar class="app-toolbar" color="primary">
-    <button (click)="sidenav.toggle()" mat-icon-button>
+<mat-toolbar class="app-toolbar"
+             color="primary">
+    <button class="app-name"
+            mat-icon-button
+            routerLink="/"
+            title="Jira Time Logger">
+        <mat-icon>home</mat-icon>
+    </button>
+
+    <button (click)="sidenav.toggle()"
+            class="app-menu"
+            mat-icon-button>
         <mat-icon>menu</mat-icon>
     </button>
 
-    <a class="app-name" routerLink="/">Jira Time Logger</a>
+    <a [routerLink]="reportDateLink()"
+       class="time-spent">{{ timeLoggedToday | readableTime }}</a>
 
     <span class="spacer"></span>
 

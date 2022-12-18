@@ -132,9 +132,8 @@ export class Task extends Base implements Searchable {
       return 0;
     }
 
-    const filterFn = (timeLog: TimeLog) => timeLog?.endTime && timeLog?.startTime;
     const mapFn = (timeLog: TimeLog) => [
-      (timeLog.endTime as Date).getTime(),
+      (timeLog.endTime ?? new Date()).getTime(),
       timeLog.startTime.getTime(),
     ];
 
@@ -149,7 +148,7 @@ export class Task extends Base implements Searchable {
     };
 
     return (
-      timeLogs.filter(filterFn)
+      timeLogs
         .map(mapFn)
         .reduce(reduceFn, 0)
     ) ?? 0;

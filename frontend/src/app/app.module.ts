@@ -15,6 +15,7 @@ import { StorageService }  from '@core/services/storage.service';
 import { loadableServicesInitializerFactory } from '@shared/factories/loadable-services-initializer.factory';
 import { tagsPreloaderFactory }               from '@shared/factories/tags-preloader.factory';
 import { TagsService }                        from '@shared/services/tags.service';
+import { TaskManagerService }                 from '@shared/services/task-manager.service';
 import { TasksService }                       from '@shared/services/tasks.service';
 import { TimeLogsService }                    from '@shared/services/time-logs.service';
 
@@ -81,6 +82,7 @@ registerLocaleData(lv);
         deps: [TagsService],
         multi: true,
       },
+      TaskManagerService,
     ],
     bootstrap: [AppComponent],
   },

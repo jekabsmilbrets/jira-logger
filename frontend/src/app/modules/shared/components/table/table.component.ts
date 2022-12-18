@@ -90,15 +90,16 @@ export class TableComponent implements AfterViewInit {
 
   public get displayedColumns(): string[] {
     const columns = this.columns
-      .filter((column: Column) => column.visible)
-      .map((column: Column) => column.columnDef);
+      .filter(({hidden}: Column) => !hidden)
+      .filter(({excludeFromLoop}: Column) => !excludeFromLoop)
+      .map(({columnDef}: Column) => columnDef);
 
     if (this.enableRemoveAction) {
       columns.push('remove');
     }
 
     if (this.enableSyncAction) {
-      columns.push('sync');
+      // columns.push('sync');
     }
 
     if (this.isSelectable) {
@@ -128,6 +129,15 @@ export class TableComponent implements AfterViewInit {
     } else {
       this.dataSource.data.forEach(row => this.selection.select(row));
     }
+  }
+
+  public shouldDisplayColumn(column: Column): boolean {
+    return !column.hidden && !column.excludeFromLoop
+    && ![
+      'select',
+      'remove',
+      'sync',
+    ].includes(column.columnDef);
   }
 
   public onCellClick(row: Searchable, column: Column): void {

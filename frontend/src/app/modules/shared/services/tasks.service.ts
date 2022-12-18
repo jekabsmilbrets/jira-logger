@@ -14,10 +14,11 @@ import { LoaderStateService } from '@core/services/loader-state.service';
 import { StorageService } from '@core/services/storage.service';
 import { waitForTurn }    from '@core/utils/wait-for.utility';
 
-import { adaptTasks }      from '@shared/adapters/task.adapter';
-import { ApiTask }         from '@shared/interfaces/api/api-task.interface';
-import { LoadableService } from '@shared/interfaces/loadable-service.interface';
-import { TaskListFilter }  from '@shared/interfaces/task-list-filter.interface';
+import { adaptTasks }         from '@shared/adapters/task.adapter';
+import { ApiTask }            from '@shared/interfaces/api/api-task.interface';
+import { LoadableService }    from '@shared/interfaces/loadable-service.interface';
+import { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
+import { TaskListFilter }     from '@shared/interfaces/task-list-filter.interface';
 
 import { Tag }  from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
@@ -28,7 +29,7 @@ import { ErrorDialogService } from '@shared/services/error-dialog.service';
 @Injectable({
   providedIn: 'root',
 })
-export class TasksService implements LoadableService {
+export class TasksService implements LoadableService, MakeRequestService {
   public isLoading$: Observable<boolean>;
   public tasks$: Observable<Task[]>;
 
@@ -53,9 +54,11 @@ export class TasksService implements LoadableService {
   }
 
   public list(): Observable<Task[]> {
-    return this.makeRequest(
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }`;
+
+    return this.makeRequest<JsonApi<ApiTask[]>>(
+      url,
       'get',
-      null,
       null,
       false,
     )
@@ -77,16 +80,17 @@ export class TasksService implements LoadableService {
     filter: TaskListFilter,
     updateTaskList: boolean = false,
   ): Observable<Task[]> {
+    let url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }`;
+
     const outputQueryParams = this.buildQueryParams(filter);
-    let path;
 
     if (Object.keys(outputQueryParams).length > 0) {
-      path = '?' + new HttpParams({fromObject: outputQueryParams}).toString();
+      url += '?' + new HttpParams({fromObject: outputQueryParams}).toString();
     }
 
-    return this.makeRequest(
+    return this.makeRequest<JsonApi<ApiTask[]>>(
+      url,
       'get',
-      path,
       null,
       false,
     )
@@ -113,15 +117,17 @@ export class TasksService implements LoadableService {
     task: Task,
     skipReload: boolean = false,
   ): Observable<Task> {
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }`;
+
     const body = {
-      name: task.name,
-      description: task.description,
+      name: task.name && task.name.trim(),
+      description: task.description && task.description.trim(),
       tags: task.tags.map((tag: Tag) => tag.id),
     };
 
-    return this.makeRequest(
+    return this.makeRequest<JsonApi<ApiTask>>(
+      url,
       'post',
-      null,
       body,
       true,
     )
@@ -135,16 +141,18 @@ export class TasksService implements LoadableService {
     task: Task,
     skipReload: boolean = false,
   ): Observable<Task> {
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }/${ task.id }`;
+
     const body = {
       id: task.id,
-      name: task.name,
-      description: task.description,
+      name: task.name && task.name.trim(),
+      description: task.description && task.description.trim(),
       tags: task.tags.map((tag: Tag) => tag.id),
     };
 
-    return this.makeRequest(
+    return this.makeRequest<JsonApi<ApiTask>>(
+      url,
       'patch',
-      task.id,
       body,
       true,
     )
@@ -157,9 +165,11 @@ export class TasksService implements LoadableService {
   public delete(
     task: Task,
   ): Observable<void> {
-    return this.makeRequest(
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }/${ task.id }`;
+
+    return this.makeRequest<void>(
+      url,
       'delete',
-      task.id,
       null,
       true,
     )
@@ -174,9 +184,11 @@ export class TasksService implements LoadableService {
   public taskExist(
     name: string,
   ): Observable<null> {
-    return this.makeRequest(
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }/exist/${ name }`;
+
+    return this.makeRequest<void>(
+      url,
       'get',
-      `exist/${ name }`,
     )
       .pipe(
         catchError(this.processError),
@@ -193,14 +205,56 @@ export class TasksService implements LoadableService {
       'yyyy-MM-dd',
       'lv',
     );
-    const path = `${ task.id }/${ formattedDate }`;
+    const url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }/${ task.id }/${ formattedDate }`;
 
-    return this.makeRequest(
+    return this.makeRequest<void>(
+      url,
       'get',
-      path,
     )
       .pipe(
         map(() => true),
+      );
+  }
+
+  public makeRequest<T>(
+    url: string,
+    method: 'get' | 'post' | 'patch' | 'delete' = 'get',
+    body: any                                   = null,
+    reportError: boolean                        = false,
+  ): Observable<T> {
+    let request$: Observable<T>;
+
+    switch (method) {
+      case 'post':
+        request$ = this.http.post<T>(url, body);
+        break;
+
+      case 'patch':
+        request$ = this.http.patch<T>(url, body);
+        break;
+
+      case 'delete':
+        request$ = this.http.delete<T>(url);
+        break;
+
+      case 'get':
+      default:
+        request$ = this.http.get<T>(url);
+        break;
+    }
+
+    return waitForTurn(this.isLoading$, this.isLoadingSubject)
+      .pipe(
+        switchMap(() => request$),
+        catchError((error) => {
+          if (reportError) {
+            return this.processError(error);
+          }
+
+          this.isLoadingSubject.next(false);
+          return throwError(() => error);
+        }),
+        tap(() => this.isLoadingSubject.next(false)),
       );
   }
 
@@ -290,57 +344,5 @@ export class TasksService implements LoadableService {
     }
 
     return foundTask;
-  }
-
-  private makeRequest(
-    method: 'get' | 'post' | 'patch' | 'delete' = 'get',
-    path: string | null                         = null,
-    body: any                                   = null,
-    reportError: boolean                        = false,
-  ): Observable<any> {
-    let url = `${ environment.apiHost }${ environment.apiBase }/${ this.basePath }`;
-
-    if (path) {
-      if (path.startsWith('?')) {
-        url += `${ path }`;
-      } else {
-        url += `/${ path }`;
-      }
-    }
-
-    let request$: Observable<any> = of({});
-
-    switch (method) {
-      case 'post':
-        request$ = this.http.post(url, body);
-        break;
-
-      case 'patch':
-        request$ = this.http.patch(url, body);
-        break;
-
-      case 'delete':
-        request$ = this.http.delete(url);
-        break;
-
-      case 'get':
-      default:
-        request$ = this.http.get(url);
-        break;
-    }
-
-    return waitForTurn(this.isLoading$, this.isLoadingSubject)
-      .pipe(
-        switchMap(() => request$),
-        catchError((error) => {
-          if (reportError) {
-            return this.processError(error);
-          }
-
-          this.isLoadingSubject.next(false);
-          return throwError(() => error);
-        }),
-        tap(() => this.isLoadingSubject.next(false)),
-      );
   }
 }

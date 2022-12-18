@@ -8,7 +8,7 @@
                       [cdkColumnDef]="column.columnDef"
                       [stickyEnd]="column.stickyEnd"
                       [sticky]="column.sticky">
-            <ng-container *ngIf="column.visible">
+            <ng-container *ngIf="shouldDisplayColumn(column)">
                 <mat-header-cell *cdkHeaderCellDef
                                  [disabled]="!column.sortable"
                                  [mat-sort-header]="column.columnDef">
@@ -19,13 +19,13 @@
                           *cdkCellDef="let row"
                           [ngClass]="{'mat-cell-clickable': column.isClickable}">
                     <ng-container *ngIf="column.pipe">
-            <span *ngIf="column.pipe === 'readableTime'">
-              {{ column.cell(row) | readableTime }}
-            </span>
+                        <span *ngIf="column.pipe === 'readableTime'">
+                            {{ column.cell(row) | readableTime }}
+                        </span>
 
                         <span *ngIf="column.pipe === 'date'">
-              {{ column.cell(row) | date: 'yyyy-MM-dd' }}
-            </span>
+                            {{ column.cell(row) | date: 'yyyy-MM-dd' }}
+                        </span>
                     </ng-container>
 
                     <span *ngIf="!column.pipe">{{ column.cell(row) }}</span>
@@ -36,12 +36,36 @@
                                      *cdkFooterCellDef
                                      [ngClass]="{'mat-cell-clickable': column.isClickable && !column.disableFooterClick}">
                         <ng-container *ngIf="column.pipe">
-              <span *ngIf="column.pipe === 'readableTime'">
-                {{ (column.hasFooter ? column.footerCell(dataSource.data) : '') | readableTime }}
-              </span>
+                            <span *ngIf="column.pipe === 'readableTime'">
+                                {{ (column.hasFooter ? column.footerCell(dataSource.data) : '') | readableTime }}
+                            </span>
                         </ng-container>
 
-                        <span *ngIf="!column.pipe">{{ column.hasFooter ? column.footerCell(dataSource.data) : '' }}</span>
+                        <span *ngIf="!column.pipe">
+                            {{ column.hasFooter ? column.footerCell(dataSource.data) : '' }}
+                        </span>
+                    </mat-footer-cell>
+                </ng-container>
+            </ng-container>
+
+            <ng-container *ngIf="column.columnDef === 'sync' && !column.hidden && !column.excludeFromLoop">
+                <mat-header-cell *cdkHeaderCellDef>
+                    Sync
+                </mat-header-cell>
+
+                <mat-cell *cdkCellDef="let row"
+                          [matTooltipDisabled]="!column.taskSynced(row)"
+                          matTooltip="Task already synced with JIRA server!">
+                    <button (click)="onSyncAction(row)"
+                            [disabled]="column.taskSynced(row)"
+                            color="warn"
+                            mat-icon-button>
+                        <mat-icon>sync</mat-icon>
+                    </button>
+                </mat-cell>
+
+                <ng-container *ngIf="enableFooter">
+                    <mat-footer-cell *cdkFooterCellDef>
                     </mat-footer-cell>
                 </ng-container>
             </ng-container>
@@ -78,25 +102,6 @@
                         color="warn"
                         mat-icon-button>
                     <mat-icon>delete</mat-icon>
-                </button>
-            </mat-cell>
-
-            <ng-container *ngIf="enableFooter">
-                <mat-footer-cell *cdkFooterCellDef>
-                </mat-footer-cell>
-            </ng-container>
-        </ng-container>
-
-        <ng-container cdkColumnDef="sync">
-            <mat-header-cell *cdkHeaderCellDef>
-                Sync
-            </mat-header-cell>
-
-            <mat-cell *cdkCellDef="let row">
-                <button (click)="onSyncAction(row)"
-                        color="warn"
-                        mat-icon-button>
-                    <mat-icon>sync</mat-icon>
                 </button>
             </mat-cell>
 
