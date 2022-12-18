@@ -54,13 +54,9 @@ export class LayoutComponent {
     })
       .pipe(
         catchError(() => of([])),
-        map((tasks: Task[]) => {
-          console.log([tasks]);
-          return tasks.map(
-            (task: Task) => task.calcTimeLoggedForDate(this.date),
-          )
-            .reduce((acc: number, value: number) => acc + value, 0);
-        }),
+        map((tasks: Task[]) =>
+          tasks.map((task: Task) => task.calcTimeLoggedForDate(this.date))
+            .reduce((acc: number, value: number) => acc + value, 0)),
         tap((timeLoggedToday: number) => this.timeLoggedTodaySubject.next(timeLoggedToday)),
       );
   }

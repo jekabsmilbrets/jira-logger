@@ -30,13 +30,13 @@ export class ReportResolver implements Resolve<boolean> {
 
     if (paramMap.has('date')) {
       const date = new Date(paramMap.get('date') as string);
-      date?.setHours(0,0,0,0);
 
-      this.reportService.date = date;
+      if (isFinite(+date)) {
+        this.router.navigate(['report']);
+        setTimeout(()=> this.reportService.date = date, 100); // TODO: FIX HAX
 
-      this.router.navigate(['report']);
-
-      return of(false);
+        return of(false);
+      }
     }
 
     return of(true);
