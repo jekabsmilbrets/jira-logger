@@ -112,8 +112,20 @@
       "pre-commit": [
         "CURRENT_DIRECTORY=`pwd`",
         "cd ./backend",
+        "files_changed=false;",
+        "current_state=$(git diff)",
         "composer php-cs-fixer",
-        "cd $CURRENT_DIRECTORY"
+        "new_state=$(git diff)",
+        "if [ \"$current_state\" != \"$new_state\" ]; then",
+        "   files_changed=true",
+        "fi",
+        "cd $CURRENT_DIRECTORY",
+        "if [ \"$files_changed\" = true ]; then",
+        "    echo \"PHP CS FIXER have updated files, please review the changes!\"",
+        "    exit 1",
+        "fi",
+        "echo \"All good! Proceed!\"",
+        "exit 0"
       ]
     }
   }
