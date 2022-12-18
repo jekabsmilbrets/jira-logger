@@ -7,4 +7,4 @@ import { TagsService }    from '@shared/services/tags.service';
 export const tagsPreloaderFactory = (
   provider: TagsService,
 ): () => Promise<Tag[]> =>
-  () => firstValueFrom(provider.fetchTags());
+  () => firstValueFrom(provider.list());

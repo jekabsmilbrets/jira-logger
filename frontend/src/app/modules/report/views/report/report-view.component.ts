@@ -1,10 +1,9 @@
-import { Clipboard }                    from '@angular/cdk/clipboard';
-import { HttpErrorResponse }            from '@angular/common/http';
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { MatSnackBar }                  from '@angular/material/snack-bar';
-import { ActivatedRoute, ParamMap }     from '@angular/router';
+import { Clipboard }         from '@angular/cdk/clipboard';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, OnInit } from '@angular/core';
+import { MatSnackBar }       from '@angular/material/snack-bar';
 
-import { filter, map, Observable, Subscription, switchMap, take } from 'rxjs';
+import { catchError, filter, map, Observable, of, switchMap, take } from 'rxjs';
 
 import { DynamicMenu }        from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
@@ -15,6 +14,7 @@ import { Searchable } from '@shared/interfaces/searchable.interface';
 import { Task }             from '@shared/models/task.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import { TasksService }     from '@shared/services/tasks.service';
+import { TimeLogsService }  from '@shared/services/time-logs.service';
 import { SharedModule }     from '@shared/shared.module';
 
 import { ReportMenuComponent } from '@report/components/report-menu/report-menu.component';
@@ -29,37 +29,17 @@ import { ReportService }       from '@report/services/report.service';
     styleUrls: ['./report-view.component.scss'],
   },
 )
-export class ReportViewComponent implements OnInit, OnDestroy {
+export class ReportViewComponent implements OnInit {
   public tasks$!: Observable<Task[]>;
-
-  private subscriptions: Subscription[] = [];
 
   constructor(
     private dynamicMenuService: DynamicMenuService,
     private reportService: ReportService,
     private tasksService: TasksService,
-    private activatedRoute: ActivatedRoute,
+    private timeLogsService: TimeLogsService,
     private clipboard: Clipboard,
     private snackBar: MatSnackBar,
   ) {
-    this.subscriptions.push(
-      this.activatedRoute.paramMap
-        .pipe()
-        .subscribe(
-          (params: ParamMap) => {
-            if (params.has('reportMode')) {
-              const reportMode = params.get('reportMode') as string;
-
-              if (reportMode in ReportModeEnum) {
-                this.reportService.reportMode = ReportModeEnum[reportMode as keyof typeof ReportModeEnum];
-              } else {
-                this.reportService.reportMode = ReportModeEnum.total;
-              }
-            }
-          },
-        ),
-    );
-
     this.tasks$ = this.reportService.tasks$;
   }
 
@@ -73,12 +53,6 @@ export class ReportViewComponent implements OnInit, OnDestroy {
 
   public ngOnInit(): void {
     this.createDynamicMenu();
-  }
-
-  public ngOnDestroy(): void {
-    this.subscriptions.forEach(
-      (sub: Subscription) => sub.unsubscribe(),
-    );
   }
 
   public onCellClick([row, column]: [Searchable, Column]): void {
@@ -115,7 +89,20 @@ export class ReportViewComponent implements OnInit, OnDestroy {
         take(1),
         map((date: Date | null): Date => date as Date),
         switchMap(
-          (date: Date) => this.tasksService.syncDateToJiraApi(task, date),
+          (date: Date) => {
+            const syncDateToJiraApi$ = this.tasksService.syncDateToJiraApi(task, date);
+
+            if (task.isTimeLogRunning) {
+              return this.timeLogsService.stop(task)
+                .pipe(
+                  catchError(() => of(null)),
+                  switchMap(() => syncDateToJiraApi$),
+                  switchMap(() => this.timeLogsService.start(task)),
+                );
+            }
+
+            return syncDateToJiraApi$;
+          },
         ),
         take(1),
       )
@@ -126,7 +113,7 @@ export class ReportViewComponent implements OnInit, OnDestroy {
             this.reportService.reload();
           },
           error: (error: HttpErrorResponse) => this.openSnackBar(
-            `Task "${ task.name }" failed synced! ${ error.error.errors.join(', ') }`,
+            `Task "${ task.name }" failed synced! ${ error?.error?.errors?.join(', ') }`,
           ),
         },
       );
@@ -166,7 +153,7 @@ export class ReportViewComponent implements OnInit, OnDestroy {
       message,
       undefined,
       {
-        duration: 5000,
+        duration,
       },
     );
   }

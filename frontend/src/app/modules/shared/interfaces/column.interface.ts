@@ -2,8 +2,10 @@ export interface Column {
   columnDef: string;
   header: string;
   headerToolTip?: string;
+  excludeFromLoop?: boolean;
   sortable?: boolean;
-  visible?: boolean;
+  hidden?: boolean;
+  taskSynced?: any;
   sticky?: boolean;
   stickyEnd?: boolean;
   type?: string;

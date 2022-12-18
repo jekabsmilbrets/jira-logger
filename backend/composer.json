@@ -17,6 +17,7 @@
     "doctrine/doctrine-bundle": "^2.7",
     "doctrine/doctrine-migrations-bundle": "^3.2",
     "doctrine/orm": "^2.12",
+    "evotodi/seed-bundle": "^6.0",
     "lesstif/php-jira-rest-client": "^5.1",
     "nelmio/api-doc-bundle": "^4.9",
     "phpdocumentor/reflection-docblock": "^5.3",
@@ -111,9 +112,20 @@
       "pre-commit": [
         "CURRENT_DIRECTORY=`pwd`",
         "cd ./backend",
+        "files_changed=false;",
+        "current_state=$(git diff)",
         "composer php-cs-fixer",
+        "new_state=$(git diff)",
+        "if [ \"$current_state\" != \"$new_state\" ]; then",
+        "   files_changed=true",
+        "fi",
         "cd $CURRENT_DIRECTORY",
-        "git add ./backend/src"
+        "if [ \"$files_changed\" = true ]; then",
+        "    echo \"PHP CS FIXER have updated files, please review the changes!\"",
+        "    exit 1",
+        "fi",
+        "echo \"All good! Proceed!\"",
+        "exit 0"
       ]
     }
   }

@@ -5,6 +5,7 @@ import { SharedModule } from '@shared/shared.module';
 
 import { ReportMenuComponent } from '@report/components/report-menu/report-menu.component';
 import { ReportRoutingModule } from '@report/report-routing.module';
+import { ReportResolver }      from '@report/resolvers/report.resolver';
 import { ReportViewComponent } from '@report/views/report/report-view.component';
 
 
@@ -21,6 +22,9 @@ import { ReportViewComponent } from '@report/views/report/report-view.component'
       ReportRoutingModule,
 
       SharedModule,
+    ],
+    providers: [
+      ReportResolver,
     ],
   },
 )

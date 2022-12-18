@@ -14,6 +14,7 @@
                                       [hideUnreportedTasks]="hideUnreportedTasks$ | async"></app-report-hide-unreported-tasks>
 
     <app-report-show-weekends (showWeekendsChange)="onShowWeekendsChange($event)"
+                              *ngIf="(reportMode$ | async) !== 'date'"
                               [showWeekends]="showWeekends$ | async"></app-report-show-weekends>
 
     <app-report-date-selector (dateChange)="onDateChange($event)"

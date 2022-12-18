@@ -1,8 +1,11 @@
 :host {
   .app-toolbar {
-    a.app-name {
-      margin-left: 8px;
-      cursor: pointer;
+    display: flex;
+    align-items: center;
+    column-gap: 8px;
+
+    .time-spent {
+      display: flex;
       color: white;
       text-decoration: none;
       font: 500 20px/32px Roboto, "Helvetica Neue", sans-serif;

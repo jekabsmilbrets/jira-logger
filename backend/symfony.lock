@@ -1,6 +1,6 @@
 {
     "doctrine/annotations": {
-        "version": "1.13",
+        "version": "1.14",
         "recipe": {
             "repo": "github.com/symfony/recipes",
             "branch": "main",
@@ -14,7 +14,7 @@
             "repo": "github.com/symfony/recipes",
             "branch": "main",
             "version": "2.4",
-            "ref": "ddddd8249dd55bbda16fa7a45bb7499ef6f8e90e"
+            "ref": "d562b46dd8075ab2de3d58bf7895cf6b8365cb72"
         },
         "files": [
             "config/packages/doctrine.yaml",
@@ -28,15 +28,18 @@
             "repo": "github.com/symfony/recipes",
             "branch": "main",
             "version": "3.1",
-            "ref": "ee609429c9ee23e22d6fa5728211768f51ed2818"
+            "ref": "1d01ec03c6ecbd67c3375c5478c9a423ae5d6a33"
         },
         "files": [
             "config/packages/doctrine_migrations.yaml",
             "migrations/.gitignore"
         ]
     },
+    "evotodi/seed-bundle": {
+        "version": "6.0"
+    },
     "friendsofphp/php-cs-fixer": {
-        "version": "3.9",
+        "version": "3.13",
         "recipe": {
             "repo": "github.com/symfony/recipes",
             "branch": "main",
@@ -48,7 +51,7 @@
         ]
     },
     "nelmio/api-doc-bundle": {
-        "version": "4.9",
+        "version": "4.10",
         "recipe": {
             "repo": "github.com/symfony/recipes-contrib",
             "branch": "main",
@@ -128,7 +131,7 @@
         ]
     },
     "symfony/maker-bundle": {
-        "version": "1.44",
+        "version": "1.48",
         "recipe": {
             "repo": "github.com/symfony/recipes",
             "branch": "main",
