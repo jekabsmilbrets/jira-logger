@@ -1,8 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl }                            from '@angular/forms';
 
-import { reportModes } from '@report/constants/report-modes.constant';
-
+import { reportModes }    from '@report/constants/report-modes.constant';
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
 
 

@@ -1,7 +1,6 @@
 import { Component, Injector, Input, OnDestroy, ViewChild } from '@angular/core';
 import { MatSidenav }                                       from '@angular/material/sidenav';
-
-import { NavigationEnd, Router } from '@angular/router';
+import { NavigationEnd, Router }                            from '@angular/router';
 
 import { delay, filter, Observable, Subscription, switchMap, take, tap } from 'rxjs';
 
@@ -9,6 +8,8 @@ import { DynamicMenuDirective } from '@core/directives/dynamic-menu.directive';
 import { DynamicMenuInterface } from '@core/interfaces/dynamic-menu.interface';
 import { DynamicMenu }          from '@core/models/dynamic-menu';
 import { DynamicMenuService }   from '@core/services/dynamic-menu.service';
+
+import { Task } from '@shared/models/task.model';
 
 
 @Component(
@@ -21,6 +22,9 @@ import { DynamicMenuService }   from '@core/services/dynamic-menu.service';
 export class HeaderComponent implements OnDestroy {
   @Input()
   public sidenav!: MatSidenav;
+
+  @Input()
+  public activeTask!: Task | null;
 
   @Input()
   public isLoading = false;

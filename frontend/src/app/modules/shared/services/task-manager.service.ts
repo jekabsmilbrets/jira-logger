@@ -3,19 +3,18 @@ import { Injectable } from '@angular/core';
 import {
   BehaviorSubject,
   catchError,
-  filter,
-  forkJoin,
+  interval,
   map,
   Observable,
   of,
-  pairwise,
-  startWith,
+  skip,
   switchMap,
+  take,
+  tap,
   withLatestFrom,
 } from 'rxjs';
 
-import { Task } from '@shared/models/task.model';
-
+import { Task }            from '@shared/models/task.model';
 import { TasksService }    from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
@@ -24,59 +23,99 @@ import { TimeLogsService } from '@shared/services/time-logs.service';
   providedIn: 'root',
 })
 export class TaskManagerService {
-  public activeTask$: Observable<Task>;
+  public activeTask$: Observable<Task | null>;
+  public timeLoggedToday$: Observable<number>;
 
-  private activeTaskSubject: BehaviorSubject<Task | undefined> = new BehaviorSubject<Task | undefined>(undefined);
+  private activeTaskSubject: BehaviorSubject<Task | null> = new BehaviorSubject<Task | null>(null);
+  private timeLoggedTodaySubject: BehaviorSubject<number> = new BehaviorSubject<number>(0);
 
   constructor(
     private tasksService: TasksService,
     private timeLogsService: TimeLogsService,
   ) {
-    this.activeTask$ = this.activeTaskSubject.asObservable()
+    this.activeTask$ = this.activeTaskSubject.asObservable();
+    this.timeLoggedToday$ = this.timeLoggedTodaySubject.asObservable();
+
+    this.calculateTimeLoggedToday()
+      .subscribe();
+
+    this.listenActiveTaskStart()
+      .subscribe();
+
+    this.listenActiveTaskFinish()
+      .subscribe();
+
+    this.getActiveTaskFromTasksList()
+      .subscribe();
+  }
+
+  private calculateTimeLoggedToday() {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+
+    const getTimeLoggedToday = () => this.tasksService.filteredList({
+      date,
+    })
       .pipe(
-        filter((activeTask: Task | undefined) => activeTask instanceof Task),
-        map((activeTask: Task | undefined): Task => activeTask as Task),
+        catchError(() => of([])),
+        map((tasks: Task[]) =>
+          tasks.map((task: Task) => task.calcTimeLoggedForDate(date))
+            .reduce((acc: number, value: number) => acc + value, 0)),
+        tap((timeLoggedToday: number) => this.timeLoggedTodaySubject.next(timeLoggedToday)),
       );
 
-    this.timeLogsService.taskStarted$
+    return getTimeLoggedToday()
       .pipe(
-        startWith(undefined),
-        pairwise(),
-        withLatestFrom(this.tasksService.tasks$),
+        take(1),
+        switchMap(() => interval(10000)
+          .pipe(
+            switchMap(() => getTimeLoggedToday()),
+          ),
+        ),
+      );
+  }
+
+  private listenActiveTaskStart(): Observable<null | void> {
+    return this.timeLogsService.taskStarted$
+      .pipe(
         switchMap(
-          ([[previousTask, currentTask], currentTasks]: [[Task | undefined, Task | undefined], Task[]]): Observable<void> => {
-            if (
-              currentTask &&
-              currentTasks && currentTasks.length > 0
-            ) {
-              if (previousTask) {
-                const currentTaskFresh = currentTasks.find((task: Task) => task.id === previousTask.id);
-
-                if (currentTaskFresh && currentTaskFresh.isTimeLogRunning) {
-                  return this.timeLogsService.stop(currentTaskFresh);
-                }
-              }
-              const ghostRunningTasks = currentTasks.filter(
-                (task: Task) => task.id !== currentTask.id && task.isTimeLogRunning,
-              ) ?? [];
-
-              if (ghostRunningTasks.length > 0) {
-                return forkJoin(
-                  ghostRunningTasks.map(
-                    (task: Task) => this.timeLogsService.stop(task),
-                  ),
-                )
-                  .pipe(
-                    map(() => undefined),
-                  );
-              }
+          (currentTask: Task | undefined): Observable<void> => {
+            if (currentTask) {
+              this.activeTaskSubject.next(currentTask);
             }
 
             return of(undefined);
           },
         ),
         catchError(() => of(null)),
-      )
-      .subscribe();
+      );
+  }
+
+  private listenActiveTaskFinish(): Observable<[Task, (Task | null)]> {
+    return this.timeLogsService.taskFinished$
+      .pipe(
+        withLatestFrom(this.activeTask$),
+        tap(
+          ([finishedTask, activeTask]: [Task, Task | null]) => {
+            if (activeTask && activeTask.id === finishedTask.id) {
+              this.activeTaskSubject.next(null);
+            }
+          },
+        ),
+      );
+  }
+
+  private getActiveTaskFromTasksList(): Observable<Task | undefined> {
+    return this.tasksService.tasks$
+      .pipe(
+        skip(1),
+        take(1),
+        map((tasks: Task[]) => tasks.find((task: Task) => task.isTimeLogRunning)),
+        tap((task: Task | undefined) => {
+          if (task) {
+            this.activeTaskSubject.next(task);
+          }
+        }),
+      );
   }
 }

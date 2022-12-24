@@ -2,8 +2,7 @@ import { formatDate } from '@angular/common';
 
 import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
 
-import { Column } from '@shared/interfaces/column.interface';
-
+import { Column }      from '@shared/interfaces/column.interface';
 import { TimeLog }     from '@shared/models/time-log.model';
 import { columnValue } from '@shared/utils/column-value.util';
 

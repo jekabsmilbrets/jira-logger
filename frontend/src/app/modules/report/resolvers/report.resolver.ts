@@ -33,7 +33,7 @@ export class ReportResolver implements Resolve<boolean> {
 
       if (isFinite(+date)) {
         this.router.navigate(['report']);
-        setTimeout(()=> this.reportService.date = date, 100); // TODO: FIX HAX
+        setTimeout(() => this.reportService.date = date, 100); // TODO: FIX HAX
 
         return of(false);
       }
