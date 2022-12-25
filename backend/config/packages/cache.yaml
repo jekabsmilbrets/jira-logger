@@ -1,7 +1,14 @@
 framework:
   cache:
-  # Unique name of your app: used to compute stable namespaces for cache keys.
-  #prefix_seed: your_vendor_name/app_name
+    # Unique name of your app: used to compute stable namespaces for cache keys.
+    prefix_seed: jekabs_milbrets/jira_logger
+    app: cache.adapter.filesystem
+
+    pools:
+      doctrine.result_cache_pool:
+        adapter: cache.app
+      doctrine.system_cache_pool:
+        adapter: cache.system
 
   # The "app" cache stores to the filesystem by default.
   # The data in this cache should persist between deploys.
