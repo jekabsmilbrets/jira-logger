@@ -41,10 +41,10 @@ function copyEnvironment() {
 
 function generateCertificates() {
   echo "Generating certificates"
-  cd ./.docker/certs/
-  bash cert.sh jira-logger.io
-  cd ..
-  cd ..
+  (
+    cd ./.docker/certs/
+    bash cert.sh jira-logger.io
+  )
 }
 
 function ngBuild() {
