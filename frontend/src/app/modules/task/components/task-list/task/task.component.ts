@@ -3,8 +3,7 @@ import { FormGroup }                                      from '@angular/forms';
 
 import { Observable, take } from 'rxjs';
 
-import { Tag } from '@shared/models/tag.model';
-
+import { Tag }               from '@shared/models/tag.model';
 import { Task }              from '@shared/models/task.model';
 import { TimeLog }           from '@shared/models/time-log.model';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';

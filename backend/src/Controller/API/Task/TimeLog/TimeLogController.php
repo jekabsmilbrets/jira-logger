@@ -35,6 +35,9 @@ class TimeLogController extends BaseApiController
     final public const CANNOT_DELETE_TIME_LOG = 'Can not Delete TimeLog';
     final public const CANNOT_UPDATE_TIME_LOG = 'Can not Update TimeLog';
 
+    final public const OA_TAG = 'Time logs';
+    final public const MODEL_SCHEMA = '#/components/schemas/TimeLogModel';
+
     public function __construct(
         private readonly TimeLogService $timeLogService,
         private readonly TaskService $taskService,
@@ -49,11 +52,11 @@ class TimeLogController extends BaseApiController
             methods: [Request::METHOD_GET],
             stateless: true,
         ),
-        OA\Tag(name: 'Time logs'),
+        OA\Tag(name: self::OA_TAG),
         OA\Get(
             operationId: 'list-time-logs',
             summary: 'List Time Logs',
-            tags: ['Time logs'],
+            tags: [self::OA_TAG],
         ),
         OA\Response(
             response: Response::HTTP_OK,
@@ -63,7 +66,7 @@ class TimeLogController extends BaseApiController
                     new OA\Property(
                         property: 'data',
                         type: 'array',
-                        items: new OA\Items(ref: '#/components/schemas/TimeLogModel')
+                        items: new OA\Items(ref: self::MODEL_SCHEMA)
                     ),
                 ]
             ),
@@ -104,16 +107,73 @@ class TimeLogController extends BaseApiController
 
     #[
         Route(
+            path: '/{id}',
+            name: 'show-time-log',
+            requirements: ['id' => Requirement::UUID],
+            methods: [Request::METHOD_GET],
+            stateless: true,
+        ),
+        OA\Tag(name: self::OA_TAG),
+        OA\Get(
+            operationId: 'show-time-log',
+            summary: 'Show TimeLog',
+            tags: [self::OA_TAG],
+        ),
+        OA\Response(
+            response: Response::HTTP_OK,
+            description: 'Returns TimeLog',
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
+        ),
+        OA\Response(
+            response: Response::HTTP_NOT_FOUND,
+            description: self::TIME_LOG_NOT_FOUND,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(
+                        property: 'errors',
+                        type: 'array',
+                        items: new OA\Items(
+                            type: 'string',
+                            example: self::TIME_LOG_NOT_FOUND
+                        )
+                    ),
+                ]
+            ),
+        ),
+    ]
+    final public function show(
+        string $taskId,
+        string $id
+    ): JsonResponse {
+        $timeLog = $this->timeLogService->show(
+            taskId: $taskId,
+            id: $id
+        );
+
+        if (!$timeLog instanceof TimeLog) {
+            return $this->jsonApi(
+                errors: [self::TIME_LOGS_NOT_FOUND],
+                status: Response::HTTP_NOT_FOUND
+            );
+        }
+
+        return $this->jsonApi(
+            $timeLog
+        );
+    }
+
+    #[
+        Route(
             path: '',
             name: 'create-time-log',
             methods: [Request::METHOD_POST],
             stateless: true
         ),
-        OA\Tag(name: 'Time logs'),
+        OA\Tag(name: self::OA_TAG),
         OA\Post(
             operationId: 'create-time-log',
             summary: 'Create a new TimeLog',
-            tags: ['Time logs'],
+            tags: [self::OA_TAG],
         ),
         OA\RequestBody(
             content: new OA\JsonContent(ref: '#/components/schemas/TimeLogCreateRequest')
@@ -121,7 +181,7 @@ class TimeLogController extends BaseApiController
         OA\Response(
             response: Response::HTTP_OK,
             description: 'Task created successfully',
-            content: new OA\JsonContent(ref: '#/components/schemas/TimeLogModel'),
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
         ),
         OA\Response(
             response: Response::HTTP_BAD_REQUEST,
@@ -223,11 +283,11 @@ class TimeLogController extends BaseApiController
             methods: [Request::METHOD_PATCH],
             stateless: true,
         ),
-        OA\Tag(name: 'Time logs'),
+        OA\Tag(name: self::OA_TAG),
         OA\Patch(
             operationId: 'edit-time-log',
             summary: 'Edit TimeLog',
-            tags: ['Time logs'],
+            tags: [self::OA_TAG],
         ),
         OA\RequestBody(
             content: new OA\JsonContent(ref: '#/components/schemas/TimeLogUpdateRequest')
@@ -235,7 +295,7 @@ class TimeLogController extends BaseApiController
         OA\Response(
             response: Response::HTTP_OK,
             description: 'Returns TimeLog',
-            content: new OA\JsonContent(ref: '#/components/schemas/TimeLogModel'),
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
         ),
         OA\Response(
             response: Response::HTTP_BAD_REQUEST,
@@ -361,11 +421,11 @@ class TimeLogController extends BaseApiController
             methods: [Request::METHOD_DELETE],
             stateless: true,
         ),
-        OA\Tag(name: 'Time logs'),
+        OA\Tag(name: self::OA_TAG),
         OA\Delete(
             operationId: 'delete-time-log',
             summary: 'Delete TimeLog',
-            tags: ['Time logs'],
+            tags: [self::OA_TAG],
         ),
         OA\Response(
             response: Response::HTTP_NO_CONTENT,
@@ -443,11 +503,11 @@ class TimeLogController extends BaseApiController
             methods: [Request::METHOD_GET],
             stateless: true
         ),
-        OA\Tag(name: 'Tasks'),
+        OA\Tag(name: self::OA_TAG),
         OA\Get(
             operationId: 'start-task',
             summary: 'Start Task TimeLog',
-            tags: ['Tasks'],
+            tags: [self::OA_TAG],
         ),
         OA\Response(
             response: Response::HTTP_NO_CONTENT,
@@ -477,63 +537,6 @@ class TimeLogController extends BaseApiController
         );
     }
 
-    #[
-        Route(
-            path: '/{id}',
-            name: 'show-time-log',
-            requirements: ['id' => Requirement::UUID],
-            methods: [Request::METHOD_GET],
-            stateless: true,
-        ),
-        OA\Tag(name: 'Time logs'),
-        OA\Get(
-            operationId: 'show-time-log',
-            summary: 'Show TimeLog',
-            tags: ['Time logs'],
-        ),
-        OA\Response(
-            response: Response::HTTP_OK,
-            description: 'Returns TimeLog',
-            content: new OA\JsonContent(ref: '#/components/schemas/TimeLogModel'),
-        ),
-        OA\Response(
-            response: Response::HTTP_NOT_FOUND,
-            description: self::TIME_LOG_NOT_FOUND,
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(
-                        property: 'errors',
-                        type: 'array',
-                        items: new OA\Items(
-                            type: 'string',
-                            example: self::TIME_LOG_NOT_FOUND
-                        )
-                    ),
-                ]
-            ),
-        ),
-    ]
-    final public function show(
-        string $taskId,
-        string $id
-    ): JsonResponse {
-        $timeLog = $this->timeLogService->show(
-            taskId: $taskId,
-            id: $id
-        );
-
-        if (!$timeLog instanceof TimeLog) {
-            return $this->jsonApi(
-                errors: [self::TIME_LOGS_NOT_FOUND],
-                status: Response::HTTP_NOT_FOUND
-            );
-        }
-
-        return $this->jsonApi(
-            $timeLog
-        );
-    }
-
     /**
      * @throws \Exception
      */
@@ -545,11 +548,11 @@ class TimeLogController extends BaseApiController
             methods: [Request::METHOD_GET],
             stateless: true
         ),
-        OA\Tag(name: 'Tasks'),
+        OA\Tag(name: self::OA_TAG),
         OA\Get(
             operationId: 'stop-task',
             summary: 'Stop Task TimeLog',
-            tags: ['Tasks'],
+            tags: [self::OA_TAG],
         ),
         OA\Response(
             response: Response::HTTP_NO_CONTENT,

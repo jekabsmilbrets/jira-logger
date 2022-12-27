@@ -7,18 +7,16 @@ import { environment } from 'environments/environment';
 import { BehaviorSubject, catchError, map, Observable, Subject, switchMap, tap, throwError } from 'rxjs';
 
 import { appLocale, appTimeLogDateTimeFormat, appTimeZone } from '@core/constants/date-time.constant';
-
-import { JsonApi }            from '@core/interfaces/json-api.interface';
-import { LoaderStateService } from '@core/services/loader-state.service';
-import { waitForTurn }        from '@core/utils/wait-for.utility';
+import { JsonApi }                                          from '@core/interfaces/json-api.interface';
+import { LoaderStateService }                               from '@core/services/loader-state.service';
+import { waitForTurn }                                      from '@core/utils/wait-for.utility';
 
 import { adaptTimeLog, adaptTimeLogs } from '@shared/adapters/time-log.adapter';
 import { ApiTimeLog }                  from '@shared/interfaces/api/api-time-log.interface';
 import { LoadableService }             from '@shared/interfaces/loadable-service.interface';
 import { MakeRequestService }          from '@shared/interfaces/make-request-service.interface';
-
-import { Task }    from '@shared/models/task.model';
-import { TimeLog } from '@shared/models/time-log.model';
+import { Task }                        from '@shared/models/task.model';
+import { TimeLog }                     from '@shared/models/time-log.model';
 
 
 @Injectable({

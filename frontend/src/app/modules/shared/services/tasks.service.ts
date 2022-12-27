@@ -7,22 +7,18 @@ import { environment } from 'environments/environment';
 import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
-
-import { JsonApi }            from '@core/interfaces/json-api.interface';
-import { LoaderStateService } from '@core/services/loader-state.service';
-
-import { StorageService } from '@core/services/storage.service';
-import { waitForTurn }    from '@core/utils/wait-for.utility';
+import { JsonApi }                from '@core/interfaces/json-api.interface';
+import { LoaderStateService }     from '@core/services/loader-state.service';
+import { StorageService }         from '@core/services/storage.service';
+import { waitForTurn }            from '@core/utils/wait-for.utility';
 
 import { adaptTasks }         from '@shared/adapters/task.adapter';
 import { ApiTask }            from '@shared/interfaces/api/api-task.interface';
 import { LoadableService }    from '@shared/interfaces/loadable-service.interface';
 import { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
 import { TaskListFilter }     from '@shared/interfaces/task-list-filter.interface';
-
-import { Tag }  from '@shared/models/tag.model';
-import { Task } from '@shared/models/task.model';
-
+import { Tag }                from '@shared/models/tag.model';
+import { Task }               from '@shared/models/task.model';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
 
 

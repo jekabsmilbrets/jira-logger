@@ -3,13 +3,10 @@ import { Injectable }                    from '@angular/core';
 
 import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
-import { adaptSettings } from '@core/adapters/api-setting.adapter';
-
-import { ApiSetting } from '@core/interfaces/api/api-setting.interface';
-
-import { JsonApi } from '@core/interfaces/json-api.interface';
-import { Setting } from '@core/models/setting.model';
-
+import { adaptSettings }      from '@core/adapters/api-setting.adapter';
+import { ApiSetting }         from '@core/interfaces/api/api-setting.interface';
+import { JsonApi }            from '@core/interfaces/json-api.interface';
+import { Setting }            from '@core/models/setting.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { waitForTurn }        from '@core/utils/wait-for.utility';
 

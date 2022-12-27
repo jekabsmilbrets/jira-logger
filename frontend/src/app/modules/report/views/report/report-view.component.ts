@@ -8,9 +8,8 @@ import { catchError, filter, map, Observable, of, switchMap, take } from 'rxjs';
 import { DynamicMenu }        from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
-import { Column }     from '@shared/interfaces/column.interface';
-import { Searchable } from '@shared/interfaces/searchable.interface';
-
+import { Column }           from '@shared/interfaces/column.interface';
+import { Searchable }       from '@shared/interfaces/searchable.interface';
 import { Task }             from '@shared/models/task.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import { TasksService }     from '@shared/services/tasks.service';

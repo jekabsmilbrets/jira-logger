@@ -5,11 +5,9 @@ import { TestBed }                                        from '@angular/core/te
 import { Observable, of, take } from 'rxjs';
 
 import { adaptSetting, adaptSettings } from '@core/adapters/api-setting.adapter';
-
-import { ApiSetting } from '@core/interfaces/api/api-setting.interface';
-import { Setting }    from '@core/models/setting.model';
-
-import { LoaderStateService } from '@core/services/loader-state.service';
+import { ApiSetting }                  from '@core/interfaces/api/api-setting.interface';
+import { Setting }                     from '@core/models/setting.model';
+import { LoaderStateService }          from '@core/services/loader-state.service';
 
 import { ErrorDialogDataInterface } from '@shared/interfaces/error-dialog-data.interface';
 import { ErrorDialogService }       from '@shared/services/error-dialog.service';

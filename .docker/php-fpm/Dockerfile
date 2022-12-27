@@ -1,4 +1,4 @@
-FROM php:8.1-fpm
+FROM php:8.2-fpm
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends libssl-dev zlib1g-dev curl git unzip netcat libxml2-dev libpq-dev libzip-dev && \
@@ -13,11 +13,6 @@ COPY --from=composer /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-CMD composer i -o
-CMD php bin/console doctrine:database:create
-CMD php bin/console doctrine:migrations:migrate --no-interaction
-CMD php bin/console seed:load
-CMD php bin/console c:c
-CMD php-fpm
+CMD composer i -o; php bin/console doctrine:database:create; php bin/console doctrine:migrations:migrate; --no-interaction; php bin/console seed:load; php bin/console c:c; php-fpm
 
 EXPOSE 9000

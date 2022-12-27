@@ -27,12 +27,12 @@ export class TaskCreateService {
   private static createAsyncValidator(tasksService: TasksService): AsyncValidatorFn {
     return (control: AbstractControl): Promise<ValidationErrors | null> => lastValueFrom(
       tasksService
-      .taskExist(control.value)
-      .pipe(
-        take(1),
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        catchError(() => of<ValidationErrors>({'duplicate-task': true})),
-      )
+        .taskExist(control.value)
+        .pipe(
+          take(1),
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          catchError(() => of<ValidationErrors>({'duplicate-task': true})),
+        ),
     );
   }
 

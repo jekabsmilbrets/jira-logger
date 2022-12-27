@@ -1,5 +1,6 @@
 <div class="base-container mat-typography">
-    <app-header [isLoading]="(isLoading$ | async) || false"
+    <app-header [activeTask]="activeTask$ | async"
+                [isLoading]="(isLoading$ | async) || false"
                 [sidenav]="sidenav"
                 [timeLoggedToday]="(timeLoggedToday$ | async) || 0">
     </app-header>

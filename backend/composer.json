@@ -10,7 +10,7 @@
   "minimum-stability": "stable",
   "prefer-stable": true,
   "require": {
-    "php": ">=8.1",
+    "php": ">=8.2",
     "ext-ctype": "*",
     "ext-iconv": "*",
     "doctrine/annotations": "^1.13",
@@ -23,23 +23,22 @@
     "phpdocumentor/reflection-docblock": "^5.3",
     "phpstan/phpdoc-parser": "^1.6",
     "ramsey/uuid-doctrine": "^1.8",
-    "sensio/framework-extra-bundle": "^6.2",
-    "symfony/asset": "6.1.*",
-    "symfony/console": "6.1.*",
-    "symfony/dotenv": "6.1.*",
-    "symfony/event-dispatcher": "6.1.*",
+    "symfony/asset": "6.2.*",
+    "symfony/console": "6.2.*",
+    "symfony/dotenv": "6.2.*",
+    "symfony/event-dispatcher": "6.2.*",
     "symfony/flex": "^2",
-    "symfony/framework-bundle": "6.1.*",
-    "symfony/mime": "6.1.*",
+    "symfony/framework-bundle": "6.2.*",
+    "symfony/mime": "6.2.*",
     "symfony/monolog-bundle": "^3.8",
-    "symfony/property-access": "6.1.*",
-    "symfony/property-info": "6.1.*",
-    "symfony/proxy-manager-bridge": "6.1.*",
-    "symfony/runtime": "6.1.*",
-    "symfony/serializer": "6.1.*",
-    "symfony/twig-bundle": "6.1.*",
-    "symfony/validator": "6.1.*",
-    "symfony/yaml": "6.1.*",
+    "symfony/property-access": "6.2.*",
+    "symfony/property-info": "6.2.*",
+    "symfony/proxy-manager-bridge": "6.2.*",
+    "symfony/runtime": "6.2.*",
+    "symfony/serializer": "6.2.*",
+    "symfony/twig-bundle": "6.2.*",
+    "symfony/validator": "6.2.*",
+    "symfony/yaml": "6.2.*",
     "twig/extra-bundle": "^2.12|^3.0",
     "twig/twig": "^2.12|^3.0"
   },
@@ -49,8 +48,8 @@
     "phpstan/phpstan": "^1.8",
     "roave/security-advisories": "dev-latest",
     "symfony/maker-bundle": "^1.44",
-    "symfony/stopwatch": "6.1.*",
-    "symfony/web-profiler-bundle": "6.1.*"
+    "symfony/stopwatch": "6.2.*",
+    "symfony/web-profiler-bundle": "6.2.*"
   },
   "config": {
     "allow-plugins": {
@@ -97,7 +96,9 @@
       "cghooks update --git-dir='../.git'"
     ],
     "cghooks": "vendor/bin/cghooks",
-    "php-cs-fixer": "php-cs-fixer fix src -v",
+    "format": [
+      "php-cs-fixer fix src -v"
+    ],
     "php-stan": "phpstan analyse src --memory-limit 1024M"
   },
   "conflict": {
@@ -106,7 +107,7 @@
   "extra": {
     "symfony": {
       "allow-contrib": false,
-      "require": "6.1.*"
+      "require": "6.2.*"
     },
     "hooks": {
       "pre-commit": [
@@ -114,7 +115,7 @@
         "cd ./backend",
         "files_changed=false;",
         "current_state=$(git diff)",
-        "composer php-cs-fixer",
+        "composer format",
         "new_state=$(git diff)",
         "if [ \"$current_state\" != \"$new_state\" ]; then",
         "   files_changed=true",

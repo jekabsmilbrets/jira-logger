@@ -16,16 +16,14 @@ import {
 } from 'rxjs';
 
 import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
-
-import { StorageService } from '@core/services/storage.service';
+import { StorageService }         from '@core/services/storage.service';
 
 import { Column }         from '@shared/interfaces/column.interface';
 import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
-
-import { Tag }          from '@shared/models/tag.model';
-import { Task }         from '@shared/models/task.model';
-import { TagsService }  from '@shared/services/tags.service';
-import { TasksService } from '@shared/services/tasks.service';
+import { Tag }            from '@shared/models/tag.model';
+import { Task }           from '@shared/models/task.model';
+import { TagsService }    from '@shared/services/tags.service';
+import { TasksService }   from '@shared/services/tasks.service';
 
 import { columns as monthModelColumns } from '@report/constants/report-date-range-columns.constant';
 import { columns as totalModelColumns } from '@report/constants/report-total-columns.constant';
@@ -82,17 +80,17 @@ export class ReportService {
   }
 
   public set date(date: Date | null) {
-    date?.setHours(0,0,0,0);
+    date?.setHours(0, 0, 0, 0);
     this.dateSubject.next(date);
   }
 
   public set startDate(startDate: Date | null) {
-    startDate?.setHours(0,0,0,0);
+    startDate?.setHours(0, 0, 0, 0);
     this.startDateSubject.next(startDate);
   }
 
   public set endDate(endDate: Date | null) {
-    endDate?.setHours(23,59,59);
+    endDate?.setHours(23, 59, 59);
     this.endDateSubject.next(endDate);
   }
 
@@ -277,36 +275,36 @@ export class ReportService {
              hideUnreportedTasks,
              reload,
            ]: [Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean, void]) => this.storageService.create(
-              this.settingsKey,
-              {
-                reportMode,
-                tags: tags.map((t: Tag) => t.id),
-                date,
-                startDate,
-                endDate,
-                showWeekends,
-                hideUnreportedTasks,
-              },
-              this.customStoreName,
-            )
-              .pipe(
-                take(1),
-                catchError(
-                  (error) => {
-                    console.error(error);
-                    return of([
-                      tags,
-                      date,
-                      startDate,
-                      endDate,
-                      reportMode,
-                      showWeekends,
-                      hideUnreportedTasks,
-                      reload,
-                    ]);
-                  },
-                ),
+            this.settingsKey,
+            {
+              reportMode,
+              tags: tags.map((t: Tag) => t.id),
+              date,
+              startDate,
+              endDate,
+              showWeekends,
+              hideUnreportedTasks,
+            },
+            this.customStoreName,
+          )
+            .pipe(
+              take(1),
+              catchError(
+                (error) => {
+                  console.error(error);
+                  return of([
+                    tags,
+                    date,
+                    startDate,
+                    endDate,
+                    reportMode,
+                    showWeekends,
+                    hideUnreportedTasks,
+                    reload,
+                  ]);
+                },
               ),
+            ),
         ),
       );
   }

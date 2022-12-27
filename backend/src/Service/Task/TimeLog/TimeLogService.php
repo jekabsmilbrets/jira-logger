@@ -9,6 +9,7 @@ use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Factory\Task\TimeLog\TimeLogFactory;
 use App\Repository\Task\TimeLog\TimeLogRepository;
+use Doctrine\DBAL\Exception;
 
 class TimeLogService
 {
@@ -52,23 +53,6 @@ class TimeLogService
     /**
      * @throws \Exception
      */
-    final public function startTaskTimeLog(
-        Task $task,
-        bool $flush = true,
-    ): ?TimeLog {
-        $timeLog = new TimeLog();
-        $timeLog->setTask($task)
-            ->setStartTime(new \DateTime());
-
-        return $this->new(
-            timeLog: $timeLog,
-            flush: $flush
-        );
-    }
-
-    /**
-     * @throws \Exception
-     */
     final public function new(
         TimeLogRequest $timeLogRequest = null,
         TimeLog $timeLog = null,
@@ -88,32 +72,6 @@ class TimeLogService
         );
 
         return $timeLog;
-    }
-
-    /**
-     * @throws \Exception
-     */
-    final public function stopTaskTimeLog(
-        Task $task,
-        bool $flush = true,
-    ): ?TimeLog {
-        $timeLog = $task->getLastTimeLog();
-
-        if (
-            !$timeLog instanceof TimeLog |
-            null !== $timeLog->getEndTime()
-        ) {
-            return null;
-        }
-
-        $timeLog->setEndTime(new \DateTime());
-
-        return $this->edit(
-            taskId: $task->getId(),
-            id: $timeLog->getId(),
-            timeLog: $timeLog,
-            flush: $flush
-        );
     }
 
     /**
@@ -190,5 +148,58 @@ class TimeLogService
         );
 
         return true;
+    }
+
+    /**
+     * @throws \Exception
+     */
+    final public function startTaskTimeLog(
+        Task $task,
+        bool $flush = true,
+    ): ?TimeLog {
+        $this->stopAllTimeLog();
+
+        $timeLog = new TimeLog();
+        $timeLog->setTask($task)
+            ->setStartTime(new \DateTime());
+
+        return $this->new(
+            timeLog: $timeLog,
+            flush: $flush
+        );
+    }
+
+    /**
+     * @throws \Exception
+     */
+    final public function stopTaskTimeLog(
+        Task $task,
+        bool $flush = true,
+    ): ?TimeLog {
+        $timeLog = $task->getLastTimeLog();
+
+        if (
+            !$timeLog instanceof TimeLog |
+            null !== $timeLog->getEndTime()
+        ) {
+            return null;
+        }
+
+        $timeLog->setEndTime(new \DateTime());
+
+        return $this->edit(
+            taskId: $task->getId(),
+            id: $timeLog->getId(),
+            timeLog: $timeLog,
+            flush: $flush
+        );
+    }
+
+    /**
+     * @throws Exception
+     */
+    final public function stopAllTimeLog(): int|string
+    {
+        return $this->timeLogRepository->stopAllTimeLog();
     }
 }

@@ -6,6 +6,7 @@ namespace App\Repository\Task\TimeLog;
 
 use App\Entity\Task\TimeLog\TimeLog;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Exception;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -51,6 +52,18 @@ class TimeLogRepository extends ServiceEntityRepository
         if ($flush) {
             $this->getEntityManager()->flush();
         }
+    }
+
+    /**
+     * @throws Exception
+     */
+    final public function stopAllTimeLog(): int|string
+    {
+        $rawQuery = 'UPDATE time_log SET end_time = (NOW()) WHERE end_time IS NULL;';
+
+        return $this->getEntityManager()
+            ->getConnection()
+            ->executeStatement($rawQuery);
     }
 
 //    /**

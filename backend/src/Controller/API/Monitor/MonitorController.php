@@ -16,6 +16,8 @@ use Symfony\Component\Routing\Annotation\Route;
 )]
 class MonitorController extends BaseApiController
 {
+    final public const OA_TAG = 'Monitor';
+
     #[
         Route(
             path: '/monitor',
@@ -23,11 +25,11 @@ class MonitorController extends BaseApiController
             methods: [Request::METHOD_GET],
             stateless: true,
         ),
-        OA\Tag(name: 'Monitor'),
+        OA\Tag(name: self::OA_TAG),
         OA\Get(
             operationId: 'monitor',
             summary: 'Monitor lifeline of Jira-logger',
-            tags: ['Monitor'],
+            tags: [self::OA_TAG],
             responses: [
                 new OA\Response(
                     response: 200,

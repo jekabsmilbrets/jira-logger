@@ -1,8 +1,7 @@
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { Tag }     from '@shared/models/tag.model';
 
-import { validateTagsInterfaceData } from '@task/data-validators/tag-interface-data.validator';
-
+import { validateTagsInterfaceData }     from '@task/data-validators/tag-interface-data.validator';
 import { validateTimeLogsInterfaceData } from '@task/data-validators/time-log-interface.validator';
 
 

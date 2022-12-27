@@ -13,9 +13,8 @@ import { adaptTag, adaptTags } from '@shared/adapters/api-tag.adapter';
 import { ApiTag }              from '@shared/interfaces/api/api-tag.interface';
 import { LoadableService }     from '@shared/interfaces/loadable-service.interface';
 import { MakeRequestService }  from '@shared/interfaces/make-request-service.interface';
-
-import { Tag }                from '@shared/models/tag.model';
-import { ErrorDialogService } from '@shared/services/error-dialog.service';
+import { Tag }                 from '@shared/models/tag.model';
+import { ErrorDialogService }  from '@shared/services/error-dialog.service';
 
 
 @Injectable({

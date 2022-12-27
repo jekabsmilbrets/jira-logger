@@ -2,13 +2,11 @@ import { Component } from '@angular/core';
 
 import { of, switchMap, take } from 'rxjs';
 
-import { ApiTask } from '@shared/interfaces/api/api-task.interface';
-import { Task }    from '@shared/models/task.model';
-
+import { ApiTask }      from '@shared/interfaces/api/api-task.interface';
+import { Task }         from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
 
-import { TaskImportService } from '@task/services/task-import.service';
-
+import { TaskImportService }    from '@task/services/task-import.service';
 import { TasksSettingsService } from '@task/services/tasks-settings.service';
 
 

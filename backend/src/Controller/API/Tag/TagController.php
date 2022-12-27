@@ -32,6 +32,9 @@ class TagController extends BaseApiController
     final public const CANNOT_UPDATE_TAG = 'Can not Update Tag';
     final public const DUPLICATE_TAG_NAME = 'Duplicate Tag name';
 
+    final public const OA_TAG = 'Tags';
+    final public const MODEL_SCHEMA = '#/components/schemas/TagModel';
+
     public function __construct(
         private readonly TagService $tagService,
     ) {
@@ -44,11 +47,11 @@ class TagController extends BaseApiController
             methods: [Request::METHOD_GET],
             stateless: true
         ),
-        OA\Tag(name: 'Tags'),
+        OA\Tag(name: self::OA_TAG),
         OA\Get(
             operationId: 'list-tags',
             summary: 'List Tags',
-            tags: ['Tags'],
+            tags: [self::OA_TAG],
         ),
         OA\Response(
             response: 200,
@@ -58,7 +61,7 @@ class TagController extends BaseApiController
                     new OA\Property(
                         property: 'data',
                         type: 'array',
-                        items: new OA\Items(ref: '#/components/schemas/TagModel')
+                        items: new OA\Items(ref: self::MODEL_SCHEMA)
                     ),
                 ]
             ),
@@ -104,16 +107,16 @@ class TagController extends BaseApiController
             methods: [Request::METHOD_GET],
             stateless: true,
         ),
-        OA\Tag(name: 'Tags'),
+        OA\Tag(name: self::OA_TAG),
         OA\Get(
             operationId: 'show-tag',
             summary: 'Show tag',
-            tags: ['Tags']
+            tags: [self::OA_TAG]
         ),
         OA\Response(
             response: 200,
             description: 'Returns tag',
-            content: new OA\JsonContent(ref: '#/components/schemas/TagModel'),
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
         ),
         OA\Response(
             response: 404,
@@ -156,11 +159,11 @@ class TagController extends BaseApiController
             methods: [Request::METHOD_POST],
             stateless: true
         ),
-        OA\Tag(name: 'Tags'),
+        OA\Tag(name: self::OA_TAG),
         OA\Post(
             operationId: 'create-tag',
             summary: 'Create a new tag',
-            tags: ['Tags'],
+            tags: [self::OA_TAG],
         ),
         OA\RequestBody(
             content: new OA\JsonContent(ref: '#/components/schemas/TagCreateRequest')
@@ -168,7 +171,7 @@ class TagController extends BaseApiController
         OA\Response(
             response: 200,
             description: 'Tag created successfully',
-            content: new OA\JsonContent(ref: '#/components/schemas/TagModel'),
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
         ),
         OA\Response(
             response: 400,
@@ -263,11 +266,11 @@ class TagController extends BaseApiController
             methods: [Request::METHOD_PATCH],
             stateless: true,
         ),
-        OA\Tag(name: 'Tags'),
+        OA\Tag(name: self::OA_TAG),
         OA\Patch(
             operationId: 'edit-tag',
             summary: 'Edit Tag',
-            tags: ['Tags'],
+            tags: [self::OA_TAG],
         ),
         OA\RequestBody(
             content: new OA\JsonContent(ref: '#/components/schemas/TagUpdateRequest')
@@ -275,7 +278,7 @@ class TagController extends BaseApiController
         OA\Response(
             response: 200,
             description: 'Returns tag',
-            content: new OA\JsonContent(ref: '#/components/schemas/TagModel'),
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
         ),
         OA\Response(
             response: 400,
@@ -392,11 +395,11 @@ class TagController extends BaseApiController
             methods: [Request::METHOD_DELETE],
             stateless: true,
         ),
-        OA\Tag(name: 'Tags'),
+        OA\Tag(name: self::OA_TAG),
         OA\Delete(
             operationId: 'delete-tag',
             summary: 'Delete Tag',
-            tags: ['Tags'],
+            tags: [self::OA_TAG],
         ),
         OA\Response(
             response: 204,
