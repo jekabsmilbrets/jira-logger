@@ -32,6 +32,9 @@ class SettingController extends BaseApiController
     final public const CANNOT_UPDATE_SETTING = 'Can not Update Setting';
     final public const DUPLICATE_SETTING_NAME = 'Duplicate Setting name';
 
+    final public const OA_TAG = 'Settings';
+    final public const MODEL_SCHEMA = '#/components/schemas/SettingModel';
+
     public function __construct(
         private readonly SettingService $settingService,
     ) {
@@ -44,11 +47,11 @@ class SettingController extends BaseApiController
             methods: [Request::METHOD_GET],
             stateless: true
         ),
-        OA\Tag(name: 'Settings'),
+        OA\Tag(name: self::OA_TAG),
         OA\Get(
             operationId: 'list-settings',
             summary: 'List Settings',
-            tags: ['Settings'],
+            tags: [self::OA_TAG],
         ),
         OA\Response(
             response: 200,
@@ -58,7 +61,7 @@ class SettingController extends BaseApiController
                     new OA\Property(
                         property: 'data',
                         type: 'array',
-                        items: new OA\Items(ref: '#/components/schemas/SettingModel')
+                        items: new OA\Items(ref: self::MODEL_SCHEMA)
                     ),
                 ]
             ),
@@ -104,16 +107,16 @@ class SettingController extends BaseApiController
             methods: [Request::METHOD_GET],
             stateless: true,
         ),
-        OA\Tag(name: 'Settings'),
+        OA\Tag(name: self::OA_TAG),
         OA\Get(
             operationId: 'show-setting',
             summary: 'Show Setting',
-            tags: ['Settings']
+            tags: [self::OA_TAG]
         ),
         OA\Response(
             response: 200,
             description: 'Returns Setting',
-            content: new OA\JsonContent(ref: '#/components/schemas/SettingModel'),
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
         ),
         OA\Response(
             response: 404,
@@ -156,11 +159,11 @@ class SettingController extends BaseApiController
             methods: [Request::METHOD_POST],
             stateless: true
         ),
-        OA\Tag(name: 'Settings'),
+        OA\Tag(name: self::OA_TAG),
         OA\Post(
             operationId: 'create-setting',
             summary: 'Create a new Setting',
-            tags: ['Settings'],
+            tags: [self::OA_TAG],
         ),
         OA\RequestBody(
             content: new OA\JsonContent(ref: '#/components/schemas/SettingCreateRequest')
@@ -168,7 +171,7 @@ class SettingController extends BaseApiController
         OA\Response(
             response: 200,
             description: 'Setting created successfully',
-            content: new OA\JsonContent(ref: '#/components/schemas/SettingModel'),
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
         ),
         OA\Response(
             response: 400,
@@ -263,11 +266,11 @@ class SettingController extends BaseApiController
             methods: [Request::METHOD_PATCH],
             stateless: true,
         ),
-        OA\Tag(name: 'Settings'),
+        OA\Tag(name: self::OA_TAG),
         OA\Patch(
             operationId: 'edit-setting',
             summary: 'Edit Setting',
-            tags: ['Settings'],
+            tags: [self::OA_TAG],
         ),
         OA\RequestBody(
             content: new OA\JsonContent(ref: '#/components/schemas/SettingUpdateRequest')
@@ -275,7 +278,7 @@ class SettingController extends BaseApiController
         OA\Response(
             response: 200,
             description: 'Returns Setting',
-            content: new OA\JsonContent(ref: '#/components/schemas/SettingModel'),
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
         ),
         OA\Response(
             response: 400,
@@ -392,11 +395,11 @@ class SettingController extends BaseApiController
             methods: [Request::METHOD_DELETE],
             stateless: true,
         ),
-        OA\Tag(name: 'Settings'),
+        OA\Tag(name: self::OA_TAG),
         OA\Delete(
             operationId: 'delete-setting',
             summary: 'Delete Setting',
-            tags: ['Settings'],
+            tags: [self::OA_TAG],
         ),
         OA\Response(
             response: 204,

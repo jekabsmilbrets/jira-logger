@@ -36,6 +36,9 @@ class TaskController extends BaseApiController
     final public const CANNOT_UPDATE_TASK = 'Can not Update Task';
     final public const DUPLICATE_TASK_NAME = 'Duplicate Task name';
 
+    final public const OA_TAG = 'Tasks';
+    final public const MODEL_SCHEMA = '#/components/schemas/TaskModel';
+
     public function __construct(
         private readonly TaskService $taskService,
         private readonly JiraApiService $jiraApiService,
@@ -52,11 +55,11 @@ class TaskController extends BaseApiController
             methods: [Request::METHOD_GET],
             stateless: true
         ),
-        OA\Tag(name: 'Tasks'),
+        OA\Tag(name: self::OA_TAG),
         OA\Get(
             operationId: 'list-tasks',
             summary: 'List Tasks',
-            tags: ['Tasks'],
+            tags: [self::OA_TAG],
         ),
         OA\Parameter(
             name: 'date',
@@ -96,7 +99,7 @@ class TaskController extends BaseApiController
                     new OA\Property(
                         property: 'data',
                         type: 'array',
-                        items: new OA\Items(ref: '#/components/schemas/TaskModel')
+                        items: new OA\Items(ref: self::MODEL_SCHEMA)
                     ),
                 ]
             ),
@@ -141,7 +144,7 @@ class TaskController extends BaseApiController
                 ),
                 initial: []
             ),
-            callback: static function ($value, $key): bool {
+            callback: static function ($value): bool {
                 return null !== $value;
             },
             mode: \ARRAY_FILTER_USE_BOTH
@@ -169,16 +172,16 @@ class TaskController extends BaseApiController
             methods: [Request::METHOD_GET],
             stateless: true,
         ),
-        OA\Tag(name: 'Tasks'),
+        OA\Tag(name: self::OA_TAG),
         OA\Get(
             operationId: 'show-task',
             summary: 'Show task',
-            tags: ['Tasks']
+            tags: [self::OA_TAG]
         ),
         OA\Response(
             response: Response::HTTP_OK,
             description: 'Returns task',
-            content: new OA\JsonContent(ref: '#/components/schemas/TaskModel'),
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
         ),
         OA\Response(
             response: Response::HTTP_NOT_FOUND,
@@ -198,10 +201,8 @@ class TaskController extends BaseApiController
         ),
     ]
     final public function show(
-        string $id
+        ?Task $task,
     ): JsonResponse {
-        $task = $this->taskService->show($id);
-
         if (!$task instanceof Task) {
             return $this->jsonApi(
                 errors: [self::TASK_NOT_FOUND],
@@ -221,11 +222,11 @@ class TaskController extends BaseApiController
             methods: [Request::METHOD_POST],
             stateless: true
         ),
-        OA\Tag(name: 'Tasks'),
+        OA\Tag(name: self::OA_TAG),
         OA\Post(
             operationId: 'create-task',
             summary: 'Create a new task',
-            tags: ['Tasks'],
+            tags: [self::OA_TAG],
         ),
         OA\RequestBody(
             content: new OA\JsonContent(ref: '#/components/schemas/TaskCreateRequest')
@@ -233,7 +234,7 @@ class TaskController extends BaseApiController
         OA\Response(
             response: Response::HTTP_OK,
             description: 'Task created successfully',
-            content: new OA\JsonContent(ref: '#/components/schemas/TaskModel'),
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
         ),
         OA\Response(
             response: Response::HTTP_BAD_REQUEST,
@@ -332,11 +333,11 @@ class TaskController extends BaseApiController
             methods: [Request::METHOD_PATCH],
             stateless: true,
         ),
-        OA\Tag(name: 'Tasks'),
+        OA\Tag(name: self::OA_TAG),
         OA\Patch(
             operationId: 'edit-task',
             summary: 'Edit Task',
-            tags: ['Tasks'],
+            tags: [self::OA_TAG],
         ),
         OA\RequestBody(
             content: new OA\JsonContent(ref: '#/components/schemas/TaskUpdateRequest')
@@ -344,7 +345,7 @@ class TaskController extends BaseApiController
         OA\Response(
             response: Response::HTTP_OK,
             description: 'Returns task',
-            content: new OA\JsonContent(ref: '#/components/schemas/TaskModel'),
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
         ),
         OA\Response(
             response: Response::HTTP_BAD_REQUEST,
@@ -465,11 +466,11 @@ class TaskController extends BaseApiController
             methods: [Request::METHOD_DELETE],
             stateless: true,
         ),
-        OA\Tag(name: 'Tasks'),
+        OA\Tag(name: self::OA_TAG),
         OA\Delete(
             operationId: 'delete-task',
             summary: 'Delete Task',
-            tags: ['Tasks'],
+            tags: [self::OA_TAG],
         ),
         OA\Response(
             response: Response::HTTP_NO_CONTENT,
@@ -543,11 +544,11 @@ class TaskController extends BaseApiController
             methods: [Request::METHOD_GET],
             stateless: true
         ),
-        OA\Tag(name: 'Tasks'),
+        OA\Tag(name: self::OA_TAG),
         OA\Get(
             operationId: 'task-exist',
             summary: 'Task exist check',
-            tags: ['Tasks'],
+            tags: [self::OA_TAG],
         ),
         OA\Parameter(
             name: 'name',
@@ -565,10 +566,8 @@ class TaskController extends BaseApiController
         ),
     ]
     final public function taskExists(
-        string $name,
+        ?Task $foundTask,
     ): JsonResponse {
-        $foundTask = $this->taskService->findByName($name);
-
         return $this->jsonApi(
             status: $foundTask ? Response::HTTP_CONFLICT : Response::HTTP_NO_CONTENT,
         );
@@ -588,11 +587,11 @@ class TaskController extends BaseApiController
             methods: [Request::METHOD_GET],
             stateless: true
         ),
-        OA\Tag(name: 'Tasks'),
+        OA\Tag(name: self::OA_TAG),
         OA\Get(
             operationId: 'sync-task-with-jira',
             summary: 'Sync Task with JIRA',
-            tags: ['Tasks'],
+            tags: [self::OA_TAG],
         ),
         OA\Parameter(
             name: 'id',

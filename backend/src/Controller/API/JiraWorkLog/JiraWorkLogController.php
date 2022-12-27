@@ -32,6 +32,9 @@ class JiraWorkLogController extends BaseApiController
     final public const CANNOT_UPDATE_JIRA_WORK_LOG = 'Can not Update JiraWorkLog';
     final public const DUPLICATE_JIRA_WORK_LOG_NAME = 'Duplicate JiraWorkLog name';
 
+    final public const OA_TAG = 'Jira Work Logs';
+    final public const MODEL_SCHEMA = '#/components/schemas/JiraWorkLogModel';
+
     public function __construct(
         private readonly JiraWorkLogService $jiraWorkLogService,
     ) {
@@ -44,11 +47,11 @@ class JiraWorkLogController extends BaseApiController
             methods: [Request::METHOD_GET],
             stateless: true
         ),
-        OA\Tag(name: 'JiraWorkLogs'),
+        OA\Tag(name: self::OA_TAG),
         OA\Get(
             operationId: 'list-jira-work-logs',
             summary: 'List JiraWorkLogs',
-            tags: ['JiraWorkLogs'],
+            tags: [self::OA_TAG],
         ),
         OA\Response(
             response: 200,
@@ -58,7 +61,7 @@ class JiraWorkLogController extends BaseApiController
                     new OA\Property(
                         property: 'data',
                         type: 'array',
-                        items: new OA\Items(ref: '#/components/schemas/JiraWorkLogModel')
+                        items: new OA\Items(ref: self::MODEL_SCHEMA)
                     ),
                 ]
             ),
@@ -104,16 +107,16 @@ class JiraWorkLogController extends BaseApiController
             methods: [Request::METHOD_GET],
             stateless: true,
         ),
-        OA\Tag(name: 'JiraWorkLogs'),
+        OA\Tag(name: self::OA_TAG),
         OA\Get(
             operationId: 'show-jira-work-log',
             summary: 'Show JiraWorkLog',
-            tags: ['JiraWorkLogs']
+            tags: [self::OA_TAG]
         ),
         OA\Response(
             response: 200,
             description: 'Returns JiraWorkLog',
-            content: new OA\JsonContent(ref: '#/components/schemas/JiraWorkLogModel'),
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
         ),
         OA\Response(
             response: 404,
@@ -133,10 +136,8 @@ class JiraWorkLogController extends BaseApiController
         ),
     ]
     final public function show(
-        string $id
+        ?JiraWorkLog $jiraWorkLog,
     ): JsonResponse {
-        $jiraWorkLog = $this->jiraWorkLogService->show($id);
-
         if (!$jiraWorkLog instanceof JiraWorkLog) {
             return $this->jsonApi(
                 errors: [self::JIRA_WORK_LOG_NOT_FOUND],
@@ -156,11 +157,11 @@ class JiraWorkLogController extends BaseApiController
             methods: [Request::METHOD_POST],
             stateless: true
         ),
-        OA\Tag(name: 'JiraWorkLogs'),
+        OA\Tag(name: self::OA_TAG),
         OA\Post(
             operationId: 'create-jira-work-log',
             summary: 'Create a new JiraWorkLog',
-            tags: ['JiraWorkLogs'],
+            tags: [self::OA_TAG],
         ),
         OA\RequestBody(
             content: new OA\JsonContent(ref: '#/components/schemas/JiraWorkLogCreateRequest')
@@ -168,7 +169,7 @@ class JiraWorkLogController extends BaseApiController
         OA\Response(
             response: 200,
             description: 'JiraWorkLog created successfully',
-            content: new OA\JsonContent(ref: '#/components/schemas/JiraWorkLogModel'),
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
         ),
         OA\Response(
             response: 400,
@@ -263,11 +264,11 @@ class JiraWorkLogController extends BaseApiController
             methods: [Request::METHOD_PATCH],
             stateless: true,
         ),
-        OA\Tag(name: 'JiraWorkLogs'),
+        OA\Tag(name: self::OA_TAG),
         OA\Patch(
             operationId: 'edit-jira-work-log',
             summary: 'Edit JiraWorkLog',
-            tags: ['JiraWorkLogs'],
+            tags: [self::OA_TAG],
         ),
         OA\RequestBody(
             content: new OA\JsonContent(ref: '#/components/schemas/JiraWorkLogUpdateRequest')
@@ -275,7 +276,7 @@ class JiraWorkLogController extends BaseApiController
         OA\Response(
             response: 200,
             description: 'Returns JiraWorkLog',
-            content: new OA\JsonContent(ref: '#/components/schemas/JiraWorkLogModel'),
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
         ),
         OA\Response(
             response: 400,
@@ -392,11 +393,11 @@ class JiraWorkLogController extends BaseApiController
             methods: [Request::METHOD_DELETE],
             stateless: true,
         ),
-        OA\Tag(name: 'JiraWorkLogs'),
+        OA\Tag(name: self::OA_TAG),
         OA\Delete(
             operationId: 'delete-jira-work-log',
             summary: 'Delete JiraWorkLog',
-            tags: ['JiraWorkLogs'],
+            tags: [self::OA_TAG],
         ),
         OA\Response(
             response: 204,

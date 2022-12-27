@@ -9,10 +9,9 @@ import { take } from 'rxjs';
 
 import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
 
-import { Column }     from '@shared/interfaces/column.interface';
-import { Searchable } from '@shared/interfaces/searchable.interface';
-import { Task }       from '@shared/models/task.model';
-
+import { Column }            from '@shared/interfaces/column.interface';
+import { Searchable }        from '@shared/interfaces/searchable.interface';
+import { Task }              from '@shared/models/task.model';
 import { TimeLog }           from '@shared/models/time-log.model';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
 import { getNestedObject }   from '@shared/utils/get-nested-object.util';
@@ -133,11 +132,11 @@ export class TableComponent implements AfterViewInit {
 
   public shouldDisplayColumn(column: Column): boolean {
     return !column.hidden && !column.excludeFromLoop
-    && ![
-      'select',
-      'remove',
-      'sync',
-    ].includes(column.columnDef);
+      && ![
+        'select',
+        'remove',
+        'sync',
+      ].includes(column.columnDef);
   }
 
   public onCellClick(row: Searchable, column: Column): void {

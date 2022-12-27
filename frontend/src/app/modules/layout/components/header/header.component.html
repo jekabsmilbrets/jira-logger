@@ -16,6 +16,9 @@
     <a [routerLink]="reportDateLink()"
        class="time-spent">{{ timeLoggedToday | readableTime }}</a>
 
+    <span *ngIf="activeTask"
+          class="active-task">{{ activeTask.name }}</span>
+
     <span class="spacer"></span>
 
     <ng-template appDynamicMenu></ng-template>

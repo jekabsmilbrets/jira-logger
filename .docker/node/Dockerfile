@@ -1,12 +1,7 @@
 FROM node:lts-gallium
-ENV NODE_ENV=production
+
+RUN npm i -g @angular/cli@latest
 
 WORKDIR /home/node/app
 
-RUN npm config set unsafe-perm true
-
-RUN npm install -g @angular/cli@14
-
-USER node
-
-EXPOSE 4200
+CMD npm ci; npm run build

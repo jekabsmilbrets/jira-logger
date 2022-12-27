@@ -1,6 +1,5 @@
-import { Column } from '@shared/interfaces/column.interface';
-import { Tag }    from '@shared/models/tag.model';
-
+import { Column }      from '@shared/interfaces/column.interface';
+import { Tag }         from '@shared/models/tag.model';
 import { Task }        from '@shared/models/task.model';
 import { columnValue } from '@shared/utils/column-value.util';
 

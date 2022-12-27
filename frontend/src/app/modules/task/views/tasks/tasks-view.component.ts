@@ -1,24 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup }         from '@angular/forms';
 
-import {
-  catchError,
-  debounceTime,
-  distinctUntilChanged,
-  forkJoin,
-  map,
-  Observable,
-  of,
-  startWith,
-  switchMap,
-  take,
-} from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, map, Observable, of, startWith, switchMap, take } from 'rxjs';
 
 import { DynamicMenu }        from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
-import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
-
+import { TaskListFilter }  from '@shared/interfaces/task-list-filter.interface';
 import { Tag }             from '@shared/models/tag.model';
 import { Task }            from '@shared/models/task.model';
 import { TimeLog }         from '@shared/models/time-log.model';
@@ -27,13 +15,11 @@ import { TasksService }    from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 import { SharedModule }    from '@shared/shared.module';
 
-import { TasksMenuComponent }   from '@task/components/tasks-menu/tasks-menu.component';
-import { TaskUpdateActionEnum } from '@task/enums/task-update-action.enum';
-
+import { TasksMenuComponent }           from '@task/components/tasks-menu/tasks-menu.component';
+import { TaskUpdateActionEnum }         from '@task/enums/task-update-action.enum';
 import { CreateTaskFromGroupInterface } from '@task/interfaces/create-task-from-group.interface';
 import { TaskCreateService }            from '@task/services/task-create.service';
-
-import { TasksSettingsService } from '@task/services/tasks-settings.service';
+import { TasksSettingsService }         from '@task/services/tasks-settings.service';
 
 
 @Component(
@@ -196,36 +182,9 @@ export class TasksViewComponent implements OnInit {
   private startTimeLog(
     task: Task,
   ): Observable<boolean> {
-    return this.tasks$
+    return this.timeLogsService.start(task)
       .pipe(
         take(1),
-        switchMap(
-          (tasks: Task[]) => {
-            const observables: Observable<void>[] = [];
-
-            tasks.forEach(
-              (oTask: Task) => {
-                if (oTask.id !== task.id) {
-                  if (oTask.isTimeLogRunning && oTask.lastTimeLog instanceof TimeLog) {
-                    oTask.lastTimeLog.endTime = new Date();
-                    observables.push(this.timeLogsService.stop(oTask));
-                  }
-                }
-              },
-            );
-
-            if (observables.length > 0) {
-              return forkJoin(observables)
-                .pipe(
-                  take(1),
-                  map(() => true),
-                );
-            }
-
-            return of(true);
-          },
-        ),
-        switchMap(() => this.timeLogsService.start(task)),
         map(() => true),
       );
   }
@@ -235,6 +194,7 @@ export class TasksViewComponent implements OnInit {
   ): Observable<boolean> {
     return this.timeLogsService.stop(task)
       .pipe(
+        take(1),
         map(() => true),
       );
   }

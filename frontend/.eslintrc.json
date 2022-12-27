@@ -51,9 +51,13 @@
             "groups": [
               "builtin",
               "external",
+              "internal",
+              "unknown",
               "parent",
               "sibling",
-              "index"
+              "index",
+              "object",
+              "type"
             ],
             "pathGroups": [
               {
