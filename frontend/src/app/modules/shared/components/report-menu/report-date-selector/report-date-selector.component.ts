@@ -7,7 +7,7 @@ import { ReportModeEnum } from '@report/enums/report-mode.enum';
 
 @Component(
   {
-    selector: 'app-report-date-selector',
+    selector: 'shared-report-date-selector',
     templateUrl: './report-date-selector.component.html',
     styleUrls: ['./report-date-selector.component.scss'],
   },

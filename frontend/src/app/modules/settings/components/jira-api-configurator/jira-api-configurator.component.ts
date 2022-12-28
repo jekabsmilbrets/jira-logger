@@ -9,7 +9,7 @@ import { Setting } from '@core/models/setting.model';
 
 
 @Component({
-  selector: 'app-jira-api-configurator',
+  selector: 'settings-jira-api-configurator',
   templateUrl: './jira-api-configurator.component.html',
   styleUrls: ['./jira-api-configurator.component.scss'],
 })

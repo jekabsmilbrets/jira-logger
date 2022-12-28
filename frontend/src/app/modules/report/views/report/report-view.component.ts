@@ -23,7 +23,7 @@ import { ReportService }       from '@report/services/report.service';
 
 @Component(
   {
-    selector: 'app-report-view',
+    selector: 'report-view',
     templateUrl: './report-view.component.html',
     styleUrls: ['./report-view.component.scss'],
   },

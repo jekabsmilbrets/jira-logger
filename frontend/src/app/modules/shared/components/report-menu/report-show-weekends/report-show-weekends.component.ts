@@ -4,7 +4,7 @@ import { MatSlideToggleChange }                   from '@angular/material/slide-
 
 @Component(
   {
-    selector: 'app-report-show-weekends',
+    selector: 'shared-report-show-weekends',
     templateUrl: './report-show-weekends.component.html',
     styleUrls: ['./report-show-weekends.component.scss'],
   },

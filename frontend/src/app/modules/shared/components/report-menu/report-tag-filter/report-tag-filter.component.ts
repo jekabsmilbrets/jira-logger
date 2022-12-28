@@ -9,7 +9,7 @@ import { TagsService } from '@shared/services/tags.service';
 
 @Component(
   {
-    selector: 'app-report-tag-filter',
+    selector: 'shared-report-tag-filter',
     templateUrl: './report-tag-filter.component.html',
     styleUrls: ['./report-tag-filter.component.scss'],
   },

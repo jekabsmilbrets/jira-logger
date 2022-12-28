@@ -19,7 +19,7 @@ import { getNestedObject }   from '@shared/utils/get-nested-object.util';
 
 @Component(
   {
-    selector: 'app-shared-table',
+    selector: 'shared-shared-table',
     templateUrl: './table.component.html',
     styleUrls: ['./table.component.scss'],
   },

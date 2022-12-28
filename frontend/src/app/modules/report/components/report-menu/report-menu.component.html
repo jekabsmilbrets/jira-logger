@@ -10,27 +10,27 @@
 </ng-template>
 
 <ng-template #menuItems>
-    <app-report-hide-unreported-tasks (hideUnreportedTasksChange)="onHideUnreportedTasksChange($event)"
-                                      [hideUnreportedTasks]="hideUnreportedTasks$ | async"></app-report-hide-unreported-tasks>
+    <shared-report-hide-unreported-tasks (hideUnreportedTasksChange)="onHideUnreportedTasksChange($event)"
+                                      [hideUnreportedTasks]="hideUnreportedTasks$ | async"></shared-report-hide-unreported-tasks>
 
-    <app-report-show-weekends (showWeekendsChange)="onShowWeekendsChange($event)"
+    <shared-report-show-weekends (showWeekendsChange)="onShowWeekendsChange($event)"
                               *ngIf="(reportMode$ | async) !== 'date'"
-                              [showWeekends]="showWeekends$ | async"></app-report-show-weekends>
+                              [showWeekends]="showWeekends$ | async"></shared-report-show-weekends>
 
-    <app-report-date-selector (dateChange)="onDateChange($event)"
+    <shared-report-date-selector (dateChange)="onDateChange($event)"
                               (endDateChange)="onEndDateChange($event)"
                               (startDateChange)="onStartDateChange($event)"
                               *ngIf="showDatePicker() | async"
                               [date]="date$ | async"
                               [endDate]="endDate$ | async"
                               [reportMode]="reportMode$ | async"
-                              [startDate]="startDate$ | async"></app-report-date-selector>
+                              [startDate]="startDate$ | async"></shared-report-date-selector>
 
-    <app-report-tag-filter (tagChange)="onTagChange($event)"
-                           [tags]="tags$ | async"></app-report-tag-filter>
+    <shared-report-tag-filter (tagChange)="onTagChange($event)"
+                           [tags]="tags$ | async"></shared-report-tag-filter>
 
-    <app-report-mode-switcher (reportModeChange)="onReportModeChange($event)"
-                              [reportMode]="reportMode$ | async"></app-report-mode-switcher>
+    <shared-report-mode-switcher (reportModeChange)="onReportModeChange($event)"
+                              [reportMode]="reportMode$ | async"></shared-report-mode-switcher>
 </ng-template>
 
 <ng-template #smallScreenDialog>

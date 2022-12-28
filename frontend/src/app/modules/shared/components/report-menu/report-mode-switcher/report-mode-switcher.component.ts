@@ -7,7 +7,7 @@ import { ReportModeEnum } from '@report/enums/report-mode.enum';
 
 @Component(
   {
-    selector: 'app-report-mode-switcher',
+    selector: 'shared-report-mode-switcher',
     templateUrl: './report-mode-switcher.component.html',
     styleUrls: ['./report-mode-switcher.component.scss'],
   },
