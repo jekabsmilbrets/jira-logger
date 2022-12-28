@@ -11,26 +11,31 @@
 
 <ng-template #menuItems>
     <shared-report-hide-unreported-tasks (hideUnreportedTasksChange)="onHideUnreportedTasksChange($event)"
-                                      [hideUnreportedTasks]="hideUnreportedTasks$ | async"></shared-report-hide-unreported-tasks>
+                                         [hideUnreportedTasks]="hideUnreportedTasks$ | async">
+    </shared-report-hide-unreported-tasks>
 
     <shared-report-show-weekends (showWeekendsChange)="onShowWeekendsChange($event)"
-                              *ngIf="(reportMode$ | async) !== 'date'"
-                              [showWeekends]="showWeekends$ | async"></shared-report-show-weekends>
+                                 *ngIf="(reportMode$ | async) !== 'date'"
+                                 [showWeekends]="showWeekends$ | async">
+    </shared-report-show-weekends>
 
     <shared-report-date-selector (dateChange)="onDateChange($event)"
-                              (endDateChange)="onEndDateChange($event)"
-                              (startDateChange)="onStartDateChange($event)"
-                              *ngIf="showDatePicker() | async"
-                              [date]="date$ | async"
-                              [endDate]="endDate$ | async"
-                              [reportMode]="reportMode$ | async"
-                              [startDate]="startDate$ | async"></shared-report-date-selector>
+                                 (endDateChange)="onEndDateChange($event)"
+                                 (startDateChange)="onStartDateChange($event)"
+                                 *ngIf="showDatePicker() | async"
+                                 [date]="date$ | async"
+                                 [endDate]="endDate$ | async"
+                                 [reportMode]="reportMode$ | async"
+                                 [startDate]="startDate$ | async">
+    </shared-report-date-selector>
 
     <shared-report-tag-filter (tagChange)="onTagChange($event)"
-                           [tags]="tags$ | async"></shared-report-tag-filter>
+                              [tags]="tags$ | async">
+    </shared-report-tag-filter>
 
     <shared-report-mode-switcher (reportModeChange)="onReportModeChange($event)"
-                              [reportMode]="reportMode$ | async"></shared-report-mode-switcher>
+                                 [reportMode]="reportMode$ | async">
+    </shared-report-mode-switcher>
 </ng-template>
 
 <ng-template #smallScreenDialog>

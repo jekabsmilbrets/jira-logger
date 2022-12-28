@@ -5,34 +5,34 @@
 
     <mat-card-content *ngIf="reportSettings">
         <shared-report-mode-switcher (reportModeChange)="onReportModeChange($event)"
-                                  [disabled]="disabled"
-                                  [reportMode]="reportSettings.reportMode">
+                                     [disabled]="disabled"
+                                     [reportMode]="reportSettings.reportMode">
         </shared-report-mode-switcher>
 
         <shared-report-date-selector (dateChange)="onDateChange($event)"
-                                  (endDateChange)="onEndDateChange($event)"
-                                  (startDateChange)="onStartDateChange($event)"
-                                  *ngIf="showDatePicker()"
-                                  [date]="reportSettings.date"
-                                  [disabled]="disabled"
-                                  [endDate]="reportSettings.endDate"
-                                  [reportMode]="reportSettings.reportMode"
-                                  [startDate]="reportSettings.startDate">
+                                     (endDateChange)="onEndDateChange($event)"
+                                     (startDateChange)="onStartDateChange($event)"
+                                     *ngIf="showDatePicker()"
+                                     [date]="reportSettings.date"
+                                     [disabled]="disabled"
+                                     [endDate]="reportSettings.endDate"
+                                     [reportMode]="reportSettings.reportMode"
+                                     [startDate]="reportSettings.startDate">
         </shared-report-date-selector>
 
         <shared-report-tag-filter (tagChange)="onTagChange($event)"
-                               [disabled]="disabled"
-                               [tags]="reportSettings.tags">
+                                  [disabled]="disabled"
+                                  [tags]="reportSettings.tags">
         </shared-report-tag-filter>
 
         <shared-report-hide-unreported-tasks (hideUnreportedTasksChange)="onHideUnreportedTasksChange($event)"
-                                          [disabled]="disabled"
-                                          [hideUnreportedTasks]="reportSettings.hideUnreportedTasks">
+                                             [disabled]="disabled"
+                                             [hideUnreportedTasks]="reportSettings.hideUnreportedTasks">
         </shared-report-hide-unreported-tasks>
 
         <shared-report-show-weekends (showWeekendsChange)="onShowWeekendsChange($event)"
-                                  [disabled]="disabled"
-                                  [showWeekends]="reportSettings.showWeekends">
+                                     [disabled]="disabled"
+                                     [showWeekends]="reportSettings.showWeekends">
         </shared-report-show-weekends>
     </mat-card-content>
 </mat-card>

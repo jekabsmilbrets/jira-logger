@@ -32,13 +32,13 @@
 
 <tasks-task-list *ngIf="tasks$ | async as tasks">
     <tasks-task (action)="onAction($event)"
-              (createTimeLog)="onCreateTimeLog($event)"
-              (remove)="onRemove($event)"
-              (removeTimeLog)="onRemoveTimeLog($event)"
-              (update)="onUpdate($event)"
-              (updateTimeLog)="onUpdateTimeLog($event)"
-              *ngFor="let task of tasks"
-              [isLoading]="isLoading$ | async"
-              [task]="task">
+                (createTimeLog)="onCreateTimeLog($event)"
+                (remove)="onRemove($event)"
+                (removeTimeLog)="onRemoveTimeLog($event)"
+                (update)="onUpdate($event)"
+                (updateTimeLog)="onUpdateTimeLog($event)"
+                *ngFor="let task of tasks"
+                [isLoading]="isLoading$ | async"
+                [task]="task">
     </tasks-task>
 </tasks-task-list>

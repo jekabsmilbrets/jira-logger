@@ -19,16 +19,17 @@
     </mat-toolbar>
 
     <shared-shared-table (cellClicked)="onCellClick($event)"
-                      (removeAction)="onRemoveAction($event)"
-                      [columns]="columns"
-                      [data]="timeLogs"
-                      [enableFooter]="true"
-                      [enableRemoveAction]="true"
-                      [isSelectable]="false"
-                      [stickyFooter]="true"
-                      [stickyHeader]="true"
-                      sortDirection="desc"
-                      sortField="startTime"></shared-shared-table>
+                         (removeAction)="onRemoveAction($event)"
+                         [columns]="columns"
+                         [data]="timeLogs"
+                         [enableFooter]="true"
+                         [enableRemoveAction]="true"
+                         [isSelectable]="false"
+                         [stickyFooter]="true"
+                         [stickyHeader]="true"
+                         sortDirection="desc"
+                         sortField="startTime">
+    </shared-shared-table>
 </mat-dialog-content>
 
 <mat-dialog-actions>

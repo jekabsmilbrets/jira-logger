@@ -1,8 +1,8 @@
 <div class="base-container mat-typography">
     <layout-header [activeTask]="activeTask$ | async"
-                [isLoading]="(isLoading$ | async) || false"
-                [sidenav]="sidenav"
-                [timeLoggedToday]="(timeLoggedToday$ | async) || 0">
+                   [isLoading]="(isLoading$ | async) || false"
+                   [sidenav]="sidenav"
+                   [timeLoggedToday]="(timeLoggedToday$ | async) || 0">
     </layout-header>
 
     <mat-sidenav-container [style.marginTop.px]="0"
