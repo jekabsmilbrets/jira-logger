@@ -30,8 +30,8 @@
       "@shared/*": [
         "app/modules/shared/*"
       ],
-      "@task/*": [
-        "app/modules/task/*"
+      "@tasks/*": [
+        "app/modules/tasks/*"
       ],
       "@report/*": [
         "app/modules/report/*"

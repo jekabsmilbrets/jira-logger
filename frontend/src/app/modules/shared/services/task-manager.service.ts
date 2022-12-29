@@ -3,11 +3,11 @@ import { Injectable } from '@angular/core';
 import {
   BehaviorSubject,
   catchError,
+  filter,
   interval,
   map,
   Observable,
   of,
-  skip,
   switchMap,
   take,
   tap,
@@ -108,7 +108,7 @@ export class TaskManagerService {
   private getActiveTaskFromTasksList(): Observable<Task | undefined> {
     return this.tasksService.tasks$
       .pipe(
-        skip(1),
+        filter((tasks: Task[]) => tasks && tasks.length > 0),
         take(1),
         map((tasks: Task[]) => tasks.find((task: Task) => task.isTimeLogRunning)),
         tap((task: Task | undefined) => {

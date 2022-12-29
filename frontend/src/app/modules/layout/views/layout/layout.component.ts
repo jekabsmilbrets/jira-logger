@@ -11,7 +11,7 @@ import { TasksService }       from '@shared/services/tasks.service';
 
 @Component(
   {
-    selector: 'app-layout',
+    selector: 'layout-view',
     templateUrl: './layout.component.html',
     styleUrls: ['./layout.component.scss'],
   },

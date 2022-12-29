@@ -8,7 +8,7 @@ import { ReportModeEnum } from '@report/enums/report-mode.enum';
 
 
 @Component({
-  selector: 'app-report-configurator',
+  selector: 'settings-report-configurator',
   templateUrl: './report-configurator.component.html',
   styleUrls: ['./report-configurator.component.scss'],
 })

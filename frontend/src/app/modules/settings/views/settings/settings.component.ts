@@ -17,7 +17,7 @@ import { ReportService }  from '@report/services/report.service';
 
 
 @Component({
-  selector: 'app-settings',
+  selector: 'settings-view',
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.scss'],
 })

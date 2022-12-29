@@ -4,7 +4,7 @@ import { MatSlideToggleChange }                   from '@angular/material/slide-
 
 @Component(
   {
-    selector: 'app-report-hide-unreported-tasks',
+    selector: 'shared-report-hide-unreported-tasks',
     templateUrl: './report-hide-unreported-tasks.component.html',
     styleUrls: ['./report-hide-unreported-tasks.component.scss'],
   },

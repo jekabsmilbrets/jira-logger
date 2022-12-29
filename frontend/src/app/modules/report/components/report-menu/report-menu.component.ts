@@ -12,7 +12,7 @@ import { ReportService }  from '@report/services/report.service';
 
 @Component(
   {
-    selector: 'app-report-menu',
+    selector: 'report-menu',
     templateUrl: './report-menu.component.html',
     styleUrls: ['./report-menu.component.scss'],
   },

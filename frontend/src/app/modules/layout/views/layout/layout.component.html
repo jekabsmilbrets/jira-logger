@@ -1,17 +1,17 @@
 <div class="base-container mat-typography">
-    <app-header [activeTask]="activeTask$ | async"
-                [isLoading]="(isLoading$ | async) || false"
-                [sidenav]="sidenav"
-                [timeLoggedToday]="(timeLoggedToday$ | async) || 0">
-    </app-header>
+    <layout-header [activeTask]="activeTask$ | async"
+                   [isLoading]="(isLoading$ | async) || false"
+                   [sidenav]="sidenav"
+                   [timeLoggedToday]="(timeLoggedToday$ | async) || 0">
+    </layout-header>
 
     <mat-sidenav-container [style.marginTop.px]="0"
                            class="app-sidenav-container">
         <mat-sidenav #sidenav
                      fixedTopGap="56"
                      mode="over">
-            <app-sidenav (sidenavClose)="sidenav.close()">
-            </app-sidenav>
+            <layout-sidenav (sidenavClose)="sidenav.close()">
+            </layout-sidenav>
         </mat-sidenav>
 
         <mat-sidenav-content>

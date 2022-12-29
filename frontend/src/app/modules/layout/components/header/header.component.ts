@@ -14,7 +14,7 @@ import { Task } from '@shared/models/task.model';
 
 @Component(
   {
-    selector: 'app-header',
+    selector: 'layout-header',
     templateUrl: './header.component.html',
     styleUrls: ['./header.component.scss'],
   },

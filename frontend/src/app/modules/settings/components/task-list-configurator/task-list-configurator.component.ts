@@ -2,7 +2,7 @@ import { Component, Input } from '@angular/core';
 
 
 @Component({
-  selector: 'app-task-list-configurator',
+  selector: 'settings-task-list-configurator',
   templateUrl: './task-list-configurator.component.html',
   styleUrls: ['./task-list-configurator.component.scss'],
 })

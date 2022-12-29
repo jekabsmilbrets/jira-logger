@@ -19,7 +19,7 @@ import { TaskManagerService }                 from '@shared/services/task-manage
 import { TasksService }                       from '@shared/services/tasks.service';
 import { TimeLogsService }                    from '@shared/services/time-logs.service';
 
-import { TaskImportService } from '@task/services/task-import.service';
+import { TaskImportService } from '@tasks/services/task-import.service';
 
 import { LayoutModule } from '@layout/layout.module';
 
