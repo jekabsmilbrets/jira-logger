@@ -1,13 +1,13 @@
-<app-shared-table (cellClicked)="onCellClick($event)"
-                  (footerCellClicked)="onFooterCellClicked($event)"
-                  (syncAction)="onSyncClick($event)"
-                  [columns]="columns"
-                  [data]="tasks$ | async"
-                  [enableFooter]="true"
-                  [enableSyncAction]="(reportMode$ | async) === 'date'"
-                  [isSelectable]="false"
-                  [stickyFooter]="true"
-                  [stickyHeader]="true"
-                  sortDirection="desc"
-                  sortField="lastTimeLogStartTime">
-</app-shared-table>
+<shared-shared-table (cellClicked)="onCellClick($event)"
+                     (footerCellClicked)="onFooterCellClicked($event)"
+                     (syncAction)="onSyncClick($event)"
+                     [columns]="columns"
+                     [data]="tasks$ | async"
+                     [enableFooter]="true"
+                     [enableSyncAction]="(reportMode$ | async) === 'date'"
+                     [isSelectable]="false"
+                     [stickyFooter]="true"
+                     [stickyHeader]="true"
+                     sortDirection="desc"
+                     sortField="lastTimeLogStartTime">
+</shared-shared-table>

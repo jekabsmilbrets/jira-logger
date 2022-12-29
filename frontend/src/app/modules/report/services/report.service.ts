@@ -224,7 +224,7 @@ export class ReportService {
         break;
     }
 
-    return this.tasksService.filteredList(filter);
+    return this.tasksService.filteredList(filter, true);
   }
 
   private initSettings(): void {

@@ -4,16 +4,13 @@ import {
   NgxMatTimepickerModule,
 }                                from '@angular-material-components/datetime-picker';
 import { ClipboardModule }       from '@angular/cdk/clipboard';
-import { LayoutModule }          from '@angular/cdk/layout';
 import { CdkTableModule }        from '@angular/cdk/table';
 import { NgModule }              from '@angular/core';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule }       from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule }         from '@angular/material/card';
 import { MatCheckboxModule }     from '@angular/material/checkbox';
 import { MatChipsModule }        from '@angular/material/chips';
-import { MatNativeDateModule }   from '@angular/material/core';
 import { MatDatepickerModule }   from '@angular/material/datepicker';
 import { MatDialogModule }       from '@angular/material/dialog';
 import { MatFormFieldModule }    from '@angular/material/form-field';
@@ -40,9 +37,6 @@ import { MatTooltipModule }      from '@angular/material/tooltip';
 
       ClipboardModule,
 
-      LayoutModule,
-
-      MatAutocompleteModule,
       MatButtonModule,
       MatButtonToggleModule,
       MatCardModule,
@@ -54,7 +48,6 @@ import { MatTooltipModule }      from '@angular/material/tooltip';
       MatIconModule,
       MatInputModule,
       MatListModule,
-      MatNativeDateModule,
       MatPaginatorModule,
       MatProgressBarModule,
       MatSelectModule,
@@ -75,9 +68,6 @@ import { MatTooltipModule }      from '@angular/material/tooltip';
 
       ClipboardModule,
 
-      LayoutModule,
-
-      MatAutocompleteModule,
       MatButtonModule,
       MatButtonToggleModule,
       MatCardModule,
@@ -89,7 +79,6 @@ import { MatTooltipModule }      from '@angular/material/tooltip';
       MatIconModule,
       MatInputModule,
       MatListModule,
-      MatNativeDateModule,
       MatPaginatorModule,
       MatProgressBarModule,
       MatSelectModule,

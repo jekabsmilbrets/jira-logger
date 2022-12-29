@@ -5,7 +5,7 @@ import { SideNavInterface } from '@layout/interfaces/side-nav.interface';
 
 @Component(
   {
-    selector: 'app-sidenav',
+    selector: 'layout-sidenav',
     templateUrl: './sidenav.component.html',
     styleUrls: ['./sidenav.component.scss'],
   },
