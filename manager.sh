@@ -54,7 +54,8 @@ function ngBuild() {
 
   echo "Starting ng-$buildCmd"
 
-  docker-compose -f ./.docker/docker-compose.yml $ttraefik run $bbackground node npm run $buildCmd
+  docker-compose -f ./.docker/docker-compose.yml run node npm ci
+  docker-compose -f ./.docker/docker-compose.yml run node npm run build
 }
 
 ############################################################
