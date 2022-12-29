@@ -7,13 +7,12 @@
   "version": "0.2.0",
   "scripts": {
     "ng": "ng",
-    "clear-dist": "del-cli ./dist/jira-logger/*",
     "start": "ng serve",
     "start-allow-remote": "ng serve --host 0.0.0.0 --disable-host-check --configuration production",
     "build": "ng build --configuration production",
-    "build-dev": "npm run clear-dist && ng build --configuration development",
-    "watch": "npm run clear-dist && ng build --watch --configuration production",
-    "watch-dev": "npm run clear-dist && ng build --watch --configuration development",
+    "build-dev": "ng build --configuration development",
+    "watch": "ng build --watch --configuration production",
+    "watch-dev": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint"
   },

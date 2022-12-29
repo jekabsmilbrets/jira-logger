@@ -20,7 +20,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "deleteOutputPath": false,
+            "deleteOutputPath": true,
             "outputPath": "dist/jira-logger",
             "index": "src/index.html",
             "main": "src/main.ts",
