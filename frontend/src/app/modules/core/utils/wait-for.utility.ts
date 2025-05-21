@@ -1,6 +1,5 @@
 import { BehaviorSubject, filter, Observable, take, tap } from 'rxjs';
 
-
 export const waitForTurn = (
   isLoading$: Observable<boolean>,
   isLoadingSubject: BehaviorSubject<boolean>,

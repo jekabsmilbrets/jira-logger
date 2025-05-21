@@ -1,17 +1,17 @@
 <form (ngSubmit)="onUpdate()"
       [formGroup]="formGroup">
-    <mat-card>
+    <mat-card appearance="outlined">
         <ng-container *ngIf="!editMode">
             <mat-card-title>
-                <span>{{task.name}}</span>
+                <span>{{ task.name }}</span>
 
-                <mat-chip-list aria-label="Task tags">
-                    <mat-chip *ngFor="let tag of task.tags">{{tag.name}}</mat-chip>
-                </mat-chip-list>
+                <mat-chip-listbox aria-label="Task tags">
+                    <mat-chip-option *ngFor="let tag of task.tags">{{ tag.name }}</mat-chip-option>
+                </mat-chip-listbox>
             </mat-card-title>
 
             <mat-card-subtitle>
-                <span>{{task.description}}</span><br/>
+                <span>{{ task.description }}</span><br/>
 
                 <span>Total Time Worked: {{ task.timeLogged | readableTime }}</span>
             </mat-card-subtitle>
@@ -29,7 +29,7 @@
                     <mat-label>Tags</mat-label>
                     <mat-select [compareWith]="isSameTag" formControlName="tags" multiple>
                         <mat-option *ngFor="let tag of tags$ | async" [value]="tag">
-                            {{tag.name}}
+                            {{ tag.name }}
                         </mat-option>
                     </mat-select>
                 </mat-form-field>
@@ -82,11 +82,12 @@
             <button (click)="onToggleTimeLogging()"
                     [disabled]="isLoading"
                     aria-label="Start Timer"
+                    class="play-pause-button"
                     color="primary"
                     mat-icon-button
                     type="button">
                 <mat-icon>timer</mat-icon>
-                <mat-icon>{{isTimeLogRunning() ? 'pause' : 'play_arrow'}}</mat-icon>
+                <mat-icon>{{ isTimeLogRunning() ? 'pause' : 'play_arrow' }}</mat-icon>
             </button>
 
             <button (click)="onOpenTimeLogsModal()"

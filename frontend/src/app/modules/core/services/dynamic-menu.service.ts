@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
 
-import { BehaviorSubject, Observable } from 'rxjs';
-
 import { DynamicMenu } from '@core/models/dynamic-menu';
 
+import { BehaviorSubject, Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',

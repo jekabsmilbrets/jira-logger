@@ -2,7 +2,7 @@
   ::ng-deep shared-shared-table {
     .table-container {
       ::ng-deep {
-        .mat-header-cell, .mat-footer-cell, .mat-cell {
+        .mat-mdc-header-cell, .mat-mdc-footer-cell, .mat-mdc-cell {
           min-width: 80px;
           text-align: center;
           justify-content: center;

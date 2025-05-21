@@ -1,6 +1,5 @@
 import { ApiTag } from '@shared/interfaces/api/api-tag.interface';
-import { Tag }    from '@shared/models/tag.model';
-
+import { Tag } from '@shared/models/tag.model';
 
 export const validateTagInterfaceData = (tagInterfaceData: any, tags: Tag[]): ApiTag | undefined => {
   let existingTag;

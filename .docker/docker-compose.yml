@@ -40,7 +40,7 @@ services:
       dockerfile: ./.docker/nginx/Dockerfile
     volumes:
       - ./../backend/:/var/www
-      - ./../frontend/dist/jira-logger/:/var/www/public/ng
+      - ./../frontend/dist/jira-logger/browser/:/var/www/public/ng
       - ./certs/:/etc/ssl/certs/
       - ./nginx/sites/:/etc/nginx/sites-available
       - ./nginx/conf.d/:/etc/nginx/conf.d

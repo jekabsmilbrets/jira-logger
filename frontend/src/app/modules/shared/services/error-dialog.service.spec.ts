@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 
 import { ErrorDialogService } from './error-dialog.service';
 
-
 describe('ErrorDialogService', () => {
   let service: ErrorDialogService;
 

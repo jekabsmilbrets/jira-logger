@@ -1,20 +1,18 @@
-import { HttpClientModule } from '@angular/common/http';
-import { NgModule }         from '@angular/core';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { NgModule } from '@angular/core';
 
 import { DynamicMenuDirective } from './directives/dynamic-menu.directive';
 
-
 @NgModule(
   {
-    imports: [
-      HttpClientModule,
-    ],
     declarations: [
       DynamicMenuDirective,
     ],
     exports: [
       DynamicMenuDirective,
-      HttpClientModule,
+    ],
+    providers: [
+      provideHttpClient(withInterceptorsFromDi()),
     ],
   },
 )

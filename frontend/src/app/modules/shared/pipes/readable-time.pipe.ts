@@ -1,8 +1,8 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
-
 @Pipe({
   name: 'readableTime',
+  standalone: false,
 })
 export class ReadableTimePipe implements PipeTransform {
   public transform(seconds: number, withSeconds: boolean = false): string {
@@ -15,15 +15,7 @@ export class ReadableTimePipe implements PipeTransform {
 
     const levels = [
       [
-        Math.floor(seconds / 31536000),
-        'y',
-      ], // years
-      [
-        Math.floor((seconds % 31536000) / 86400),
-        'd',
-      ], // days
-      [
-        Math.floor(((seconds % 31536000) % 86400) / 3600),
+        Math.floor(((seconds % 31536000)) / 3600),
         'h',
       ], // hours
       [

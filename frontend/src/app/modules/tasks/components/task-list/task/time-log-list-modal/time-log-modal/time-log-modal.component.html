@@ -18,25 +18,35 @@
         </mat-form-field>
 
         <mat-form-field>
-            <mat-label>Start Time</mat-label>
-            <input [ngxMatDatetimePicker]="startTimePicker"
-                   formControlName="startTime"
-                   matInput
-                   placeholder="Ex. 2000-01-01 01:02:03">
-            <mat-datepicker-toggle [for]="$any(startTimePicker)" matSuffix></mat-datepicker-toggle>
-            <ngx-mat-datetime-picker #startTimePicker
-                                     [showSeconds]="true"></ngx-mat-datetime-picker>
+            <mat-label>Start date</mat-label>
+            <input [matDatepicker]="startDatepicker" formControlName="startTime" matInput>
+            <mat-datepicker #startDatepicker/>
+            <mat-datepicker-toggle [for]="startDatepicker" matSuffix/>
         </mat-form-field>
 
         <mat-form-field>
-            <mat-label>End Time</mat-label>
-            <input [ngxMatDatetimePicker]="endTimePicker"
+            <mat-label>Start time</mat-label>
+            <input [matTimepicker]="startTimepicker"
+                   formControlName="startTime"
+                   matInput>
+            <mat-timepicker #startTimepicker/>
+            <mat-timepicker-toggle [for]="startTimepicker" matSuffix/>
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>End date</mat-label>
+            <input [matDatepicker]="endDatepicker" formControlName="endTime" matInput>
+            <mat-datepicker #endDatepicker/>
+            <mat-datepicker-toggle [for]="endDatepicker" matSuffix/>
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>End time</mat-label>
+            <input [matTimepicker]="endTimepicker"
                    formControlName="endTime"
-                   matInput
-                   placeholder="Ex. 2222-12-31 23:59:59">
-            <mat-datepicker-toggle [for]="$any(endTimePicker)" matSuffix></mat-datepicker-toggle>
-            <ngx-mat-datetime-picker #endTimePicker
-                                     [showSeconds]="true"></ngx-mat-datetime-picker>
+                   matInput>
+            <mat-timepicker #endTimepicker/>
+            <mat-timepicker-toggle [for]="endTimepicker" matSuffix/>
         </mat-form-field>
     </form>
 </mat-dialog-content>
