@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { TimeLogModalComponent } from './time-log-modal.component';
 
-
 describe('TimeLogModalComponent', () => {
   let component: TimeLogModalComponent;
   let fixture: ComponentFixture<TimeLogModalComponent>;

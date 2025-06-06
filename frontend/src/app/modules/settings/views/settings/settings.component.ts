@@ -1,25 +1,25 @@
 import { Component } from '@angular/core';
 
+import { Setting } from '@core/models/setting.model';
+import { LoaderStateService } from '@core/services/loader-state.service';
+import { SettingsService } from '@core/services/settings.service';
+
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportService } from '@report/services/report.service';
+
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 
-import { ReportSettings }  from '@settings/interfaces/report-settings.interface';
-
-import { combineLatest, forkJoin, map, Observable, shareReplay, take } from 'rxjs';
-
-import { Setting }            from '@core/models/setting.model';
-import { LoaderStateService } from '@core/services/loader-state.service';
-import { SettingsService }    from '@core/services/settings.service';
+import { ReportSettings } from '@settings/interfaces/report-settings.interface';
 
 import { Tag } from '@shared/models/tag.model';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
-import { ReportService }  from '@report/services/report.service';
-
+import { combineLatest, forkJoin, map, Observable, shareReplay, take } from 'rxjs';
 
 @Component({
   selector: 'settings-view',
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.scss'],
+  standalone: false,
 })
 export class SettingsComponent {
   public isLoading$: Observable<boolean>;

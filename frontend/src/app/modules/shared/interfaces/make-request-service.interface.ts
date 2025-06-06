@@ -1,6 +1,5 @@
 import { Observable } from 'rxjs';
 
-
 export interface MakeRequestService {
   makeRequest<T>(
     url: string,

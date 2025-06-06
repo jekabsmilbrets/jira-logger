@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 
 import { TimeLogsService } from './time-logs.service';
 
-
 describe('TimeLogsService', () => {
   let service: TimeLogsService;
 

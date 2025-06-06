@@ -1,3 +1,5 @@
+@use "styles/report/report-menu/global";
+
 /* You can add global styles to this file, and also import other style files */
 
 html, body {
@@ -9,4 +11,3 @@ body {
   font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
-@import "styles/report/report-menu/global";

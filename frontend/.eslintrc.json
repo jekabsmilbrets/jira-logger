@@ -16,8 +16,6 @@
       },
       "extends": [
         "plugin:@angular-eslint/recommended",
-        "plugin:@angular-eslint/ng-cli-compat",
-        "plugin:@angular-eslint/ng-cli-compat--formatting-add-on",
         "plugin:@angular-eslint/template/process-inline-templates"
       ],
       "rules": {
@@ -37,84 +35,87 @@
             "style": "kebab-case"
           }
         ],
+        "@angular-eslint/prefer-standalone": [
+          "off"
+        ],
         "import/no-unresolved": "off",
-        "import/named": "warn",
-        "import/namespace": "warn",
+//        "import/named": "warn",
+//        "import/namespace": "warn",
         "import/no-named-as-default": "off",
-        "import/export": "warn",
-        "import/order": [
-          "error",
-          {
-            "alphabetize": {
-              "order": "asc"
-            },
-            "groups": [
-              "builtin",
-              "external",
-              "internal",
-              "unknown",
-              "parent",
-              "sibling",
-              "index",
-              "object",
-              "type"
-            ],
-            "pathGroups": [
-              {
-                "pattern": "rxjs|rxjs/**",
-                "group": "builtin",
-                "position": "after"
-              },
-              {
-                "pattern": "@core/**",
-                "group": "external",
-                "position": "after"
-              },
-              {
-                "pattern": "@shared/**",
-                "group": "external",
-                "position": "after"
-              },
-              {
-                "pattern": "@tasks/**",
-                "group": "external",
-                "position": "after"
-              },
-              {
-                "pattern": "@report/**",
-                "group": "external",
-                "position": "after"
-              },
-              {
-                "pattern": "@layout/**",
-                "group": "external",
-                "position": "after"
-              }
-            ],
-            "newlines-between": "always-and-inside-groups",
-            "pathGroupsExcludedImportTypes": []
-          }
-        ],
-        "@typescript-eslint/member-ordering": [
-          "error",
-          {
-            "default": [
-              "public-static-field",
-              "protected-static-field",
-              "private-static-field",
-              "public-field",
-              "protected-field",
-              "private-field",
-              "constructor",
-              "public-static-method",
-              "protected-static-method",
-              "private-static-method",
-              "public-method",
-              "protected-method",
-              "private-method"
-            ]
-          }
-        ],
+//        "import/export": "warn",
+//        "import/order": [
+//          "error",
+//          {
+//            "alphabetize": {
+//              "order": "asc"
+//            },
+//            "groups": [
+//              "builtin",
+//              "external",
+//              "internal",
+//              "unknown",
+//              "parent",
+//              "sibling",
+//              "index",
+//              "object",
+//              "type"
+//            ],
+//            "pathGroups": [
+//              {
+//                "pattern": "rxjs|rxjs/**",
+//                "group": "builtin",
+//                "position": "after"
+//              },
+//              {
+//                "pattern": "@core/**",
+//                "group": "external",
+//                "position": "after"
+//              },
+//              {
+//                "pattern": "@shared/**",
+//                "group": "external",
+//                "position": "after"
+//              },
+//              {
+//                "pattern": "@tasks/**",
+//                "group": "external",
+//                "position": "after"
+//              },
+//              {
+//                "pattern": "@report/**",
+//                "group": "external",
+//                "position": "after"
+//              },
+//              {
+//                "pattern": "@layout/**",
+//                "group": "external",
+//                "position": "after"
+//              }
+//            ],
+//            "newlines-between": "always-and-inside-groups",
+//            "pathGroupsExcludedImportTypes": []
+//          }
+//        ],
+//        "@typescript-eslint/member-ordering": [
+//          "error",
+//          {
+//            "default": [
+//              "public-static-field",
+//              "protected-static-field",
+//              "private-static-field",
+//              "public-field",
+//              "protected-field",
+//              "private-field",
+//              "constructor",
+//              "public-static-method",
+//              "protected-static-method",
+//              "private-static-method",
+//              "public-method",
+//              "protected-method",
+//              "private-method"
+//            ]
+//          }
+//        ],
         "no-underscore-dangle": "off"
       }
     },

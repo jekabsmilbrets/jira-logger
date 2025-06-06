@@ -2,12 +2,12 @@ import { Component, EventEmitter, Output } from '@angular/core';
 
 import { SideNavInterface } from '@layout/interfaces/side-nav.interface';
 
-
 @Component(
   {
     selector: 'layout-sidenav',
     templateUrl: './sidenav.component.html',
     styleUrls: ['./sidenav.component.scss'],
+    standalone: false,
   },
 )
 export class SidenavComponent {

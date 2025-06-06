@@ -1,16 +1,16 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
+
 import { ReportSettings } from '@settings/interfaces/report-settings.interface';
 
 import { Tag } from '@shared/models/tag.model';
-
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
-
 
 @Component({
   selector: 'settings-report-configurator',
   templateUrl: './report-configurator.component.html',
   styleUrls: ['./report-configurator.component.scss'],
+  standalone: false,
 })
 export class ReportConfiguratorComponent {
   @Input()

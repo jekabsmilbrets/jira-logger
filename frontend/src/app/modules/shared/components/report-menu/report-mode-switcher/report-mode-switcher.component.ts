@@ -1,15 +1,15 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormControl }                            from '@angular/forms';
+import { FormControl } from '@angular/forms';
 
-import { reportModes }    from '@report/constants/report-modes.constant';
+import { reportModes } from '@report/constants/report-modes.constant';
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
-
 
 @Component(
   {
     selector: 'shared-report-mode-switcher',
     templateUrl: './report-mode-switcher.component.html',
     styleUrls: ['./report-mode-switcher.component.scss'],
+    standalone: false,
   },
 )
 export class ReportModeSwitcherComponent {
@@ -19,6 +19,9 @@ export class ReportModeSwitcherComponent {
   }[] = reportModes;
 
   public reportModeFormControl: FormControl<ReportModeEnum | null> = new FormControl<ReportModeEnum | null>(ReportModeEnum.total);
+
+  @Input()
+  public showLabel: boolean = false;
 
   @Output()
   public reportModeChange: EventEmitter<ReportModeEnum> = new EventEmitter<ReportModeEnum>();
@@ -37,7 +40,7 @@ export class ReportModeSwitcherComponent {
     if (reportMode) {
       this.reportModeFormControl.setValue(
         reportMode,
-        {emitEvent: false},
+        { emitEvent: false },
       );
     }
   }

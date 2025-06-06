@@ -2,18 +2,7 @@ import { Injectable } from '@angular/core';
 
 import { environment } from 'environments/environment';
 
-import {
-  BehaviorSubject,
-  combineLatest,
-  debounceTime,
-  distinctUntilChanged,
-  map,
-  Observable,
-  share,
-  switchMap,
-  tap,
-} from 'rxjs';
-
+import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, map, Observable, share, switchMap, tap } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',

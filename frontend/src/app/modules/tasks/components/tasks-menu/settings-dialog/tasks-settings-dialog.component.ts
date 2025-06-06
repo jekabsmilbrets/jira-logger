@@ -1,26 +1,28 @@
-import { Component, Inject }                  from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogRef }      from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
-import { take } from 'rxjs';
-
-import { ApiTask }     from '@shared/interfaces/api/api-task.interface';
-import { Tag }         from '@shared/models/tag.model';
+import { ApiTask } from '@shared/interfaces/api/api-task.interface';
+import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
 
-import { validateTasksInterfaceData }       from '@tasks/data-validators/task-interface.validator';
+import { validateTasksInterfaceData } from '@tasks/data-validators/task-interface.validator';
 import { TasksSettingsDialogDataInterface } from '@tasks/interfaces/tasks-settings-dialog-data.interface';
 
+import { take } from 'rxjs';
 
 @Component(
   {
     selector: 'tasks-settings-dialog',
     templateUrl: './tasks-settings-dialog.component.html',
     styleUrls: ['./tasks-settings-dialog.component.scss'],
+    standalone: false,
   },
 )
 export class TasksSettingsDialogComponent {
-  public formGroup: FormGroup<{ json: FormControl<string | null> }> = new FormGroup<{ json: FormControl<string | null> }>(
+  public formGroup: FormGroup<{ json: FormControl<string | null> }> = new FormGroup<{
+    json: FormControl<string | null>
+  }>(
     {
       json: new FormControl<string | null>(null, Validators.required),
     },
@@ -63,7 +65,7 @@ export class TasksSettingsDialogComponent {
           },
         );
     } catch (e) {
-      console.error({e});
+      console.error({ e });
     }
   }
 }

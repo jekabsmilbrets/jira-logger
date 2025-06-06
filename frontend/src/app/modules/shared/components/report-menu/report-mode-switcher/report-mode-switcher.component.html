@@ -1,10 +1,11 @@
 <mat-form-field>
-    <mat-label>Report mode</mat-label>
+    <mat-label *ngIf="showLabel">Report mode</mat-label>
     <mat-select (valueChange)="reportModeValueChange($event)"
-                [formControl]="reportModeFormControl">
+                [formControl]="reportModeFormControl"
+                placeholder="Report mode<">
         <mat-option *ngFor="let reportMode of reportModes"
                     [value]="reportMode.value">
-            {{reportMode.viewValue}}
+            {{ reportMode.viewValue }}
         </mat-option>
     </mat-select>
 </mat-form-field>

@@ -1,14 +1,14 @@
-import { Component, Inject }             from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import { AreYouSureDialogDataInterface } from '@shared/interfaces/are-you-sure-dialog-data.interface';
-
 
 @Component(
   {
     selector: 'shared-are-you-sure-dialog',
     templateUrl: './are-you-sure-dialog.component.html',
     styleUrls: ['./are-you-sure-dialog.component.scss'],
+    standalone: false,
   },
 )
 export class AreYouSureDialogComponent {

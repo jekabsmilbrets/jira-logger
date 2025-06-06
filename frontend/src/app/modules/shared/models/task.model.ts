@@ -1,11 +1,10 @@
-import { Base }         from '@core/models/base.model';
+import { Base } from '@core/models/base.model';
 import { getDateParts } from '@core/utils/get-date-parts.utility';
 
-import { Searchable }  from '@shared/interfaces/searchable.interface';
+import { Searchable } from '@shared/interfaces/searchable.interface';
 import { JiraWorkLog } from '@shared/models/jira-work-log.model';
-import { Tag }         from '@shared/models/tag.model';
-import { TimeLog }     from '@shared/models/time-log.model';
-
+import { Tag } from '@shared/models/tag.model';
+import { TimeLog } from '@shared/models/time-log.model';
 
 export class Task extends Base implements Searchable {
   private _name!: string;

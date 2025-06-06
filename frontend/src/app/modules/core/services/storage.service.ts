@@ -1,16 +1,14 @@
 import { Injectable } from '@angular/core';
 
-// eslint-disable-next-line import/named
-import { createStore, del, entries, get, set, setMany, UseStore } from 'idb-keyval';
-
-import { BehaviorSubject, catchError, from, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
-
-import { DbFailInterface }    from '@core/interfaces/db-fail.interface';
+import { DbFailInterface } from '@core/interfaces/db-fail.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { waitForTurn }        from '@core/utils/wait-for.utility';
+import { waitForTurn } from '@core/utils/wait-for.utility';
 
 import { LoadableService } from '@shared/interfaces/loadable-service.interface';
 
+import { createStore, del, entries, get, set, setMany, UseStore } from 'idb-keyval';
+
+import { BehaviorSubject, catchError, from, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -266,7 +264,7 @@ export class StorageService implements LoadableService {
       .pipe(
         take(1),
         catchError((error) => {
-          console.error('Error @ recreateStore ', {error});
+          console.error('Error @ recreateStore ', { error });
           return of(false);
         }),
         map(() => true),

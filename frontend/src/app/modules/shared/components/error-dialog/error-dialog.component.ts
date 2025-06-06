@@ -1,14 +1,14 @@
-import { Component, Inject }             from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import { ErrorDialogDataInterface } from '@shared/interfaces/error-dialog-data.interface';
-
 
 @Component(
   {
     selector: 'shared-error-dialog',
     templateUrl: './error-dialog.component.html',
     styleUrls: ['./error-dialog.component.scss'],
+    standalone: false,
   },
 )
 export class ErrorDialogComponent {

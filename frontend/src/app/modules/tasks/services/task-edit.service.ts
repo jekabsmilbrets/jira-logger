@@ -1,13 +1,12 @@
-import { Injectable }                                          from '@angular/core';
+import { Injectable } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, Validators } from '@angular/forms';
 
-import { Observable, of, switchMap, take } from 'rxjs';
-
-import { Tag }          from '@shared/models/tag.model';
-import { Task }         from '@shared/models/task.model';
-import { TagsService }  from '@shared/services/tags.service';
+import { Tag } from '@shared/models/tag.model';
+import { Task } from '@shared/models/task.model';
+import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 
+import { Observable, of, switchMap, take } from 'rxjs';
 
 @Injectable()
 export class TaskEditService {
@@ -63,8 +62,7 @@ export class TaskEditService {
           (task: Task) => task.name === value && currentTask.id !== task.id,
         )
       ) {
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        return of({'duplicate-task': true});
+        return of({ 'duplicate-task': true });
       }
 
       return of(null);

@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ReportMenuComponent } from './report-menu.component';
 
-
 describe('ReportMenuComponent', () => {
   let component: ReportMenuComponent;
   let fixture: ComponentFixture<ReportMenuComponent>;

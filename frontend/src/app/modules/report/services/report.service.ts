@@ -1,6 +1,20 @@
 import { formatDate } from '@angular/common';
 import { Injectable } from '@angular/core';
 
+import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
+import { StorageService } from '@core/services/storage.service';
+
+import { columns as monthModelColumns } from '@report/constants/report-date-range-columns.constant';
+import { columns as totalModelColumns } from '@report/constants/report-total-columns.constant';
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
+
+import { Column } from '@shared/interfaces/column.interface';
+import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
+import { Tag } from '@shared/models/tag.model';
+import { Task } from '@shared/models/task.model';
+import { TagsService } from '@shared/services/tags.service';
+import { TasksService } from '@shared/services/tasks.service';
+
 import {
   BehaviorSubject,
   catchError,
@@ -14,21 +28,6 @@ import {
   tap,
   withLatestFrom,
 } from 'rxjs';
-
-import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
-import { StorageService }         from '@core/services/storage.service';
-
-import { Column }         from '@shared/interfaces/column.interface';
-import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
-import { Tag }            from '@shared/models/tag.model';
-import { Task }           from '@shared/models/task.model';
-import { TagsService }    from '@shared/services/tags.service';
-import { TasksService }   from '@shared/services/tasks.service';
-
-import { columns as monthModelColumns } from '@report/constants/report-date-range-columns.constant';
-import { columns as totalModelColumns } from '@report/constants/report-total-columns.constant';
-import { ReportModeEnum }               from '@report/enums/report-mode.enum';
-
 
 @Injectable({
   providedIn: 'root',

@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AreYouSureDialogComponent } from './are-you-sure-dialog.component';
 
-
 describe('AreYouSureDialogComponent', () => {
   let component: AreYouSureDialogComponent;
   let fixture: ComponentFixture<AreYouSureDialogComponent>;

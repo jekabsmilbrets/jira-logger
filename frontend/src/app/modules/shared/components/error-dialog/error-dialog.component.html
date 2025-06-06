@@ -1,5 +1,5 @@
 <div class="dialog-title" mat-dialog-title>
-    <h2>{{data.errorTitle}}</h2>
+    <h2>{{ data.errorTitle }}</h2>
 
     <button (click)="onClose()"
             aria-label="close dialog"
@@ -8,8 +8,8 @@
     </button>
 </div>
 <div mat-dialog-content>
-    <p>{{data.errorMessage}}</p>
-    <pre>{{data.idbData | json}}</pre>
+    <p>{{ data.errorMessage }}</p>
+    <pre>{{ data.idbData | json }}</pre>
 </div>
 
 <div mat-dialog-actions>

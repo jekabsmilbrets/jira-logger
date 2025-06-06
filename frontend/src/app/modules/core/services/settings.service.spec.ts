@@ -1,21 +1,20 @@
-import { HttpErrorResponse }                              from '@angular/common/http';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { TestBed }                                        from '@angular/core/testing';
-
-import { Observable, of, take } from 'rxjs';
+import { HttpErrorResponse, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
 
 import { adaptSetting, adaptSettings } from '@core/adapters/api-setting.adapter';
-import { ApiSetting }                  from '@core/interfaces/api/api-setting.interface';
-import { Setting }                     from '@core/models/setting.model';
-import { LoaderStateService }          from '@core/services/loader-state.service';
+import { ApiSetting } from '@core/interfaces/api/api-setting.interface';
+import { Setting } from '@core/models/setting.model';
+import { LoaderStateService } from '@core/services/loader-state.service';
 
 import { ErrorDialogDataInterface } from '@shared/interfaces/error-dialog-data.interface';
-import { ErrorDialogService }       from '@shared/services/error-dialog.service';
+import { ErrorDialogService } from '@shared/services/error-dialog.service';
+
+import { Observable, of, take } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 
 import { SettingsService } from './settings.service';
-
 
 const testId = '13d0305b-d6f2-4344-bb30-d5100d56f568';
 const testName = 'JIRA-LOGGER-0001';
@@ -53,12 +52,12 @@ describe('SettingsService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [
-        HttpClientTestingModule,
-      ],
+      imports: [],
       providers: [
-        {provide: LoaderStateService, useClass: LoaderStateServiceStub},
-        {provide: ErrorDialogService, useClass: ErrorDialogServiceStub},
+        { provide: LoaderStateService, useClass: LoaderStateServiceStub },
+        { provide: ErrorDialogService, useClass: ErrorDialogServiceStub },
+        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClientTesting(),
       ],
     });
 
@@ -223,7 +222,7 @@ describe('SettingsService', () => {
 
           const request = httpMock.expectOne(url);
           expect(request.request.method).toEqual('GET');
-          request.flush({data: testSettings});
+          request.flush({ data: testSettings });
         },
       );
 

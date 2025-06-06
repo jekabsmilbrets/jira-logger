@@ -1,26 +1,25 @@
-import { formatDate }                                from '@angular/common';
+import { formatDate } from '@angular/common';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { Injectable }                                from '@angular/core';
+import { Injectable } from '@angular/core';
+
+import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
+import { JsonApi } from '@core/interfaces/json-api.interface';
+import { LoaderStateService } from '@core/services/loader-state.service';
+import { StorageService } from '@core/services/storage.service';
+import { waitForTurn } from '@core/utils/wait-for.utility';
+
+import { adaptTasks } from '@shared/adapters/task.adapter';
+import { ApiTask } from '@shared/interfaces/api/api-task.interface';
+import { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
+import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
+import { Tag } from '@shared/models/tag.model';
+import { Task } from '@shared/models/task.model';
+import { ErrorDialogService } from '@shared/services/error-dialog.service';
 
 import { environment } from 'environments/environment';
 
 import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
-
-import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
-import { JsonApi }                from '@core/interfaces/json-api.interface';
-import { LoaderStateService }     from '@core/services/loader-state.service';
-import { StorageService }         from '@core/services/storage.service';
-import { waitForTurn }            from '@core/utils/wait-for.utility';
-
-import { adaptTasks }         from '@shared/adapters/task.adapter';
-import { ApiTask }            from '@shared/interfaces/api/api-task.interface';
-import { LoadableService }    from '@shared/interfaces/loadable-service.interface';
-import { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
-import { TaskListFilter }     from '@shared/interfaces/task-list-filter.interface';
-import { Tag }                from '@shared/models/tag.model';
-import { Task }               from '@shared/models/task.model';
-import { ErrorDialogService } from '@shared/services/error-dialog.service';
-
 
 @Injectable({
   providedIn: 'root',
@@ -61,7 +60,7 @@ export class TasksService implements LoadableService, MakeRequestService {
       .pipe(
         catchError((error: HttpErrorResponse) => {
           if (error.status === 404) {
-            return of({data: []});
+            return of({ data: [] });
           }
           return this.processError(error);
         }),
@@ -81,7 +80,7 @@ export class TasksService implements LoadableService, MakeRequestService {
     const outputQueryParams = this.buildQueryParams(filter);
 
     if (Object.keys(outputQueryParams).length > 0) {
-      url += '?' + new HttpParams({fromObject: outputQueryParams}).toString();
+      url += '?' + new HttpParams({ fromObject: outputQueryParams }).toString();
     }
 
     return this.makeRequest<JsonApi<ApiTask[]>>(
@@ -93,7 +92,7 @@ export class TasksService implements LoadableService, MakeRequestService {
       .pipe(
         catchError((error: HttpErrorResponse) => {
           if (error.status === 404) {
-            return of({data: []});
+            return of({ data: [] });
           }
           return this.processError(error);
         }),
@@ -215,8 +214,8 @@ export class TasksService implements LoadableService, MakeRequestService {
   public makeRequest<T>(
     url: string,
     method: 'get' | 'post' | 'patch' | 'delete' = 'get',
-    body: any                                   = null,
-    reportError: boolean                        = false,
+    body: any = null,
+    reportError: boolean = false,
   ): Observable<T> {
     let request$: Observable<T>;
 
@@ -299,7 +298,7 @@ export class TasksService implements LoadableService, MakeRequestService {
   private processError(
     error: any,
   ): Observable<never> {
-    console.error({error});
+    console.error({ error });
     this.isLoadingSubject.next(false);
 
     return this.tasks$

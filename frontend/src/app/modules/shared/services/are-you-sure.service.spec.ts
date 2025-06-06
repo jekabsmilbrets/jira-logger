@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 
 import { AreYouSureService } from './are-you-sure.service';
 
-
 describe('AreYouSureService', () => {
   let service: AreYouSureService;
 

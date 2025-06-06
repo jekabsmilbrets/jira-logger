@@ -1,16 +1,16 @@
-import { Component, Inject, OnInit }          from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogRef }      from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
-import { TimeLogDialogDataInterface }    from '@tasks/interfaces/time-log-dialog-data.interface';
+import { TimeLogDialogDataInterface } from '@tasks/interfaces/time-log-dialog-data.interface';
 import { TimeLogModalResponseInterface } from '@tasks/interfaces/time-log-modal-response.interface';
-
 
 @Component(
   {
     selector: 'tasks-time-log-modal',
     templateUrl: './time-log-modal.component.html',
     styleUrls: ['./time-log-modal.component.scss'],
+    standalone: false,
   },
 )
 export class TimeLogModalComponent implements OnInit {

@@ -1,5 +1,5 @@
 export enum TaskUpdateActionEnum {
-  update       = 'update',
+  update = 'update',
   startWorkLog = 'start-work-log',
-  stopWorkLog  = 'stop-work-log',
+  stopWorkLog = 'stop-work-log',
 }

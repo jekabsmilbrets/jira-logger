@@ -1,15 +1,15 @@
-import { Component, EventEmitter, Input, Output }                           from '@angular/core';
-import { FormControl }                                                      from '@angular/forms';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { FormControl } from '@angular/forms';
 import { DateRange, ExtractDateTypeFromSelection, MatDatepickerInputEvent } from '@angular/material/datepicker';
 
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
-
 
 @Component(
   {
     selector: 'shared-report-date-selector',
     templateUrl: './report-date-selector.component.html',
     styleUrls: ['./report-date-selector.component.scss'],
+    standalone: false,
   },
 )
 export class ReportDateSelectorComponent {
@@ -19,6 +19,9 @@ export class ReportDateSelectorComponent {
 
   @Input()
   public reportMode!: ReportModeEnum | null;
+
+  @Input()
+  public showLabel: boolean = false;
 
   @Output()
   public dateChange: EventEmitter<Date | null> = new EventEmitter<Date | null>();
@@ -45,21 +48,21 @@ export class ReportDateSelectorComponent {
   @Input()
   public set date(value: Date | null) {
     if (value) {
-      this.dateFormControl.setValue(value, {emitEvent: false});
+      this.dateFormControl.setValue(value, { emitEvent: false });
     }
   }
 
   @Input()
   public set startDate(value: Date | null) {
     if (value) {
-      this.startDateFormControl.setValue(value, {emitEvent: false});
+      this.startDateFormControl.setValue(value, { emitEvent: false });
     }
   }
 
   @Input()
   public set endDate(value: Date | null) {
     if (value) {
-      this.endDateFormControl.setValue(value, {emitEvent: false});
+      this.endDateFormControl.setValue(value, { emitEvent: false });
     }
   }
 

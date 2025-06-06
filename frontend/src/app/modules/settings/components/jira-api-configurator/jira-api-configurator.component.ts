@@ -1,17 +1,17 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormControl, FormGroup, Validators }             from '@angular/forms';
-
-import { JiraApiSettings }      from '@settings/enums/jira-api-settings.enum';
-import { JiraApiFormGroupData } from '@settings/interfaces/jira-api-form-group-data.interface';
-import { JiraApiFormGroup }     from '@settings/types/jira-api-form-group.type';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
 
 import { Setting } from '@core/models/setting.model';
 
+import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
+import { JiraApiFormGroupData } from '@settings/interfaces/jira-api-form-group-data.interface';
+import { JiraApiFormGroup } from '@settings/types/jira-api-form-group.type';
 
 @Component({
   selector: 'settings-jira-api-configurator',
   templateUrl: './jira-api-configurator.component.html',
   styleUrls: ['./jira-api-configurator.component.scss'],
+  standalone: false,
 })
 export class JiraApiConfiguratorComponent implements OnInit {
   @Input()

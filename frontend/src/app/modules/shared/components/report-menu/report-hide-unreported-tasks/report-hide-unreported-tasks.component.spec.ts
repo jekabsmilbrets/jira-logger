@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ReportHideUnreportedTasksComponent } from './report-hide-unreported-tasks.component';
 
-
 describe('ReportHideUnreportedTasksComponent', () => {
   let component: ReportHideUnreportedTasksComponent;
   let fixture: ComponentFixture<ReportHideUnreportedTasksComponent>;

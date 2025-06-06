@@ -1,20 +1,12 @@
 import { Injectable } from '@angular/core';
-import {
-  AbstractControl,
-  AsyncValidatorFn,
-  FormControl,
-  FormGroup,
-  ValidationErrors,
-  Validators,
-}                     from '@angular/forms';
+import { AbstractControl, AsyncValidatorFn, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 
-import { catchError, lastValueFrom, of, take } from 'rxjs';
-
-import { Tag }          from '@shared/models/tag.model';
+import { Tag } from '@shared/models/tag.model';
 import { TasksService } from '@shared/services/tasks.service';
 
 import { CreateTaskFromGroupInterface } from '@tasks/interfaces/create-task-from-group.interface';
 
+import { catchError, lastValueFrom, of, take } from 'rxjs';
 
 @Injectable()
 export class TaskCreateService {
@@ -30,8 +22,7 @@ export class TaskCreateService {
         .taskExist(control.value)
         .pipe(
           take(1),
-          // eslint-disable-next-line @typescript-eslint/naming-convention
-          catchError(() => of<ValidationErrors>({'duplicate-task': true})),
+          catchError(() => of<ValidationErrors>({ 'duplicate-task': true })),
         ),
     );
   }

@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { TaskListConfiguratorComponent } from './task-list-configurator.component';
 
-
 describe('TaskListConfiguratorComponent', () => {
   let component: TaskListConfiguratorComponent;
   let fixture: ComponentFixture<TaskListConfiguratorComponent>;

@@ -1,24 +1,24 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormGroup }                                      from '@angular/forms';
+import { FormGroup } from '@angular/forms';
 
-import { Observable, take } from 'rxjs';
-
-import { Tag }               from '@shared/models/tag.model';
-import { Task }              from '@shared/models/task.model';
-import { TimeLog }           from '@shared/models/time-log.model';
+import { Tag } from '@shared/models/tag.model';
+import { Task } from '@shared/models/task.model';
+import { TimeLog } from '@shared/models/time-log.model';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
 
-import { TaskUpdateActionEnum }           from '@tasks/enums/task-update-action.enum';
+import { TaskUpdateActionEnum } from '@tasks/enums/task-update-action.enum';
 import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
-import { TaskEditService }                from '@tasks/services/task-edit.service';
-import { TimeLogEditService }             from '@tasks/services/time-log-edit.service';
+import { TaskEditService } from '@tasks/services/task-edit.service';
+import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
 
+import { Observable, take } from 'rxjs';
 
 @Component(
   {
     selector: 'tasks-task',
     templateUrl: './task.component.html',
     styleUrls: ['./task.component.scss'],
+    standalone: false,
   },
 )
 export class TaskComponent implements OnInit {

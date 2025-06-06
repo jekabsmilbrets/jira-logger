@@ -1,25 +1,25 @@
-import { Component, Inject, ViewChild }  from '@angular/core';
-import { MatDatepicker }                 from '@angular/material/datepicker';
+import { Component, Inject, ViewChild } from '@angular/core';
+import { MatDatepicker } from '@angular/material/datepicker';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
-import { take, throwError } from 'rxjs';
-
-import { Column }     from '@shared/interfaces/column.interface';
+import { Column } from '@shared/interfaces/column.interface';
 import { Searchable } from '@shared/interfaces/searchable.interface';
-import { TimeLog }    from '@shared/models/time-log.model';
+import { TimeLog } from '@shared/models/time-log.model';
 
-import { columns as timeLogListColumns }  from '@tasks/constants/time-log-list-columns.constant';
+import { columns as timeLogListColumns } from '@tasks/constants/time-log-list-columns.constant';
 import { TimeLogListDialogDataInterface } from '@tasks/interfaces/time-log-list-dialog-data.interface';
-import { TimeLogModalResponseInterface }  from '@tasks/interfaces/time-log-modal-response.interface';
+import { TimeLogModalResponseInterface } from '@tasks/interfaces/time-log-modal-response.interface';
 import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
-import { TimeLogEditService }             from '@tasks/services/time-log-edit.service';
+import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
 
+import { take, throwError } from 'rxjs';
 
 @Component(
   {
     selector: 'tasks-time-log-list-modal',
     templateUrl: './time-log-list-modal.component.html',
     styleUrls: ['./time-log-list-modal.component.scss'],
+    standalone: false,
   },
 )
 export class TimeLogListModalComponent {

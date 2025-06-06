@@ -1,14 +1,13 @@
-import { Injectable }                                                   from '@angular/core';
-import { ActivatedRouteSnapshot, Resolve, Router, RouterStateSnapshot } from '@angular/router';
+import { Injectable } from '@angular/core';
+import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
+
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportService } from '@report/services/report.service';
 
 import { Observable, of } from 'rxjs';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
-import { ReportService }  from '@report/services/report.service';
-
-
 @Injectable()
-export class ReportResolver implements Resolve<boolean> {
+export class ReportResolver {
   constructor(
     private router: Router,
     private reportService: ReportService,

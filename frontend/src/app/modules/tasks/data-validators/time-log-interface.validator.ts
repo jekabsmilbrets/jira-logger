@@ -1,6 +1,5 @@
 import { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
 
-
 export const validateTimeLogInterfaceData = (timeLogInterfaceData: any): ApiTimeLog => {
   [
     '_startTime',

@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { JiraApiConfiguratorComponent } from './jira-api-configurator.component';
 
-
 describe('JiraApiConfiguratorComponent', () => {
   let component: JiraApiConfiguratorComponent;
   let fixture: ComponentFixture<JiraApiConfiguratorComponent>;

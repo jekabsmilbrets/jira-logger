@@ -1,4 +1,4 @@
-FROM node:lts-gallium
+FROM node:lts-iron
 
 RUN npm i -g @angular/cli@latest
 

@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { TasksSettingsToggleComponent } from '@tasks/components/tasks-menu/tasks-settings-toggler/tasks-settings-toggle.component';
 
-
 describe('TasksSettingsToggleComponent', () => {
   let component: TasksSettingsToggleComponent;
   let fixture: ComponentFixture<TasksSettingsToggleComponent>;

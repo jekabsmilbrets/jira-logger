@@ -1,21 +1,20 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable }                    from '@angular/core';
+import { Injectable } from '@angular/core';
+
+import { JsonApi } from '@core/interfaces/json-api.interface';
+import { LoaderStateService } from '@core/services/loader-state.service';
+import { waitForTurn } from '@core/utils/wait-for.utility';
+
+import { adaptTag, adaptTags } from '@shared/adapters/api-tag.adapter';
+import { ApiTag } from '@shared/interfaces/api/api-tag.interface';
+import { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
+import { Tag } from '@shared/models/tag.model';
+import { ErrorDialogService } from '@shared/services/error-dialog.service';
 
 import { environment } from 'environments/environment';
 
 import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
-
-import { JsonApi }            from '@core/interfaces/json-api.interface';
-import { LoaderStateService } from '@core/services/loader-state.service';
-import { waitForTurn }        from '@core/utils/wait-for.utility';
-
-import { adaptTag, adaptTags } from '@shared/adapters/api-tag.adapter';
-import { ApiTag }              from '@shared/interfaces/api/api-tag.interface';
-import { LoadableService }     from '@shared/interfaces/loadable-service.interface';
-import { MakeRequestService }  from '@shared/interfaces/make-request-service.interface';
-import { Tag }                 from '@shared/models/tag.model';
-import { ErrorDialogService }  from '@shared/services/error-dialog.service';
-
 
 @Injectable({
   providedIn: 'root',
@@ -55,7 +54,7 @@ export class TagsService implements LoadableService, MakeRequestService {
       .pipe(
         catchError((error: HttpErrorResponse) => {
           if (error.status === 404) {
-            return of({data: []});
+            return of({ data: [] });
           }
           return this.processError(error);
         }),
@@ -129,8 +128,8 @@ export class TagsService implements LoadableService, MakeRequestService {
   public makeRequest<T>(
     url: string,
     method: 'get' | 'post' | 'patch' | 'delete' = 'get',
-    body: any                                   = null,
-    reportError: boolean                        = false,
+    body: any = null,
+    reportError: boolean = false,
   ): Observable<T> {
     let request$: Observable<T>;
 

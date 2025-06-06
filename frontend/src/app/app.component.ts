@@ -1,15 +1,15 @@
-import { Component, OnDestroy, OnInit }                  from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatSnackBar, MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
-
-import { catchError, interval, retry, startWith, Subscription, switchMap, take, tap, throwError, timer } from 'rxjs';
 
 import { MonitorService } from '@core/services/monitor.service';
 
+import { catchError, interval, retry, startWith, Subscription, switchMap, take, tap, throwError, timer } from 'rxjs';
 
 @Component(
   {
     selector: 'app-root',
     templateUrl: './app.component.html',
+    standalone: false,
   },
 )
 export class AppComponent implements OnDestroy, OnInit {

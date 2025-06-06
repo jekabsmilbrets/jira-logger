@@ -2,7 +2,6 @@ import { Base } from '@core/models/base.model';
 
 import { Searchable } from '@shared/interfaces/searchable.interface';
 
-
 export class TimeLog extends Base implements Searchable {
   public description?: string;
 

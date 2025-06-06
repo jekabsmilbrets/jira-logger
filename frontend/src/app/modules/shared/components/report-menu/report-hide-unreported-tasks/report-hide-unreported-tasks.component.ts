@@ -1,12 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { MatSlideToggleChange }                   from '@angular/material/slide-toggle';
-
+import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 
 @Component(
   {
     selector: 'shared-report-hide-unreported-tasks',
     templateUrl: './report-hide-unreported-tasks.component.html',
     styleUrls: ['./report-hide-unreported-tasks.component.scss'],
+    standalone: false,
   },
 )
 export class ReportHideUnreportedTasksComponent {

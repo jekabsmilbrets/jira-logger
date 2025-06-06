@@ -1,9 +1,8 @@
-import { adaptTags }                   from '@shared/adapters/api-tag.adapter';
-import { adaptJiraWorkLogs }           from '@shared/adapters/jira-work-log.adapter';
+import { adaptTags } from '@shared/adapters/api-tag.adapter';
+import { adaptJiraWorkLogs } from '@shared/adapters/jira-work-log.adapter';
 import { adaptTimeLog, adaptTimeLogs } from '@shared/adapters/time-log.adapter';
-import { ApiTask }                     from '@shared/interfaces/api/api-task.interface';
-import { Task }                        from '@shared/models/task.model';
-
+import { ApiTask } from '@shared/interfaces/api/api-task.interface';
+import { Task } from '@shared/models/task.model';
 
 export const adaptTask = (dbTask: ApiTask): Task => new Task(
   {

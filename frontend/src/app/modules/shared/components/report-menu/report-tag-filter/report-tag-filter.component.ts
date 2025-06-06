@@ -1,23 +1,26 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormControl }                            from '@angular/forms';
+import { FormControl } from '@angular/forms';
 
-import { Observable } from 'rxjs';
-
-import { Tag }         from '@shared/models/tag.model';
+import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
 
+import { Observable } from 'rxjs';
 
 @Component(
   {
     selector: 'shared-report-tag-filter',
     templateUrl: './report-tag-filter.component.html',
     styleUrls: ['./report-tag-filter.component.scss'],
+    standalone: false,
   },
 )
 export class ReportTagFilterComponent {
   public tags$: Observable<Tag[]>;
 
   public tagFormControl: FormControl<Tag[] | null> = new FormControl<Tag[] | null>(null);
+
+  @Input()
+  public showLabel: boolean = false;
 
   @Output()
   public tagChange: EventEmitter<Tag[]> = new EventEmitter<Tag[]>();
@@ -42,7 +45,7 @@ export class ReportTagFilterComponent {
     if (tags) {
       this.tagFormControl.setValue(
         tags,
-        {emitEvent: false},
+        { emitEvent: false },
       );
     }
   }
