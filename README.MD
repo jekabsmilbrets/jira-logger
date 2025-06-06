@@ -26,14 +26,14 @@ API calls and Angular PWA;
 ## Project Specification
 
 ### API
-* Symfony 6.1
+* Symfony 6.4
 * Doctrine
 * PostgreSQL
 * PHP 8.1 / PHP-FPM
 * Nginx
 
 ### FE
-* Angular 14
-* Material 14
-* Node 16.16.0
-* NPM 8.11.0
+* Angular 19
+* Material 19
+* Node 20.19.2
+* NPM 10.8.2
