@@ -1,12 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { MatSlideToggleChange }                   from '@angular/material/slide-toggle';
-
+import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 
 @Component(
   {
     selector: 'shared-report-show-weekends',
     templateUrl: './report-show-weekends.component.html',
     styleUrls: ['./report-show-weekends.component.scss'],
+    standalone: false,
   },
 )
 export class ReportShowWeekendsComponent {

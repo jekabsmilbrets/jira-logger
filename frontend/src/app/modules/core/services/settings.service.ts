@@ -1,20 +1,19 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable }                    from '@angular/core';
+import { Injectable } from '@angular/core';
+
+import { adaptSettings } from '@core/adapters/api-setting.adapter';
+import { ApiSetting } from '@core/interfaces/api/api-setting.interface';
+import { JsonApi } from '@core/interfaces/json-api.interface';
+import { Setting } from '@core/models/setting.model';
+import { LoaderStateService } from '@core/services/loader-state.service';
+import { waitForTurn } from '@core/utils/wait-for.utility';
+
+import { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import { ErrorDialogService } from '@shared/services/error-dialog.service';
 
 import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
-import { adaptSettings }      from '@core/adapters/api-setting.adapter';
-import { ApiSetting }         from '@core/interfaces/api/api-setting.interface';
-import { JsonApi }            from '@core/interfaces/json-api.interface';
-import { Setting }            from '@core/models/setting.model';
-import { LoaderStateService } from '@core/services/loader-state.service';
-import { waitForTurn }        from '@core/utils/wait-for.utility';
-
-import { LoadableService }    from '@shared/interfaces/loadable-service.interface';
-import { ErrorDialogService } from '@shared/services/error-dialog.service';
-
 import { environment } from '../../../../environments/environment';
-
 
 @Injectable({
   providedIn: 'root',
@@ -55,7 +54,7 @@ export class SettingsService implements LoadableService {
         catchError((error: HttpErrorResponse) => {
           this.isLoadingSubject.next(false);
           if (error.status === 404) {
-            return of({data: []});
+            return of({ data: [] });
           }
           return this.processError(error);
         }),

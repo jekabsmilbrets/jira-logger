@@ -1,7 +1,5 @@
-import { Tag }            from '@shared/models/tag.model';
-
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
-
+import { Tag } from '@shared/models/tag.model';
 
 export interface ReportSettings {
   reportMode: ReportModeEnum;

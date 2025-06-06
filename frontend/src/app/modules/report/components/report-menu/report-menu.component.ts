@@ -1,20 +1,20 @@
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
-import { Component, TemplateRef, ViewChild }   from '@angular/core';
-import { MatDialog }                           from '@angular/material/dialog';
+import { Component, TemplateRef, ViewChild } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
 
-import { map, Observable } from 'rxjs';
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportService } from '@report/services/report.service';
 
 import { Tag } from '@shared/models/tag.model';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
-import { ReportService }  from '@report/services/report.service';
-
+import { map, Observable } from 'rxjs';
 
 @Component(
   {
     selector: 'report-menu',
     templateUrl: './report-menu.component.html',
     styleUrls: ['./report-menu.component.scss'],
+    standalone: false,
   },
 )
 export class ReportMenuComponent {

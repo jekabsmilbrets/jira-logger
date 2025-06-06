@@ -1,6 +1,9 @@
 $mat-icon-size: 18px;
 
 :host {
+  display: block;
+  padding: 8px 0 0;
+
   .dialog-title {
     display: flex;
     justify-content: space-between;
@@ -9,7 +12,7 @@ $mat-icon-size: 18px;
       margin: 4px 0 0;
     }
 
-    .mat-icon-button {
+    .mat-mdc-icon-button {
       .mat-icon {
         line-height: $mat-icon-size;
         width: $mat-icon-size;

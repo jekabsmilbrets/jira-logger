@@ -1,9 +1,8 @@
-import { NgModule }             from '@angular/core';
+import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { ReportResolver }      from '@report/resolvers/report.resolver';
+import { ReportResolver } from '@report/resolvers/report.resolver';
 import { ReportViewComponent } from '@report/views/report/report-view.component';
-
 
 const routes: Routes = [
   {

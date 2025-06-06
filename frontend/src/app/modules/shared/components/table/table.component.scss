@@ -5,12 +5,12 @@
     overflow: auto;
 
     ::ng-deep {
-      .mat-table {
+      .mat-mdc-table {
         min-width: 100%;
         width: max-content;
       }
 
-      .mat-header-cell, .mat-footer-cell, .mat-cell {
+      .mat-mdc-header-cell, .mat-mdc-footer-cell, .mat-mdc-cell {
         min-width: 80px;
         text-align: center;
         justify-content: center;

@@ -1,19 +1,18 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Injectable }        from '@angular/core';
-
-import { BehaviorSubject, catchError, concat, map, Observable, of, switchMap, tap, throwError, toArray } from 'rxjs';
+import { Injectable } from '@angular/core';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { waitForTurn }        from '@core/utils/wait-for.utility';
+import { waitForTurn } from '@core/utils/wait-for.utility';
 
-import { adaptTasks }      from '@shared/adapters/task.adapter';
-import { ApiTask }         from '@shared/interfaces/api/api-task.interface';
+import { adaptTasks } from '@shared/adapters/task.adapter';
+import { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { LoadableService } from '@shared/interfaces/loadable-service.interface';
-import { Task }            from '@shared/models/task.model';
-import { TimeLog }         from '@shared/models/time-log.model';
-import { TasksService }    from '@shared/services/tasks.service';
+import { Task } from '@shared/models/task.model';
+import { TimeLog } from '@shared/models/time-log.model';
+import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
+import { BehaviorSubject, catchError, concat, map, Observable, of, switchMap, tap, throwError, toArray } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',

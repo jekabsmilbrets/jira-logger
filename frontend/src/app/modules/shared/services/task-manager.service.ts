@@ -1,23 +1,10 @@
 import { Injectable } from '@angular/core';
 
-import {
-  BehaviorSubject,
-  catchError,
-  filter,
-  interval,
-  map,
-  Observable,
-  of,
-  switchMap,
-  take,
-  tap,
-  withLatestFrom,
-} from 'rxjs';
-
-import { Task }            from '@shared/models/task.model';
-import { TasksService }    from '@shared/services/tasks.service';
+import { Task } from '@shared/models/task.model';
+import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
+import { BehaviorSubject, catchError, filter, interval, map, Observable, of, switchMap, take, tap, withLatestFrom } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',

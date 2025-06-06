@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ReportDateSelectorComponent } from './report-date-selector.component';
 
-
 describe('ReportDateSelectorComponent', () => {
   let component: ReportDateSelectorComponent;
   let fixture: ComponentFixture<ReportDateSelectorComponent>;

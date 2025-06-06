@@ -1,27 +1,27 @@
-import { SelectionModel }                                                   from '@angular/cdk/collections';
-import { formatDate }                                                       from '@angular/common';
+import { SelectionModel } from '@angular/cdk/collections';
+import { formatDate } from '@angular/common';
 import { AfterViewInit, Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
-import { MatPaginator }                                                     from '@angular/material/paginator';
-import { MatSort, SortDirection }                                           from '@angular/material/sort';
-import { MatTableDataSource }                                               from '@angular/material/table';
-
-import { take } from 'rxjs';
+import { MatPaginator } from '@angular/material/paginator';
+import { MatSort, SortDirection } from '@angular/material/sort';
+import { MatTableDataSource } from '@angular/material/table';
 
 import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
 
-import { Column }            from '@shared/interfaces/column.interface';
-import { Searchable }        from '@shared/interfaces/searchable.interface';
-import { Task }              from '@shared/models/task.model';
-import { TimeLog }           from '@shared/models/time-log.model';
+import { Column } from '@shared/interfaces/column.interface';
+import { Searchable } from '@shared/interfaces/searchable.interface';
+import { Task } from '@shared/models/task.model';
+import { TimeLog } from '@shared/models/time-log.model';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
-import { getNestedObject }   from '@shared/utils/get-nested-object.util';
+import { getNestedObject } from '@shared/utils/get-nested-object.util';
 
+import { take } from 'rxjs';
 
 @Component(
   {
     selector: 'shared-shared-table',
     templateUrl: './table.component.html',
     styleUrls: ['./table.component.scss'],
+    standalone: false,
   },
 )
 export class TableComponent implements AfterViewInit {
@@ -64,10 +64,10 @@ export class TableComponent implements AfterViewInit {
   @Output()
   public syncAction: EventEmitter<Searchable> = new EventEmitter<Searchable>();
 
-  @ViewChild(MatSort, {static: true})
+  @ViewChild(MatSort, { static: true })
   public sort!: MatSort;
 
-  @ViewChild(MatPaginator, {static: true})
+  @ViewChild(MatPaginator, { static: true })
   public paginator!: MatPaginator;
 
   public selection = new SelectionModel<Searchable>(true, []);
@@ -89,9 +89,9 @@ export class TableComponent implements AfterViewInit {
 
   public get displayedColumns(): string[] {
     const columns = this.columns
-      .filter(({hidden}: Column) => !hidden)
-      .filter(({excludeFromLoop}: Column) => !excludeFromLoop)
-      .map(({columnDef}: Column) => columnDef);
+      .filter(({ hidden }: Column) => !hidden)
+      .filter(({ excludeFromLoop }: Column) => !excludeFromLoop)
+      .map(({ columnDef }: Column) => columnDef);
 
     if (this.enableRemoveAction) {
       columns.push('remove');

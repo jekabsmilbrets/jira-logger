@@ -1,18 +1,16 @@
 import { Injectable } from '@angular/core';
-import { MatDialog }  from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 
-import { Observable } from 'rxjs';
-
-import { Task }    from '@shared/models/task.model';
+import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 
-import { TimeLogListModalComponent }      from '@tasks/components/task-list/task/time-log-list-modal/time-log-list-modal.component';
+import { TimeLogListModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-list-modal.component';
 // eslint-disable-next-line max-len
-import { TimeLogModalComponent }          from '@tasks/components/task-list/task/time-log-list-modal/time-log-modal/time-log-modal.component';
-import { TimeLogModalResponseInterface }  from '@tasks/interfaces/time-log-modal-response.interface';
+import { TimeLogModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-modal/time-log-modal.component';
+import { TimeLogModalResponseInterface } from '@tasks/interfaces/time-log-modal-response.interface';
 import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
 
-
+import { Observable } from 'rxjs';
 
 @Injectable()
 export class TimeLogEditService {
