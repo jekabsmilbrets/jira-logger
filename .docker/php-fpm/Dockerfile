@@ -13,6 +13,6 @@ COPY --from=composer /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-CMD composer i -o; php bin/console doctrine:database:create; php bin/console doctrine:migrations:migrate; --no-interaction; php bin/console seed:load; php bin/console c:c; php-fpm
+CMD ["sh", "-c", "composer i -o && (php bin/console doctrine:database:create --no-interaction || true) && php bin/console doctrine:migrations:migrate --no-interaction && php bin/console seed:load && php bin/console c:c && php-fpm"]
 
 EXPOSE 9000

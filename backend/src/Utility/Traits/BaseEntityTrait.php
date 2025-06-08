@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Utility\Traits;
 
+use App\Doctrine\CustomUuidGenerator;
 use App\Utility\Constants\Group;
-use DateTimeInterface;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use OpenApi\Attributes as OA;
-use Ramsey\Uuid\Doctrine\UuidGenerator;
 use Symfony\Component\Serializer\Annotation\Context;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
@@ -22,7 +21,7 @@ trait BaseEntityTrait
         ORM\GeneratedValue(
             strategy: 'CUSTOM'
         ),
-        ORM\CustomIdGenerator(UuidGenerator::class),
+        ORM\CustomIdGenerator(class: CustomUuidGenerator::class),
         ORM\Column(
             type: 'uuid',
             unique: true

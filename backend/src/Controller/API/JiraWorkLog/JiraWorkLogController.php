@@ -37,7 +37,8 @@ class JiraWorkLogController extends BaseApiController
 
     public function __construct(
         private readonly JiraWorkLogService $jiraWorkLogService,
-    ) {
+    )
+    {
     }
 
     #[
@@ -136,8 +137,11 @@ class JiraWorkLogController extends BaseApiController
         ),
     ]
     final public function show(
-        ?JiraWorkLog $jiraWorkLog,
-    ): JsonResponse {
+        string $id
+    ): JsonResponse
+    {
+        $jiraWorkLog = $this->jiraWorkLogService->show($id);
+
         if (!$jiraWorkLog instanceof JiraWorkLog) {
             return $this->jsonApi(
                 errors: [self::JIRA_WORK_LOG_NOT_FOUND],
@@ -208,10 +212,11 @@ class JiraWorkLogController extends BaseApiController
         ),
     ]
     final public function new(
-        ValidatorInterface $validator,
+        ValidatorInterface  $validator,
         SerializerInterface $serializer,
-        Request $request,
-    ): JsonResponse {
+        Request             $request,
+    ): JsonResponse
+    {
         try {
             $jiraWorkLogRequest = $serializer->deserialize(
                 data: $request->getContent(),
@@ -331,11 +336,12 @@ class JiraWorkLogController extends BaseApiController
         ),
     ]
     final public function edit(
-        string $id,
-        ValidatorInterface $validator,
+        string              $id,
+        ValidatorInterface  $validator,
         SerializerInterface $serializer,
-        Request $request,
-    ): JsonResponse {
+        Request             $request,
+    ): JsonResponse
+    {
         try {
             $jiraWorkLogRequest = $serializer->deserialize(
                 data: $request->getContent(),
@@ -438,7 +444,8 @@ class JiraWorkLogController extends BaseApiController
     ]
     final public function delete(
         string $id
-    ): JsonResponse {
+    ): JsonResponse
+    {
         try {
             $status = $this->jiraWorkLogService->delete($id);
         } catch (Exception) {

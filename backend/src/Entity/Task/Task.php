@@ -15,6 +15,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\Order;
 use OpenApi\Attributes as OA;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Serializer\Annotation\MaxDepth;
@@ -210,8 +211,8 @@ class Task implements EntityBaseInterface
         $criteria = Criteria::create()
             ->orderBy(
                 [
-                    'createdAt' => 'DESC',
-                    'updatedAt' => 'DESC',
+                    'createdAt' => Order::Descending,
+                    'updatedAt' => Order::Descending,
                 ]
             );
 

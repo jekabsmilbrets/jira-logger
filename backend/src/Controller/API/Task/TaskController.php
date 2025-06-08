@@ -18,6 +18,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
+use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
@@ -46,7 +47,8 @@ class TaskController extends BaseApiController
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
+     * @throws ExceptionInterface
      */
     #[
         Route(
@@ -201,8 +203,10 @@ class TaskController extends BaseApiController
         ),
     ]
     final public function show(
-        ?Task $task,
+        string $id,
     ): JsonResponse {
+        $task = $this->taskService->show($id);
+
         if (!$task instanceof Task) {
             return $this->jsonApi(
                 errors: [self::TASK_NOT_FOUND],
@@ -534,7 +538,7 @@ class TaskController extends BaseApiController
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     #[
         Route(
@@ -574,7 +578,7 @@ class TaskController extends BaseApiController
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     #[
         Route(

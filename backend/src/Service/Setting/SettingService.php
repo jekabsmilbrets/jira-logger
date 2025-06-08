@@ -50,8 +50,8 @@ class SettingService
     }
 
     final public function new(
-        SettingRequest $settingRequest = null,
-        Setting $setting = null,
+        ?SettingRequest $settingRequest = null,
+        ?Setting $setting = null,
         bool $flush = true,
     ): Setting {
         if (!$settingRequest && !$setting) {
@@ -72,8 +72,8 @@ class SettingService
 
     final public function edit(
         string $id,
-        SettingRequest $settingRequest = null,
-        Setting $setting = null,
+        ?SettingRequest $settingRequest = null,
+        ?Setting $setting = null,
         bool $flush = true,
     ): ?Setting {
         switch (true) {

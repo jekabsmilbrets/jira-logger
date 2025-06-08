@@ -8,6 +8,7 @@ use App\Dto\JsonApi\JsonApi;
 use App\Serializer\Normalizer\ModelNormalizer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 class BaseApiController extends AbstractController
@@ -31,6 +32,9 @@ class BaseApiController extends AbstractController
         );
     }
 
+    /**
+     * @throws ExceptionInterface
+     */
     final public function jsonApi(
         mixed $data = null,
         mixed $errors = null,
