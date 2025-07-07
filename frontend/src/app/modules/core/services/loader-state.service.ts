@@ -40,13 +40,7 @@ export class LoaderStateService {
 
     loaderMarks.set(
       name,
-      loader.pipe(
-        tap((isLoading: boolean) => {
-          if (!environment.production && environment.debug) {
-            console.log(`${ name } is ${ isLoading ? 'Loading' : 'Done loading' }!`);
-          }
-        }),
-      ),
+      loader,
     );
 
     this.loaderMarks.next(loaderMarks);
