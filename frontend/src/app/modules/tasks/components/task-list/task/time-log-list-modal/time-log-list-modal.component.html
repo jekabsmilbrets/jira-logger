@@ -1,5 +1,6 @@
-<div class="dialog-title" mat-dialog-title>
-    <h2>Time Log list for task {{ data.task.name }}</h2>
+<div class="dialog-title"
+     mat-dialog-title>
+    <h2>Time Log list for task: {{ data.task.name }}</h2>
 
     <button (click)="onCancel()"
             aria-label="close dialog"
@@ -33,6 +34,10 @@
 </mat-dialog-content>
 
 <mat-dialog-actions>
-    <button (click)="onCancel()" mat-button>Cancel</button>
-    <button (click)="onSave()" mat-button>Save changes</button>
+    <button (click)="onCancel()"
+            mat-button>Cancel
+    </button>
+    <button (click)="onSave()"
+            mat-button>Save changes
+    </button>
 </mat-dialog-actions>

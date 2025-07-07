@@ -1,4 +1,5 @@
-<div class="dialog-title" mat-dialog-title>
+<div class="dialog-title"
+     mat-dialog-title>
     <h2>Import JSON Backup</h2>
 
     <button (click)="onClose()"
@@ -8,12 +9,11 @@
     </button>
 </div>
 
-<div mat-dialog-content>
+<mat-dialog-content>
     <mat-slide-toggle (toggleChange)="showCurrent = !showCurrent">Show Current Data JSON</mat-slide-toggle>
     <button [cdkCopyToClipboard]="data.currentTasks | json"
             color="accent"
-            mat-button>
-        Copy to clipboard
+            mat-button>Copy to clipboard
     </button>
 
     <pre *ngIf="showCurrent">{{ data.currentTasks | json }}</pre>
@@ -24,12 +24,17 @@
             <textarea formControlName="json"
                       matInput
                       placeholder="[{task data...}]">
-      </textarea>
+            </textarea>
         </mat-form-field>
     </form>
-</div>
+</mat-dialog-content>
 
-<div mat-dialog-actions>
-    <button (click)="onClose()" mat-button>Close</button>
-    <button (click)="onImport()" color="warn" mat-button>Import</button>
-</div>
+<mat-dialog-actions>
+    <button (click)="onClose()"
+            mat-button>Close
+    </button>
+    <button (click)="onImport()"
+            color="warn"
+            mat-button>Import
+    </button>
+</mat-dialog-actions>
