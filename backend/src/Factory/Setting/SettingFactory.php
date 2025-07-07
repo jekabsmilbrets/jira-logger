@@ -11,7 +11,7 @@ class SettingFactory
 {
     final public static function create(
         SettingRequest $settingRequest,
-        Setting $setting = null,
+        ?Setting $setting = null,
     ): Setting {
         if (null === $setting) {
             $setting = new Setting();

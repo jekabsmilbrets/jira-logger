@@ -14,7 +14,7 @@ class TimeLogFactory
      */
     final public static function create(
         TimeLogRequest $timeLogRequest,
-        TimeLog $timeLog = null,
+        ?TimeLog $timeLog = null,
     ): TimeLog {
         if (null === $timeLog) {
             $timeLog = new TimeLog();

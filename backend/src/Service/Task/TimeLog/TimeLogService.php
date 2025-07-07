@@ -54,8 +54,8 @@ class TimeLogService
      * @throws \Exception
      */
     final public function new(
-        TimeLogRequest $timeLogRequest = null,
-        TimeLog $timeLog = null,
+        ?TimeLogRequest $timeLogRequest = null,
+        ?TimeLog $timeLog = null,
         bool $flush = true,
     ): TimeLog {
         if (!$timeLogRequest && !$timeLog) {
@@ -80,8 +80,8 @@ class TimeLogService
     final public function edit(
         string $taskId,
         string $id,
-        TimeLogRequest $timeLogRequest = null,
-        TimeLog $timeLog = null,
+        ?TimeLogRequest $timeLogRequest = null,
+        ?TimeLog $timeLog = null,
         bool $flush = true,
     ): ?TimeLog {
         switch (true) {

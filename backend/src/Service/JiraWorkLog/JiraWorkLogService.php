@@ -60,8 +60,8 @@ class JiraWorkLogService
     }
 
     final public function new(
-        JiraWorkLogRequest $jiraWorkLogRequest = null,
-        JiraWorkLog $jiraWorkLog = null,
+        ?JiraWorkLogRequest $jiraWorkLogRequest = null,
+        ?JiraWorkLog $jiraWorkLog = null,
         bool $flush = true,
     ): JiraWorkLog {
         if (!$jiraWorkLogRequest && !$jiraWorkLog) {
@@ -82,8 +82,8 @@ class JiraWorkLogService
 
     final public function edit(
         string $id,
-        JiraWorkLogRequest $jiraWorkLogRequest = null,
-        JiraWorkLog $jiraWorkLog = null,
+        ?JiraWorkLogRequest $jiraWorkLogRequest = null,
+        ?JiraWorkLog $jiraWorkLog = null,
         bool $flush = true,
     ): ?JiraWorkLog {
         switch (true) {

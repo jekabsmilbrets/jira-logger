@@ -93,7 +93,7 @@ class JiraApiService
         Task $task,
         \DateTime $startTime,
         int $timeSpentSeconds,
-        string $description = null,
+        ?string $description = null,
     ): Worklog {
         try {
             $issueKey = $this->getIssueNameFromTask($task);
@@ -172,7 +172,7 @@ class JiraApiService
         int $workLogId,
         \DateTime $startTime,
         int $timeSpentSeconds,
-        string $description = null,
+        ?string $description = null,
     ): Worklog {
         try {
             $issueKey = $this->getIssueNameFromTask($task);
@@ -361,7 +361,7 @@ class JiraApiService
         Task $task,
         \DateTime $startTime,
         int $timeSpentSeconds,
-        string $description = null,
+        ?string $description = null,
     ): Worklog {
         if ($timeSpentSeconds < self::MIN_REPORT_SECONDS) {
             throw new JiraApiServiceException(message: sprintf(self::MIN_SECOND_REPORT_ERROR_MSG, self::MIN_REPORT_SECONDS));

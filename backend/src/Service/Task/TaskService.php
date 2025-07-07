@@ -113,8 +113,8 @@ class TaskService
     }
 
     final public function new(
-        TaskRequest $taskRequest = null,
-        Task $task = null,
+        ?TaskRequest $taskRequest = null,
+        ?Task $task = null,
         bool $flush = true,
     ): Task {
         if (!$taskRequest && !$task) {
@@ -135,8 +135,8 @@ class TaskService
 
     final public function edit(
         string $id,
-        TaskRequest $taskRequest = null,
-        Task $task = null,
+        ?TaskRequest $taskRequest = null,
+        ?Task $task = null,
         bool $flush = true,
     ): ?Task {
         switch (true) {

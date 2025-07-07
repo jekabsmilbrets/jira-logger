@@ -39,8 +39,8 @@ class TagService
     }
 
     final public function new(
-        TagRequest $tagRequest = null,
-        Tag $tag = null,
+        ?TagRequest $tagRequest = null,
+        ?Tag $tag = null,
         bool $flush = true,
     ): Tag {
         if (!$tagRequest && !$tag) {
@@ -61,8 +61,8 @@ class TagService
 
     final public function edit(
         string $id,
-        TagRequest $tagRequest = null,
-        Tag $tag = null,
+        ?TagRequest $tagRequest = null,
+        ?Tag $tag = null,
         bool $flush = true,
     ): ?Tag {
         switch (true) {

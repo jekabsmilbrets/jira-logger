@@ -17,7 +17,7 @@
     "doctrine/doctrine-bundle": "^2.7",
     "doctrine/doctrine-migrations-bundle": "^3.2",
     "doctrine/orm": "^2.12",
-    "evotodi/seed-bundle": "^6.0",
+    "evotodi/seed-bundle": "^7.0",
     "lesstif/php-jira-rest-client": "^5.1",
     "nelmio/api-doc-bundle": "^4.9",
     "nelmio/cors-bundle": "^2.5",

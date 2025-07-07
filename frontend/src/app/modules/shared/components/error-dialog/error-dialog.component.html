@@ -7,11 +7,14 @@
         <mat-icon>close</mat-icon>
     </button>
 </div>
-<div mat-dialog-content>
+
+<mat-dialog-content>
     <p>{{ data.errorMessage }}</p>
     <pre>{{ data.idbData | json }}</pre>
-</div>
+</mat-dialog-content>
 
-<div mat-dialog-actions>
-    <button (click)="onClose()" mat-button>Close</button>
-</div>
+<mat-dialog-actions>
+    <button (click)="onClose()"
+            mat-button>Close
+    </button>
+</mat-dialog-actions>

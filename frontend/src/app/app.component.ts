@@ -26,10 +26,7 @@ export class AppComponent implements OnDestroy, OnInit {
     private monitorService: MonitorService,
     private snackBar: MatSnackBar,
   ) {
-    this.window?.navigator?.storage?.persist()
-      .then(
-        (persistent: boolean) => console.log('IndexedDB will be persistent ' + persistent),
-      );
+    this.window?.navigator?.storage?.persist();
   }
 
   public ngOnInit(): void {

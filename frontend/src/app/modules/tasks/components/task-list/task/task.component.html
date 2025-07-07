@@ -1,47 +1,51 @@
 <form (ngSubmit)="onUpdate()"
       [formGroup]="formGroup">
-    <mat-card appearance="outlined">
+    <mat-card>
         <ng-container *ngIf="!editMode">
-            <mat-card-title>
-                <span>{{ task.name }}</span>
+            <mat-card-header>
+                <mat-card-title>
+                    <span>{{ task.name }}</span>
 
-                <mat-chip-listbox aria-label="Task tags">
-                    <mat-chip-option *ngFor="let tag of task.tags">{{ tag.name }}</mat-chip-option>
-                </mat-chip-listbox>
-            </mat-card-title>
+                    <mat-chip-listbox aria-label="Task tags">
+                        <mat-chip-option *ngFor="let tag of task.tags">{{ tag.name }}</mat-chip-option>
+                    </mat-chip-listbox>
+                </mat-card-title>
 
-            <mat-card-subtitle>
-                <span>{{ task.description }}</span><br/>
+                <mat-card-subtitle>
+                    <span>{{ task.description }}</span><br/>
 
-                <span>Total Time Worked: {{ task.timeLogged | readableTime }}</span>
-            </mat-card-subtitle>
+                    <span>Total Time Worked: {{ task.timeLogged | readableTime }}</span>
+                </mat-card-subtitle>
+            </mat-card-header>
         </ng-container>
 
         <ng-container *ngIf="editMode">
-            <mat-card-title>
-                <mat-form-field>
-                    <mat-label>Task</mat-label>
-                    <input formControlName="name"
-                           matInput>
-                </mat-form-field>
+            <mat-card-header>
+                <mat-card-title>
+                    <mat-form-field>
+                        <mat-label>Task</mat-label>
+                        <input formControlName="name"
+                               matInput>
+                    </mat-form-field>
 
-                <mat-form-field>
-                    <mat-label>Tags</mat-label>
-                    <mat-select [compareWith]="isSameTag" formControlName="tags" multiple>
-                        <mat-option *ngFor="let tag of tags$ | async" [value]="tag">
-                            {{ tag.name }}
-                        </mat-option>
-                    </mat-select>
-                </mat-form-field>
-            </mat-card-title>
+                    <mat-form-field>
+                        <mat-label>Tags</mat-label>
+                        <mat-select [compareWith]="isSameTag" formControlName="tags" multiple>
+                            <mat-option *ngFor="let tag of tags$ | async" [value]="tag">
+                                {{ tag.name }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </mat-card-title>
 
-            <mat-card-subtitle>
-                <mat-form-field>
-                    <mat-label>Description</mat-label>
-                    <textarea formControlName="description"
-                              matInput></textarea>
-                </mat-form-field>
-            </mat-card-subtitle>
+                <mat-card-subtitle>
+                    <mat-form-field>
+                        <mat-label>Description</mat-label>
+                        <textarea formControlName="description"
+                                  matInput></textarea>
+                    </mat-form-field>
+                </mat-card-subtitle>
+            </mat-card-header>
         </ng-container>
 
         <mat-card-actions>

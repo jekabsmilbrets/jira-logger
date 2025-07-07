@@ -1,15 +1,17 @@
 $mat-icon-size: 18px;
 
 :host {
-  display: block;
-  padding: 8px 0 0;
-
   .dialog-title {
     display: flex;
     justify-content: space-between;
+    align-items: center;
+
+    &:before {
+      display: none;
+    }
 
     h2 {
-      margin: 4px 0 0;
+      margin: 0;
     }
 
     .mat-mdc-icon-button {
