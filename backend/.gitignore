@@ -1,7 +1,9 @@
 
 ###> symfony/framework-bundle ###
+/.env.dev
 /.env.local
 /.env.local.php
+/.env.*.dev
 /.env.*.local
 /config/secrets/prod/prod.decrypt.private.php
 /public/bundles/
@@ -14,7 +16,6 @@
 /.php-cs-fixer.cache
 ###< friendsofphp/php-cs-fixer ###
 cghooks.lock
-
 
 ###> phpstan/phpstan ###
 phpstan.neon
