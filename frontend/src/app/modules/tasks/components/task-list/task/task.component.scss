@@ -1,7 +1,71 @@
 :host {
-  ::ng-deep .mat-mdc-card {
-    .play-pause-button {
-      width: 75px;
+  .task-card {
+    max-width: 325px;
+    min-height: 200px;
+
+    @media (max-width: 1023px) {
+      max-width: 240px;
+    }
+
+    .mat-mdc-card-header {
+      .mat-mdc-card-title {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+
+        .card-title {
+          max-width: 300px;
+          margin-bottom: 5px;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          overflow: hidden;
+
+          @media (max-width: 1023px) {
+            max-width: 215px;
+          }
+        }
+      }
+    }
+
+    .mat-mdc-card-content {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .task-card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: auto;
+
+      .card-task-info {
+        display: flex;
+        flex-direction: column;
+        flex-basis: 100%;
+        justify-content: space-between;
+      }
+
+      .play-pause-button {
+        width: 75px;
+      }
+    }
+
+    &-editing {
+      max-width: 325px;
+
+      .mat-mdc-card-header {
+        .mat-mdc-card-title {
+          .card-title {
+            max-width: 300px;
+          }
+        }
+      }
+
+      .input-form-field {
+        min-width: 100%;
+      }
     }
   }
 }

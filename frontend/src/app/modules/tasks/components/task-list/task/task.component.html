@@ -1,54 +1,74 @@
 <form (ngSubmit)="onUpdate()"
       [formGroup]="formGroup">
-    <mat-card>
+    <mat-card class="task-card"
+              [ngClass]="{ 'task-card-editing': editMode }">
         <ng-container *ngIf="!editMode">
             <mat-card-header>
                 <mat-card-title>
-                    <span>{{ task.name }}</span>
+                    <h1 class="card-title"
+                        [matTooltipDisabled]="task.name.length < 20"
+                        [matTooltip]="task.name">{{ task.name }}</h1>
 
-                    <mat-chip-listbox aria-label="Task tags">
+                    <mat-chip-listbox aria-label="Task tags"
+                                      disabled>
                         <mat-chip-option *ngFor="let tag of task.tags">{{ tag.name }}</mat-chip-option>
                     </mat-chip-listbox>
                 </mat-card-title>
-
-                <mat-card-subtitle>
-                    <span>{{ task.description }}</span><br/>
-
-                    <span>Total Time Worked: {{ task.timeLogged | readableTime }}</span>
-                </mat-card-subtitle>
             </mat-card-header>
         </ng-container>
 
         <ng-container *ngIf="editMode">
-            <mat-card-header>
-                <mat-card-title>
-                    <mat-form-field>
-                        <mat-label>Task</mat-label>
-                        <input formControlName="name"
-                               matInput>
-                    </mat-form-field>
+            <mat-card-content>
+                <mat-form-field class="input-form-field">
+                    <mat-label>Task</mat-label>
+                    <input formControlName="name"
+                           matInput>
+                </mat-form-field>
 
-                    <mat-form-field>
-                        <mat-label>Tags</mat-label>
-                        <mat-select [compareWith]="isSameTag" formControlName="tags" multiple>
-                            <mat-option *ngFor="let tag of tags$ | async" [value]="tag">
-                                {{ tag.name }}
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
-                </mat-card-title>
+                <mat-form-field class="input-form-field">
+                    <mat-label>Tags</mat-label>
+                    <mat-select [compareWith]="isSameTag" formControlName="tags" multiple>
+                        <mat-option *ngFor="let tag of tags$ | async" [value]="tag">
+                            {{ tag.name }}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
 
-                <mat-card-subtitle>
-                    <mat-form-field>
-                        <mat-label>Description</mat-label>
-                        <textarea formControlName="description"
-                                  matInput></textarea>
-                    </mat-form-field>
-                </mat-card-subtitle>
-            </mat-card-header>
+                <mat-form-field class="input-form-field">
+                    <mat-label>Description</mat-label>
+                    <textarea formControlName="description"
+                              matInput></textarea>
+                </mat-form-field>
+            </mat-card-content>
         </ng-container>
 
-        <mat-card-actions>
+        <mat-card-actions class="task-card-actions">
+            <div class="card-task-info">
+                <span>{{ task.description }}</span>
+
+                <span>Total Time Worked: {{ task.timeLogged | readableTime }}</span>
+            </div>
+
+            <button (click)="onToggleTimeLogging()"
+                    [disabled]="isLoading || editMode"
+                    aria-label="Start Timer"
+                    class="play-pause-button"
+                    color="primary"
+                    mat-icon-button
+                    type="button">
+                <mat-icon>timer</mat-icon>
+                <mat-icon>{{ isTimeLogRunning() ? 'pause' : 'play_arrow' }}</mat-icon>
+            </button>
+
+            <button (click)="onOpenTimeLogsModal()"
+                    [disabled]="isLoading || editMode"
+                    aria-label="Remove"
+                    color="warn"
+                    mat-icon-button
+                    type="button">
+                <mat-icon>history</mat-icon>
+            </button>
+
             <button (click)="onToggleEditMode()"
                     *ngIf="!editMode"
                     [disabled]="isLoading"
@@ -70,37 +90,18 @@
                     [disabled]="false"
                     aria-label="Update"
                     mat-icon-button
+                    color="primary"
                     type="submit">
                 <mat-icon>save</mat-icon>
             </button>
 
             <button (click)="onRemove()"
-                    [disabled]="isLoading"
+                    [disabled]="isLoading || editMode"
                     aria-label="Remove"
                     color="warn"
                     mat-icon-button
                     type="button">
                 <mat-icon>delete</mat-icon>
-            </button>
-
-            <button (click)="onToggleTimeLogging()"
-                    [disabled]="isLoading"
-                    aria-label="Start Timer"
-                    class="play-pause-button"
-                    color="primary"
-                    mat-icon-button
-                    type="button">
-                <mat-icon>timer</mat-icon>
-                <mat-icon>{{ isTimeLogRunning() ? 'pause' : 'play_arrow' }}</mat-icon>
-            </button>
-
-            <button (click)="onOpenTimeLogsModal()"
-                    [disabled]="isLoading"
-                    aria-label="Remove"
-                    color="warn"
-                    mat-icon-button
-                    type="button">
-                <mat-icon>history</mat-icon>
             </button>
         </mat-card-actions>
     </mat-card>
