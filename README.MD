@@ -49,7 +49,7 @@ which should be imported into your system's root certificates to allow SSL for A
 * Nginx
 
 ### FE
-* Angular 19
-* Material 19
-* Node 20.18.0
+* Angular 20
+* Material 20
+* Node 22.17.0
 * NPM 10.8.2

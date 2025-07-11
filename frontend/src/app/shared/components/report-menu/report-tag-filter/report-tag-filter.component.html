@@ -1,0 +1,16 @@
+<mat-form-field>
+    @if (showLabel()) {
+        <mat-label>Tags</mat-label>
+    }
+
+    <mat-select (valueChange)="tagValueChange($event)"
+                [formControl]="tagFormControl"
+                multiple
+                placeholder="Tags">
+        @for (tag of tags$ | async; track $index) {
+            <mat-option [value]="tag">
+                {{ tag.name }}
+            </mat-option>
+        }
+    </mat-select>
+</mat-form-field>

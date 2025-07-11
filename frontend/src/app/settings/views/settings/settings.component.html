@@ -1,0 +1,17 @@
+<div class="settings-container">
+    <!--    <app-task-list-configurator [disabled]="isLoading$ | async"></app-task-list-configurator>-->
+
+    <settings-report-configurator (dateChange)="onDateChange($event)"
+                                  (endDateChange)="onEndDateChange($event)"
+                                  (hideUnreportedTasksChange)="onHideUnreportedTasksChange($event)"
+                                  (reportModeChange)="onReportModeChange($event)"
+                                  (showWeekendsChange)="onShowWeekendsChange($event)"
+                                  (startDateChange)="onStartDateChange($event)"
+                                  (tagChange)="onTagChange($event)"
+                                  [disabled]="(isLoading$ | async) ?? false"
+                                  [reportSettings]="(reportSettings$ | async)!"/>
+
+    <settings-jira-api-configurator (settingsChange)="onSettingsChange($event)"
+                                    [disabled]="isLoading$ | async"
+                                    [settings]="(jiraApiSettings$ | async) ?? []"/>
+</div>

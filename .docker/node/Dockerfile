@@ -1,5 +1,5 @@
-FROM node:lts-iron
+FROM node:lts-jod
 
-RUN npm i -g @angular/cli@19
+RUN npm i -g @angular/cli@20
 
 WORKDIR /home/node/app
