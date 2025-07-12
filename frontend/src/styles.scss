@@ -1,8 +1,9 @@
+@use "@angular/material" as mat;
 @use "styles/report/report-menu/global";
-
 /* You can add global styles to this file, and also import other style files */
 
-html, body {
+html,
+body {
   height: 100%;
 }
 
@@ -11,3 +12,16 @@ body {
   font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
+html {
+  color-scheme: light dark;
+
+  @include mat.theme((
+          color: mat.$cyan-palette,
+          typography: Roboto,
+          density: 0,
+  ));
+}
+
+:root {
+  --mat-dialog-container-max-width: 90vw;
+}

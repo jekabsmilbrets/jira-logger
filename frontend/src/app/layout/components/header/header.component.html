@@ -1,0 +1,33 @@
+<mat-toolbar class="app-toolbar">
+    <button aria-label="Home"
+            class="app-name"
+            mat-icon-button
+            routerLink="/"
+            title="Jira Time Logger"
+            type="button">
+        <mat-icon>home</mat-icon>
+    </button>
+
+    <button (click)="sidenav().toggle()"
+            aria-label="Menu"
+            class="app-menu"
+            mat-icon-button
+            type="button">
+        <mat-icon>menu</mat-icon>
+    </button>
+
+    <a [routerLink]="reportDateLink()"
+       class="time-spent">{{ timeLoggedToday() | readableTime }}</a>
+
+    @if (activeTask()) {
+        <span class="active-task">{{ activeTask()?.name }}</span>
+    }
+
+    <span class="spacer"></span>
+
+    <ng-template appDynamicMenu/>
+</mat-toolbar>
+
+@if (isLoading()) {
+    <mat-progress-bar mode="indeterminate"/>
+}

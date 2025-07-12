@@ -1,0 +1,36 @@
+@if (reportMode() === 'dateRange') {
+    <mat-form-field>
+        @if (showLabel()) {
+            <mat-label>Enter a date range</mat-label>
+        }
+        <mat-date-range-input [rangePicker]="picker">
+            <input (dateChange)="onStartDateChange($event)"
+                   [formControl]="startDateFormControl"
+                   matStartDate
+                   placeholder="Start date"/>
+            <input (dateChange)="onEndDateChange($event)"
+                   [formControl]="endDateFormControl"
+                   matEndDate
+                   placeholder="End date"/>
+        </mat-date-range-input>
+        <mat-datepicker-toggle [for]="picker"
+                               matSuffix/>
+        <mat-date-range-picker #picker/>
+    </mat-form-field>
+}
+
+@if (reportMode() === 'date') {
+    <mat-form-field>
+        @if (showLabel()) {
+            <mat-label>Enter a date</mat-label>
+        }
+        <input (dateChange)="onDateChange($event)"
+               [formControl]="dateFormControl"
+               placeholder="Date"
+               [matDatepicker]="picker"
+               matInput/>
+        <mat-datepicker-toggle [for]="picker"
+                               matSuffix/>
+        <mat-datepicker #picker/>
+    </mat-form-field>
+}

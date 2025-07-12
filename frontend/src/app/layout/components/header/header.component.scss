@@ -1,0 +1,42 @@
+@use '@angular/material' as mat;
+
+:host {
+  .app-toolbar {
+    @include mat.toolbar-overrides((
+            container-background-color: var(--mat-sys-inverse-primary),
+            container-text-color: var(--mat-sys-inverse-surface),
+    ));
+
+    display: flex;
+    align-items: center;
+    column-gap: 8px;
+
+    .time-spent {
+      display: flex;
+      color: white;
+      text-decoration: none;
+      font: 500 20px/32px Roboto, "Helvetica Neue", sans-serif;
+      letter-spacing: normal;
+
+      &:hover,
+      &:active {
+        color: rgba(255, 255, 255, 0.85);
+      }
+    }
+
+    .active-task {
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .spacer {
+      flex: 1 1 auto;
+    }
+  }
+
+  ::ng-deep .mat-mdc-progress-bar {
+    z-index: 100;
+    margin-bottom: -4px;
+  }
+}

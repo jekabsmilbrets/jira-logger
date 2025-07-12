@@ -1,0 +1,45 @@
+@if ((isSmallerThanDesktop$ | async) === false) {
+    <ng-template [ngTemplateOutlet]="menuItems"/>
+} @else {
+    <ng-template [ngTemplateOutlet]="smallScreen"/>
+}
+
+<ng-template #smallScreen>
+    <button (click)="onSmallScreenMenuToggle()"
+            mat-icon-button
+            type="button">
+        <mat-icon>list</mat-icon>
+    </button>
+</ng-template>
+
+<ng-template #menuItems>
+    <shared-report-hide-unreported-tasks (hideUnreportedTasksChange)="onHideUnreportedTasksChange($event)"
+                                         [hideUnreportedTasks]="(hideUnreportedTasks$ | async) ?? false"/>
+
+    @if ((reportMode$ | async) !== ReportModeEnum.date) {
+        <shared-report-show-weekends (showWeekendsChange)="onShowWeekendsChange($event)"
+                                     [showWeekends]="(showWeekends$ | async) ?? false"/>
+    }
+
+    @if (showDatePicker() | async) {
+        <shared-report-date-selector (dateChange)="onDateChange($event)"
+                                     (endDateChange)="onEndDateChange($event)"
+                                     (startDateChange)="onStartDateChange($event)"
+                                     [date]="date$ | async"
+                                     [endDate]="endDate$ | async"
+                                     [reportMode]="(reportMode$ | async) ?? ReportModeEnum.date"
+                                     [startDate]="startDate$ | async"/>
+    }
+
+    <shared-report-tag-filter (tagChange)="onTagChange($event)"
+                              [tags]="tags$ | async"/>
+
+    <shared-report-mode-switcher (reportModeChange)="onReportModeChange($event)"
+                                 [reportMode]="reportMode$ | async"/>
+</ng-template>
+
+<ng-template #smallScreenDialog>
+    <div class="report-menu-dialog">
+        <ng-template [ngTemplateOutlet]="menuItems"/>
+    </div>
+</ng-template>
