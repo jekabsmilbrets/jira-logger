@@ -1,0 +1,50 @@
+<div class="dialog-title"
+     mat-dialog-title>
+    <h2>Import JSON Backup</h2>
+
+    <button (click)="onClose()"
+            aria-label="close dialog"
+            mat-icon-button
+            type="button">
+        <mat-icon>close</mat-icon>
+    </button>
+</div>
+
+<mat-dialog-content>
+    <mat-slide-toggle (toggleChange)="showCurrent = !showCurrent">Show Current Data JSON</mat-slide-toggle>
+
+    <button [cdkCopyToClipboard]="data.currentTasks | json"
+            mat-button
+            type="button">
+        Copy to clipboard
+    </button>
+
+    @if (showCurrent) {
+        <pre>{{ data.currentTasks | json }}</pre>
+    }
+
+    <form [formGroup]="formGroup">
+        <mat-form-field>
+            <mat-label>JSON</mat-label>
+
+            <textarea formControlName="json"
+                      matInput
+                      placeholder="[{task data...}]">
+            </textarea>
+        </mat-form-field>
+    </form>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+    <button (click)="onClose()"
+            mat-button
+            type="button">
+        Close
+    </button>
+
+    <button (click)="onImport()"
+            mat-button
+            type="button">
+        Import
+    </button>
+</mat-dialog-actions>

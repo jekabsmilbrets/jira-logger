@@ -1,0 +1,19 @@
+<div class="base-container mat-typography">
+    <layout-header [activeTask]="activeTask$ | async"
+                   [isLoading]="(isLoading$ | async) || false"
+                   [sidenav]="sidenav"
+                   [timeLoggedToday]="(timeLoggedToday$ | async) || 0"/>
+
+    <mat-sidenav-container [style.marginTop.px]="0"
+                           class="app-sidenav-container">
+        <mat-sidenav #sidenav
+                     fixedTopGap="56"
+                     mode="over">
+            <layout-sidenav (sidenavClose)="sidenav.close()"/>
+        </mat-sidenav>
+
+        <mat-sidenav-content>
+            <router-outlet/>
+        </mat-sidenav-content>
+    </mat-sidenav-container>
+</div>

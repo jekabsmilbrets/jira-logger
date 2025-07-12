@@ -1,53 +1,57 @@
-/* To learn more about this file see: https://angular.io/config/tsconfig. */
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "baseUrl": "src",
-    "outDir": "./dist/out-tsc",
-    "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "esModuleInterop": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "sourceMap": true,
-    "declaration": false,
+    "skipLibCheck": true,
+    "isolatedModules": true,
     "experimentalDecorators": true,
-    "moduleResolution": "node",
     "importHelpers": true,
     "target": "ES2022",
-    "module": "es2020",
-    "lib": [
-      "es2020",
-      "dom"
-    ],
+    "module": "preserve",
     "paths": {
       "@core/*": [
-        "app/modules/core/*"
+        "./src/app/core/*"
       ],
       "@shared/*": [
-        "app/modules/shared/*"
+        "./src/app/shared/*"
       ],
       "@tasks/*": [
-        "app/modules/tasks/*"
+        "./src/app/tasks/*"
       ],
       "@report/*": [
-        "app/modules/report/*"
+        "./src/app/report/*"
       ],
       "@layout/*": [
-        "app/modules/layout/*"
+        "./src/app/layout/*"
       ],
       "@settings/*": [
-        "app/modules/settings/*"
+        "./src/app/settings/*"
+      ],
+      "environments/*": [
+        "./src/environments/*"
       ]
-    },
-    "useDefineForClassFields": false
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
+    "typeCheckHostBindings": true,
     "strictTemplates": true
-  }
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.spec.json"
+    }
+  ]
 }

@@ -1,0 +1,126 @@
+<div class="table-container">
+    <mat-table [dataSource]="dataSource"
+               [matSortActive]="sortField()"
+               [matSortDirection]="sortDirection()"
+               matSort
+               matSortDisableClear>
+        @for (column of columns(); track column.columnDef) {
+            <ng-container [cdkColumnDef]="column.columnDef"
+                          [stickyEnd]="column.stickyEnd"
+                          [sticky]="column.sticky">
+                @if (shouldDisplayColumn(column)) {
+                    <mat-header-cell *cdkHeaderCellDef
+                                     [disabled]="!column.sortable"
+                                     [mat-sort-header]="column.columnDef">
+                        {{ column.header }}
+                    </mat-header-cell>
+
+                    <mat-cell (click)="onCellClick(row, column)"
+                              *cdkCellDef="let row"
+                              [ngClass]="{ 'mat-cell-clickable': column.isClickable }">
+                        @switch (column.pipe) {
+                            @case ('readableTime') {
+                                <span>{{ column.cell(row) | readableTime }}</span>
+                            }
+                            @case ('date') {
+                                <span>{{ column.cell(row) | date: 'yyyy-MM-dd' }}</span>
+                            }
+                            @default {
+                                <span>{{ column.cell(row) }}</span>
+                            }
+                        }
+                    </mat-cell>
+
+                    @if (enableFooter()) {
+                        <mat-footer-cell (click)="onFooterCellClicked(column)"
+                                         *cdkFooterCellDef
+                                         [ngClass]="{ 'mat-cell-clickable': column.isClickable && !column.disableFooterClick }">
+                            @switch (column.pipe) {
+                                @case ('readableTime') {
+                                    <span>{{ (column.hasFooter ? column.footerCell(dataSource.data) : '') | readableTime }}</span>
+                                }
+                                @default {
+                                    <span>{{ column.hasFooter ? column.footerCell(dataSource.data) : '' }}</span>
+                                }
+                            }
+                        </mat-footer-cell>
+                    }
+                }
+
+                @if (column.columnDef === 'sync' && !column.hidden && !column.excludeFromLoop) {
+                    <mat-header-cell *cdkHeaderCellDef>Sync</mat-header-cell>
+
+                    <mat-cell *cdkCellDef="let row"
+                              [matTooltipDisabled]="!column.taskSynced(row)"
+                              matTooltip="Task already synced with JIRA server!">
+                        <button (click)="onSyncAction(row)"
+                                [disabled]="column.taskSynced(row)"
+                                color="warn"
+                                type="button"
+                                mat-icon-button>
+                            <mat-icon>sync</mat-icon>
+                        </button>
+                    </mat-cell>
+
+                    @if (enableFooter()) {
+                        <mat-footer-cell *cdkFooterCellDef/>
+                    }
+                }
+            </ng-container>
+        }
+        <ng-container cdkColumnDef="select">
+            <mat-header-cell *cdkHeaderCellDef>
+                <mat-checkbox (change)="$event ? masterToggle() : null"
+                              [checked]="selection.hasValue() && isAllSelected()"
+                              [indeterminate]="selection.hasValue() && !isAllSelected()"/>
+            </mat-header-cell>
+
+            <mat-cell *cdkCellDef="let row">
+                <mat-checkbox (change)="$event ? selection.toggle(row) : null"
+                              (click)="$event.stopPropagation()"
+                              [checked]="selection.isSelected(row)"/>
+            </mat-cell>
+
+            @if (enableFooter()) {
+                <mat-footer-cell *cdkFooterCellDef/>
+            }
+        </ng-container>
+
+        <ng-container cdkColumnDef="remove">
+            <mat-header-cell *cdkHeaderCellDef>Remove</mat-header-cell>
+
+            <mat-cell *cdkCellDef="let row">
+                <button (click)="onRemoveAction(row)"
+                        color="warn"
+                        mat-icon-button
+                        type="button">
+                    <mat-icon>delete</mat-icon>
+                </button>
+            </mat-cell>
+
+            @if (enableFooter()) {
+                <mat-footer-cell *cdkFooterCellDef/>
+            }
+        </ng-container>
+
+        <mat-header-row *cdkHeaderRowDef="displayedColumns; sticky: stickyHeader()"/>
+
+        @if (enableFooter()) {
+            <mat-header-row *cdkFooterRowDef="displayedColumns; sticky: stickyFooter()"/>
+        }
+
+        @if (!isSelectable()) {
+            <mat-row *cdkRowDef="let row; columns: displayedColumns"/>
+        }
+
+        @if (isSelectable()) {
+            <mat-row (click)="selection.toggle(row)"
+                     *matRowDef="let row; columns: displayedColumns"
+                     [ngClass]="{ selected: selection.isSelected(row) }"/>
+        }
+    </mat-table>
+</div>
+
+<mat-paginator [pageSizeOptions]="[5, 10, 20]"
+               aria-label="Select page"
+               showFirstLastButtons/>

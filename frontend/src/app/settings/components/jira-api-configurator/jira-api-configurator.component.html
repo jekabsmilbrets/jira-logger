@@ -1,0 +1,58 @@
+<form (ngSubmit)="onSaveFormData()"
+      [formGroup]="formGroup">
+    <mat-card>
+        <mat-card-header>
+            <mat-card-title>JIRA API</mat-card-title>
+        </mat-card-header>
+
+        @if (settings()) {
+            <mat-card-content>
+                <mat-slide-toggle formControlName="jira.enabled">Enabled</mat-slide-toggle>
+
+                <mat-form-field>
+                    <mat-label>Jira Host</mat-label>
+
+                    <input formControlName="jira.host"
+                           matInput/>
+                </mat-form-field>
+
+                <mat-form-field>
+                    <mat-label>Personal Access Token</mat-label>
+
+                    <input [type]="hidePersonalAccessToken ? 'password' : 'text'"
+                           autoComplete="off"
+                           formControlName="jira.personal-access-token"
+                           matInput/>
+
+                    <button (click)="hidePersonalAccessToken = !hidePersonalAccessToken"
+                            [attr.aria-label]="'Hide token'"
+                            [attr.aria-pressed]="hidePersonalAccessToken"
+                            mat-icon-button
+                            matSuffix
+                            type="button">
+                        <mat-icon>{{ hidePersonalAccessToken ? 'visibility_off' : 'visibility' }}</mat-icon>
+                    </button>
+                </mat-form-field>
+            </mat-card-content>
+        }
+
+        <mat-card-actions>
+            <button (click)="onCancel()"
+                    [disabled]="formGroup.disabled"
+                    aria-label="Cancel"
+                    color="danger"
+                    mat-raised-button
+                    type="button">
+                Cancel
+            </button>
+
+            <button [disabled]="formGroup.disabled || !formGroup.dirty"
+                    aria-label="Save"
+                    color="primary"
+                    mat-raised-button
+                    type="submit">
+                Save
+            </button>
+        </mat-card-actions>
+    </mat-card>
+</form>

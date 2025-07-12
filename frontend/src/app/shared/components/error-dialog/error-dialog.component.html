@@ -1,0 +1,24 @@
+<div class="dialog-title" mat-dialog-title>
+    <h2>{{ data.errorTitle }}</h2>
+
+    <button (click)="onClose()"
+            aria-label="close dialog"
+            mat-icon-button
+            type="button">
+        <mat-icon>close</mat-icon>
+    </button>
+</div>
+
+<mat-dialog-content>
+    <p>{{ data.errorMessage }}</p>
+
+    <pre>{{ data.idbData | json }}</pre>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+    <button (click)="onClose()"
+            mat-button
+            type="button">
+        Close
+    </button>
+</mat-dialog-actions>
