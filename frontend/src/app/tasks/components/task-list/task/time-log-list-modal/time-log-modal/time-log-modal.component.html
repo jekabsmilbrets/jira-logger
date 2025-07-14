@@ -25,6 +25,7 @@
             <mat-label>Start date</mat-label>
 
             <input [matDatepicker]="startDatepicker"
+                   [value]="formGroup.controls.startTime.value"
                    formControlName="startTime"
                    matInput/>
 
@@ -37,6 +38,7 @@
             <mat-label>Start time</mat-label>
 
             <input [matTimepicker]="startTimepicker"
+                   [value]="formGroup.controls.startTime.value"
                    formControlName="startTime"
                    matInput/>
 
@@ -49,6 +51,7 @@
             <mat-label>End date</mat-label>
 
             <input [matDatepicker]="endDatepicker"
+                   [value]="formGroup.controls.endTime.value"
                    formControlName="endTime"
                    matInput/>
 
@@ -61,6 +64,7 @@
             <mat-label>End time</mat-label>
 
             <input [matTimepicker]="endTimepicker"
+                   [value]="formGroup.controls.endTime.value"
                    formControlName="endTime"
                    matInput/>
 

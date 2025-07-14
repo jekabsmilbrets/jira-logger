@@ -2,7 +2,7 @@ import { formatDate } from '@angular/common';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 
-import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
+import { appLocale, appTimeLogDateTimeFormat, appTimeZone } from '@core/constants/date-time.constant';
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { waitForTurn } from '@core/utils/wait-for.utility';
@@ -255,8 +255,7 @@ export class TasksService implements LoadableService, MakeRequestService {
   private buildQueryParams(
     filter: TaskListFilter,
   ): QueryParams {
-    const format: string = 'yyyy-MM-dd HH:mm:ss';
-    const formatDateForUri: (date: Date) => string = (date: Date) => formatDate(date, format, appLocale, appTimeZone);
+    const formatDateForUri: (date: Date) => string = (date: Date) => formatDate(date, appTimeLogDateTimeFormat, appLocale, appTimeZone);
 
     const outputQueryParams: QueryParams = {};
 
