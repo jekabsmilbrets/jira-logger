@@ -10,6 +10,7 @@ import {
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
 } from '@angular/core';
+import { provideNativeDateAdapter } from '@angular/material/core';
 import { provideRouter } from '@angular/router';
 import { provideServiceWorker } from '@angular/service-worker';
 import { MonitorService } from '@core/services/monitor.service';
@@ -68,5 +69,6 @@ export const appConfig: ApplicationConfig = {
 
       return initializerFn();
     }),
+    provideNativeDateAdapter(),
   ],
 };
