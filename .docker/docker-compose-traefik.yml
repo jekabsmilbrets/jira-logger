@@ -2,11 +2,21 @@ services:
   traefik:
     container_name: "jira-logger-traefik"
     image: traefik:latest
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
       - "8080:8080"
     volumes:
-      - "./traefik.yaml:/etc/traefik/traefik.yaml"
-      - "./certs/:/certs/"
-      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./traefik.yaml:/etc/traefik/traefik.yaml:ro"
+      - "./certs/:/certs/:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - traefik
+      - default
+
+networks:
+  # Shared external network so Traefik can route to services in OTHER compose projects.
+  # Create once with:  docker network create traefik
+  traefik:
+    external: true
