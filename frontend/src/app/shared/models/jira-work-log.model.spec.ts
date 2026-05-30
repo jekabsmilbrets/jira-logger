@@ -1,7 +1,9 @@
-import { JiraWorkLog } from '@shared/models/jira-work-log.model';
+import { JiraWorkLog } from './jira-work-log.model';
 
-describe('JiraWorkLog', () => {
-  it('should create an instance', () => {
-    expect(new JiraWorkLog()).toBeTruthy();
+describe('Shared Models jira-work-log.model', () => {
+  it('assigns properties from constructor data', () => {
+    const item = new JiraWorkLog({ id: '1', workLogId: 'wl-1', description: 'x', timeSpentSeconds: 10 } as any);
+    expect(item.id).toBe('1');
+    expect(item.workLogId).toBe('wl-1');
   });
 });

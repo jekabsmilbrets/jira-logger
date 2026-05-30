@@ -1,7 +1,9 @@
-import { Tag } from '@shared/models/tag.model';
+import { Tag } from './tag.model';
 
-describe('Tag', () => {
-  it('should create an instance', () => {
-    expect(new Tag()).toBeTruthy();
+describe('Shared Models tag.model', () => {
+  it('assigns properties from constructor data', () => {
+    const tag = new Tag({ id: '1', name: 'backend' } as any);
+    expect(tag.id).toBe('1');
+    expect(tag.name).toBe('backend');
   });
 });

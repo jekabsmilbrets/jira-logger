@@ -1,16 +1,23 @@
 import { TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
+import { of } from 'rxjs';
 
 import { AreYouSureService } from './are-you-sure.service';
 
-describe('AreYouSureService', () => {
-  let service: AreYouSureService;
+describe('Shared Services are-you-sure.service', () => {
+  it('opens dialog and returns close stream', async () => {
+    const matDialog = {
+      open: vi.fn(() => ({ afterClosed: () => of(true) })),
+    };
 
-  beforeEach(() => {
-    TestBed.configureTestingModule({});
-    service = TestBed.inject(AreYouSureService);
-  });
+    await TestBed.configureTestingModule({
+      providers: [{ provide: MatDialog, useValue: matDialog }],
+    });
 
-  it('should be created', () => {
-    expect(service).toBeTruthy();
+    const service = TestBed.inject(AreYouSureService);
+    const value = await import('rxjs').then(({ firstValueFrom }) => firstValueFrom(service.openDialog('x')));
+
+    expect(matDialog.open).toHaveBeenCalledOnce();
+    expect(value).toBe(true);
   });
 });
