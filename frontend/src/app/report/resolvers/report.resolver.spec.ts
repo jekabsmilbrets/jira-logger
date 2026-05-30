@@ -40,7 +40,7 @@ describe('ReportResolver', () => {
 
   it('returns true when no relevant route params are present', async () => {
     const result = await firstValueFrom(
-      resolver.resolve(createRoute({}) as never, {} as never),
+      resolver.resolve(createRoute({}) as never),
     );
 
     expect(result).toBe(true);
@@ -49,7 +49,7 @@ describe('ReportResolver', () => {
 
   it('sets report mode from a valid reportMode param', async () => {
     const result = await firstValueFrom(
-      resolver.resolve(createRoute({ reportMode: ReportModeEnum.date }) as never, {} as never),
+      resolver.resolve(createRoute({ reportMode: ReportModeEnum.date }) as never),
     );
 
     expect(result).toBe(true);
@@ -60,7 +60,7 @@ describe('ReportResolver', () => {
     reportService.reportMode = ReportModeEnum.dateRange;
 
     const result = await firstValueFrom(
-      resolver.resolve(createRoute({ reportMode: 'invalid-mode' }) as never, {} as never),
+      resolver.resolve(createRoute({ reportMode: 'invalid-mode' }) as never),
     );
 
     expect(result).toBe(true);
@@ -69,7 +69,7 @@ describe('ReportResolver', () => {
 
   it('navigates to /report and returns false for a valid date param', async () => {
     const result = await firstValueFrom(
-      resolver.resolve(createRoute({ date: '2026-05-30T12:00:00.000Z' }) as never, {} as never),
+      resolver.resolve(createRoute({ date: '2026-05-30T12:00:00.000Z' }) as never),
     );
 
     await Promise.resolve();
@@ -82,7 +82,7 @@ describe('ReportResolver', () => {
 
   it('returns true and does not navigate for an invalid date param', async () => {
     const result = await firstValueFrom(
-      resolver.resolve(createRoute({ date: 'not-a-date' }) as never, {} as never),
+      resolver.resolve(createRoute({ date: 'not-a-date' }) as never),
     );
 
     expect(result).toBe(true);
