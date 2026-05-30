@@ -9,8 +9,13 @@ To run in docker mode you need to have Docker and Docker Compose installed.
 
 ## Setup
 
-1) Run: `sh manager.sh -a build -m ng-build`
-    - For development build: `sh manager.sh -a build -m ng-build-dev`
+1) Create `./backend/.env` (recommended), or prepare `./.docker/.env` directly.
+2) Run: `sh manager.sh -a build`
+3) Start containers: `sh manager.sh -a start`
+
+Notes:
+- `manager.sh` now runs with `./.docker/docker-compose.yml` and `./.docker/docker-compose.dev.yml` by default.
+- If `./backend/.env` is missing and `./.docker/.env` does not exist, `./.docker/.env.example` is copied to `./.docker/.env`.
 
 ## Basic Usage
 
@@ -19,22 +24,48 @@ To run in docker mode you need to have Docker and Docker Compose installed.
 2) To run in **background**:
    `sh manager.sh -a start -b`
 3) To run with **Traefik**:
-   `sh manager.sh -a start -b -t`
-4) To rebuild Angular:
-   `sh manager.sh -a ng-build`
-   or for dev build:
-   `sh manager.sh -a ng-build-dev`
-   Then rerun the start command.
-5) To fully **rebuild** the stack (down + build + Angular build):
+   `sh manager.sh -a start -b`
+   To disable Traefik:
+   `sh manager.sh -a start -b -t off`
+4) Runtime containers are copy-only (no backend/frontend bind mounts), so source code changes require image rebuild + restart (`sh manager.sh -a build` then `sh manager.sh -a start`), or `sh manager.sh -a rebuild`.
+5) To fully **rebuild** the stack (down + build + prepare-db):
    `sh manager.sh -a rebuild`
 6) To **remove all database data** (dangerous, deletes all data!):
    `sh manager.sh -a db-remove`
 7) To **dump the database** to a single SQL file (`db_dump.sql`):
    `sh manager.sh -a db-dump`
+8) To run DB migrations using the `release` profile:
+   `sh manager.sh -a migrate`
 
-- The `-m` flag can be used **only with `build`** to specify Angular build mode (`ng-build` or `ng-build-dev`).
-- The `rebuild` action always uses `ng-build` (production build) and does **not** accept `-m`.
-- The `-t` flag adds Traefik to the Docker Compose stack.
+- Traefik is enabled by default. Use `-t off` to start without Traefik.
+- The `traefik` Docker network is created automatically by `manager.sh` when needed.
+- Frontend assets are stored in a shared Docker volume populated by `assets-init` during `build`/`rebuild`.
+- On `start`, assets marker preflight rules are enforced:
+  - Missing marker: interactive mode prompts to run `build`; non-interactive mode runs `build` automatically.
+  - Marker mismatch: interactive mode prompts to run `rebuild`; non-interactive mode fails fast with a rebuild command.
+- All core runtime logs are available on host in `./.logs/jira-logger/`:
+  - `log-php-fpm-error.log`
+  - `log-php-fpm-access.log`
+  - `log-php-fpm-slow.log`
+  - `log-symfony-main.log`
+  - `log-symfony-deprecation.log`
+  - `log-symfony-jira-api-service.log`
+  - `log-nginx-access.log`
+  - `log-nginx-error.log`
+  - `log-postgres.log`
+  - `log-traefik.log`
+  - `log-traefik-access.log`
+  - `log-assets-init.log`
+  - `log-migrate.log`
+- `assets-init` output is appended to `log-assets-init.log` during `build`/`rebuild`.
+- Migration output is appended to `log-migrate.log` during `prepare-db` and `migrate`.
+- Runtime log cap is enforced by `log-governor` container:
+  - per-file hard cap: `50MB` (`52428800` bytes)
+  - behavior: keeps newest content by size-based trim when a file exceeds cap
+  - applies to all `log-*.log` files listed above, including `log-assets-init.log` and `log-migrate.log`
+- Log rotation/cleanup runs on every `start`/`start-with-init`:
+  - active `log-*.log` files are rotated to `./.logs/jira-logger/archive/log-*.YYYY-MM-DD_HHMMSS.log`
+  - archived logs older than 7 days are deleted
 
 After first start, a certificate will be generated at `.docker/nginx-selfsigned.crt`,
 which should be imported into your system's root certificates to allow SSL for API calls and Angular PWA.
