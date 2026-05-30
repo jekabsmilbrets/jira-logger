@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { JsonApi } from '@core/interfaces/json-api.interface';
+import { ApiRequestBody } from '@shared/types/api-request-body.type';
 import { environment } from 'environments/environment';
 import { map, Observable } from 'rxjs';
 
@@ -22,7 +23,7 @@ export class ApiRequestService {
   public request<T>(
     url: string,
     method: 'get' | 'post' | 'patch' | 'delete' = 'get',
-    body: unknown = null,
+    body: ApiRequestBody | null = null,
   ): Observable<T> {
     switch (method) {
       case 'post':
@@ -40,7 +41,7 @@ export class ApiRequestService {
   public requestData<TData>(
     url: string,
     method: 'get' | 'post' | 'patch' | 'delete' = 'get',
-    body: unknown = null,
+    body: ApiRequestBody | null = null,
   ): Observable<TData> {
     return this.request<JsonApi<TData>>(url, method, body)
       .pipe(
