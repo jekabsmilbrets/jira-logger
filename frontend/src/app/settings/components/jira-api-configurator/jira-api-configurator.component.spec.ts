@@ -116,7 +116,7 @@ describe('Settings Components jira-api-configurator.component', () => {
     const tokenSetting = emitted.find((setting) => setting.name === JiraApiSettings.personalAccessToken);
 
     expect(tokenSetting?.value).toBe('');
-    expect(emitted.some((setting) => setting.name === JiraApiSettings.enabled && setting.value === false)).toBe(true);
+    expect(emitted.some((setting) => setting.name === JiraApiSettings.enabled && setting.value === 'false')).toBe(true);
   });
 
   it('resets form values back to persisted settings on cancel', () => {

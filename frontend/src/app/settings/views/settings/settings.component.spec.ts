@@ -226,7 +226,7 @@ describe('Settings Views settings.component', () => {
 
   it('updates each changed setting when settingsChange is received', () => {
     const changedSettings = [
-      new Setting({ id: '11', name: JiraApiSettings.enabled, value: false }),
+      new Setting({ id: '11', name: JiraApiSettings.enabled, value: 'false' }),
       new Setting({ id: '12', name: JiraApiSettings.host, value: 'https://new.example' }),
     ];
 
