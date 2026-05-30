@@ -26,11 +26,13 @@ class JiraApiService
     final public const DELETE_ERROR_MSG = 'Failed to delete workLog "%s" from issue "%s": %s';
     final public const INIT_ERROR_MSG = 'Failed to initialize IssueService: %s';
     final public const MIN_SECOND_REPORT_ERROR_MSG = 'Cannot report less than %s second!';
-    final public const MISSING_HOST_TOKEN_ERROR_MSG = 'No host or JIRA_PERSONAL_ACCESS_TOKEN secret found!';
+    final public const MISSING_HOST_TOKEN_ERROR_MSG = 'No host or personal access token found!';
     final public const JIRA_DISABLED_MSG = 'JIRA sync not enabled!';
 
     final public const JIRA_ENABLED_KEY = 'jira.enabled';
     final public const JIRA_HOST_SETTING_KEY = 'jira.host';
+    final public const JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY = 'jira.personal-access-token';
+
     final public const MIN_REPORT_SECONDS = 60;
 
     private readonly IssueService $client;
@@ -481,7 +483,11 @@ class JiraApiService
             $jiraHost = $this->settingService->findByName(
                 self::JIRA_HOST_SETTING_KEY
             )?->getValue();
-            $personalAccessToken = getenv('JIRA_PERSONAL_ACCESS_TOKEN') ?: null;
+            $personalAccessToken = getenv('JIRA_PERSONAL_ACCESS_TOKEN') ?:
+                $this->settingService->findByName(
+                    self::JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY
+                )?->getValue() ?:
+                null;
 
             if (
                 !$jiraHost ||
