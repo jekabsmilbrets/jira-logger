@@ -17,6 +17,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route(
@@ -31,9 +32,13 @@ class SettingController extends BaseApiController
     final public const CANNOT_DELETE_SETTING = 'Can not Delete Setting';
     final public const CANNOT_UPDATE_SETTING = 'Can not Update Setting';
     final public const DUPLICATE_SETTING_NAME = 'Duplicate Setting name';
+    final public const SETTING_MANAGED_EXTERNALLY = 'This setting is managed via secret storage. Rotate JIRA token through JIRA_PERSONAL_ACCESS_TOKEN and restart the backend.';
 
     final public const OA_TAG = 'Settings';
     final public const MODEL_SCHEMA = '#/components/schemas/SettingModel';
+    private const REDACTED_VALUE = '***REDACTED***';
+    private const SECRET_NAME_PARTS = ['token', 'password', 'secret', 'key'];
+    private const EXTERNALLY_MANAGED_SETTING_NAMES = ['jira.personal-access-token'];
 
     public function __construct(
         private readonly SettingService $settingService,
@@ -94,9 +99,7 @@ class SettingController extends BaseApiController
             );
         }
 
-        return $this->jsonApi(
-            $settings
-        );
+        return $this->jsonApi($this->sanitizeSettingsCollection($settings));
     }
 
     #[
@@ -147,9 +150,7 @@ class SettingController extends BaseApiController
             );
         }
 
-        return $this->jsonApi(
-            $setting
-        );
+        return $this->jsonApi($this->sanitizeSetting($setting));
     }
 
     #[
@@ -215,27 +216,30 @@ class SettingController extends BaseApiController
         Request $request,
     ): JsonResponse {
         try {
-            $settingRequest = $serializer->deserialize(
-                data: $request->getContent(),
+            $settingRequest = $this->deserializeJsonRequest(
+                serializer: $serializer,
+                request: $request,
                 type: SettingRequest::class,
-                format: 'json'
             );
         } catch (UnexpectedValueException) {
-            return $this->jsonApi(
-                errors: [self::BAD_REQUEST],
-                status: 400
-            );
+            return $this->badRequestJsonApi();
         }
 
-        $errors = $validator->validate(
-            value: $settingRequest,
-            groups: ['create']
+        $validationError = $this->validateRequestDto(
+            validator: $validator,
+            requestDto: $settingRequest,
+            group: 'create',
+            status: 406,
         );
 
-        if (\count($errors) > 0) {
-            return $this->validationErrorJsonApi(
-                constraintViolationList: $errors,
-                status: 406
+        if ($validationError instanceof JsonResponse) {
+            return $validationError;
+        }
+
+        if ($this->isExternallyManagedSettingName($settingRequest->getName())) {
+            return $this->jsonApi(
+                errors: [self::SETTING_MANAGED_EXTERNALLY],
+                status: 400
             );
         }
 
@@ -339,27 +343,30 @@ class SettingController extends BaseApiController
         Request $request,
     ): JsonResponse {
         try {
-            $settingRequest = $serializer->deserialize(
-                data: $request->getContent(),
+            $settingRequest = $this->deserializeJsonRequest(
+                serializer: $serializer,
+                request: $request,
                 type: SettingRequest::class,
-                format: 'json'
             );
         } catch (UnexpectedValueException) {
-            return $this->jsonApi(
-                errors: [self::BAD_REQUEST],
-                status: 400
-            );
+            return $this->badRequestJsonApi();
         }
 
-        $errors = $validator->validate(
-            value: $settingRequest,
-            groups: ['update']
+        $validationError = $this->validateRequestDto(
+            validator: $validator,
+            requestDto: $settingRequest,
+            group: 'update',
+            status: 406,
         );
 
-        if (\count($errors) > 0) {
-            return $this->validationErrorJsonApi(
-                constraintViolationList: $errors,
-                status: 406
+        if ($validationError instanceof JsonResponse) {
+            return $validationError;
+        }
+
+        if ($this->isExternallyManagedSettingName($settingRequest->getName())) {
+            return $this->jsonApi(
+                errors: [self::SETTING_MANAGED_EXTERNALLY],
+                status: 400
             );
         }
 
@@ -460,5 +467,42 @@ class SettingController extends BaseApiController
         return $this->jsonApi(
             status: 204
         );
+    }
+
+    private function sanitizeSettingsCollection(iterable $settings): array
+    {
+        $sanitized = [];
+
+        foreach ($settings as $setting) {
+            if ($setting instanceof Setting) {
+                $sanitized[] = $this->sanitizeSetting($setting);
+            }
+        }
+
+        return $sanitized;
+    }
+
+    private function sanitizeSetting(Setting $setting): array
+    {
+        $value = $setting->getValue();
+        $name = mb_strtolower($setting->getName() ?? '');
+
+        foreach (self::SECRET_NAME_PARTS as $part) {
+            if (str_contains($name, $part)) {
+                $value = self::REDACTED_VALUE;
+                break;
+            }
+        }
+
+        return [
+            'id' => $setting->getId(),
+            'name' => $setting->getName(),
+            'value' => $value,
+        ];
+    }
+
+    private function isExternallyManagedSettingName(string $settingName): bool
+    {
+        return \in_array(mb_strtolower($settingName), self::EXTERNALLY_MANAGED_SETTING_NAMES, true);
     }
 }

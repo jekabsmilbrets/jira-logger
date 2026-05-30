@@ -208,11 +208,25 @@ class Task implements EntityBaseInterface
 
     final public function getLastTimeLog(): ?TimeLog
     {
+        $activeLogCriteria = Criteria::create()
+            ->andWhere(Criteria::expr()->isNull('endTime'))
+            ->orderBy(
+                [
+                    'startTime' => Order::Descending,
+                    'createdAt' => Order::Descending,
+                ]
+            );
+        $activeTimeLog = $this->timeLogs->matching($activeLogCriteria)->first();
+
+        if ($activeTimeLog instanceof TimeLog) {
+            return $activeTimeLog;
+        }
+
         $criteria = Criteria::create()
             ->orderBy(
                 [
+                    'startTime' => Order::Descending,
                     'createdAt' => Order::Descending,
-                    'updatedAt' => Order::Descending,
                 ]
             );
 

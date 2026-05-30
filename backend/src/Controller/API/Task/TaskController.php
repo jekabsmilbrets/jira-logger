@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\API\Task;
 
 use App\Controller\API\BaseApiController;
+use App\Dto\Task\TaskListFilterRequest;
 use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
 use App\Exception\JiraApiServiceException;
@@ -20,8 +21,8 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route(
@@ -36,6 +37,7 @@ class TaskController extends BaseApiController
     final public const CANNOT_DELETE_TASK = 'Can not Delete Task';
     final public const CANNOT_UPDATE_TASK = 'Can not Update Task';
     final public const DUPLICATE_TASK_NAME = 'Duplicate Task name';
+    final public const INVALID_DATE_FILTER = 'Invalid date filter values';
 
     final public const OA_TAG = 'Tasks';
     final public const MODEL_SCHEMA = '#/components/schemas/TaskModel';
@@ -43,6 +45,8 @@ class TaskController extends BaseApiController
     public function __construct(
         private readonly TaskService $taskService,
         private readonly JiraApiService $jiraApiService,
+        private readonly ValidatorInterface $validator,
+        private readonly SerializerInterface $serializer,
     ) {
     }
 
@@ -126,33 +130,33 @@ class TaskController extends BaseApiController
     final public function list(
         Request $request,
     ): JsonResponse {
-        $queryParameters = [
-            'tags',
-            'name',
-            'date',
-            'startDate',
-            'endDate',
-            'hideUnreported',
-        ];
+        try {
+            /** @var TaskListFilterRequest $filterRequest */
+            $filterRequest = $this->serializer->denormalize(
+                data: $request->query->all(),
+                type: TaskListFilterRequest::class
+            );
+        } catch (UnexpectedValueException) {
+            return $this->badRequestJsonApi();
+        }
 
-        $filter = array_filter(
-            array: array_reduce(
-                array: $queryParameters,
-                callback: static fn (array $carry, string $queryParameter): array => array_merge(
-                    $carry,
-                    [
-                        $queryParameter => $request->query->get($queryParameter),
-                    ]
-                ),
-                initial: []
-            ),
-            callback: static function ($value): bool {
-                return null !== $value;
-            },
-            mode: \ARRAY_FILTER_USE_BOTH
+        $validationError = $this->validateRequestDto(
+            validator: $this->validator,
+            requestDto: $filterRequest,
+            group: 'list',
         );
 
-        $tasks = $this->taskService->list($filter);
+        if ($validationError instanceof JsonResponse) {
+            return $validationError;
+        }
+
+        $filter = $filterRequest->toFilterArray();
+
+        try {
+            $tasks = $this->taskService->list($filter);
+        } catch (\Throwable) {
+            return $this->badRequestJsonApi(self::INVALID_DATE_FILTER);
+        }
 
         if (empty($tasks) || [] === $tasks) {
             return $this->jsonApi(
@@ -277,37 +281,28 @@ class TaskController extends BaseApiController
         ),
     ]
     final public function new(
-        ValidatorInterface $validator,
-        SerializerInterface $serializer,
         Request $request,
         TaskRequest $taskRequest,
     ): JsonResponse {
         try {
-            $taskRequest = $serializer->deserialize(
-                data: $request->getContent(),
+            $taskRequest = $this->deserializeJsonRequest(
+                serializer: $this->serializer,
+                request: $request,
                 type: TaskRequest::class,
-                format: 'json',
-                context: [
-                    AbstractNormalizer::OBJECT_TO_POPULATE => $taskRequest,
-                ]
+                populate: $taskRequest,
             );
         } catch (UnexpectedValueException) {
-            return $this->jsonApi(
-                errors: [self::BAD_REQUEST],
-                status: Response::HTTP_BAD_REQUEST
-            );
+            return $this->badRequestJsonApi();
         }
 
-        $errors = $validator->validate(
-            value: $taskRequest,
-            groups: ['create']
+        $validationError = $this->validateRequestDto(
+            validator: $this->validator,
+            requestDto: $taskRequest,
+            group: 'create',
         );
 
-        if (\count($errors) > 0) {
-            return $this->validationErrorJsonApi(
-                constraintViolationList: $errors,
-                status: Response::HTTP_NOT_ACCEPTABLE
-            );
+        if ($validationError instanceof JsonResponse) {
+            return $validationError;
         }
 
         try {
@@ -405,37 +400,28 @@ class TaskController extends BaseApiController
     ]
     final public function edit(
         string $id,
-        ValidatorInterface $validator,
-        SerializerInterface $serializer,
         Request $request,
         TaskRequest $taskRequest,
     ): JsonResponse {
         try {
-            $taskRequest = $serializer->deserialize(
-                data: $request->getContent(),
+            $taskRequest = $this->deserializeJsonRequest(
+                serializer: $this->serializer,
+                request: $request,
                 type: TaskRequest::class,
-                format: 'json',
-                context: [
-                    AbstractNormalizer::OBJECT_TO_POPULATE => $taskRequest,
-                ]
+                populate: $taskRequest,
             );
         } catch (UnexpectedValueException) {
-            return $this->jsonApi(
-                errors: [self::BAD_REQUEST],
-                status: Response::HTTP_BAD_REQUEST
-            );
+            return $this->badRequestJsonApi();
         }
 
-        $errors = $validator->validate(
-            value: $taskRequest,
-            groups: ['update']
+        $validationError = $this->validateRequestDto(
+            validator: $this->validator,
+            requestDto: $taskRequest,
+            group: 'update',
         );
 
-        if (\count($errors) > 0) {
-            return $this->validationErrorJsonApi(
-                constraintViolationList: $errors,
-                status: Response::HTTP_NOT_ACCEPTABLE
-            );
+        if ($validationError instanceof JsonResponse) {
+            return $validationError;
         }
 
         try {
@@ -588,11 +574,11 @@ class TaskController extends BaseApiController
                 'id' => Requirement::UUID,
                 'date' => Requirement::DATE_YMD,
             ],
-            methods: [Request::METHOD_GET],
+            methods: [Request::METHOD_POST],
             stateless: true
         ),
         OA\Tag(name: self::OA_TAG),
-        OA\Get(
+        OA\Post(
             operationId: 'sync-task-with-jira',
             summary: 'Sync Task with JIRA',
             tags: [self::OA_TAG],

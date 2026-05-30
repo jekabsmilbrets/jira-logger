@@ -157,7 +157,7 @@ class TimeLogService
         Task $task,
         bool $flush = true,
     ): ?TimeLog {
-        $this->stopAllTimeLog();
+        $this->stopAllRunningTimeLogs();
 
         $timeLog = new TimeLog();
         $timeLog->setTask($task)
@@ -179,7 +179,7 @@ class TimeLogService
         $timeLog = $task->getLastTimeLog();
 
         if (
-            !$timeLog instanceof TimeLog |
+            !$timeLog instanceof TimeLog ||
             null !== $timeLog->getEndTime()
         ) {
             return null;
@@ -198,8 +198,8 @@ class TimeLogService
     /**
      * @throws Exception
      */
-    final public function stopAllTimeLog(): int|string
+    final public function stopAllRunningTimeLogs(): int|string
     {
-        return $this->timeLogRepository->stopAllTimeLog();
+        return $this->timeLogRepository->stopAllRunningTimeLogs();
     }
 }

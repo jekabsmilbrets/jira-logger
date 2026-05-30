@@ -10,6 +10,8 @@ use App\Entity\Task\TimeLog\TimeLog;
 use App\Exception\JiraApiServiceException;
 use App\Service\JiraWorkLog\JiraWorkLogService;
 use App\Service\Setting\SettingService;
+use App\Utility\TimeLog\TimeLogDuration;
+use App\Utility\TimeLog\TimeLogRange;
 use Doctrine\Common\Collections\Collection;
 use JiraRestApi\Configuration\ArrayConfiguration;
 use JiraRestApi\Issue\IssueService;
@@ -24,13 +26,11 @@ class JiraApiService
     final public const DELETE_ERROR_MSG = 'Failed to delete workLog "%s" from issue "%s": %s';
     final public const INIT_ERROR_MSG = 'Failed to initialize IssueService: %s';
     final public const MIN_SECOND_REPORT_ERROR_MSG = 'Cannot report less than %s second!';
-    final public const MISSING_HOST_TOKEN_ERROR_MSG = 'No host or personal access token found!';
+    final public const MISSING_HOST_TOKEN_ERROR_MSG = 'No host or JIRA_PERSONAL_ACCESS_TOKEN secret found!';
     final public const JIRA_DISABLED_MSG = 'JIRA sync not enabled!';
 
     final public const JIRA_ENABLED_KEY = 'jira.enabled';
     final public const JIRA_HOST_SETTING_KEY = 'jira.host';
-    final public const JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY = 'jira.personal-access-token';
-
     final public const MIN_REPORT_SECONDS = 60;
 
     private readonly IssueService $client;
@@ -213,15 +213,12 @@ class JiraApiService
         Task $task,
         \DateTime $date
     ): bool {
-        $date->setTime(hour: 0, minute: 0);
-        $startDate = $date;
-        $endDate = new \DateTime($date->format(\DateTimeInterface::ATOM));
-        $endDate->setTime(23, 59, 59);
+        [$syncDate, $startDate, $endDate, $jiraStartDateTime] = $this->resolveSyncDates($date);
 
         $jiraWorkLog = $this->jiraWorkLogService->findOneBy(
             [
                 'task' => $task,
-                'startTime' => $date,
+                'startTime' => $syncDate,
             ]
         );
 
@@ -237,10 +234,6 @@ class JiraApiService
             startDate: $startDate,
             endDate: $endDate
         );
-        $startDate->setTime(
-            hour: 17,
-            minute: 0,
-        );
         $workLogId = $jiraWorkLog->getWorkLogId();
 
         if (str_contains($taskName = $task->getName(), '-#-')) {
@@ -250,13 +243,13 @@ class JiraApiService
         $jiraApiWorkLog = $this->createUpdateRecreateWorkLogWithTimeSpent(
             jiraWorkLog: $jiraWorkLog,
             task: $task,
-            startDate: $startDate,
+            startDate: $jiraStartDateTime,
             timeSpentSeconds: $timeSpentSeconds,
             descriptions: $descriptions,
         );
 
         $jiraWorkLog->setTimeSpentSeconds($timeSpentSeconds);
-        $jiraWorkLog->setStartTime($date);
+        $jiraWorkLog->setStartTime($syncDate);
         $jiraWorkLog->setWorkLogId((string) $jiraApiWorkLog->id);
 
         $this->createUpdateJiraWorkLog(
@@ -265,6 +258,16 @@ class JiraApiService
         );
 
         return true;
+    }
+
+    private function resolveSyncDates(\DateTime $date): array
+    {
+        $syncDate = (clone $date)->setTime(0, 0, 0);
+        $startDate = clone $syncDate;
+        $endDate = (clone $syncDate)->setTime(23, 59, 59);
+        $jiraStartDateTime = (clone $syncDate)->setTime(17, 0, 0);
+
+        return [$syncDate, $startDate, $endDate, $jiraStartDateTime];
     }
 
     /**
@@ -385,9 +388,7 @@ class JiraApiService
         $startTime = $timeLog->getStartTime();
         $endTime = $timeLog->getEndTime();
 
-        $timeSpentSeconds = ($endTime && $startTime) ? (
-            $endTime->getTimestamp() - $startTime->getTimestamp()
-        ) : 0;
+        $timeSpentSeconds = TimeLogDuration::secondsBetween($startTime, $endTime);
 
         if ($timeSpentSeconds < self::MIN_REPORT_SECONDS) {
             throw new JiraApiServiceException(message: sprintf(self::MIN_SECOND_REPORT_ERROR_MSG, self::MIN_REPORT_SECONDS));
@@ -402,15 +403,13 @@ class JiraApiService
         \DateTime $endDate,
     ): array {
         return $this->collectTimeSpentSecondsNDescriptions(
-            $this->adjustTimeLogsInDateRange(
-                $this->filterTimeLogsInDateRange(
-                    $timeLogs,
-                    $startDate,
-                    $endDate
-                ),
+            $this->filterTimeLogsInDateRange(
+                $timeLogs,
                 $startDate,
                 $endDate
-            )
+            ),
+            $startDate,
+            $endDate
         );
     }
 
@@ -424,44 +423,15 @@ class JiraApiService
                 $startTime = $timeLog->getStartTime();
                 $endTime = $timeLog->getEndTime();
 
-                return ($startTime && $endTime) && (
-                    ($startDate <= $startTime && $startTime <= $endDate) ||
-                    ($startTime <= $startDate && $startTime >= $endDate) ||
-                    ($endTime >= $startDate && $endTime <= $endDate)
-                );
-            }
-        );
-    }
-
-    private function adjustTimeLogsInDateRange(
-        Collection $timeLogs,
-        \DateTime $startDate,
-        \DateTime $endDate,
-    ): Collection {
-        return $timeLogs->map(
-            function (TimeLog $timeLog) use ($startDate, $endDate) {
-                $startTime = $timeLog->getStartTime();
-                $endTime = $timeLog->getEndTime();
-
-                if ($startTime < $startDate) {
-                    $timeLog->setOriginalStartTime($startTime);
-                    $timeLog->setStartTime($startDate);
-                    $timeLog->setManuallyModified(true);
-                }
-
-                if ($endTime > $endDate) {
-                    $timeLog->setOriginalEndTime($endTime);
-                    $timeLog->setEndTime($endDate);
-                    $timeLog->setManuallyModified(true);
-                }
-
-                return $timeLog;
+                return TimeLogRange::overlaps($startDate, $endDate, $startTime, $endTime);
             }
         );
     }
 
     private function collectTimeSpentSecondsNDescriptions(
         Collection $timeLogs,
+        \DateTime $startDate,
+        \DateTime $endDate,
     ): array {
         $timeSpentSeconds = 0;
         $descriptions = [];
@@ -471,8 +441,13 @@ class JiraApiService
             $startTime = $timeLog->getStartTime();
             $endTime = $timeLog->getEndTime();
 
-            if ($startTime && $endTime) {
-                $timeSpentSeconds += $endTime->getTimestamp() - $startTime->getTimestamp();
+            if ($startTime) {
+                $timeSpentSeconds += TimeLogDuration::clippedSecondsInRange(
+                    rangeStart: $startDate,
+                    rangeEnd: $endDate,
+                    logStart: $startTime,
+                    logEnd: $endTime,
+                );
 
                 if (!empty($description = $timeLog->getDescription())) {
                     $descriptions[] = $description;
@@ -506,9 +481,7 @@ class JiraApiService
             $jiraHost = $this->settingService->findByName(
                 self::JIRA_HOST_SETTING_KEY
             )?->getValue();
-            $personalAccessToken = $this->settingService->findByName(
-                self::JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY
-            )?->getValue();
+            $personalAccessToken = getenv('JIRA_PERSONAL_ACCESS_TOKEN') ?: null;
 
             if (
                 !$jiraHost ||

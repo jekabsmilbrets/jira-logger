@@ -500,11 +500,11 @@ class TimeLogController extends BaseApiController
             path: '/start',
             name: 'start-task',
             requirements: ['id' => Requirement::UUID],
-            methods: [Request::METHOD_GET],
+            methods: [Request::METHOD_POST],
             stateless: true
         ),
         OA\Tag(name: self::OA_TAG),
-        OA\Get(
+        OA\Post(
             operationId: 'start-task',
             summary: 'Start Task TimeLog',
             tags: [self::OA_TAG],
@@ -545,11 +545,11 @@ class TimeLogController extends BaseApiController
             path: '/stop',
             name: 'stop-task',
             requirements: ['id' => Requirement::UUID],
-            methods: [Request::METHOD_GET],
+            methods: [Request::METHOD_POST],
             stateless: true
         ),
         OA\Tag(name: self::OA_TAG),
-        OA\Get(
+        OA\Post(
             operationId: 'stop-task',
             summary: 'Stop Task TimeLog',
             tags: [self::OA_TAG],

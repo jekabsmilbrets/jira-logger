@@ -9,6 +9,7 @@ use App\Service\Task\TaskService;
 use OpenApi\Attributes as OA;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 class TimeLogRequest
 {
@@ -124,5 +125,27 @@ class TimeLogRequest
         }
 
         return $this;
+    }
+
+    #[Assert\Callback]
+    final public function validateChronology(ExecutionContextInterface $context): void
+    {
+        if (null === $this->endTime || null === $this->startTime) {
+            return;
+        }
+
+        try {
+            $startTime = new \DateTimeImmutable($this->startTime);
+            $endTime = new \DateTimeImmutable($this->endTime);
+        } catch (\Throwable) {
+            return;
+        }
+
+        if ($endTime <= $startTime) {
+            $context
+                ->buildViolation('End time must be later than start time.')
+                ->atPath('endTime')
+                ->addViolation();
+        }
     }
 }
