@@ -1,23 +1,22 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { provideRouter, RouterOutlet } from '@angular/router';
+
 import { App } from './app';
 
-describe('App', () => {
+describe('App.spec.ts app', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
+      providers: [provideRouter([])],
     }).compileComponents();
   });
 
-  it('should create the app', () => {
-    const fixture: ComponentFixture<App> = TestBed.createComponent(App);
-    const app: App = fixture.componentInstance;
-    expect(app).toBeTruthy();
-  });
+  it('renders a router outlet as the app shell', () => {
+    const fixture = TestBed.createComponent(App);
 
-  it('should render title', () => {
-    const fixture: ComponentFixture<App> = TestBed.createComponent(App);
     fixture.detectChanges();
-    const compiled: HTMLElement = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, ng20');
+
+    expect(fixture.debugElement.query(By.directive(RouterOutlet))).toBeTruthy();
   });
 });

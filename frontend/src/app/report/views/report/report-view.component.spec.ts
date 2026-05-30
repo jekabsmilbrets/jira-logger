@@ -1,25 +1,247 @@
+import { Clipboard } from '@angular/cdk/clipboard';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { By } from '@angular/platform-browser';
 
+import { DynamicMenuService } from '@core/services/dynamic-menu.service';
+
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportService } from '@report/services/report.service';
+import { TableComponent } from '@shared/components/table/table.component';
+import { Searchable } from '@shared/interfaces/searchable.interface';
+import { Task } from '@shared/models/task.model';
+import { TasksService } from '@shared/services/tasks.service';
+import { TimeLogsService } from '@shared/services/time-logs.service';
+
+import { BehaviorSubject, of, throwError } from 'rxjs';
 import { ReportViewComponent } from './report-view.component';
 
+class ReportServiceStub {
+  public readonly tasks$ = of([] as Task[]);
+  public readonly reportMode$ = of(ReportModeEnum.date);
+  public readonly dateSubject = new BehaviorSubject<Date | null>(null);
+  public readonly date$ = this.dateSubject.asObservable();
+  public readonly columns = [];
+  public readonly reload = vi.fn();
+}
+
 describe('ReportViewComponent', () => {
-  let component: ReportViewComponent;
   let fixture: ComponentFixture<ReportViewComponent>;
+  let component: ReportViewComponent;
+  let reportService: ReportServiceStub;
+
+  let clipboard: { copy: ReturnType<typeof vi.fn> };
+  let snackBar: { open: ReturnType<typeof vi.fn> };
+  let dynamicMenuService: { addDynamicMenu: ReturnType<typeof vi.fn> };
+  let tasksService: { syncDateToJiraApi: ReturnType<typeof vi.fn> };
+  let timeLogsService: { stop: ReturnType<typeof vi.fn>; start: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
+    clipboard = { copy: vi.fn() };
+    snackBar = { open: vi.fn() };
+    dynamicMenuService = { addDynamicMenu: vi.fn() };
+    tasksService = { syncDateToJiraApi: vi.fn().mockReturnValue(of(true)) };
+    timeLogsService = {
+      stop: vi.fn().mockReturnValue(of(undefined)),
+      start: vi.fn().mockReturnValue(of(true)),
+    };
+
     await TestBed.configureTestingModule({
       imports: [ReportViewComponent],
-    })
-      .compileComponents();
-  });
+      providers: [
+        { provide: ReportService, useClass: ReportServiceStub },
+        { provide: DynamicMenuService, useValue: dynamicMenuService },
+        { provide: TasksService, useValue: tasksService },
+        { provide: TimeLogsService, useValue: timeLogsService },
+        { provide: Clipboard, useValue: clipboard },
+        { provide: MatSnackBar, useValue: snackBar },
+      ],
+    }).compileComponents();
 
-  beforeEach(() => {
     fixture = TestBed.createComponent(ReportViewComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    (component as any).ReportModeEnum = ReportModeEnum;
+    reportService = TestBed.inject(ReportService) as unknown as ReportServiceStub;
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  it('creates dynamic menu on init', () => {
+    component.ngOnInit();
+
+    expect(dynamicMenuService.addDynamicMenu).toHaveBeenCalledTimes(1);
+  });
+
+  it('binds table inputs and wires table outputs through template', () => {
+    fixture.detectChanges();
+
+    const table = fixture.debugElement.query(By.directive(TableComponent));
+    expect(table).toBeTruthy();
+    expect(table.componentInstance.enableFooter()).toBe(true);
+    expect(table.componentInstance.isSelectable()).toBe(false);
+
+    const onCellClickSpy = vi.spyOn(component as any, 'onCellClick');
+    const onFooterClickSpy = vi.spyOn(component as any, 'onFooterCellClicked');
+    const onSyncSpy = vi.spyOn(component as any, 'onSyncClick');
+    const sampleTask = { name: 'Task X', isTimeLogRunning: false } as Task;
+    const sampleColumn = { header: 'Name', cell: () => 'X' } as any;
+
+    table.componentInstance.cellClicked.emit([sampleTask, sampleColumn]);
+    table.componentInstance.footerCellClicked.emit([[sampleTask], sampleColumn]);
+    table.componentInstance.syncAction.emit(sampleTask);
+
+    expect(onCellClickSpy).toHaveBeenCalled();
+    expect(onFooterClickSpy).toHaveBeenCalled();
+    expect(onSyncSpy).toHaveBeenCalled();
+  });
+
+  it('copies readable-time cell value and shows snackbar', () => {
+    const task = { name: 'Task A' } as Task;
+    const column = {
+      header: 'Time Logged',
+      cellClickType: 'readableTime',
+      cell: () => 3660,
+    } as any;
+
+    (component as any).onCellClick([task as Searchable, column]);
+
+    expect(clipboard.copy).toHaveBeenCalledWith('1h 1m');
+    expect(snackBar.open).toHaveBeenCalledWith(
+      'Copied Task "Task A" logged time to clipboard "1h 1m"!',
+      undefined,
+      { duration: 5000 },
+    );
+  });
+
+  it('copies string cell value and shows snackbar', () => {
+    const task = { name: 'Task B' } as Task;
+    const column = {
+      header: 'Name',
+      cellClickType: 'string',
+      cell: () => 'Alpha',
+    } as any;
+
+    (component as any).onCellClick([task as Searchable, column]);
+
+    expect(clipboard.copy).toHaveBeenCalledWith('Alpha');
+    expect(snackBar.open).toHaveBeenCalledWith(
+      'Copied Task "Task B" field "Name" value to clipboard "Alpha"!',
+      undefined,
+      { duration: 5000 },
+    );
+  });
+
+  it('copies concatenated footer values and shows snackbar', () => {
+    const rows = [{ name: 'A' }, { name: 'B' }] as Task[];
+    const column = {
+      header: 'Name',
+      cell: (task: Task) => task.name,
+    } as any;
+
+    (component as any).onFooterCellClicked([rows as Searchable[], column]);
+
+    expect(clipboard.copy).toHaveBeenCalledWith('A, B');
+    expect(snackBar.open).toHaveBeenCalledWith(
+      'Copied field "Name" value to clipboard "A, B"!',
+      undefined,
+      { duration: 5000 },
+    );
+  });
+
+  it('copies concatenatedString footer value and shows snackbar', () => {
+    const rows = [{ name: 'A' }, { name: 'B' }] as Task[];
+    const column = {
+      header: 'Name',
+      footerCellClickType: 'concatenatedString',
+      cell: (task: Task) => task.name,
+    } as any;
+
+    (component as any).onFooterCellClicked([rows as Searchable[], column]);
+
+    expect(clipboard.copy).toHaveBeenCalledWith('A, B');
+    expect(snackBar.open).toHaveBeenCalledWith(
+      'Copied field "Name" value to clipboard "A, B"!',
+      undefined,
+      { duration: 5000 },
+    );
+  });
+
+  it('copies readableTime footer value and shows snackbar', () => {
+    const rows = [{ name: 'A' }, { name: 'B' }] as Task[];
+    const column = {
+      header: 'Time Logged',
+      footerCellClickType: 'readableTime',
+      footerCell: () => 3661,
+    } as any;
+
+    (component as any).onFooterCellClicked([rows as Searchable[], column]);
+
+    expect(clipboard.copy).toHaveBeenCalledWith('1h 1m');
+    expect(snackBar.open).toHaveBeenCalledWith(
+      'Copied logged time to clipboard "1h 1m"!',
+      undefined,
+      { duration: 5000 },
+    );
+  });
+
+  it('syncs non-running task and reloads report on success', () => {
+    const task = { name: 'Task C', isTimeLogRunning: false } as Task;
+    const date = new Date('2026-05-30T00:00:00.000Z');
+    reportService.dateSubject.next(date);
+
+    (component as any).onSyncClick(task as Searchable);
+
+    expect(tasksService.syncDateToJiraApi).toHaveBeenCalledWith(task, date);
+    expect(timeLogsService.stop).not.toHaveBeenCalled();
+    expect(timeLogsService.start).not.toHaveBeenCalled();
+    expect(reportService.reload).toHaveBeenCalledTimes(1);
+    expect(snackBar.open).toHaveBeenCalledWith(
+      'Task "Task C" synced successfully!',
+      undefined,
+      { duration: 5000 },
+    );
+  });
+
+  it('stops and restarts running task around sync flow', () => {
+    const task = { name: 'Task D', isTimeLogRunning: true } as Task;
+    const date = new Date('2026-05-30T00:00:00.000Z');
+    reportService.dateSubject.next(date);
+
+    (component as any).onSyncClick(task as Searchable);
+
+    expect(timeLogsService.stop).toHaveBeenCalledWith(task);
+    expect(tasksService.syncDateToJiraApi).toHaveBeenCalledWith(task, date);
+    expect(timeLogsService.start).toHaveBeenCalledWith(task);
+  });
+
+  it('continues sync when stop fails for running task', () => {
+    timeLogsService.stop.mockReturnValueOnce(throwError(() => new Error('stop failed')));
+
+    const task = { name: 'Task E', isTimeLogRunning: true } as Task;
+    reportService.dateSubject.next(new Date('2026-05-30T00:00:00.000Z'));
+
+    (component as any).onSyncClick(task as Searchable);
+
+    expect(tasksService.syncDateToJiraApi).toHaveBeenCalled();
+    expect(timeLogsService.start).toHaveBeenCalledWith(task);
+  });
+
+  it('shows error snackbar and skips reload when sync fails', () => {
+    tasksService.syncDateToJiraApi.mockReturnValueOnce(
+      throwError(
+        () => new HttpErrorResponse({ error: { errors: ['sync denied'] } }),
+      ),
+    );
+
+    const task = { name: 'Task F', isTimeLogRunning: false } as Task;
+    reportService.dateSubject.next(new Date('2026-05-30T00:00:00.000Z'));
+
+    (component as any).onSyncClick(task as Searchable);
+
+    expect(reportService.reload).not.toHaveBeenCalled();
+    expect(snackBar.open).toHaveBeenCalledWith(
+      'Task "Task F" failed synced! sync denied',
+      undefined,
+      { duration: 5000 },
+    );
   });
 });
