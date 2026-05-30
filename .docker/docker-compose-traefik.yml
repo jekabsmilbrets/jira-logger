@@ -1,16 +1,46 @@
 services:
+  docker-socket-proxy:
+    container_name: "jira-logger-docker-socket-proxy"
+    image: tecnativa/docker-socket-proxy:v0.4.2
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      NETWORKS: 1
+      SERVICES: 1
+      TASKS: 1
+      INFO: 1
+      PING: 1
+      VERSION: 1
+      POST: 0
+      AUTH: 0
+      SECRETS: 0
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - default
+
   traefik:
     container_name: "jira-logger-traefik"
-    image: traefik:latest
+    image: traefik:v3.6.1
     restart: unless-stopped
+    environment:
+      DOCKER_API_VERSION: "1.40"
+    depends_on:
+      docker-socket-proxy:
+        condition: service_started
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"
     volumes:
       - "./traefik.yaml:/etc/traefik/traefik.yaml:ro"
       - "./certs/:/certs/:ro"
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./../.logs/jira-logger:/var/log/traefik:rw"
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     networks:
       - traefik
       - default

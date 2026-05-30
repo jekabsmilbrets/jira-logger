@@ -1,4 +1,4 @@
-FROM node:22-slim
+FROM node:22-bookworm-slim
 # lts/jov
 
 RUN npm i -g @angular/cli@20
