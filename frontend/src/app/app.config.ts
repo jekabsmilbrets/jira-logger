@@ -13,6 +13,7 @@ import {
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { provideRouter } from '@angular/router';
 import { provideServiceWorker } from '@angular/service-worker';
+import { runtimeConfigInitializer } from '@core/config/runtime-config.initializer';
 import { MonitorService } from '@core/services/monitor.service';
 import { SettingsService } from '@core/services/settings.service';
 import { StorageService } from '@core/services/storage.service';
@@ -37,6 +38,7 @@ export const appConfig: ApplicationConfig = {
       registrationStrategy: 'registerWhenStable:30000',
     }),
     provideHttpClient(withFetch()),
+    provideAppInitializer(() => runtimeConfigInitializer()),
     {
       provide: LOCALE_ID,
       useValue: 'lv-LV',
