@@ -37,9 +37,9 @@ class TaskService
                         $startDate = new \DateTime($filter['date'] ?? $filter['startDate']);
                         $endDate = new \DateTime($filter['date'] ?? $filter['endDate']);
 
-//                         if (isset($filter['date']) || preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($filter['endDate'] ?? ''))) {
+                        if (isset($filter['date']) || preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($filter['endDate'] ?? ''))) {
                             $endDate->setTime(23, 59, 59);
-//                         }
+                        }
 
                         $timeLogs = $task->getTimeLogs();
 
