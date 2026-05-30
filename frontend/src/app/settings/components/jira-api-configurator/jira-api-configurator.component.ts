@@ -95,14 +95,16 @@ export class JiraApiConfiguratorComponent implements OnInit {
             }
           }
 
-          changedSettings.push(
-            new Setting({
-              ...originalSetting,
-              value,
-            }),
-          );
-        }
-      }
+	          changedSettings.push(
+	            new Setting({
+	              ...originalSetting,
+	              value: typeof value === 'boolean' ?
+	                String(value) :
+	                value ?? '',
+	            }),
+	          );
+	        }
+	      }
     }
 
     if (changedSettings.length > 0) {
