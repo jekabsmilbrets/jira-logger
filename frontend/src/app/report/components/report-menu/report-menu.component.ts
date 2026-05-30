@@ -1,5 +1,5 @@
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
-import { CommonModule } from '@angular/common';
+import { AsyncPipe, NgTemplateOutlet } from '@angular/common';
 import { Component, inject, Signal, TemplateRef, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -23,7 +23,6 @@ import { map, Observable } from 'rxjs';
   styleUrls: ['./report-menu.component.scss'],
   standalone: true,
   imports: [
-    CommonModule,
     ReportTagFilterComponent,
     ReportModeSwitcherComponent,
     ReportDateSelectorComponent,
@@ -31,6 +30,8 @@ import { map, Observable } from 'rxjs';
     ReportHideUnreportedTasksComponent,
     MatIconModule,
     MatButtonModule,
+    AsyncPipe,
+    NgTemplateOutlet,
   ],
 })
 export class ReportMenuComponent {

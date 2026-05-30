@@ -1,1 +1,1 @@
-export type DialogData = Record<string, any>;
+export type DialogData = Record<string, unknown>;

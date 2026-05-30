@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
 
 import { Setting } from '@core/models/setting.model';
@@ -26,7 +26,7 @@ import { combineLatest, forkJoin, map, Observable, shareReplay, take } from 'rxj
   imports: [
     JiraApiConfiguratorComponent,
     ReportConfiguratorComponent,
-    CommonModule,
+    AsyncPipe,
   ],
 })
 export class SettingsComponent {

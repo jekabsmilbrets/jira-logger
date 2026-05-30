@@ -7,6 +7,7 @@ import { StorageService } from '@core/services/storage.service';
 import { columns as monthModelColumns } from '@report/constants/report-date-range-columns.constant';
 import { columns as totalModelColumns } from '@report/constants/report-total-columns.constant';
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportSettingsStorageValue } from '@report/interfaces/report-settings-storage-value.interface';
 
 import { Column } from '@shared/interfaces/column.interface';
 import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
@@ -73,7 +74,8 @@ export class ReportService {
 
     this.initSettings();
 
-    this.listenToChanges().subscribe();
+    this.listenToChanges()
+      .subscribe();
 
     this.tasks$ = this.getTasks();
   }
@@ -245,7 +247,7 @@ export class ReportService {
   }
 
   private initSettings(): void {
-    this.storageService.read(
+    this.storageService.read<ReportSettingsStorageValue | undefined>(
       this.settingsKey,
       this.customStoreName,
     )
@@ -254,18 +256,7 @@ export class ReportService {
         withLatestFrom(this.tagsService.tags$),
         take(1),
         tap(
-          ([settings, tags]: [
-            {
-              reportMode: ReportModeEnum;
-              tags: string[];
-              date: Date | null;
-              startDate: Date | null;
-              endDate: Date | null;
-              showWeekends: boolean;
-              hideUnreportedTasks: boolean;
-            },
-            Tag[],
-          ]) => {
+          ([settings, tags]: [ReportSettingsStorageValue | undefined, Tag[]]) => {
             this.reportModeSubject.next(settings?.reportMode ?? ReportModeEnum.total);
             this.tagsSubject.next(tags.filter((t: Tag) => settings?.tags.includes(t.id)) ?? []);
             this.dateSubject.next(settings?.date ?? null);
@@ -414,7 +405,11 @@ export class ReportService {
         excludeFromLoop: false,
         hidden: false,
         taskSynced,
-        cell: (task: Task) => undefined,
+        cell: (task: Task) => {
+          void task;
+
+          return undefined;
+        },
       });
     }
 

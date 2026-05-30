@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -34,8 +34,8 @@ import { catchError, debounceTime, distinctUntilChanged, Observable, of, startWi
     MatOptionModule,
     TasksSettingsToggleComponent,
     MatButtonModule,
-    CommonModule,
     MatInputModule,
+    AsyncPipe,
   ],
 })
 export class TasksMenuComponent {

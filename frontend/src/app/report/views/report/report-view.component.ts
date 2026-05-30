@@ -1,5 +1,5 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -28,7 +28,7 @@ import { catchError, filter, map, Observable, of, switchMap, take } from 'rxjs';
   standalone: true,
   imports: [
     TableComponent,
-    CommonModule,
+    AsyncPipe,
   ],
 })
 export class ReportViewComponent implements OnInit {
@@ -139,7 +139,7 @@ export class ReportViewComponent implements OnInit {
 
     switch (column.footerCellClickType) {
       case 'readableTime': {
-        const timeLogged: number = column.footerCell(tasks);
+        const timeLogged: number = column.footerCell ? column.footerCell(tasks) as number : 0;
         const readableTimePipe: ReadableTimePipe = new ReadableTimePipe();
 
         outputValue = readableTimePipe.transform(timeLogged);

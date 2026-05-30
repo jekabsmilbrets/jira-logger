@@ -63,10 +63,10 @@ export class TasksSettingsDialogComponent {
     let data: ApiTask[];
     const formData: TaskSettingsFormData = this.formGroup.getRawValue();
 
-    try {
-      this.tagsService.tags$
-        .pipe(take(1))
-        .subscribe((tags: Tag[]) => {
+    this.tagsService.tags$
+      .pipe(take(1))
+      .subscribe((tags: Tag[]) => {
+        try {
           data = validateTasksInterfaceData(
             JSON.parse(
               formData.json as string,
@@ -75,9 +75,9 @@ export class TasksSettingsDialogComponent {
           );
 
           this.dialogRef.close(data);
-        });
-    } catch (e) {
-      console.error({ e });
-    }
+        } catch (e) {
+          console.error({ e });
+        }
+      });
   }
 }

@@ -1,5 +1,5 @@
 import { formatDate } from '@angular/common';
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 
 import { appLocale, appTimeLogDateTimeFormat, appTimeZone } from '@core/constants/date-time.constant';
@@ -14,11 +14,10 @@ import { MakeRequestService } from '@shared/interfaces/make-request-service.inte
 import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
+import { ApiRequestService } from '@shared/services/api-request.service';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
 import { ApiRequestBody } from '@shared/types/api-request-body.type';
 import { QueryParams } from '@shared/types/query-params.type';
-
-import { environment } from 'environments/environment';
 
 import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
@@ -31,7 +30,7 @@ export class TasksService implements LoadableService, MakeRequestService {
   public isLoading$: Observable<boolean>;
   public tasks$: Observable<Task[]>;
 
-  private readonly httpClient: HttpClient = inject(HttpClient);
+  private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
   private readonly errorDialogService: ErrorDialogService = inject(ErrorDialogService);
 
   private tasksSubject: BehaviorSubject<Task[]> = new BehaviorSubject<Task[]>([]);
@@ -198,7 +197,7 @@ export class TasksService implements LoadableService, MakeRequestService {
 
     return this.makeRequest<void>(
       url,
-      'get',
+      'post',
     )
       .pipe(
         map(() => true),
@@ -211,28 +210,11 @@ export class TasksService implements LoadableService, MakeRequestService {
     body: ApiRequestBody | null = null,
     reportError: boolean = false,
   ): Observable<T> {
-    let request$: Observable<T>;
-
-    url = `${ environment['apiHost'] }${ environment['apiBase'] }/${ this.basePath }` + url;
-
-    switch (method) {
-      case 'post':
-        request$ = this.httpClient.post<T>(url, body);
-        break;
-
-      case 'patch':
-        request$ = this.httpClient.patch<T>(url, body);
-        break;
-
-      case 'delete':
-        request$ = this.httpClient.delete<T>(url);
-        break;
-
-      case 'get':
-      default:
-        request$ = this.httpClient.get<T>(url);
-        break;
-    }
+    const request$: Observable<T> = this.apiRequestService.request<T>(
+      this.apiRequestService.buildApiUrl(this.basePath, url),
+      method,
+      body,
+    );
 
     return waitForTurn(
       this.isLoading$,
@@ -287,7 +269,7 @@ export class TasksService implements LoadableService, MakeRequestService {
   }
 
   private processError(
-    error: any,
+    error: unknown,
   ): Observable<never> {
     this.isLoadingSubject.next(false);
 

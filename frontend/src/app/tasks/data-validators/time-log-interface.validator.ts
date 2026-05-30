@@ -1,7 +1,8 @@
 import { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
+import { TimeLogInterfaceData, TimeLogsInterfaceData } from '@tasks/interfaces/imported-task-data.interface';
 
-export const validateTimeLogInterfaceData: (timeLogInterfaceData: any) => ApiTimeLog = (
-  timeLogInterfaceData: any,
+export const validateTimeLogInterfaceData: (timeLogInterfaceData: TimeLogInterfaceData) => ApiTimeLog = (
+  timeLogInterfaceData: TimeLogInterfaceData,
 ): ApiTimeLog => {
   ['_startTime'].forEach(
     (field: string) => {
@@ -18,8 +19,8 @@ export const validateTimeLogInterfaceData: (timeLogInterfaceData: any) => ApiTim
   } as ApiTimeLog;
 };
 
-export const validateTimeLogsInterfaceData: (timeLogsInterfaceData: any[]) => ApiTimeLog[] = (
-  timeLogsInterfaceData: any[],
+export const validateTimeLogsInterfaceData: (timeLogsInterfaceData: TimeLogsInterfaceData) => ApiTimeLog[] = (
+  timeLogsInterfaceData: TimeLogsInterfaceData,
 ): ApiTimeLog[] => timeLogsInterfaceData.map(
-  (timeLogInterfaceData: any) => validateTimeLogInterfaceData(timeLogInterfaceData),
+  (timeLogInterfaceData: TimeLogInterfaceData) => validateTimeLogInterfaceData(timeLogInterfaceData),
 );

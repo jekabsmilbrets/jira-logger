@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { Component, inject, input, Input, InputSignal, output, OutputEmitterRef } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -18,7 +18,7 @@ import { Observable } from 'rxjs';
     MatFormFieldModule,
     MatSelectModule,
     ReactiveFormsModule,
-    CommonModule,
+    AsyncPipe,
   ],
 })
 export class ReportTagFilterComponent {

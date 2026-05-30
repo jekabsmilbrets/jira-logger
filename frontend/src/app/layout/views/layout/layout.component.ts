@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { RouterOutlet } from '@angular/router';
@@ -18,11 +18,11 @@ import { Observable } from 'rxjs';
   styleUrls: ['./layout.component.scss'],
   standalone: true,
   imports: [
-    CommonModule,
     HeaderComponent,
     MatSidenavModule,
     SidenavComponent,
     RouterOutlet,
+    AsyncPipe,
   ],
 })
 export class LayoutComponent {

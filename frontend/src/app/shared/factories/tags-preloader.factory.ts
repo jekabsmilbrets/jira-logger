@@ -6,5 +6,5 @@ export const tagsPreloaderFactory: (provider: TagsService) => () => Promise<Tag[
   (
     provider: TagsService,
   ): (() => Promise<Tag[]>) => () => firstValueFrom(
-    provider.list(),
+    provider.preloadForInit(),
   );

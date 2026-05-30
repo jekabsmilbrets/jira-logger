@@ -1,5 +1,5 @@
 import { formatDate } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 
 import { appLocale, appTimeLogDateTimeFormat, appTimeZone } from '@core/constants/date-time.constant';
@@ -13,9 +13,8 @@ import { LoadableService } from '@shared/interfaces/loadable-service.interface';
 import { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
+import { ApiRequestService } from '@shared/services/api-request.service';
 import { ApiRequestBody } from '@shared/types/api-request-body.type';
-
-import { environment } from 'environments/environment';
 
 import { BehaviorSubject, catchError, map, Observable, Subject, switchMap, tap, throwError } from 'rxjs';
 
@@ -29,7 +28,7 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
   public taskStarted$: Observable<Task>;
   public taskFinished$: Observable<Task>;
 
-  private readonly httpClient: HttpClient = inject(HttpClient);
+  private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
 
   private basePath: string = 'task';
   private baseTimeLogPath: string = 'time-log';
@@ -126,7 +125,7 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
 
     return this.makeRequest<void>(
       url,
-      'get',
+      'post',
     )
       .pipe(
         tap(() => this.taskStartedSubject.next(task)),
@@ -140,7 +139,7 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
 
     return this.makeRequest<void>(
       url,
-      'get',
+      'post',
     )
       .pipe(
         tap(() => this.taskFinishedSubject.next(task)),
@@ -152,28 +151,11 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
     method: 'get' | 'post' | 'patch' | 'delete' = 'get',
     body: ApiRequestBody | null = null,
   ): Observable<T> {
-    let request$: Observable<T>;
-
-    url = `${ environment['apiHost'] }${ environment['apiBase'] }/${ this.basePath }` + url;
-
-    switch (method) {
-      case 'post':
-        request$ = this.httpClient.post<T>(url, body);
-        break;
-
-      case 'patch':
-        request$ = this.httpClient.patch<T>(url, body);
-        break;
-
-      case 'delete':
-        request$ = this.httpClient.delete<T>(url);
-        break;
-
-      case 'get':
-      default:
-        request$ = this.httpClient.get<T>(url);
-        break;
-    }
+    const request$: Observable<T> = this.apiRequestService.request<T>(
+      this.apiRequestService.buildApiUrl(this.basePath, url),
+      method,
+      body,
+    );
 
     return waitForTurn(
       this.isLoading$,

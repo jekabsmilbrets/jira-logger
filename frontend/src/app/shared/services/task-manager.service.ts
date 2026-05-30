@@ -33,24 +33,24 @@ export class TaskManagerService {
   }
 
   private calculateTimeLoggedToday(): Observable<number> {
-    const date: Date = new Date();
+    const getTimeLoggedToday: () => Observable<number> = () => {
+      const date: Date = this.getStartOfToday();
 
-    date.setHours(0, 0, 0, 0);
-
-    const getTimeLoggedToday: () => Observable<number> = () => this.tasksService.filteredList({
-      date,
-    })
-      .pipe(
-        catchError(() => of([])),
-        map(
-          (tasks: Task[]) => tasks.map(
-            (task: Task) => task.calcTimeLoggedForDate(date))
-            .reduce(
-              (acc: number, value: number) => acc + value, 0,
-            ),
-        ),
-        tap((timeLoggedToday: number) => this.timeLoggedTodaySubject.next(timeLoggedToday)),
-      );
+      return this.tasksService.filteredList({
+        date,
+      })
+        .pipe(
+          catchError(() => of([])),
+          map(
+            (tasks: Task[]) => tasks.map(
+              (task: Task) => task.calcTimeLoggedForDate(date))
+              .reduce(
+                (acc: number, value: number) => acc + value, 0,
+              ),
+          ),
+          tap((timeLoggedToday: number) => this.timeLoggedTodaySubject.next(timeLoggedToday)),
+        );
+    };
 
     return getTimeLoggedToday()
       .pipe(
@@ -61,6 +61,13 @@ export class TaskManagerService {
           ),
         ),
       );
+  }
+
+  private getStartOfToday(): Date {
+    const date: Date = new Date();
+    date.setHours(0, 0, 0, 0);
+
+    return date;
   }
 
   private listenActiveTaskStart(): Observable<null | void> {

@@ -1,12 +1,12 @@
-import { Type } from '@angular/core';
+import { Provider, Type } from '@angular/core';
 
 export class DynamicMenu {
   constructor(
-    public component: Type<any>,
+    public component: Type<unknown>,
     public data: {
-      [key: string]: any;
+      [key: string]: unknown;
       route: string;
-      providers: any[];
+      providers: Provider[];
     },
   ) {
   }

@@ -76,7 +76,7 @@ export class HeaderComponent implements OnDestroy {
             viewContainerRef.clear();
 
             viewContainerRef.createComponent<DynamicMenuInterface>(
-              dynamicMenu.component,
+              dynamicMenu.component as never,
               {
                 injector: Injector.create({
                   providers: dynamicMenu.data?.providers ?? [],

@@ -3,9 +3,10 @@ import { Tag } from '@shared/models/tag.model';
 
 import { validateTagsInterfaceData } from '@tasks/data-validators/tag-interface-data.validator';
 import { validateTimeLogsInterfaceData } from '@tasks/data-validators/time-log-interface.validator';
+import { TaskInterfaceData, TasksInterfaceData } from '@tasks/interfaces/imported-task-data.interface';
 
-export const validateTaskInterfaceData: (taskInterfaceData: any, tags: Tag[]) => ApiTask = (
-  taskInterfaceData: any,
+export const validateTaskInterfaceData: (taskInterfaceData: TaskInterfaceData, tags: Tag[]) => ApiTask = (
+  taskInterfaceData: TaskInterfaceData,
   tags: Tag[],
 ): ApiTask => {
   ['_name', '_timeLogs', '_tags'].forEach(
@@ -24,12 +25,12 @@ export const validateTaskInterfaceData: (taskInterfaceData: any, tags: Tag[]) =>
   } as ApiTask;
 };
 
-export const validateTasksInterfaceData: (tasksInterfaceData: any[], tags: Tag[]) => ApiTask[] = (
-  tasksInterfaceData: any[],
+export const validateTasksInterfaceData: (tasksInterfaceData: TasksInterfaceData, tags: Tag[]) => ApiTask[] = (
+  tasksInterfaceData: TasksInterfaceData,
   tags: Tag[],
 ): ApiTask[] =>
   tasksInterfaceData.map(
-    (taskInterfaceData: any) => validateTaskInterfaceData(
+    (taskInterfaceData: TaskInterfaceData) => validateTaskInterfaceData(
       taskInterfaceData,
       tags,
     ),

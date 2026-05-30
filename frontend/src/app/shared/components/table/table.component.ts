@@ -8,7 +8,7 @@ import {
   CdkHeaderRowDef,
   CdkRowDef,
 } from '@angular/cdk/table';
-import { CommonModule, formatDate } from '@angular/common';
+import { DatePipe, formatDate } from '@angular/common';
 import { AfterViewInit, Component, inject, Input, input, InputSignal, output, OutputEmitterRef, Signal, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -43,7 +43,6 @@ import { take } from 'rxjs';
     MatIconModule,
     MatButtonModule,
     MatPaginatorModule,
-    CommonModule,
     ReadableTimePipe,
     CdkHeaderCellDef,
     CdkColumnDef,
@@ -52,6 +51,7 @@ import { take } from 'rxjs';
     CdkHeaderRowDef,
     CdkFooterRowDef,
     CdkRowDef,
+    DatePipe,
   ],
 })
 export class TableComponent implements AfterViewInit {
@@ -108,9 +108,10 @@ export class TableComponent implements AfterViewInit {
       columns.push('remove');
     }
 
-    if (this.enableSyncAction()) {
-      // columns.push('sync');
-    }
+    // TODO: Enable when bug in table is resolved
+    // if (this.enableSyncAction()) {
+    //   columns.push('sync');
+    // }
 
     if (this.isSelectable()) {
       columns.unshift('select');
@@ -121,10 +122,14 @@ export class TableComponent implements AfterViewInit {
 
   public ngAfterViewInit(): void {
     this.dataSource.sort = this.sort();
-    this.dataSource.sortingDataAccessor = (item: any, property: string) => getNestedObject(
-      item,
-      property.split('.'),
-    );
+    this.dataSource.sortingDataAccessor = (item: Searchable, property: string): string | number => {
+      const value: unknown = getNestedObject(
+        item,
+        property.split('.'),
+      );
+
+      return (typeof value === 'number' || typeof value === 'string') ? value : '';
+    };
     this.dataSource.paginator = this.paginator();
   }
 
@@ -200,9 +205,15 @@ export class TableComponent implements AfterViewInit {
       formatDate(timeLogEndTime, 'HH:mm:ss', appLocale, appTimeZone) :
       null;
 
-    this.areYouSureService.openDialog(
+    const confirmation$: ReturnType<AreYouSureService['openDialog']> | undefined = this.areYouSureService.openDialog(
       `Time log "${ timeLogDate } ${ timeLogStart }-${ timeLogEnd }"`,
-    )
+    );
+
+    if (!confirmation$) {
+      return;
+    }
+
+    confirmation$
       .pipe(take(1))
       .subscribe((response: boolean | undefined) => {
         if (response === true) {

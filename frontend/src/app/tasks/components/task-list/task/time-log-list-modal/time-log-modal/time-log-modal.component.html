@@ -72,6 +72,10 @@
             <mat-timepicker-toggle [for]="endTimepicker"
                                    matSuffix/>
         </mat-form-field>
+
+        @if (formGroup.errors?.['invalidChronology']) {
+            <p>End time must be later than start time.</p>
+        }
     </form>
 </mat-dialog-content>
 

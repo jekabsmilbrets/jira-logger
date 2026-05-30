@@ -2,7 +2,7 @@ import { Base } from '@core/models/base.model';
 
 export class Setting extends Base {
   public name!: string;
-  public value!: any;
+  public value!: unknown;
 
   constructor(
     data: Partial<Setting> = {},

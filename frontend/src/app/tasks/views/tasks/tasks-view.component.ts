@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 
 import { DynamicMenu } from '@core/models/dynamic-menu';
@@ -26,7 +26,7 @@ import { map, Observable, of, switchMap, take } from 'rxjs';
     TaskViewHeaderComponent,
     TaskListComponent,
     TaskComponent,
-    CommonModule,
+    AsyncPipe,
   ],
 })
 export class TasksViewComponent implements OnInit {

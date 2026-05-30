@@ -17,6 +17,7 @@ export class ReportResolver {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot,
   ): Observable<boolean> {
+    void state;
     const paramMap: ParamMap = route.paramMap;
 
     if (paramMap.has('reportMode')) {

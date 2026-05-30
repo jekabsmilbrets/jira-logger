@@ -36,9 +36,10 @@ export class JiraApiConfiguratorComponent implements OnInit {
   protected formGroup: FormGroup<JiraApiFormGroup> = new FormGroup<JiraApiFormGroup>({
     [JiraApiSettings.enabled]: new FormControl(false, Validators.required),
     [JiraApiSettings.host]: new FormControl('', Validators.required),
-    [JiraApiSettings.personalAccessToken]: new FormControl('', Validators.required),
+    [JiraApiSettings.personalAccessToken]: new FormControl(''),
   });
   protected hidePersonalAccessToken: boolean = true;
+  protected hasStoredPersonalAccessToken: boolean = false;
 
   // TODO: Skipped for migration because:
   //  Accessor inputs cannot be migrated as they are too complex.
@@ -53,6 +54,7 @@ export class JiraApiConfiguratorComponent implements OnInit {
 
   public ngOnInit(): void {
     this.patchFormData();
+    this.formGroup.controls[JiraApiSettings.enabled].valueChanges.subscribe(() => this.updateTokenValidator());
   }
 
   protected onCancel(): void {
@@ -60,6 +62,11 @@ export class JiraApiConfiguratorComponent implements OnInit {
   }
 
   protected onSaveFormData(): void {
+    if (this.formGroup.invalid) {
+      this.formGroup.markAllAsTouched();
+      return;
+    }
+
     const formData: JiraApiFormGroupData = this.formGroup.getRawValue() as JiraApiFormGroupData;
     const changedSettings: Setting[] = [];
 
@@ -70,9 +77,30 @@ export class JiraApiConfiguratorComponent implements OnInit {
         const originalSetting: undefined | Setting = this.getSetting(key);
 
         if (originalSetting) {
-          originalSetting.value = value;
+          if (key === JiraApiSettings.personalAccessToken) {
+            if (typeof value !== 'string') {
+              continue;
+            }
 
-          changedSettings.push(originalSetting);
+            if (!value.trim()) {
+              if (this.formGroup.controls[JiraApiSettings.enabled].value === false && this.hasStoredPersonalAccessToken) {
+                changedSettings.push(
+                  new Setting({
+                    ...originalSetting,
+                    value: '',
+                  }),
+                );
+              }
+              continue;
+            }
+          }
+
+          changedSettings.push(
+            new Setting({
+              ...originalSetting,
+              value,
+            }),
+          );
         }
       }
     }
@@ -83,13 +111,28 @@ export class JiraApiConfiguratorComponent implements OnInit {
   }
 
   private patchFormData(): void {
+    this.hasStoredPersonalAccessToken = !!this.getSettingValue(JiraApiSettings.personalAccessToken, '');
     const newFormData: Record<string, string | boolean> = {
       [`${ JiraApiSettings.enabled }`]: this.getSettingValue(JiraApiSettings.enabled, false),
       [`${ JiraApiSettings.host }`]: this.getSettingValue(JiraApiSettings.host, ''),
-      [`${ JiraApiSettings.personalAccessToken }`]: this.getSettingValue(JiraApiSettings.personalAccessToken, ''),
+      [`${ JiraApiSettings.personalAccessToken }`]: '',
     };
 
     this.formGroup.patchValue(newFormData);
+    this.formGroup.controls[JiraApiSettings.personalAccessToken].markAsPristine();
+    this.updateTokenValidator();
+  }
+
+  private updateTokenValidator(): void {
+    const tokenControl: FormControl<string | null> = this.formGroup.controls[JiraApiSettings.personalAccessToken];
+    const jiraEnabled: boolean = !!this.formGroup.controls[JiraApiSettings.enabled].value;
+    const requireToken: boolean = jiraEnabled && !this.hasStoredPersonalAccessToken;
+
+    tokenControl.clearValidators();
+    if (requireToken) {
+      tokenControl.setValidators(Validators.required);
+    }
+    tokenControl.updateValueAndValidity({ emitEvent: false });
   }
 
   private getSetting(
@@ -125,7 +168,9 @@ export class JiraApiConfiguratorComponent implements OnInit {
           return setting.value.toLowerCase() === 'true';
         }
 
-        return setting.value;
+        if (typeof setting.value === 'string' || typeof setting.value === 'boolean') {
+          return setting.value;
+        }
       }
     }
 

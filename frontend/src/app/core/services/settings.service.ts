@@ -167,7 +167,7 @@ export class SettingsService implements LoadableService {
   }
 
   private processError(
-    error: any,
+    error: unknown,
   ): Observable<never> {
     this.isLoadingSubject.next(false);
 

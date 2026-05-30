@@ -15,7 +15,7 @@ import { TimeLogModalResponseInterface } from '@tasks/interfaces/time-log-modal-
 import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
 import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
 
-import { take, throwError } from 'rxjs';
+import { take } from 'rxjs';
 
 @Component({
   selector: 'tasks-time-log-list-modal',
@@ -103,23 +103,28 @@ export class TimeLogListModalComponent {
   protected onUpdateAction(
     timeLog: TimeLog,
   ): void {
-    this.updatedTimeLogs.push(timeLog);
-
-    const timeLogs: TimeLog[] = this.findTimeLogSpliceAndReturnTimeLogs(timeLog);
+    const timeLogs: TimeLog[] | null = this.findTimeLogSpliceAndReturnTimeLogs(timeLog);
+    if (!timeLogs) {
+      return;
+    }
 
     timeLogs.push(timeLog);
-
+    this.updatedTimeLogs.push(timeLog);
     this.data.task.timeLogs = timeLogs;
   }
 
   protected onRemoveAction(
     timeLog: Searchable,
   ): void {
+    const timeLogs: TimeLog[] | null = this.findTimeLogSpliceAndReturnTimeLogs(timeLog as TimeLog);
+    if (!timeLogs) {
+      return;
+    }
+
     if (timeLog.id) {
       this.deletedTimeLogs.push(timeLog as TimeLog);
     }
-
-    this.data.task.timeLogs = this.findTimeLogSpliceAndReturnTimeLogs(timeLog as TimeLog);
+    this.data.task.timeLogs = timeLogs;
   }
 
   protected onAddTimeLogClick(): void {
@@ -147,15 +152,14 @@ export class TimeLogListModalComponent {
 
   private findTimeLogSpliceAndReturnTimeLogs(
     timeLog: TimeLog,
-  ): TimeLog[] {
+  ): TimeLog[] | null {
     const timeLogs: TimeLog[] = [...this.data.task.timeLogs];
-    const timeLogUuid: string = timeLog.id;
     const indexOfTimeLog: number = this.data.task.timeLogs.findIndex(
       (t: TimeLog) => t.id === timeLog.id,
     );
 
     if (indexOfTimeLog < 0) {
-      throwError(() => new Error(`Could not locate time log ${ timeLogUuid }`));
+      return null;
     }
 
     timeLogs.splice(indexOfTimeLog, 1);

@@ -17,7 +17,7 @@
 
                     <mat-cell (click)="onCellClick(row, column)"
                               *cdkCellDef="let row"
-                              [ngClass]="{ 'mat-cell-clickable': column.isClickable }">
+                              [class.mat-cell-clickable]="column.isClickable">
                         @switch (column.pipe) {
                             @case ('readableTime') {
                                 <span>{{ column.cell(row) | readableTime }}</span>
@@ -34,13 +34,13 @@
                     @if (enableFooter()) {
                         <mat-footer-cell (click)="onFooterCellClicked(column)"
                                          *cdkFooterCellDef
-                                         [ngClass]="{ 'mat-cell-clickable': column.isClickable && !column.disableFooterClick }">
+                                         [class.mat-cell-clickable]="column.isClickable && !column.disableFooterClick">
                             @switch (column.pipe) {
                                 @case ('readableTime') {
-                                    <span>{{ (column.hasFooter ? column.footerCell(dataSource.data) : '') | readableTime }}</span>
+                                    <span>{{ (column.hasFooter && column.footerCell ? column.footerCell(dataSource.data) : '') | readableTime }}</span>
                                 }
                                 @default {
-                                    <span>{{ column.hasFooter ? column.footerCell(dataSource.data) : '' }}</span>
+                                    <span>{{ column.hasFooter && column.footerCell ? column.footerCell(dataSource.data) : '' }}</span>
                                 }
                             }
                         </mat-footer-cell>
@@ -51,10 +51,11 @@
                     <mat-header-cell *cdkHeaderCellDef>Sync</mat-header-cell>
 
                     <mat-cell *cdkCellDef="let row"
-                              [matTooltipDisabled]="!column.taskSynced(row)"
+                              [matTooltipDisabled]="!(column.taskSynced?.(row) ?? false)"
                               matTooltip="Task already synced with JIRA server!">
                         <button (click)="onSyncAction(row)"
-                                [disabled]="column.taskSynced(row)"
+                                [disabled]="column.taskSynced?.(row) ?? false"
+                                aria-label="Sync task to Jira"
                                 color="warn"
                                 type="button"
                                 mat-icon-button>
@@ -91,6 +92,7 @@
 
             <mat-cell *cdkCellDef="let row">
                 <button (click)="onRemoveAction(row)"
+                        aria-label="Remove row"
                         color="warn"
                         mat-icon-button
                         type="button">
@@ -116,7 +118,7 @@
         @if (isSelectable()) {
             <mat-row (click)="selection.toggle(row)"
                      *matRowDef="let row; columns: displayedColumns"
-                     [ngClass]="{ selected: selection.isSelected(row) }"/>
+                     [class.selected]="selection.isSelected(row)"/>
         }
     </mat-table>
 </div>

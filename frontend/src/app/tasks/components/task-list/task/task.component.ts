@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { Component, inject, input, InputSignal, OnInit, output, OutputEmitterRef } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -20,6 +20,7 @@ import { TaskUpdateActionEnum } from '@tasks/enums/task-update-action.enum';
 import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
 import { TaskEditService } from '@tasks/services/task-edit.service';
 import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
+import { buildTaskUpdatePayload } from '@tasks/utils/task-payload-builder.util';
 
 import { Observable, take } from 'rxjs';
 
@@ -37,9 +38,9 @@ import { Observable, take } from 'rxjs';
     ReadableTimePipe,
     MatButtonModule,
     MatIconModule,
-    CommonModule,
     MatTooltipModule,
     MatInputModule,
+    AsyncPipe,
   ],
 })
 export class TaskComponent implements OnInit {
@@ -93,16 +94,9 @@ export class TaskComponent implements OnInit {
   }
 
   protected onUpdate(): void {
-    const task: Task = this.task();
-
-    Object.assign(
-      task,
-      this.formGroup.getRawValue() as Partial<Task>,
-    );
-
-    task.updateTimeLogged();
-
-    this.update.emit(task);
+    const taskPayload: Task = buildTaskUpdatePayload(this.task(), this.formGroup.getRawValue());
+    taskPayload.updateTimeLogged();
+    this.update.emit(taskPayload);
     this.onToggleEditMode();
   }
 
