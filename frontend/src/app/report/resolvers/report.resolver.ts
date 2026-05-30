@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, ParamMap, Router, RouterStateSnapshot } from '@angular/router';
+import { ActivatedRouteSnapshot, ParamMap, Router } from '@angular/router';
 
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
@@ -15,9 +15,7 @@ export class ReportResolver {
 
   resolve(
     route: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot,
   ): Observable<boolean> {
-    void state;
     const paramMap: ParamMap = route.paramMap;
 
     if (paramMap.has('reportMode')) {
