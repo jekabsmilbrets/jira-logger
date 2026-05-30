@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/symfony/phpunit-bridge/bin/.phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true">
+    <php>
+        <server name="APP_ENV" value="test" force="true"/>
+        <server name="KERNEL_CLASS" value="App\Kernel"/>
+        <server name="APP_TIMEZONE" value="Europe/Riga"/>
+        <server name="DATABASE_URL" value="sqlite:///%kernel.project_dir%/var/data_test.db"/>
+        <server name="API_AUTH_USERNAME" value="test-api-user"/>
+        <server name="API_AUTH_PASSWORD" value="test-api-password"/>
+        <server name="CORS_ALLOW_ORIGIN" value="^https?://localhost(:[0-9]+)?$"/>
+    </php>
+    <testsuites>
+        <testsuite name="Project Test Suite">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

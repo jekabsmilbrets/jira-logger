@@ -8,7 +8,7 @@ when@dev:
         handlers:
             main:
                 type: stream
-                path: "%kernel.logs_dir%/%kernel.environment%.log"
+                path: "%kernel.logs_dir%/log-symfony-main.log"
                 level: debug
                 channels: ["!event"]
             # uncomment to get logging in your browser
@@ -26,7 +26,7 @@ when@dev:
 
             jira-api-service:
                 type: stream
-                path: "%kernel.logs_dir%/%kernel.environment%/jira-api-service.log"
+                path: "%kernel.logs_dir%/log-symfony-jira-api-service.log"
                 channels: [ "jira-api-service" ]
 
 when@test:
@@ -54,9 +54,8 @@ when@prod:
                 buffer_size: 50 # How many messages should be saved? Prevent memory leaks
             nested:
                 type: stream
-                path: php://stderr
+                path: "%kernel.logs_dir%/log-symfony-main.log"
                 level: debug
-                formatter: monolog.formatter.json
             console:
                 type: console
                 process_psr_3_messages: false
@@ -64,9 +63,8 @@ when@prod:
             deprecation:
                 type: stream
                 channels: [deprecation]
-                path: php://stderr
-                formatter: monolog.formatter.json
+                path: "%kernel.logs_dir%/log-symfony-deprecation.log"
             jira-api-service:
                 type: stream
-                path: "%kernel.logs_dir%/%kernel.environment%/jira-api-service.log"
+                path: "%kernel.logs_dir%/log-symfony-jira-api-service.log"
                 channels: [ "jira-api-service" ]

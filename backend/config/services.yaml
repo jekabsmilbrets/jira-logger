@@ -26,6 +26,9 @@ services:
   App\Controller\API\Task\TaskController:
     arguments:
       - '@App\Service\Task\TaskService'
+      - '@App\Service\JiraApi\JiraApiService'
+      - '@Symfony\Component\Validator\Validator\ValidatorInterface'
+      - '@serializer'
   App\Controller\API\Task\TimeLog\TimeLogController:
     arguments:
       - '@App\Service\Task\TimeLog\TimeLogService'
