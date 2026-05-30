@@ -18,7 +18,5 @@ services:
       context: ./../
       dockerfile: ./.docker/node/Dockerfile
     working_dir: /home/node/app
-    volumes:
-      - ./../frontend/:/home/node/app
     labels:
       - "traefik.enable=false"
