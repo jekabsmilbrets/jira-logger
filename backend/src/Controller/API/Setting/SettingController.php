@@ -38,7 +38,7 @@ class SettingController extends BaseApiController
     final public const MODEL_SCHEMA = '#/components/schemas/SettingModel';
     private const REDACTED_VALUE = '***REDACTED***';
     private const SECRET_NAME_PARTS = ['token', 'password', 'secret', 'key'];
-    private const EXTERNALLY_MANAGED_SETTING_NAMES = ['jira.personal-access-token'];
+    private const EXTERNALLY_MANAGED_SETTING_NAMES = []; // ['jira.personal-access-token'];
 
     public function __construct(
         private readonly SettingService $settingService,
