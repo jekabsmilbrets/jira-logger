@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Dto\Task\TimeLog;
 
 use App\Entity\Task\Task;
+use App\Service\DateTime\DateInputParser;
 use App\Service\Task\TaskService;
+use App\Validator\Constraints\FlexibleDateTime;
 use OpenApi\Attributes as OA;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -21,9 +23,11 @@ class TimeLogRequest
             type: 'string',
             groups: ['create', 'update'],
         ),
+        FlexibleDateTime(groups: ['create', 'update']),
         OA\Property(
             type: 'string',
             format: 'date-time',
+            description: 'Accepted formats: Unix timestamp (seconds/milliseconds), ISO-8601/RFC3339, Y-m-d H:i:s, Y-m-d, d/m/Y',
         )
     ]
     private ?string $startTime = null;
@@ -34,9 +38,11 @@ class TimeLogRequest
             type: 'string',
             groups: ['create', 'update'],
         ),
+        FlexibleDateTime(groups: ['create', 'update']),
         OA\Property(
             type: 'string',
             format: 'date-time',
+            description: 'Accepted formats: Unix timestamp (seconds/milliseconds), ISO-8601/RFC3339, Y-m-d H:i:s, Y-m-d, d/m/Y',
         )
     ]
     private ?string $endTime = null;
@@ -74,6 +80,7 @@ class TimeLogRequest
 
     public function __construct(
         private readonly TaskService $taskService,
+        private readonly DateInputParser $dateInputParser,
     ) {
     }
 
@@ -84,7 +91,11 @@ class TimeLogRequest
 
     final public function setStartTime(string $startTime): self
     {
-        $this->startTime = $startTime;
+        try {
+            $this->startTime = $this->dateInputParser->parseDateTime($startTime);
+        } catch (\Throwable) {
+            $this->startTime = $startTime;
+        }
 
         return $this;
     }
@@ -108,7 +119,11 @@ class TimeLogRequest
 
     final public function setEndTime(string $endTime): self
     {
-        $this->endTime = $endTime;
+        try {
+            $this->endTime = $this->dateInputParser->parseDateTime($endTime);
+        } catch (\Throwable) {
+            $this->endTime = $endTime;
+        }
 
         return $this;
     }

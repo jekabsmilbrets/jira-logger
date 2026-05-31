@@ -9,6 +9,7 @@ use App\Controller\API\Task\TaskController;
 use App\Dto\Task\TimeLog\TimeLogRequest;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
+use App\Service\DateTime\DateInputParser;
 use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
 use Exception;
@@ -41,6 +42,7 @@ class TimeLogController extends BaseApiController
     public function __construct(
         private readonly TimeLogService $timeLogService,
         private readonly TaskService $taskService,
+        private readonly DateInputParser $dateInputParser,
     ) {
     }
 
@@ -224,11 +226,11 @@ class TimeLogController extends BaseApiController
         ValidatorInterface $validator,
         SerializerInterface $serializer,
         Request $request,
-        TaskService $taskService,
     ): JsonResponse {
         try {
             $timeLogRequest = new TimeLogRequest(
-                taskService: $taskService
+                taskService: $this->taskService,
+                dateInputParser: $this->dateInputParser,
             );
             $timeLogRequest = $serializer->deserialize(
                 data: $request->getContent(),
@@ -355,11 +357,11 @@ class TimeLogController extends BaseApiController
         ValidatorInterface $validator,
         SerializerInterface $serializer,
         Request $request,
-        TaskService $taskService
     ): JsonResponse {
         try {
             $timeLogRequest = new TimeLogRequest(
-                taskService: $taskService
+                taskService: $this->taskService,
+                dateInputParser: $this->dateInputParser,
             );
             $timeLogRequest = $serializer->deserialize(
                 data: $request->getContent(),

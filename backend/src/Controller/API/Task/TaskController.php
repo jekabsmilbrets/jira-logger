@@ -9,6 +9,7 @@ use App\Dto\Task\TaskListFilterRequest;
 use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
 use App\Exception\JiraApiServiceException;
+use App\Service\DateTime\DateInputParser;
 use App\Service\JiraApi\JiraApiService;
 use App\Service\Task\TaskService;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -21,6 +22,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -47,6 +49,7 @@ class TaskController extends BaseApiController
         private readonly JiraApiService $jiraApiService,
         private readonly ValidatorInterface $validator,
         private readonly SerializerInterface $serializer,
+        private readonly DateInputParser $dateInputParser,
     ) {
     }
 
@@ -69,19 +72,19 @@ class TaskController extends BaseApiController
         ),
         OA\Parameter(
             name: 'date',
-            description: 'Single date to filter Task by Time Log timestamps',
+            description: 'Single date filter. Accepted formats: Unix timestamp (seconds/milliseconds), ISO-8601/RFC3339, Y-m-d, Y-m-d H:i:s, d/m/Y',
             in: 'query',
             schema: new OA\Schema(type: 'string')
         ),
         OA\Parameter(
             name: 'startDate',
-            description: 'Start date to filter Task by Time Log timestamps',
+            description: 'Start date filter. Accepted formats: Unix timestamp (seconds/milliseconds), ISO-8601/RFC3339, Y-m-d, Y-m-d H:i:s, d/m/Y',
             in: 'query',
             schema: new OA\Schema(type: 'string')
         ),
         OA\Parameter(
             name: 'endDate',
-            description: 'End date to filter Task by Time Log timestamps',
+            description: 'End date filter. Accepted formats: Unix timestamp (seconds/milliseconds), ISO-8601/RFC3339, Y-m-d, Y-m-d H:i:s, d/m/Y',
             in: 'query',
             schema: new OA\Schema(type: 'string')
         ),
@@ -131,10 +134,14 @@ class TaskController extends BaseApiController
         Request $request,
     ): JsonResponse {
         try {
+            $filterRequest = new TaskListFilterRequest($this->dateInputParser);
             /** @var TaskListFilterRequest $filterRequest */
             $filterRequest = $this->serializer->denormalize(
                 data: $request->query->all(),
-                type: TaskListFilterRequest::class
+                type: TaskListFilterRequest::class,
+                context: [
+                    AbstractNormalizer::OBJECT_TO_POPULATE => $filterRequest,
+                ]
             );
         } catch (UnexpectedValueException) {
             return $this->badRequestJsonApi();

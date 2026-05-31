@@ -29,9 +29,12 @@ services:
       - '@App\Service\JiraApi\JiraApiService'
       - '@Symfony\Component\Validator\Validator\ValidatorInterface'
       - '@serializer'
+      - '@App\Service\DateTime\DateInputParser'
   App\Controller\API\Task\TimeLog\TimeLogController:
     arguments:
       - '@App\Service\Task\TimeLog\TimeLogService'
+      - '@App\Service\Task\TaskService'
+      - '@App\Service\DateTime\DateInputParser'
   App\Controller\API\Tag\TagController:
     arguments:
       - '@App\Service\Tag\TagService'
@@ -42,6 +45,7 @@ services:
   App\Dto\Task\TimeLog\TimeLogRequest:
     arguments:
       - '@App\Service\Task\TaskService'
+      - '@App\Service\DateTime\DateInputParser'
   App\Dto\JiraWorkLog\JiraWorkLogRequest:
     arguments:
       - '@App\Service\Task\TaskService'
@@ -54,3 +58,6 @@ services:
       - '@monolog.logger.jira-api-service'
       - '@App\Service\Setting\SettingService'
       - '@App\Service\JiraWorkLog\JiraWorkLogService'
+  App\Service\DateTime\UserTimezoneResolver:
+    arguments:
+      $defaultTimezone: '%timezone%'
