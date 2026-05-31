@@ -77,14 +77,14 @@ class DateInputParser
         }
 
         foreach ($this->formatsWithoutTimezone() as $format) {
-            $date = DateTimeImmutable::createFromFormat($format, $value, $timezone);
+            $date = $this->createFromFormat($format, $value, $timezone);
             if ($date instanceof DateTimeImmutable) {
                 return $date;
             }
         }
 
         foreach ($this->formatsWithTimezone() as $format) {
-            $date = DateTimeImmutable::createFromFormat($format, $value);
+            $date = $this->createFromFormat($format, $value);
             if ($date instanceof DateTimeImmutable) {
                 return $date;
             }
@@ -95,6 +95,21 @@ class DateInputParser
         } catch (\Throwable) {
             throw new \InvalidArgumentException('Invalid date input.');
         }
+    }
+
+    private function createFromFormat(string $format, string $value, ?DateTimeZone $timezone = null): ?DateTimeImmutable
+    {
+        $date = DateTimeImmutable::createFromFormat('!'.$format, $value, $timezone);
+        if (!$date instanceof DateTimeImmutable) {
+            return null;
+        }
+
+        $errors = DateTimeImmutable::getLastErrors();
+        if (false !== $errors && ($errors['warning_count'] > 0 || $errors['error_count'] > 0)) {
+            return null;
+        }
+
+        return $date;
     }
 
     /**
@@ -127,4 +142,3 @@ class DateInputParser
         ];
     }
 }
-

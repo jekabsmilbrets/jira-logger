@@ -10,7 +10,7 @@
   "minimum-stability": "stable",
   "prefer-stable": true,
   "require": {
-    "php": "^8.4",
+    "php": ">=8.5.4 <9.0",
     "ext-ctype": "*",
     "ext-iconv": "*",
     "doctrine/annotations": "^1.13",
