@@ -128,6 +128,10 @@ export class TableComponent implements AfterViewInit {
         property.split('.'),
       );
 
+      if (value instanceof Date) {
+        return value.getTime();
+      }
+
       return (typeof value === 'number' || typeof value === 'string') ? value : '';
     };
     this.dataSource.paginator = this.paginator();

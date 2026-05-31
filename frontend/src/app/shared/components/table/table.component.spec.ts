@@ -76,6 +76,17 @@ describe('Shared Components table.component', () => {
     expect(component['dataSource'].sortingDataAccessor(row, 'nested.value')).toBe(123);
   });
 
+  it('maps Date values to timestamps in sorting accessor', async () => {
+    const { fixture, component } = await createComponent();
+    const date = new Date('2026-05-31T12:00:00.000Z');
+    const row = { meta: { createdAt: date } } as any;
+
+    component.data = [row];
+    fixture.detectChanges();
+
+    expect(component['dataSource'].sortingDataAccessor(row, 'meta.createdAt')).toBe(date.getTime());
+  });
+
   it('maps null data input to empty data source', async () => {
     const { component } = await createComponent();
 
