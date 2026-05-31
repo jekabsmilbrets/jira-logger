@@ -81,6 +81,11 @@ services:
       - APP_ENV=${APP_ENV:-prod}
       - APP_SECRET=${APP_SECRET:?APP_SECRET is required}
       - DATABASE_URL=${DATABASE_URL:?DATABASE_URL is required}
+      - APP_TIMEZONE=${APP_TIMEZONE:?APP_TIMEZONE is required}
+      - CORS_ALLOW_ORIGIN=${CORS_ALLOW_ORIGIN:?CORS_ALLOW_ORIGIN is required}
+      - API_AUTH_USERNAME=${API_AUTH_USERNAME:?API_AUTH_USERNAME is required}
+      - API_AUTH_PASSWORD=${API_AUTH_PASSWORD:?API_AUTH_PASSWORD is required}
+      - JIRA_PERSONAL_ACCESS_TOKEN=${JIRA_PERSONAL_ACCESS_TOKEN-}
     volumes:
       - assetsData:/var/www/public/ng:ro
       - ./../.logs/jira-logger:/var/www/var/log:rw

@@ -9,13 +9,13 @@ To run in docker mode you need to have Docker and Docker Compose installed.
 
 ## Setup
 
-1) Create `./backend/.env` (recommended), or prepare `./.docker/.env` directly.
+1) Prepare `./.docker/.env` from `./.docker/.env.example` (source of truth template).
 2) Run: `sh manager.sh -a build`
 3) Start containers: `sh manager.sh -a start`
 
 Notes:
 - `manager.sh` now runs with `./.docker/docker-compose.yml` and `./.docker/docker-compose.dev.yml` by default.
-- If `./backend/.env` is missing and `./.docker/.env` does not exist, `./.docker/.env.example` is copied to `./.docker/.env`.
+- Backend env variables are loaded from `./.docker/.env` via `docker-compose.yml`.
 
 ## Basic Usage
 

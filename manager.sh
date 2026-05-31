@@ -34,16 +34,6 @@ Options:
 EOF
 }
 
-copy_environment() {
-  echo "Copying environment"
-  if [[ -f ./backend/.env ]]; then
-    cp ./backend/.env ./.docker/.env
-  elif [[ ! -f ./.docker/.env && -f ./.docker/.env.example ]]; then
-    cp ./.docker/.env.example ./.docker/.env
-    echo "Created ./.docker/.env from ./.docker/.env.example"
-  fi
-}
-
 generate_certificates() {
   echo "Generating certificates"
   (cd ./.docker/certs/ && bash cert.sh jira-logger.io)
@@ -265,7 +255,6 @@ preflight_assets_marker_for_start() {
 
 prepare_db() {
   echo "Preparing database (create if missing + migrations)"
-  copy_environment
   # Drop stale migration container/network bindings from previous compose runs.
   compose_cmd rm -fsv migrate >/dev/null 2>&1 || true
   run_with_log "log-migrate.log" compose_cmd --profile release up --force-recreate --remove-orphans migrate
@@ -290,7 +279,6 @@ run_post_build_sequence() {
 case "$ACTION" in
   build)
     echo "Running action $ACTION"
-    copy_environment
     generate_certificates
     ensure_host_log_dir
     export COMPOSE_BAKE=true
@@ -300,7 +288,6 @@ case "$ACTION" in
     ;;
   start)
     echo "Running action $ACTION"
-    copy_environment
     generate_certificates
     rotate_host_logs
     preflight_assets_marker_for_start
@@ -309,7 +296,6 @@ case "$ACTION" in
   start-with-init)
     echo "Running action $ACTION"
     prepare_db
-    copy_environment
     generate_certificates
     rotate_host_logs
     preflight_assets_marker_for_start
