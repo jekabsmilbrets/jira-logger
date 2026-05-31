@@ -64,22 +64,26 @@ describe('Shared Services tasks.service', () => {
 
   it('filteredList builds full query params for all supported filters', async () => {
     apiRequestService.request.mockReturnValueOnce(of({ data: [] }));
+    const date = new Date('2024-01-01T10:00:00.000Z');
+    const startDate = new Date('2024-01-02T10:00:00.000Z');
+    const endDate = new Date('2024-01-03T10:00:00.000Z');
+
     await firstValueFrom(service.filteredList({
       hideUnreported: true,
       name: 'abc',
       tags: ['t1', 't2'],
-      date: new Date('2024-01-01T10:00:00.000Z'),
-      startDate: new Date('2024-01-02T10:00:00.000Z'),
-      endDate: new Date('2024-01-03T10:00:00.000Z'),
+      date,
+      startDate,
+      endDate,
     } as any, true));
 
     const calledUrl = apiRequestService.buildApiUrl.mock.calls.at(-1)?.[1] as string;
     expect(calledUrl).toContain('hideUnreported=true');
     expect(calledUrl).toContain('name=abc');
     expect(calledUrl).toContain('tags=t1,t2');
-    expect(calledUrl).toContain('date=');
-    expect(calledUrl).toContain('startDate=');
-    expect(calledUrl).toContain('endDate=');
+    expect(calledUrl).toContain(`date=${ date.getTime() }`);
+    expect(calledUrl).toContain(`startDate=${ startDate.getTime() }`);
+    expect(calledUrl).toContain(`endDate=${ endDate.getTime() }`);
   });
 
   it('taskExist and syncDateToJiraApi return mapped values', async () => {

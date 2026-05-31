@@ -1,8 +1,6 @@
 import { formatDate } from '@angular/common';
 import { HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-
-import { appLocale, appTimeLogDateTimeFormat, appTimeZone } from '@core/constants/date-time.constant';
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { waitForTurn } from '@core/utils/wait-for.utility';
@@ -18,6 +16,7 @@ import { ApiRequestService } from '@shared/services/api-request.service';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
 import { ApiRequestBody } from '@shared/types/api-request-body.type';
 import { QueryParams } from '@shared/types/query-params.type';
+import { toUnixMs } from '@shared/utils/to-unix-ms.util';
 
 import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
@@ -237,7 +236,7 @@ export class TasksService implements LoadableService, MakeRequestService {
   private buildQueryParams(
     filter: TaskListFilter,
   ): QueryParams {
-    const formatDateForUri: (date: Date) => string = (date: Date) => formatDate(date, appTimeLogDateTimeFormat, appLocale, appTimeZone);
+    const formatDateForUri: (date: Date) => string = (date: Date) => toUnixMs<string>(date, 'string');
 
     const outputQueryParams: QueryParams = {};
 

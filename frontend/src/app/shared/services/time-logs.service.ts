@@ -1,8 +1,6 @@
-import { formatDate } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 
-import { appLocale, appTimeLogDateTimeFormat, appTimeZone } from '@core/constants/date-time.constant';
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { waitForTurn } from '@core/utils/wait-for.utility';
@@ -15,6 +13,7 @@ import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import { ApiRequestBody } from '@shared/types/api-request-body.type';
+import { toUnixMs } from '@shared/utils/to-unix-ms.util';
 
 import { BehaviorSubject, catchError, map, Observable, Subject, switchMap, tap, throwError } from 'rxjs';
 
@@ -66,8 +65,8 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
 
     const body: ApiRequestBody = {
       id: timeLog.id,
-      startTime: timeLog.startTime && formatDate(timeLog.startTime, appTimeLogDateTimeFormat, appLocale, appTimeZone),
-      endTime: timeLog.endTime && formatDate(timeLog.endTime, appTimeLogDateTimeFormat, appLocale, appTimeZone),
+      startTime: timeLog.startTime && toUnixMs<string>(timeLog.startTime, 'string'),
+      endTime: timeLog.endTime && toUnixMs<string>(timeLog.endTime, 'string'),
       description: timeLog.description && timeLog.description.trim(),
       task: task.id,
     };
@@ -90,8 +89,8 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
 
     const body: ApiRequestBody = {
       id: timeLog.id,
-      startTime: timeLog.startTime && formatDate(timeLog.startTime, appTimeLogDateTimeFormat, appLocale, appTimeZone),
-      endTime: timeLog.endTime && formatDate(timeLog.endTime, appTimeLogDateTimeFormat, appLocale, appTimeZone),
+      startTime: timeLog.startTime && toUnixMs<string>(timeLog.startTime, 'string'),
+      endTime: timeLog.endTime && toUnixMs<string>(timeLog.endTime, 'string'),
       description: timeLog.description && timeLog.description.trim(),
       task: task.id,
     };
