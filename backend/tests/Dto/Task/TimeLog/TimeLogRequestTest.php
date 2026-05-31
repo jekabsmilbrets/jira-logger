@@ -41,5 +41,12 @@ class TimeLogRequestTest extends TestCase
 
         self::assertSame('2025-01-01 02:00:00', $request->getEndTime());
     }
-}
 
+    public function testEndTimeNormalizesUnixTimestampMillisecondsWhenNumeric(): void
+    {
+        $request = $this->createRequest();
+        $request->setEndTime(1735689600000);
+
+        self::assertSame('2025-01-01 02:00:00', $request->getEndTime());
+    }
+}

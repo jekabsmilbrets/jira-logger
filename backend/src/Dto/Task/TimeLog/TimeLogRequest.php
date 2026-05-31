@@ -89,8 +89,16 @@ class TimeLogRequest
         return $this->startTime;
     }
 
-    final public function setStartTime(string $startTime): self
+    final public function setStartTime(mixed $startTime): self
     {
+        if (!\is_scalar($startTime)) {
+            $this->startTime = '';
+
+            return $this;
+        }
+
+        $startTime = (string) $startTime;
+
         try {
             $this->startTime = $this->dateInputParser->parseDateTime($startTime);
         } catch (\Throwable) {
@@ -117,8 +125,16 @@ class TimeLogRequest
         return $this->endTime;
     }
 
-    final public function setEndTime(string $endTime): self
+    final public function setEndTime(mixed $endTime): self
     {
+        if (!\is_scalar($endTime)) {
+            $this->endTime = '';
+
+            return $this;
+        }
+
+        $endTime = (string) $endTime;
+
         try {
             $this->endTime = $this->dateInputParser->parseDateTime($endTime);
         } catch (\Throwable) {
