@@ -1,9 +1,19 @@
-FROM composer:2.8 AS composer_deps
+FROM composer:2.8 AS composer_binary
+
+FROM php:8.5-cli-bookworm AS composer_deps
 WORKDIR /app
+COPY --from=composer_binary /usr/bin/composer /usr/bin/composer
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        git \
+        unzip \
+    ; \
+    rm -rf /var/lib/apt/lists/*
 COPY backend/composer.json backend/composer.lock ./
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
 
-FROM php:8.4-fpm-bookworm
+FROM php:8.5-fpm-bookworm
 
 RUN set -eux; \
     apt-get update; \
@@ -27,10 +37,8 @@ RUN set -eux; \
     docker-php-ext-install -j"$(nproc)" \
         intl \
         zip \
-        opcache \
         pdo_pgsql \
-        pgsql \
-        sodium
+        pgsql
 
 WORKDIR /var/www
 
