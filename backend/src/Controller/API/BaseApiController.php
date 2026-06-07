@@ -6,10 +6,12 @@ namespace App\Controller\API;
 
 use App\Dto\JsonApi\JsonApi;
 use App\Serializer\Normalizer\ModelNormalizer;
+use App\Service\DateTime\UserTimezoneResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\DependencyInjection\Attribute\Required;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
@@ -20,6 +22,13 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 class BaseApiController extends AbstractController
 {
     final public const BAD_REQUEST = 'Bad Request';
+    private ?UserTimezoneResolver $userTimezoneResolver = null;
+
+    #[Required]
+    final public function setUserTimezoneResolver(UserTimezoneResolver $userTimezoneResolver): void
+    {
+        $this->userTimezoneResolver = $userTimezoneResolver;
+    }
 
     final protected function badRequestJsonApi(string $message = self::BAD_REQUEST): JsonResponse
     {
@@ -104,10 +113,14 @@ class BaseApiController extends AbstractController
         $jsonApi = new JsonApi();
 
         if ($data) {
+            $resolvedTimezone = $this->userTimezoneResolver?->resolveCurrentUserTimezone();
             $normalizer = new ModelNormalizer();
             $normalizedData = $normalizer->normalize(
                 object: $data,
-                context: ['groups' => ['list']]
+                context: [
+                    'groups' => ['list'],
+                    'timezone' => $resolvedTimezone,
+                ]
             );
 
             $jsonApi->setData($normalizedData);

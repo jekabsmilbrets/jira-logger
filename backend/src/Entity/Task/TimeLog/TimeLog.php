@@ -13,9 +13,9 @@ use DateTimeInterface;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use OpenApi\Attributes as OA;
-use Symfony\Component\Serializer\Annotation\Context;
-use Symfony\Component\Serializer\Annotation\Groups;
-use Symfony\Component\Serializer\Annotation\MaxDepth;
+use Symfony\Component\Serializer\Attribute\Context;
+use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Serializer\Attribute\MaxDepth;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 
 #[
@@ -29,7 +29,7 @@ class TimeLog implements EntityBaseInterface
     #[
         Groups([Group::LIST]),
         ORM\Column(
-            type: Types::DATETIME_MUTABLE
+            type: Types::DATETIME_IMMUTABLE
         ),
         Context([DateTimeNormalizer::FORMAT_KEY => \DateTimeInterface::ATOM])
     ]
@@ -38,7 +38,7 @@ class TimeLog implements EntityBaseInterface
     #[
         Groups([Group::LIST]),
         ORM\Column(
-            type: Types::DATETIME_MUTABLE,
+            type: Types::DATETIME_IMMUTABLE,
             nullable: true
         ),
         Context([DateTimeNormalizer::FORMAT_KEY => \DateTimeInterface::ATOM])

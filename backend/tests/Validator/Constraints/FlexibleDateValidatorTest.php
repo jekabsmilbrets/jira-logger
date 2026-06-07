@@ -19,7 +19,7 @@ class FlexibleDateValidatorTest extends ConstraintValidatorTestCase
             ->method('resolveCurrentUserTimezone')
             ->willReturn('Europe/Riga');
 
-        return new FlexibleDateValidator(new DateInputParser($timezoneResolver));
+        return new FlexibleDateValidator(new DateInputParser($timezoneResolver, 'UTC'));
     }
 
     public function testAcceptsEuSlashDate(): void

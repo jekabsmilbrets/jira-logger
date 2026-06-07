@@ -13,12 +13,10 @@ use App\Utility\Entity\EntityBaseInterface;
 use App\Utility\Traits\BaseEntityTrait;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\Common\Collections\Order;
 use OpenApi\Attributes as OA;
-use Symfony\Component\Serializer\Annotation\Groups;
-use Symfony\Component\Serializer\Annotation\MaxDepth;
+use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Serializer\Attribute\MaxDepth;
 
 #[
     ORM\Entity(repositoryClass: TaskRepository::class),
@@ -208,31 +206,28 @@ class Task implements EntityBaseInterface
 
     final public function getLastTimeLog(): ?TimeLog
     {
-        $activeLogCriteria = Criteria::create()
-            ->andWhere(Criteria::expr()->isNull('endTime'))
-            ->orderBy(
-                [
-                    'startTime' => Order::Descending,
-                    'createdAt' => Order::Descending,
-                ]
-            );
-        $activeTimeLog = $this->timeLogs->matching($activeLogCriteria)->first();
+        $timeLogs = $this->timeLogs->toArray();
 
-        if ($activeTimeLog instanceof TimeLog) {
-            return $activeTimeLog;
+        usort(
+            $timeLogs,
+            static function (TimeLog $left, TimeLog $right): int {
+                $startTimeComparison = $right->getStartTime() <=> $left->getStartTime();
+
+                if (0 !== $startTimeComparison) {
+                    return $startTimeComparison;
+                }
+
+                return $right->getCreatedAt() <=> $left->getCreatedAt();
+            }
+        );
+
+        foreach ($timeLogs as $timeLog) {
+            if (null === $timeLog->getEndTime()) {
+                return $timeLog;
+            }
         }
 
-        $criteria = Criteria::create()
-            ->orderBy(
-                [
-                    'startTime' => Order::Descending,
-                    'createdAt' => Order::Descending,
-                ]
-            );
-
-        $timeLog = $this->timeLogs->matching($criteria)->first();
-
-        return $timeLog instanceof TimeLog ? $timeLog : null;
+        return $timeLogs[0] ?? null;
     }
 
     final public function getJiraWorkLogs(): Collection

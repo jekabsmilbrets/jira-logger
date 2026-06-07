@@ -13,7 +13,7 @@ use Exception;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 use Symfony\Component\Serializer\SerializerInterface;
@@ -257,9 +257,7 @@ class SettingController extends BaseApiController
             );
         }
 
-        return $this->jsonApi(
-            $setting
-        );
+        return $this->jsonApi($this->sanitizeSetting($setting));
     }
 
     #[
@@ -389,9 +387,7 @@ class SettingController extends BaseApiController
             );
         }
 
-        return $this->jsonApi(
-            $setting
-        );
+        return $this->jsonApi($this->sanitizeSetting($setting));
     }
 
     #[

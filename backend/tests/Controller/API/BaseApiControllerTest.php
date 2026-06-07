@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller\API;
 
 use App\Controller\API\BaseApiController;
+use App\Service\DateTime\UserTimezoneResolver;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\Validator\ConstraintViolationInterface;
@@ -12,6 +13,14 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 class BaseApiControllerTest extends TestCase
 {
+    private function buildTimezoneResolver(string $timezone): UserTimezoneResolver
+    {
+        $resolver = $this->createMock(UserTimezoneResolver::class);
+        $resolver->method('resolveCurrentUserTimezone')->willReturn($timezone);
+
+        return $resolver;
+    }
+
     public function testJsonApiWrapsData(): void
     {
         $controller = new class extends BaseApiController {
@@ -21,6 +30,7 @@ class BaseApiControllerTest extends TestCase
             }
         };
         $controller->setContainer(new Container());
+        $controller->setUserTimezoneResolver($this->buildTimezoneResolver('Europe/Riga'));
 
         $response = $controller->runJsonApi(['x' => 1]);
 
@@ -53,10 +63,33 @@ class BaseApiControllerTest extends TestCase
 
         $controller = new class extends BaseApiController {};
         $controller->setContainer(new Container());
+        $controller->setUserTimezoneResolver($this->buildTimezoneResolver('Europe/Riga'));
 
         $response = $controller->validationErrorJsonApi($list, 406);
 
         self::assertSame(406, $response->getStatusCode());
         self::assertStringContainsString('"errors":{"name":"invalid"}', (string) $response->getContent());
+    }
+
+    public function testJsonApiConvertsDateTimeFieldsToResolvedTimezone(): void
+    {
+        $controller = new class extends BaseApiController {
+            public function runJsonApi(mixed $data = null, mixed $errors = null, int $status = 200)
+            {
+                return $this->jsonApi($data, $errors, null, $status);
+            }
+        };
+        $controller->setContainer(new Container());
+        $controller->setUserTimezoneResolver($this->buildTimezoneResolver('Europe/Riga'));
+
+        $response = $controller->runJsonApi(
+            ['time' => new \DateTimeImmutable('2026-06-01T10:00:00+00:00')]
+        );
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString(
+            '"time":"2026-06-01T13:00:00+03:00"',
+            (string) $response->getContent()
+        );
     }
 }

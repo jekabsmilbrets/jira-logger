@@ -19,7 +19,7 @@ class TaskListFilterRequestTest extends TestCase
             ->willReturn('Europe/Riga');
 
         return new TaskListFilterRequest(
-            new DateInputParser($timezoneResolver)
+            new DateInputParser($timezoneResolver, 'UTC')
         );
     }
 
@@ -60,6 +60,16 @@ class TaskListFilterRequestTest extends TestCase
         $request = $this->createRequest();
         $request->setEndDate('31/05/2026');
 
-        self::assertSame('2026-05-31 00:00:00', $request->getEndDate());
+        self::assertSame('2026-05-31', $request->getEndDate());
+    }
+
+    public function testRangeDateOnlyInputsStayDateOnly(): void
+    {
+        $request = $this->createRequest();
+        $request->setStartDate('2026-06-05');
+        $request->setEndDate('2026-06-06');
+
+        self::assertSame('2026-06-05', $request->getStartDate());
+        self::assertSame('2026-06-06', $request->getEndDate());
     }
 }

@@ -77,7 +77,7 @@ class TaskListFilterRequest
 
     public function setStartDate(?string $startDate): self
     {
-        $this->startDate = $this->tryParseDateTime($startDate);
+        $this->startDate = $this->tryParseRangeDate($startDate);
 
         return $this;
     }
@@ -89,7 +89,7 @@ class TaskListFilterRequest
 
     public function setEndDate(?string $endDate): self
     {
-        $this->endDate = $this->tryParseDateTime($endDate);
+        $this->endDate = $this->tryParseRangeDate($endDate);
 
         return $this;
     }
@@ -110,6 +110,30 @@ class TaskListFilterRequest
         } catch (\Throwable) {
             return $value;
         }
+    }
+
+    private function tryParseRangeDate(?string $value): ?string
+    {
+        if ($this->looksLikeDateOnly($value)) {
+            return $this->tryParseDate($value);
+        }
+
+        return $this->tryParseDateTime($value);
+    }
+
+    private function looksLikeDateOnly(?string $value): bool
+    {
+        if (null === $value) {
+            return false;
+        }
+
+        $value = trim($value);
+
+        if ('' === $value || ctype_digit($value)) {
+            return false;
+        }
+
+        return !str_contains($value, ':') && !str_contains($value, 'T');
     }
 
     public function getHideUnreported(): ?bool

@@ -14,12 +14,17 @@ class DateInputParserTest extends TestCase
 
     protected function setUp(): void
     {
+        $this->parser = $this->createParser();
+    }
+
+    private function createParser(string $userTimezone = 'Europe/Riga', string $internalTimezone = 'UTC'): DateInputParser
+    {
         $timezoneResolver = $this->createMock(UserTimezoneResolver::class);
         $timezoneResolver
             ->method('resolveCurrentUserTimezone')
-            ->willReturn('Europe/Riga');
+            ->willReturn($userTimezone);
 
-        $this->parser = new DateInputParser($timezoneResolver);
+        return new DateInputParser($timezoneResolver, $internalTimezone);
     }
 
     public function testParsesUnixSeconds(): void
@@ -47,10 +52,29 @@ class DateInputParserTest extends TestCase
         self::assertSame('2026-05-31', $this->parser->parseDate('31/05/2026'));
     }
 
+    public function testParseDateTimeObjectPreservesInstantAndConvertsToInternalTimezone(): void
+    {
+        $parser = $this->createParser('Europe/Vienna', 'UTC');
+
+        $parsed = $parser->parseDateTimeObject('1780434000000');
+
+        self::assertNotNull($parsed);
+        self::assertSame('2026-06-02T21:00:00+00:00', $parsed->format(\DateTimeInterface::ATOM));
+    }
+
+    public function testParseDateTimeObjectInterpretsNaiveDateTimeInUserTimezone(): void
+    {
+        $parser = $this->createParser('Europe/Vienna', 'UTC');
+
+        $parsed = $parser->parseDateTimeObject('2026-06-03 23:59:00');
+
+        self::assertNotNull($parsed);
+        self::assertSame('2026-06-03T21:59:00+00:00', $parsed->format(\DateTimeInterface::ATOM));
+    }
+
     public function testThrowsOnInvalidInput(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->parser->parseDate('not-a-date');
     }
 }
-

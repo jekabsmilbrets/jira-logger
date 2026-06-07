@@ -8,8 +8,7 @@ use App\Command\AuditJiraSyncDataCommand;
 use Doctrine\DBAL\Connection;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\Console\Tester\CommandTester;
 
 class AuditJiraSyncDataCommandTest extends TestCase
 {
@@ -21,11 +20,9 @@ class AuditJiraSyncDataCommandTest extends TestCase
             ->willReturnOnConsecutiveCalls([], []);
 
         $command = new AuditJiraSyncDataCommand($connection);
-        $reflection = new \ReflectionClass($command);
-        $method = $reflection->getMethod('execute');
-        $method->setAccessible(true);
+        $tester = new CommandTester($command);
 
-        $result = $method->invoke($command, new ArrayInput([]), new BufferedOutput());
+        $result = $tester->execute([]);
 
         self::assertSame(Command::SUCCESS, $result);
     }

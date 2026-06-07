@@ -31,7 +31,6 @@ class JiraApiServiceTimeRangeTest extends TestCase
         $rangeEnd = new \DateTime('2026-05-30 23:59:59');
 
         $method = new \ReflectionMethod(JiraApiService::class, 'calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection');
-        $method->setAccessible(true);
 
         [$seconds, $descriptions] = $method->invoke(
             $service,
@@ -42,8 +41,8 @@ class JiraApiServiceTimeRangeTest extends TestCase
 
         self::assertSame(86399, $seconds);
         self::assertSame(['Long task'], $descriptions);
-        self::assertSame('2026-05-29T10:00:00+00:00', (clone $timeLog->getStartTime())->setTimezone(new \DateTimeZone('UTC'))->format(\DateTimeInterface::ATOM));
-        self::assertSame('2026-05-31T10:00:00+00:00', (clone $timeLog->getEndTime())->setTimezone(new \DateTimeZone('UTC'))->format(\DateTimeInterface::ATOM));
+        self::assertSame('2026-05-29 10:00:00', $timeLog->getStartTime()?->format('Y-m-d H:i:s'));
+        self::assertSame('2026-05-31 10:00:00', $timeLog->getEndTime()?->format('Y-m-d H:i:s'));
     }
 
     public function testFilterIncludesTimeLogSpanningWholeRequestedRange(): void
@@ -55,7 +54,6 @@ class JiraApiServiceTimeRangeTest extends TestCase
             ->setEndTime(new \DateTime('2026-05-31 00:00:00'));
 
         $method = new \ReflectionMethod(JiraApiService::class, 'filterTimeLogsInDateRange');
-        $method->setAccessible(true);
 
         $result = $method->invoke(
             $service,
@@ -73,7 +71,6 @@ class JiraApiServiceTimeRangeTest extends TestCase
         $inputDate = new \DateTime('2026-05-30 11:12:13');
 
         $method = new \ReflectionMethod(JiraApiService::class, 'resolveSyncDates');
-        $method->setAccessible(true);
         [$syncDate, $startDate, $endDate, $jiraStartDateTime] = $method->invoke($service, $inputDate);
 
         self::assertSame('2026-05-30 11:12:13', $inputDate->format('Y-m-d H:i:s'));
@@ -92,7 +89,6 @@ class JiraApiServiceTimeRangeTest extends TestCase
             ->setEndTime(new \DateTimeImmutable('2026-05-30 10:00:59'));
 
         $method = new \ReflectionMethod(JiraApiService::class, 'calculateTimeSpentInSecondsSingleTimeLog');
-        $method->setAccessible(true);
 
         $this->expectException(JiraApiServiceException::class);
         $this->expectExceptionMessage('Cannot report less than 60 second!');

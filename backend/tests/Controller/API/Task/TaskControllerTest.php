@@ -37,7 +37,7 @@ class TaskControllerTest extends TestCase
         $serializer = new class implements SerializerInterface {
             public function serialize(mixed $data, string $format, array $context = []): string { return ''; }
             public function deserialize(mixed $data, string $type, string $format, array $context = []): mixed { return null; }
-            public function denormalize(mixed $data, string $type, string $format = null, array $context = []): mixed
+            public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): mixed
             {
                 throw new UnexpectedValueException('bad');
             }

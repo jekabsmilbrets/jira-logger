@@ -19,7 +19,7 @@ class FlexibleDateTimeValidatorTest extends ConstraintValidatorTestCase
             ->method('resolveCurrentUserTimezone')
             ->willReturn('Europe/Riga');
 
-        return new FlexibleDateTimeValidator(new DateInputParser($timezoneResolver));
+        return new FlexibleDateTimeValidator(new DateInputParser($timezoneResolver, 'UTC'));
     }
 
     public function testAcceptsUnixTimestamp(): void
@@ -40,4 +40,3 @@ class FlexibleDateTimeValidatorTest extends ConstraintValidatorTestCase
             ->assertRaised();
     }
 }
-

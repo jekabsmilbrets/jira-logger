@@ -12,17 +12,18 @@ use App\Entity\Task\TimeLog\TimeLog;
 use App\Service\DateTime\DateInputParser;
 use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
-use Exception;
 use OpenApi\Attributes as OA;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Throwable;
 
 #[Route(
     path: '/api/task/{taskId}/time-log',
@@ -43,6 +44,7 @@ class TimeLogController extends BaseApiController
         private readonly TimeLogService $timeLogService,
         private readonly TaskService $taskService,
         private readonly DateInputParser $dateInputParser,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -265,7 +267,17 @@ class TimeLogController extends BaseApiController
 
         try {
             $timeLog = $this->timeLogService->new($timeLogRequest);
-        } catch (Exception) {
+        } catch (Throwable $throwable) {
+            $this->logger->error(
+                'Failed to create time log.',
+                [
+                    'taskId' => $taskId,
+                    'requestStartTime' => $timeLogRequest->getStartTime(),
+                    'requestEndTime' => $timeLogRequest->getEndTime(),
+                    'exception' => $throwable,
+                ]
+            );
+
             return $this->jsonApi(
                 errors: [self::CANNOT_CREATE_TIME_LOG],
                 status: Response::HTTP_BAD_REQUEST
@@ -396,7 +408,18 @@ class TimeLogController extends BaseApiController
                 id: $id,
                 timeLogRequest: $timeLogRequest
             );
-        } catch (Exception) {
+        } catch (Throwable $throwable) {
+            $this->logger->error(
+                'Failed to update time log.',
+                [
+                    'taskId' => $taskId,
+                    'timeLogId' => $id,
+                    'requestStartTime' => $timeLogRequest->getStartTime(),
+                    'requestEndTime' => $timeLogRequest->getEndTime(),
+                    'exception' => $throwable,
+                ]
+            );
+
             return $this->jsonApi(
                 errors: [self::CANNOT_UPDATE_TIME_LOG],
                 status: Response::HTTP_BAD_REQUEST

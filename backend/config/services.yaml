@@ -4,13 +4,19 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
-  timezone: '%env(APP_TIMEZONE)%'
+  internal_timezone: '%env(APP_INTERNAL_TIMEZONE)%'
+  default_user_timezone: '%env(APP_DEFAULT_USER_TIMEZONE)%'
 
 services:
   # default configuration for services in *this* file
   _defaults:
     autowire: true      # Automatically injects dependencies in your services.
     autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+  _instanceof:
+    App\Controller\API\BaseApiController:
+      calls:
+        - setUserTimezoneResolver: ['@App\Service\DateTime\UserTimezoneResolver']
 
   # makes classes in src/ available to be used as services
   # this creates a service per class whose id is the fully-qualified class name
@@ -21,43 +27,12 @@ services:
       - '../src/Entity/'
       - '../src/Kernel.php'
 
-  # add more service definitions when explicit configuration is needed
-  # please note that last definitions always *replace* previous ones
-  App\Controller\API\Task\TaskController:
-    arguments:
-      - '@App\Service\Task\TaskService'
-      - '@App\Service\JiraApi\JiraApiService'
-      - '@Symfony\Component\Validator\Validator\ValidatorInterface'
-      - '@serializer'
-      - '@App\Service\DateTime\DateInputParser'
-  App\Controller\API\Task\TimeLog\TimeLogController:
-    arguments:
-      - '@App\Service\Task\TimeLog\TimeLogService'
-      - '@App\Service\Task\TaskService'
-      - '@App\Service\DateTime\DateInputParser'
-  App\Controller\API\Tag\TagController:
-    arguments:
-      - '@App\Service\Tag\TagService'
-  App\Controller\API\Setting\SettingController:
-    arguments:
-      - '@App\Service\Setting\SettingService'
-
-  App\Dto\Task\TimeLog\TimeLogRequest:
-    arguments:
-      - '@App\Service\Task\TaskService'
-      - '@App\Service\DateTime\DateInputParser'
-  App\Dto\JiraWorkLog\JiraWorkLogRequest:
-    arguments:
-      - '@App\Service\Task\TaskService'
-  App\Dto\Task\TaskRequest:
-    arguments:
-      - '@App\Service\Tag\TagService'
-
   App\Service\JiraApi\JiraApiService:
     arguments:
-      - '@monolog.logger.jira-api-service'
-      - '@App\Service\Setting\SettingService'
-      - '@App\Service\JiraWorkLog\JiraWorkLogService'
+      $logger: '@monolog.logger.jira-api-service'
+  App\Service\DateTime\DateInputParser:
+    arguments:
+      $internalTimezone: '%internal_timezone%'
   App\Service\DateTime\UserTimezoneResolver:
     arguments:
-      $defaultTimezone: '%timezone%'
+      $defaultTimezone: '%default_user_timezone%'

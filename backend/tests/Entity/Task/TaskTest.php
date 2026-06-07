@@ -40,4 +40,22 @@ class TaskTest extends TestCase
 
         self::assertSame($laterLog, $task->getLastTimeLog());
     }
+
+    public function testGetLastTimeLogUsesCreatedAtAsTieBreakerForMatchingStartTimes(): void
+    {
+        $task = new Task();
+        $olderLog = (new TimeLog())
+            ->setStartTime(new \DateTime('2026-05-30 10:00:00'))
+            ->setEndTime(new \DateTime('2026-05-30 11:00:00'))
+            ->setCreatedAt(new \DateTime('2026-05-30 11:00:00'));
+        $newerLog = (new TimeLog())
+            ->setStartTime(new \DateTime('2026-05-30 10:00:00'))
+            ->setEndTime(new \DateTime('2026-05-30 11:00:00'))
+            ->setCreatedAt(new \DateTime('2026-05-30 12:00:00'));
+
+        $task->addTimeLog($olderLog);
+        $task->addTimeLog($newerLog);
+
+        self::assertSame($newerLog, $task->getLastTimeLog());
+    }
 }

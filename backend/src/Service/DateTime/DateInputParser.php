@@ -12,6 +12,7 @@ class DateInputParser
 {
     public function __construct(
         private readonly UserTimezoneResolver $userTimezoneResolver,
+        private readonly string $internalTimezone,
     ) {
     }
 
@@ -23,6 +24,20 @@ class DateInputParser
     public function parseDateTime(?string $value): ?string
     {
         return $this->parse($value, true);
+    }
+
+    public function parseDateTimeObject(?string $value): ?DateTimeImmutable
+    {
+        $value = $this->normalizeValue($value);
+        if (null === $value) {
+            return null;
+        }
+
+        $userTimezone = new DateTimeZone($this->userTimezoneResolver->resolveCurrentUserTimezone());
+        $internalTimezone = new DateTimeZone($this->internalTimezone);
+        $parsed = $this->parseInternal($value, $userTimezone);
+
+        return $parsed->setTimezone($internalTimezone);
     }
 
     public function isValidDate(?string $value): bool
@@ -49,19 +64,26 @@ class DateInputParser
 
     private function parse(?string $value, bool $preserveTime): ?string
     {
+        $value = $this->normalizeValue($value);
         if (null === $value) {
             return null;
-        }
-
-        $value = trim($value);
-        if ('' === $value) {
-            return $value;
         }
 
         $timezone = new DateTimeZone($this->userTimezoneResolver->resolveCurrentUserTimezone());
         $parsed = $this->parseInternal($value, $timezone);
 
         return $parsed->setTimezone($timezone)->format($preserveTime ? 'Y-m-d H:i:s' : 'Y-m-d');
+    }
+
+    private function normalizeValue(?string $value): ?string
+    {
+        if (null === $value) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        return '' === $value ? null : $value;
     }
 
     private function parseInternal(string $value, DateTimeZone $timezone): DateTimeImmutable

@@ -9,8 +9,10 @@ use App\Entity\Task\Task;
 use App\Factory\Task\TimeLog\TimeLogFactory;
 use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\DateInputParser;
+use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\Task\TaskService;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 class TimeLogFactoryTest extends TestCase
@@ -23,16 +25,17 @@ class TimeLogFactoryTest extends TestCase
 
         $resolver = $this->createMock(UserTimezoneResolver::class);
         $resolver->method('resolveCurrentUserTimezone')->willReturn('UTC');
-        $parser = new DateInputParser($resolver);
+        $parser = new DateInputParser($resolver, 'UTC');
+        $dateRangeResolver = $this->createMock(TaskFilterDateRangeResolver::class);
 
-        $request = new TimeLogRequest(new TaskService($taskRepository), $parser);
+        $request = new TimeLogRequest(new TaskService($taskRepository, $dateRangeResolver), $parser);
         $request->setTask('id')->setStartTime('2026-05-01 10:00:00')->setEndTime('2026-05-01 11:00:00')->setDescription('work');
 
         $timeLog = TimeLogFactory::create($request);
 
         self::assertSame($task, $timeLog->getTask());
         self::assertSame('work', $timeLog->getDescription());
-        self::assertInstanceOf(\DateTimeInterface::class, $timeLog->getStartTime());
-        self::assertInstanceOf(\DateTimeInterface::class, $timeLog->getEndTime());
+        self::assertInstanceOf(\DateTimeImmutable::class, $timeLog->getStartTime());
+        self::assertInstanceOf(\DateTimeImmutable::class, $timeLog->getEndTime());
     }
 }

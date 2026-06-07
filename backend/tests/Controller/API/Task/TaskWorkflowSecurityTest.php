@@ -27,7 +27,7 @@ class TaskWorkflowSecurityTest extends WebTestCase
     public function testAnonymousCannotSyncTaskToJira(): void
     {
         $client = static::createClient();
-        $client->request('POST', '/api/task/1/2026-05-30');
+        $client->request('POST', '/api/task/123e4567-e89b-12d3-a456-426614174000/2026-05-30');
 
         self::assertResponseStatusCodeSame(401);
     }

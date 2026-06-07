@@ -7,17 +7,18 @@ namespace App\Tests\Doctrine;
 use App\Doctrine\CustomUuidGenerator;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
-use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 class CustomUuidGeneratorTest extends TestCase
 {
-    public function testGenerateIdReturnsValidUuidV4String(): void
+    public function testGenerateIdReturnsValidUuidV4(): void
     {
         $generator = new CustomUuidGenerator();
         $entityManager = $this->createMock(EntityManagerInterface::class);
 
         $id = $generator->generateId($entityManager, new \stdClass());
 
-        self::assertTrue(Uuid::isValid($id));
+        self::assertInstanceOf(UuidInterface::class, $id);
+        self::assertSame(4, $id->getFields()->getVersion());
     }
 }
