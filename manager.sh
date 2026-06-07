@@ -267,7 +267,8 @@ migrate_db() {
 
 seed_db() {
   echo "Seeding database"
-  compose_cmd run --rm php-fpm php bin/console seed:load
+  compose_cmd run --rm php-fpm php bin/console seed:setting
+  compose_cmd run --rm php-fpm php bin/console seed:tag
 }
 
 run_post_build_sequence() {
