@@ -1,12 +1,16 @@
 import { formatDate } from '@angular/common';
 
-import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
-
 import { Column } from '@shared/interfaces/column.interface';
 import { TimeLog } from '@shared/models/time-log.model';
 import { columnValue } from '@shared/utils/column-value.util';
 
-export const columns: Column[] = [
+export const createTimeLogListColumns: (
+  getLocale: () => string,
+  getTimezone: () => string,
+) => Column[] = (
+  getLocale: () => string,
+  getTimezone: () => string,
+): Column[] => [
   {
     columnDef: 'uuid',
     header: 'uuid',
@@ -29,7 +33,7 @@ export const columns: Column[] = [
     sortable: true,
     hidden: false,
     isClickable: true,
-    cell: (timeLog: TimeLog) => timeLog.startTime && formatDate(timeLog.startTime, 'yyyy-MM-dd H:mm:s', appLocale, appTimeZone),
+    cell: (timeLog: TimeLog) => timeLog.startTime && formatDate(timeLog.startTime, 'yyyy-MM-dd H:mm:s', getLocale(), getTimezone()),
   },
   {
     columnDef: 'endTime',
@@ -37,14 +41,14 @@ export const columns: Column[] = [
     sortable: true,
     hidden: false,
     isClickable: true,
-    cell: (timeLog: TimeLog) => timeLog.endTime && formatDate(timeLog.endTime, 'yyyy-MM-dd H:mm:s', appLocale, appTimeZone),
+    cell: (timeLog: TimeLog) => timeLog.endTime && formatDate(timeLog.endTime, 'yyyy-MM-dd H:mm:s', getLocale(), getTimezone()),
   },
   {
     columnDef: 'date',
     header: 'Date',
     sortable: true,
     hidden: false,
-    cell: (timeLog: TimeLog) => timeLog.date && formatDate(timeLog.date, 'yyyy-MM-dd', appLocale, appTimeZone),
+    cell: (timeLog: TimeLog) => timeLog.date && formatDate(timeLog.date, 'yyyy-MM-dd', getLocale(), getTimezone()),
   },
   {
     columnDef: 'year',

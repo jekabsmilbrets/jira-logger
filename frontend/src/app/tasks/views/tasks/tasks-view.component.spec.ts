@@ -39,9 +39,6 @@ describe('Tasks Views tasks-view.component', () => {
     const timeLogsService = {
       start: vi.fn(() => of(true)),
       stop: vi.fn(() => of(true)),
-      create: vi.fn(() => of(true)),
-      update: vi.fn(() => of(true)),
-      delete: vi.fn(() => of(true)),
     };
 
     const dynamicMenuService = {
@@ -115,11 +112,8 @@ describe('Tasks Views tasks-view.component', () => {
   it('wires child tasks-task outputs to parent handlers', async () => {
     const { fixture, tasksSubject, component } = await setup();
     const task = buildTask([buildTimeLog('2026-03-02T10:00:00.000Z')]);
-    const log = buildTimeLog('2026-03-02T11:00:00.000Z');
     const onActionSpy = vi.spyOn(component as any, 'onAction');
-    const onCreateSpy = vi.spyOn(component as any, 'onCreateTimeLog');
-    const onUpdateSpy = vi.spyOn(component as any, 'onUpdateTimeLog');
-    const onRemoveSpy = vi.spyOn(component as any, 'onRemoveTimeLog');
+    const onSavedSpy = vi.spyOn(component as any, 'onTimeLogsSaved');
 
     tasksSubject.next([task]);
     fixture.detectChanges();
@@ -127,20 +121,15 @@ describe('Tasks Views tasks-view.component', () => {
     const taskEl = fixture.debugElement.query(By.css('tasks-task'));
     const taskCmp = taskEl.componentInstance as any;
     taskCmp.action.emit([task, TaskUpdateActionEnum.startWorkLog]);
-    taskCmp.createTimeLog.emit([task, log]);
     taskCmp.remove.emit(task);
+    taskCmp.timeLogsSaved.emit();
     taskCmp.update.emit(task);
-    taskCmp.removeTimeLog.emit([task, log]);
-    taskEl.triggerEventHandler('createTimeLog', [task, log]);
     taskEl.triggerEventHandler('remove', task);
+    taskEl.triggerEventHandler('timeLogsSaved');
     taskEl.triggerEventHandler('update', task);
-    taskEl.triggerEventHandler('removeTimeLog', [task, log]);
-    taskEl.triggerEventHandler('updateTimeLog', [task, log]);
 
     expect(onActionSpy).toHaveBeenCalled();
-    expect(onCreateSpy).toHaveBeenCalled();
-    expect(onUpdateSpy).toHaveBeenCalled();
-    expect(onRemoveSpy).toHaveBeenCalled();
+    expect(onSavedSpy).toHaveBeenCalled();
   });
 
   it('refreshes list for unknown action via default switch branch', async () => {
@@ -195,18 +184,11 @@ describe('Tasks Views tasks-view.component', () => {
     expect(tasksService.delete).toHaveBeenCalledWith(task);
   });
 
-  it('creates, updates, and removes time logs then refreshes tasks', async () => {
-    const { component, timeLogsService, tasksService } = await setup();
-    const task = buildTask();
-    const timeLog = buildTimeLog('2026-03-02T10:00:00.000Z');
+  it('refreshes tasks after time logs are saved in the modal', async () => {
+    const { component, tasksService } = await setup();
 
-    component['onCreateTimeLog']([task, timeLog]);
-    component['onUpdateTimeLog']([task, timeLog]);
-    component['onRemoveTimeLog']([task, timeLog]);
+    component['onTimeLogsSaved']();
 
-    expect(timeLogsService.create).toHaveBeenCalledWith(task, timeLog);
-    expect(timeLogsService.update).toHaveBeenCalledWith(task, timeLog);
-    expect(timeLogsService.delete).toHaveBeenCalledWith(task, timeLog);
-    expect(tasksService.list).toHaveBeenCalledTimes(3);
+    expect(tasksService.list).toHaveBeenCalledOnce();
   });
 });

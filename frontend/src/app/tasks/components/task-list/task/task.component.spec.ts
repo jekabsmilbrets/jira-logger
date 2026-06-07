@@ -152,41 +152,30 @@ describe('Tasks Components task.component', () => {
     expect(actionSpy.mock.calls[1][0][1]).toBe('stop-work-log');
   });
 
-  it('emits create/update/remove time log events from modal response', async () => {
-    const { component, baseTask, timeLogEditService } = await setup();
-    const t1 = buildTimeLog('2026-03-02T10:00:00.000Z');
-    const t2 = buildTimeLog('2026-03-02T11:00:00.000Z');
-    const t3 = buildTimeLog('2026-03-02T12:00:00.000Z');
-
+  it('emits timeLogsSaved when modal reports a successful save', async () => {
+    const { component, timeLogEditService } = await setup();
     timeLogEditService.openTimeLogsListDialog.mockReturnValueOnce(of({
-      created: [t1],
-      updated: [t2],
-      deleted: [t3],
+      saved: true,
     }) as any);
 
-    const createSpy = vi.spyOn(component['createTimeLog'], 'emit');
-    const updateSpy = vi.spyOn(component['updateTimeLog'], 'emit');
-    const removeSpy = vi.spyOn(component['removeTimeLog'], 'emit');
+    const savedSpy = vi.spyOn(component['timeLogsSaved'], 'emit');
 
     component['onOpenTimeLogsModal']();
 
-    expect(createSpy).toHaveBeenCalledWith([baseTask, t1]);
-    expect(updateSpy).toHaveBeenCalledWith([baseTask, t2]);
-    expect(removeSpy).toHaveBeenCalledWith([baseTask, t3]);
+    expect(savedSpy).toHaveBeenCalledOnce();
   });
 
-  it('ignores undefined modal response when opening time logs modal', async () => {
+  it('ignores undefined and unsaved modal responses when opening time logs modal', async () => {
     const { component, timeLogEditService } = await setup();
-    const createSpy = vi.spyOn(component['createTimeLog'], 'emit');
-    const updateSpy = vi.spyOn(component['updateTimeLog'], 'emit');
-    const removeSpy = vi.spyOn(component['removeTimeLog'], 'emit');
+    const savedSpy = vi.spyOn(component['timeLogsSaved'], 'emit');
 
     timeLogEditService.openTimeLogsListDialog.mockReturnValueOnce(of(undefined));
     component['onOpenTimeLogsModal']();
 
-    expect(createSpy).not.toHaveBeenCalled();
-    expect(updateSpy).not.toHaveBeenCalled();
-    expect(removeSpy).not.toHaveBeenCalled();
+    timeLogEditService.openTimeLogsListDialog.mockReturnValueOnce(of({ saved: false }) as any);
+    component['onOpenTimeLogsModal']();
+
+    expect(savedSpy).not.toHaveBeenCalled();
   });
 
   it('renders non-edit mode controls and switches to edit mode controls', async () => {

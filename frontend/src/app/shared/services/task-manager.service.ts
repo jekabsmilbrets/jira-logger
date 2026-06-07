@@ -1,4 +1,6 @@
 import { inject, Injectable } from '@angular/core';
+import { TimezoneService } from '@core/services/timezone.service';
+import { toWallClockDateInTimezone } from '@core/utils/timezone-date.utility';
 
 import { Task } from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
@@ -15,6 +17,7 @@ export class TaskManagerService {
 
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
+  private readonly timezoneService: TimezoneService = inject(TimezoneService);
 
   private activeTaskSubject: BehaviorSubject<Task | null> = new BehaviorSubject<Task | null>(null);
   private timeLoggedTodaySubject: BehaviorSubject<number> = new BehaviorSubject<number>(0);
@@ -43,7 +46,7 @@ export class TaskManagerService {
           catchError(() => of([])),
           map(
             (tasks: Task[]) => tasks.map(
-              (task: Task) => task.calcTimeLoggedForDate(date))
+              (task: Task) => task.calcTimeLoggedForDate(date, this.timezoneService.timezone))
               .reduce(
                 (acc: number, value: number) => acc + value, 0,
               ),
@@ -64,7 +67,7 @@ export class TaskManagerService {
   }
 
   private getStartOfToday(): Date {
-    const date: Date = new Date();
+    const date: Date = toWallClockDateInTimezone(new Date(), this.timezoneService.timezone);
     date.setHours(0, 0, 0, 0);
 
     return date;

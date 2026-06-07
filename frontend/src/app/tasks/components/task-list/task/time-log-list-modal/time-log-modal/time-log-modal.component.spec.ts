@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
+import { TimezoneService } from '@core/services/timezone.service';
 
 import { TimeLog } from '@shared/models/time-log.model';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -27,6 +28,7 @@ describe('Tasks Components time-log-modal.component', () => {
           },
         },
         { provide: MatDialogRef, useValue: dialogRef },
+        { provide: TimezoneService, useValue: { timezone: 'Europe/Vienna' } },
       ],
     });
 
@@ -82,6 +84,20 @@ describe('Tasks Components time-log-modal.component', () => {
     expect(payload.responseType).toBe('update');
     expect(payload.responseData.endTime).toBeUndefined();
     expect(payload.responseData.description).toBe('updated');
+  });
+
+  it('round-trips wall-clock values using the saved timezone', async () => {
+    const { component, dialogRef } = await setup(new TimeLog({
+      startTime: new Date('2026-06-02T22:00:00.000Z'),
+      endTime: new Date('2026-06-03T21:59:00.000Z'),
+      description: 'desc',
+    }));
+
+    component['onSave']();
+
+    const payload = dialogRef.close.mock.calls[0][0];
+    expect(payload.responseData.startTime.toISOString()).toBe('2026-06-02T22:00:00.000Z');
+    expect(payload.responseData.endTime.toISOString()).toBe('2026-06-03T21:59:00.000Z');
   });
 
   it('normalizes undefined end time to null before payload build', async () => {

@@ -36,7 +36,7 @@ describe('Shared Components table.component', () => {
   });
 
   beforeEach(() => {
-    registerLocaleData(localeLv);
+    registerLocaleData(localeLv, 'lv-LV');
     areYouSureService.openDialog.mockClear();
     areYouSureService.openDialog.mockReturnValue(of(false));
   });

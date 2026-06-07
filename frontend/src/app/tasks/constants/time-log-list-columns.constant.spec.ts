@@ -2,14 +2,19 @@ import { registerLocaleData } from '@angular/common';
 import localeLv from '@angular/common/locales/lv';
 import { TimeLog } from '@shared/models/time-log.model';
 
-import { columns } from './time-log-list-columns.constant';
+import { createTimeLogListColumns } from './time-log-list-columns.constant';
 
 describe('Tasks Constants time-log-list-columns.constant', () => {
   beforeAll(() => {
-    registerLocaleData(localeLv);
+    registerLocaleData(localeLv, 'lv-LV');
   });
 
   it('exports expected columns and callable accessors', () => {
+    const columns = createTimeLogListColumns(
+      () => 'lv-LV',
+      () => 'Europe/Riga',
+    );
+
     expect(columns.length).toBeGreaterThan(0);
 
     const timeLog = new TimeLog({

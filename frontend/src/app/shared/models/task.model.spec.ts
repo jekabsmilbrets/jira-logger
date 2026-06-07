@@ -64,4 +64,44 @@ describe('Shared Models task.model', () => {
     expect(task.calcTimeSynced(new Date('2024-01-04T10:00:00.000Z'))).toBe(120);
     expect(task.calcTimeSynced(new Date('2024-01-05T10:00:00.000Z'))).toBe(0);
   });
+
+  it('groups logged and synced time using the provided timezone instead of browser local time', () => {
+    const task = new Task({
+      timeLogs: [
+        new TimeLog({
+          startTime: new Date('2026-06-02T21:30:00.000Z'),
+          endTime: new Date('2026-06-02T22:00:00.000Z'),
+        } as any),
+      ],
+      jiraWorkLogs: [
+        new JiraWorkLog({
+          startTime: new Date('2026-06-02T21:00:00.000Z'),
+          timeSpentSeconds: 1800,
+        } as any),
+      ],
+    } as any);
+
+    expect(task.calcTimeLoggedForDate(new Date(2026, 5, 2), 'Europe/Vienna')).toBe(0);
+    expect(task.calcTimeLoggedForDate(new Date(2026, 5, 3), 'Europe/Vienna')).toBe(1800);
+    expect(task.calcTimeSynced(new Date(2026, 5, 3), 'Europe/Vienna')).toBe(1800);
+    expect(task.calcTimeSynced(new Date(2026, 5, 2), 'Europe/Vienna')).toBe(0);
+  });
+
+  it('splits time logs by overlap with each timezone day instead of assigning all time to the start day', () => {
+    const task = new Task({
+      timeLogs: [
+        new TimeLog({
+          startTime: new Date('2026-06-04T22:00:00.000Z'),
+          endTime: new Date('2026-06-05T21:59:00.000Z'),
+        } as any),
+        new TimeLog({
+          startTime: new Date('2026-06-05T22:00:00.000Z'),
+          endTime: new Date('2026-06-06T21:59:00.000Z'),
+        } as any),
+      ],
+    } as any);
+
+    expect(task.calcTimeLoggedForDate(new Date(2026, 5, 5), 'Europe/Vienna')).toBe(86340);
+    expect(task.calcTimeLoggedForDate(new Date(2026, 5, 6), 'Europe/Vienna')).toBe(86340);
+  });
 });

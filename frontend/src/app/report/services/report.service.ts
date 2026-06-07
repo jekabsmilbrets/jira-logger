@@ -1,8 +1,9 @@
 import { formatDate } from '@angular/common';
 import { inject, Injectable } from '@angular/core';
 
-import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
+import { LocaleService } from '@core/services/locale.service';
 import { StorageService } from '@core/services/storage.service';
+import { TimezoneService } from '@core/services/timezone.service';
 
 import { columns as monthModelColumns } from '@report/constants/report-date-range-columns.constant';
 import { columns as totalModelColumns } from '@report/constants/report-total-columns.constant';
@@ -49,6 +50,8 @@ export class ReportService {
   private readonly storageService: StorageService = inject(StorageService);
   private readonly tagsService: TagsService = inject(TagsService);
   private readonly tasksService: TasksService = inject(TasksService);
+  private readonly timezoneService: TimezoneService = inject(TimezoneService);
+  private readonly localeService: LocaleService = inject(LocaleService);
 
   private reportModeSubject: BehaviorSubject<ReportModeEnum> = new BehaviorSubject<ReportModeEnum>(ReportModeEnum.total);
   private tagsSubject: BehaviorSubject<Tag[]> = new BehaviorSubject<Tag[]>([]);
@@ -338,17 +341,22 @@ export class ReportService {
 
       modifiedMonthModelColumns.push({
         columnDef: 'date-' + currentDate.getTime(),
-        header: formatDate(currentDate2, 'd. MMM', appLocale, appTimeZone),
+        header: formatDate(
+          currentDate2,
+          'd. MMM',
+          this.localeService.locale,
+          this.timezoneService.timezone,
+        ),
         sortable: false,
         hidden: reportMode !== ReportModeEnum.date ? shouldShowWeekends : false,
         pipe: 'readableTime',
         isClickable: true,
         cellClickType: 'readableTime',
         footerCellClickType: 'readableTime',
-        cell: (task: Task) => task.calcTimeLoggedForDate(currentDate2),
+        cell: (task: Task) => task.calcTimeLoggedForDate(currentDate2, this.timezoneService.timezone),
         hasFooter: true,
         footerCell: (tasks: Task[]) => tasks.map(
-          (task: Task) => task.calcTimeLoggedForDate(currentDate2),
+          (task: Task) => task.calcTimeLoggedForDate(currentDate2, this.timezoneService.timezone),
         )
           .reduce(reduceFn, 0),
       });
@@ -379,7 +387,7 @@ export class ReportService {
     if (reportMode === ReportModeEnum.date) {
       const taskSynced: (task: Task) => boolean = (
         task: Task,
-      ) => task.calcTimeLogged() > 0 && task.calcTimeLogged() === task.calcTimeSynced(startDate);
+      ) => task.calcTimeLogged() > 0 && task.calcTimeLogged() === task.calcTimeSynced(startDate, this.timezoneService.timezone);
 
       modifiedMonthModelColumns.push({
         columnDef: 'synced',
@@ -391,10 +399,10 @@ export class ReportService {
         taskSynced,
         pipe: 'readableTime',
         footerCellClickType: 'readableTime',
-        cell: (task: Task) => task.calcTimeSynced(startDate),
+        cell: (task: Task) => task.calcTimeSynced(startDate, this.timezoneService.timezone),
         hasFooter: true,
         footerCell: (tasks: Task[]) => tasks.map(
-          (task: Task) => task.calcTimeSynced(startDate),
+          (task: Task) => task.calcTimeSynced(startDate, this.timezoneService.timezone),
         )
           .reduce(reduceFn, 0),
       });

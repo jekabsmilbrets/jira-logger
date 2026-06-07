@@ -53,18 +53,7 @@ export class TaskComponent implements OnInit {
   ]>();
   protected readonly update: OutputEmitterRef<Task> = output<Task>();
   protected readonly remove: OutputEmitterRef<Task> = output<Task>();
-  protected readonly createTimeLog: OutputEmitterRef<[Task, TimeLog]> = output<[
-    Task,
-    TimeLog
-  ]>();
-  protected readonly updateTimeLog: OutputEmitterRef<[Task, TimeLog]> = output<[
-    Task,
-    TimeLog
-  ]>();
-  protected readonly removeTimeLog: OutputEmitterRef<[Task, TimeLog]> = output<[
-    Task,
-    TimeLog
-  ]>();
+  protected readonly timeLogsSaved: OutputEmitterRef<void> = output<void>();
 
   protected formGroup!: FormGroup;
 
@@ -133,44 +122,9 @@ export class TaskComponent implements OnInit {
     this.timeLogEditService.openTimeLogsListDialog(this.task())
       .pipe(take(1))
       .subscribe((response: TimeLogsModalResponseInterface | undefined) => {
-        if (response) {
-          this.createTimeLogs(response.created);
-          this.updateTimeLogs(response.updated);
-          this.deleteTimeLogs(response.deleted);
+        if (response?.saved) {
+          this.timeLogsSaved.emit();
         }
       });
-  }
-
-  private createTimeLogs(
-    timeLogs: TimeLog[],
-  ): void {
-    timeLogs.forEach(
-      (timeLog: TimeLog) => this.createTimeLog.emit([
-        this.task(),
-        timeLog,
-      ]),
-    );
-  }
-
-  private updateTimeLogs(
-    timeLogs: TimeLog[],
-  ): void {
-    timeLogs.forEach(
-      (timeLog: TimeLog) => this.updateTimeLog.emit([
-        this.task(),
-        timeLog,
-      ]),
-    );
-  }
-
-  private deleteTimeLogs(
-    timeLogs: TimeLog[],
-  ): void {
-    timeLogs.forEach(
-      (timeLog: TimeLog) => this.removeTimeLog.emit([
-        this.task(),
-        timeLog,
-      ]),
-    );
   }
 }

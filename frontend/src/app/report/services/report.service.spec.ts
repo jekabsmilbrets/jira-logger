@@ -25,7 +25,7 @@ describe('ReportService', () => {
   let tagsSubject: BehaviorSubject<Tag[]>;
 
   beforeEach(() => {
-    registerLocaleData(localeLv);
+    registerLocaleData(localeLv, 'lv-LV');
     vi.useFakeTimers();
 
     tasksService = {
@@ -235,6 +235,7 @@ describe('ReportService', () => {
   });
 
   it('builds range columns and total logged column for valid dateRange', async () => {
+    service.date = new Date('2026-05-30T10:00:00.000Z');
     service.reportMode = ReportModeEnum.dateRange;
     service.showWeekends = true;
     service.startDate = new Date('2026-05-01T00:00:00.000Z');
@@ -249,6 +250,12 @@ describe('ReportService', () => {
         startDate: expect.any(Date),
         endDate: expect.any(Date),
         hideUnreported: false,
+      }),
+      true,
+    );
+    expect(tasksService.filteredList).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({
+        date: expect.any(Date),
       }),
       true,
     );

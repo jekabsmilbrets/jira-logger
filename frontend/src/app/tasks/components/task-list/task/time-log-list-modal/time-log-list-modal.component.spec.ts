@@ -1,12 +1,16 @@
 import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { By } from '@angular/platform-browser';
+import { LocaleService } from '@core/services/locale.service';
+import { TimezoneService } from '@core/services/timezone.service';
 import { TableComponent } from '@shared/components/table/table.component';
 
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
+import { TimeLogsService } from '@shared/services/time-logs.service';
 import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TimeLogListModalComponent } from './time-log-list-modal.component';
@@ -28,6 +32,21 @@ describe('Tasks Components time-log-list-modal.component', () => {
     const timeLogEditService = {
       openTimeLogDialog: vi.fn(() => of({ responseType: 'cancel' })),
     };
+    const timeLogsService = {
+      create: vi.fn((_: Task, timeLog: TimeLog) => of(new TimeLog({ ...timeLog, id: timeLog.id ?? 'created-id' }))),
+      update: vi.fn((_: Task, timeLog: TimeLog) => of(timeLog)),
+      delete: vi.fn(() => of(undefined)),
+      list: vi.fn(() => of(task.timeLogs)),
+    };
+    const snackBar = {
+      open: vi.fn(),
+    };
+    const timezoneService = {
+      timezone: 'Europe/Vienna',
+    };
+    const localeService = {
+      locale: 'lv-LV',
+    };
 
     await TestBed.configureTestingModule({
       imports: [TimeLogListModalComponent],
@@ -35,6 +54,10 @@ describe('Tasks Components time-log-list-modal.component', () => {
         { provide: MAT_DIALOG_DATA, useValue: { task } },
         { provide: MatDialogRef, useValue: dialogRef },
         { provide: TimeLogEditService, useValue: timeLogEditService },
+        { provide: TimeLogsService, useValue: timeLogsService },
+        { provide: MatSnackBar, useValue: snackBar },
+        { provide: TimezoneService, useValue: timezoneService },
+        { provide: LocaleService, useValue: localeService },
       ],
     });
 
@@ -47,6 +70,8 @@ describe('Tasks Components time-log-list-modal.component', () => {
       task,
       dialogRef,
       timeLogEditService,
+      timeLogsService,
+      snackBar,
     };
   };
 
@@ -71,7 +96,7 @@ describe('Tasks Components time-log-list-modal.component', () => {
     task.timeLogs = [existing];
 
     component['onCreateAction'](created);
-    component['onUpdateAction'](updated);
+    component['onUpdateAction'](existing, updated);
     component['onRemoveAction'](updated);
 
     expect(task.timeLogs).toEqual([created]);
@@ -137,37 +162,44 @@ describe('Tasks Components time-log-list-modal.component', () => {
     expect(task.timeLogs).toEqual([current]);
   });
 
-  it('adds created/updated/deleted lists to save payload filtered by current rows', async () => {
-    const { component, task, dialogRef } = await setup();
-    const kept = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
+  it('saves staged changes, refreshes rows, closes, and shows success snackbar', async () => {
+    const { component, task, dialogRef, timeLogsService, snackBar } = await setup();
+    const existing = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
     const removed = buildTimeLog('2', '2026-03-02T11:00:00.000Z');
+    const updated = buildTimeLog('1', '2026-03-02T12:00:00.000Z');
+    const created = buildTimeLog(undefined, '2026-03-02T09:00:00.000Z');
+    const persistedCreated = buildTimeLog('created-id', '2026-03-02T09:00:00.000Z');
 
-    task.timeLogs = [kept, removed];
+    task.timeLogs = [existing, removed];
+    timeLogsService.create.mockReturnValueOnce(of(persistedCreated));
+    timeLogsService.list.mockReturnValueOnce(of([persistedCreated, updated]));
 
-    component['onCreateAction'](buildTimeLog(undefined, '2026-03-02T09:00:00.000Z'));
-    component['onUpdateAction'](buildTimeLog('1', '2026-03-02T12:00:00.000Z'));
+    component['onCreateAction'](created);
+    component['onUpdateAction'](existing, updated);
     component['onRemoveAction'](removed);
-
     component['onSave']();
 
-    const payload = dialogRef.close.mock.calls[0][0];
-    expect(payload.created).toHaveLength(1);
-    expect(payload.updated).toHaveLength(1);
-    expect(payload.deleted).toEqual([removed]);
+    expect(timeLogsService.create).toHaveBeenCalledWith(task, created);
+    expect(timeLogsService.update).toHaveBeenCalledWith(task, updated);
+    expect(timeLogsService.delete).toHaveBeenCalledWith(task, removed);
+    expect(task.timeLogs).toEqual([persistedCreated, updated]);
+    expect(dialogRef.close).toHaveBeenCalledWith({ saved: true });
+    expect(snackBar.open).toHaveBeenCalledWith('Time logs updated.', undefined, { duration: 5000 });
   });
 
-  it('filters out created logs removed before save and skips deleted list for unsaved logs', async () => {
-    const { component, task, dialogRef } = await setup();
+  it('keeps the modal open and shows an error snackbar when save fails', async () => {
+    const { component, task, dialogRef, timeLogsService, snackBar } = await setup();
     const createdUnsaved = buildTimeLog(undefined, '2026-03-02T09:00:00.000Z');
-    task.timeLogs = [];
+    timeLogsService.create.mockReturnValueOnce(throwError(() => ({
+      error: { errors: ['Can not Create TimeLog'] },
+    })));
 
     component['onCreateAction'](createdUnsaved);
-    component['onRemoveAction'](createdUnsaved);
     component['onSave']();
 
-    const payload = dialogRef.close.mock.calls[0][0];
-    expect(payload.created).toEqual([]);
-    expect(payload.deleted).toEqual([]);
+    expect(dialogRef.close).not.toHaveBeenCalled();
+    expect(task.timeLogs).toEqual([createdUnsaved]);
+    expect(snackBar.open).toHaveBeenCalledWith('Time logs update failed! Can not Create TimeLog', undefined, { duration: 5000 });
   });
 
   it('creates a new log via add button flow on update response', async () => {
@@ -217,8 +249,22 @@ describe('Tasks Components time-log-list-modal.component', () => {
     const unknown = buildTimeLog('2', '2026-03-02T11:00:00.000Z');
     task.timeLogs = [existing];
 
-    component['onUpdateAction'](unknown);
+    component['onUpdateAction'](unknown, buildTimeLog('2', '2026-03-02T12:00:00.000Z'));
     expect(task.timeLogs).toEqual([existing]);
+  });
+
+  it('formats rows using the saved timezone instead of browser local time', async () => {
+    const { component } = await setup();
+    const timeLog = new TimeLog({
+      startTime: new Date('2026-06-02T22:00:00.000Z'),
+      endTime: new Date('2026-06-03T21:59:00.000Z'),
+    });
+
+    const startColumn = component['columns'].find((column) => column.columnDef === 'startTime');
+    const endColumn = component['columns'].find((column) => column.columnDef === 'endTime');
+
+    expect(startColumn?.cell(timeLog)).toBe('2026-06-03 0:00:0');
+    expect(endColumn?.cell(timeLog)).toBe('2026-06-03 23:59:0');
   });
 
   it('triggers toolbar button click handlers from DOM', async () => {

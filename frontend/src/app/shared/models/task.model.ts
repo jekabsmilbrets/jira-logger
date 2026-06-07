@@ -1,5 +1,6 @@
 import { Base } from '@core/models/base.model';
 import { getDateParts } from '@core/utils/get-date-parts.utility';
+import { fromWallClockDateInTimezone, getDateTimePartsInTimezone, isSameCalendarDateInTimezone } from '@core/utils/timezone-date.utility';
 
 import { Searchable } from '@shared/interfaces/searchable.interface';
 import { JiraWorkLog } from '@shared/models/jira-work-log.model';
@@ -117,17 +118,13 @@ export class Task extends Base implements Searchable {
     }
   }
 
-  public calcTimeLoggedForDate(date: Date): number {
-    const [dateYear, dateMonth, dateDate] = getDateParts(date);
+  public calcTimeLoggedForDate(date: Date, timezone?: string): number {
+    const [rangeStart, rangeEnd] = this.getDayRange(date, timezone);
 
-    const timeLogs: TimeLog[] = (this.timeLogs ?? []).filter(
-      (timeLog: TimeLog) =>
-        timeLog.startTime.getFullYear() === dateYear &&
-        timeLog.startTime.getMonth() === dateMonth &&
-        timeLog.startTime.getDate() === dateDate,
-    ) ?? [];
-
-    return this.calcTimeLogged(timeLogs);
+    return (this.timeLogs ?? []).reduce(
+      (totalSeconds: number, timeLog: TimeLog) => totalSeconds + this.getTimeLogOverlapSeconds(timeLog, rangeStart, rangeEnd),
+      0,
+    );
   }
 
   public calcTimeLogged(timeLogs?: TimeLog[]): number {
@@ -159,12 +156,14 @@ export class Task extends Base implements Searchable {
       ) ?? 0;
   }
 
-  public calcTimeSynced(startDate: Date): number {
+  public calcTimeSynced(startDate: Date, timezone?: string): number {
     const date: Date = new Date(startDate.getTime());
     date.setHours(0, 0, 0, 0);
 
     const jiraWorkLog: JiraWorkLog | undefined = this._jiraWorkLogs.find(
-      (_jiraWorkLog: JiraWorkLog) => _jiraWorkLog.startTime.getTime() === date.getTime(),
+      (_jiraWorkLog: JiraWorkLog) => timezone ?
+        isSameCalendarDateInTimezone(_jiraWorkLog.startTime, date, timezone) :
+        _jiraWorkLog.startTime.getTime() === date.getTime(),
     );
 
     if (!jiraWorkLog) {
@@ -172,5 +171,37 @@ export class Task extends Base implements Searchable {
     }
 
     return jiraWorkLog.timeSpentSeconds;
+  }
+
+  private getDayRange(date: Date, timezone?: string): [Date, Date] {
+    if (timezone) {
+      const parts = getDateTimePartsInTimezone(date, timezone);
+      const dayStartWallClock = new Date(parts.year, parts.month - 1, parts.day, 0, 0, 0, 0);
+      const nextDayStartWallClock = new Date(parts.year, parts.month - 1, parts.day + 1, 0, 0, 0, 0);
+
+      return [
+        fromWallClockDateInTimezone(dayStartWallClock, timezone),
+        fromWallClockDateInTimezone(nextDayStartWallClock, timezone),
+      ];
+    }
+
+    const [year, month, day] = getDateParts(date);
+    const dayStart = new Date(year, month, day, 0, 0, 0, 0);
+    const nextDayStart = new Date(year, month, day + 1, 0, 0, 0, 0);
+
+    return [dayStart, nextDayStart];
+  }
+
+  private getTimeLogOverlapSeconds(timeLog: TimeLog, rangeStart: Date, rangeEnd: Date): number {
+    const timeLogStart = timeLog.startTime;
+    const timeLogEnd = timeLog.endTime ?? new Date();
+    const overlapStart = Math.max(timeLogStart.getTime(), rangeStart.getTime());
+    const overlapEnd = Math.min(timeLogEnd.getTime(), rangeEnd.getTime());
+
+    if (overlapEnd <= overlapStart) {
+      return 0;
+    }
+
+    return Math.ceil((overlapEnd - overlapStart) / 1000);
   }
 }

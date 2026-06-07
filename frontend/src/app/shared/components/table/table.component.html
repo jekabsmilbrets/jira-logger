@@ -23,7 +23,7 @@
                                 <span>{{ column.cell(row) | readableTime }}</span>
                             }
                             @case ('date') {
-                                <span>{{ column.cell(row) | date: 'yyyy-MM-dd' }}</span>
+                                <span>{{ formatDateValue(column.cell(row), 'yyyy-MM-dd') }}</span>
                             }
                             @default {
                                 <span>{{ column.cell(row) }}</span>

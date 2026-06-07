@@ -94,48 +94,9 @@ export class TasksViewComponent implements OnInit {
       .subscribe();
   }
 
-  protected onCreateTimeLog(
-    [task, timeLog]: [Task, TimeLog],
-  ): void {
-    this.timeLogsService.create(
-      task,
-      timeLog,
-    )
-      .pipe(
-        take(1),
-        switchMap(() => this.tasksService.list()),
-        take(1),
-      )
-      .subscribe();
-  }
-
-  protected onUpdateTimeLog(
-    [task, timeLog]: [Task, TimeLog],
-  ): void {
-    this.timeLogsService.update(
-      task,
-      timeLog,
-    )
-      .pipe(
-        take(1),
-        switchMap(() => this.tasksService.list()),
-        take(1),
-      )
-      .subscribe();
-  }
-
-  protected onRemoveTimeLog(
-    [task, timeLog]: [Task, TimeLog],
-  ): void {
-    this.timeLogsService.delete(
-      task,
-      timeLog,
-    )
-      .pipe(
-        take(1),
-        switchMap(() => this.tasksService.list()),
-        take(1),
-      )
+  protected onTimeLogsSaved(): void {
+    this.tasksService.list()
+      .pipe(take(1))
       .subscribe();
   }
 
