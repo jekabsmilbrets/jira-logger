@@ -1,13 +1,4 @@
 {
-    "doctrine/annotations": {
-        "version": "1.14",
-        "recipe": {
-            "repo": "github.com/symfony/recipes",
-            "branch": "main",
-            "version": "1.10",
-            "ref": "64d8583af5ea57b7afa4aba4b159907f3a148b05"
-        }
-    },
     "doctrine/deprecations": {
         "version": "1.1",
         "recipe": {
@@ -43,9 +34,6 @@
             "config/packages/doctrine_migrations.yaml",
             "migrations/.gitignore"
         ]
-    },
-    "evotodi/seed-bundle": {
-        "version": "7.1"
     },
     "friendsofphp/php-cs-fixer": {
         "version": "3.13",
@@ -195,6 +183,18 @@
             "version": "7.3",
             "ref": "56f87409c45ff6654b0bf07c5cc359aebf6016ab"
         }
+    },
+    "symfony/property-info": {
+        "version": "7.4",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "7.3",
+            "ref": "dae70df71978ae9226ae915ffd5fad817f5ca1f7"
+        },
+        "files": [
+            "config/packages/property_info.yaml"
+        ]
     },
     "symfony/routing": {
         "version": "6.2",

@@ -6,7 +6,8 @@
     <php>
         <server name="APP_ENV" value="test" force="true"/>
         <server name="KERNEL_CLASS" value="App\Kernel"/>
-        <server name="APP_TIMEZONE" value="Europe/Riga"/>
+        <server name="APP_INTERNAL_TIMEZONE" value="UTC"/>
+        <server name="APP_DEFAULT_USER_TIMEZONE" value="Europe/Riga"/>
         <server name="DATABASE_URL" value="sqlite:///%kernel.project_dir%/var/data_test.db"/>
         <server name="API_AUTH_USERNAME" value="test-api-user"/>
         <server name="API_AUTH_PASSWORD" value="test-api-password"/>
