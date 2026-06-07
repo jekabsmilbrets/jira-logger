@@ -7,12 +7,12 @@
 
         @if (settings()) {
             <mat-card-content>
-                <mat-slide-toggle formControlName="jira.enabled">Enabled</mat-slide-toggle>
+                <mat-slide-toggle formControlName="jira-enabled">Enabled</mat-slide-toggle>
 
                 <mat-form-field>
                     <mat-label>Jira Host</mat-label>
 
-                    <input formControlName="jira.host"
+                    <input formControlName="jira-host"
                            matInput/>
 
                     <mat-error>Host is required.</mat-error>
@@ -23,7 +23,7 @@
 
                     <input [type]="hidePersonalAccessToken ? 'password' : 'text'"
                            autoComplete="off"
-                           formControlName="jira.personal-access-token"
+                           formControlName="jira-personal-access-token"
                            matInput/>
 
                     <mat-error>Token is required.</mat-error>

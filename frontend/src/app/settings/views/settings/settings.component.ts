@@ -9,14 +9,16 @@ import { ReportModeEnum } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 import { JiraApiConfiguratorComponent } from '@settings/components/jira-api-configurator/jira-api-configurator.component';
 import { ReportConfiguratorComponent } from '@settings/components/report-configurator/report-configurator.component';
+import { UserSettingsConfiguratorComponent } from '@settings/components/user-settings-configurator/user-settings-configurator.component';
 
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
+import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 
 import { ReportSettings } from '@settings/interfaces/report-settings.interface';
 
 import { Tag } from '@shared/models/tag.model';
 
-import { combineLatest, forkJoin, map, Observable, shareReplay, take } from 'rxjs';
+import { combineLatest, forkJoin, map, Observable, shareReplay, switchMap, take } from 'rxjs';
 
 @Component({
   selector: 'settings-view',
@@ -25,6 +27,7 @@ import { combineLatest, forkJoin, map, Observable, shareReplay, take } from 'rxj
   standalone: true,
   imports: [
     JiraApiConfiguratorComponent,
+    UserSettingsConfiguratorComponent,
     ReportConfiguratorComponent,
     AsyncPipe,
   ],
@@ -35,6 +38,7 @@ export class SettingsComponent {
   protected isLoading$: Observable<boolean>;
   protected settings$: Observable<Setting[]>;
   protected jiraApiSettings$: Observable<Setting[]>;
+  protected jiraUserSettings$: Observable<Setting[]>;
   protected reportSettings$: Observable<ReportSettings>;
 
   private readonly settingsService: SettingsService = inject(SettingsService);
@@ -48,6 +52,14 @@ export class SettingsComponent {
         (settings: Setting[]) => settings.filter(
           (setting: Setting) => Object.values(JiraApiSettings)
             .includes(setting.name as JiraApiSettings),
+        ),
+      ),
+    );
+    this.jiraUserSettings$ = this.settings$.pipe(
+      map(
+        (settings: Setting[]) => settings.filter(
+          (setting: Setting) => Object.values(JiraUserSettings)
+            .includes(setting.name as JiraUserSettings),
         ),
       ),
     );
@@ -130,10 +142,14 @@ export class SettingsComponent {
   ): void {
     forkJoin(
       changedSettings.map(
-        (setting: Setting) => this.settingsService.update(setting),
+        (setting: Setting) => this.settingsService.update(setting, true),
       ),
     )
-      .pipe(take(1))
+      .pipe(
+        take(1),
+        switchMap(() => this.settingsService.list()),
+        take(1),
+      )
       .subscribe();
   }
 }

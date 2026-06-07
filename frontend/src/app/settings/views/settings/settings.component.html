@@ -14,4 +14,8 @@
     <settings-jira-api-configurator (settingsChange)="onSettingsChange($event)"
                                     [disabled]="isLoading$ | async"
                                     [settings]="(jiraApiSettings$ | async) ?? []"/>
+
+    <settings-timezone-configurator (settingsChange)="onSettingsChange($event)"
+                                    [disabled]="isLoading$ | async"
+                                    [settings]="(jiraUserSettings$ | async) ?? []"/>
 </div>

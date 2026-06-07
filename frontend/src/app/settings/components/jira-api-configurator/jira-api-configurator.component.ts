@@ -9,7 +9,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { Setting } from '@core/models/setting.model';
 
-import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
+import { JiraApiSettings, JiraApiSettingSlugs } from '@settings/enums/jira-api-settings.enum';
 import { JiraApiFormGroupData } from '@settings/interfaces/jira-api-form-group-data.interface';
 import { JiraApiFormGroup } from '@settings/interfaces/jira-api-form-group.interface';
 
@@ -34,9 +34,9 @@ export class JiraApiConfiguratorComponent implements OnInit {
   protected readonly settingsChange: OutputEmitterRef<Setting[]> = output<Setting[]>();
 
   protected formGroup: FormGroup<JiraApiFormGroup> = new FormGroup<JiraApiFormGroup>({
-    [JiraApiSettings.enabled]: new FormControl(false, Validators.required),
-    [JiraApiSettings.host]: new FormControl('', Validators.required),
-    [JiraApiSettings.personalAccessToken]: new FormControl(''),
+    [JiraApiSettingSlugs.enabled]: new FormControl(false, Validators.required),
+    [JiraApiSettingSlugs.host]: new FormControl('', Validators.required),
+    [JiraApiSettingSlugs.personalAccessToken]: new FormControl(''),
   });
   protected hidePersonalAccessToken: boolean = true;
   protected hasStoredPersonalAccessToken: boolean = false;
@@ -54,7 +54,7 @@ export class JiraApiConfiguratorComponent implements OnInit {
 
   public ngOnInit(): void {
     this.patchFormData();
-    this.formGroup.controls[JiraApiSettings.enabled].valueChanges.subscribe(() => this.updateTokenValidator());
+    this.formGroup.controls[JiraApiSettingSlugs.enabled].valueChanges.subscribe(() => this.updateTokenValidator());
   }
 
   protected onCancel(): void {
@@ -83,7 +83,7 @@ export class JiraApiConfiguratorComponent implements OnInit {
             }
 
             if (!value.trim()) {
-              if (this.formGroup.controls[JiraApiSettings.enabled].value === false && this.hasStoredPersonalAccessToken) {
+              if (this.formGroup.controls[JiraApiSettingSlugs.enabled].value === false && this.hasStoredPersonalAccessToken) {
                 changedSettings.push(
                   new Setting({
                     ...originalSetting,
@@ -95,16 +95,16 @@ export class JiraApiConfiguratorComponent implements OnInit {
             }
           }
 
-	          changedSettings.push(
-	            new Setting({
-	              ...originalSetting,
-	              value: typeof value === 'boolean' ?
-	                String(value) :
-	                value ?? '',
-	            }),
-	          );
-	        }
-	      }
+          changedSettings.push(
+            new Setting({
+              ...originalSetting,
+              value: typeof value === 'boolean' ?
+                String(value) :
+                value ?? '',
+            }),
+          );
+        }
+      }
     }
 
     if (changedSettings.length > 0) {
@@ -115,19 +115,19 @@ export class JiraApiConfiguratorComponent implements OnInit {
   private patchFormData(): void {
     this.hasStoredPersonalAccessToken = !!this.getSettingValue(JiraApiSettings.personalAccessToken, '');
     const newFormData: Record<string, string | boolean> = {
-      [`${ JiraApiSettings.enabled }`]: this.getSettingValue(JiraApiSettings.enabled, false),
-      [`${ JiraApiSettings.host }`]: this.getSettingValue(JiraApiSettings.host, ''),
-      [`${ JiraApiSettings.personalAccessToken }`]: '',
+      [`${ JiraApiSettingSlugs.enabled }`]: this.getSettingValue(JiraApiSettings.enabled, false),
+      [`${ JiraApiSettingSlugs.host }`]: this.getSettingValue(JiraApiSettings.host, ''),
+      [`${ JiraApiSettingSlugs.personalAccessToken }`]: '',
     };
 
     this.formGroup.patchValue(newFormData);
-    this.formGroup.controls[JiraApiSettings.personalAccessToken].markAsPristine();
+    this.formGroup.controls[JiraApiSettingSlugs.personalAccessToken].markAsPristine();
     this.updateTokenValidator();
   }
 
   private updateTokenValidator(): void {
-    const tokenControl: FormControl<string | null> = this.formGroup.controls[JiraApiSettings.personalAccessToken];
-    const jiraEnabled: boolean = !!this.formGroup.controls[JiraApiSettings.enabled].value;
+    const tokenControl: FormControl<string | null> = this.formGroup.controls[JiraApiSettingSlugs.personalAccessToken];
+    const jiraEnabled: boolean = !!this.formGroup.controls[JiraApiSettingSlugs.enabled].value;
     const requireToken: boolean = jiraEnabled && !this.hasStoredPersonalAccessToken;
 
     tokenControl.clearValidators();
