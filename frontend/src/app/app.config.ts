@@ -1,6 +1,5 @@
-import { APP_BASE_HREF, registerLocaleData } from '@angular/common';
+import { APP_BASE_HREF } from '@angular/common';
 import { provideHttpClient, withFetch } from '@angular/common/http';
-import localeLv from '@angular/common/locales/lv';
 import {
   ApplicationConfig,
   inject,
@@ -14,6 +13,8 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { provideRouter } from '@angular/router';
 import { provideServiceWorker } from '@angular/service-worker';
 import { runtimeConfigInitializer } from '@core/config/runtime-config.initializer';
+import { LocaleService } from '@core/services/locale.service';
+import { MaterialLocaleBridgeService } from '@core/services/material-locale-bridge.service';
 import { MonitorService } from '@core/services/monitor.service';
 import { SettingsService } from '@core/services/settings.service';
 import { StorageService } from '@core/services/storage.service';
@@ -24,9 +25,8 @@ import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 import { TaskImportService } from '@tasks/services/task-import.service';
+import { environment } from 'environments/environment';
 import { routes } from './app.routes';
-
-registerLocaleData(localeLv);
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -39,18 +39,6 @@ export const appConfig: ApplicationConfig = {
     }),
     provideHttpClient(withFetch()),
     provideAppInitializer(() => runtimeConfigInitializer()),
-    {
-      provide: LOCALE_ID,
-      useValue: 'lv-LV',
-    },
-    {
-      provide: APP_BASE_HREF,
-      useValue: '/',
-    },
-    {
-      provide: Window,
-      useValue: window,
-    },
     provideAppInitializer(() => {
       const initializerFn: () => Promise<void> = loadableServicesInitializerFactory(
         inject(TagsService),
@@ -71,6 +59,21 @@ export const appConfig: ApplicationConfig = {
 
       return initializerFn();
     }),
+    provideAppInitializer(() => {
+      inject(MaterialLocaleBridgeService);
+    }),
+    {
+      provide: LOCALE_ID,
+      useValue: environment['appLocale'],
+    },
+    {
+      provide: APP_BASE_HREF,
+      useValue: '/',
+    },
+    {
+      provide: Window,
+      useValue: window,
+    },
     provideNativeDateAdapter(),
   ],
 };
