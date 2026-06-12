@@ -30,8 +30,6 @@ services:
       - assetsData:/assets:rw
     command: ["/usr/local/bin/assets-init.sh"]
     restart: "no"
-    profiles:
-      - assets
     labels:
       - "traefik.enable=false"
 
@@ -106,6 +104,8 @@ services:
       context: ./../
       dockerfile: ./.docker/nginx/Dockerfile
     depends_on:
+      assets-init:
+        condition: service_completed_successfully
       php-fpm:
         condition: service_healthy
       db:
@@ -146,10 +146,16 @@ services:
       - APP_ENV=${APP_ENV:-prod}
       - APP_SECRET=${APP_SECRET:?APP_SECRET is required}
       - DATABASE_URL=${DATABASE_URL:?DATABASE_URL is required}
+      - APP_INTERNAL_TIMEZONE=${APP_INTERNAL_TIMEZONE:?APP_INTERNAL_TIMEZONE is required}
+      - APP_DEFAULT_USER_TIMEZONE=${APP_DEFAULT_USER_TIMEZONE:?APP_DEFAULT_USER_TIMEZONE is required}
+      - CORS_ALLOW_ORIGIN=${CORS_ALLOW_ORIGIN:?CORS_ALLOW_ORIGIN is required}
+      - API_AUTH_USERNAME=${API_AUTH_USERNAME:?API_AUTH_USERNAME is required}
+      - API_AUTH_PASSWORD=${API_AUTH_PASSWORD:?API_AUTH_PASSWORD is required}
+      - JIRA_PERSONAL_ACCESS_TOKEN=${JIRA_PERSONAL_ACCESS_TOKEN-}
     command:
       - sh
       - -c
-      - php bin/console doctrine:database:create --no-interaction || true; php bin/console doctrine:migrations:migrate --no-interaction
+      - php bin/console doctrine:database:create --if-not-exists --no-interaction; php bin/console doctrine:migrations:migrate --no-interaction
     restart: "no"
     profiles:
       - release

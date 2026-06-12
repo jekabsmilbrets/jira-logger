@@ -15,7 +15,6 @@ Docker compose manager.
 Usage:
   manager.sh -a build
   manager.sh -a start -b
-  manager.sh -a start-with-init -b
   manager.sh -a start -b
   manager.sh -a start -b -t off
   manager.sh -a down
@@ -206,8 +205,8 @@ get_assets_marker() {
 run_assets_init() {
   local assets_version="$1"
   echo "Initializing shared assets volume (${ASSETS_VOLUME_NAME}) with version: ${assets_version}"
-  run_with_log "log-assets-init.log" compose_cmd --profile assets build assets-init
-  run_with_log "log-assets-init.log" compose_cmd --profile assets run --rm -e "ASSETS_VERSION=${assets_version}" assets-init
+  run_with_log "log-assets-init.log" compose_cmd build assets-init
+  run_with_log "log-assets-init.log" compose_cmd run --rm -e "ASSETS_VERSION=${assets_version}" assets-init
 }
 
 preflight_assets_marker_for_start() {
@@ -273,7 +272,6 @@ seed_db() {
 
 run_post_build_sequence() {
   prepare_db
-  migrate_db
   seed_db
 }
 
@@ -296,6 +294,7 @@ case "$ACTION" in
     ;;
   start-with-init)
     echo "Running action $ACTION"
+    echo "Action 'start-with-init' is now an alias for 'start'."
     prepare_db
     generate_certificates
     rotate_host_logs

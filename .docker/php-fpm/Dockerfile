@@ -15,9 +15,14 @@ RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoload
 
 FROM php:8.5-fpm-bookworm
 
+ARG APCU_VERSION=5.1.28
+
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
+        $PHPIZE_DEPS \
+        ca-certificates \
+        curl \
         libicu-dev \
         libzip-dev \
         zlib1g-dev \
@@ -31,14 +36,18 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*
 
 RUN set -eux; \
-    pecl install apcu; \
-    docker-php-ext-enable apcu; \
+    curl -fsSL "https://github.com/krakjoe/apcu/archive/refs/tags/v${APCU_VERSION}.tar.gz" -o /tmp/apcu.tar.gz; \
+    mkdir -p /usr/src/php/ext/apcu; \
+    tar -xzf /tmp/apcu.tar.gz --strip-components=1 -C /usr/src/php/ext/apcu; \
+    rm -f /tmp/apcu.tar.gz; \
     docker-php-ext-configure intl; \
     docker-php-ext-install -j"$(nproc)" \
+        apcu \
         intl \
         zip \
         pdo_pgsql \
-        pgsql
+        pgsql; \
+    docker-php-ext-enable apcu
 
 WORKDIR /var/www
 

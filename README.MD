@@ -10,12 +10,13 @@ To run in docker mode you need to have Docker and Docker Compose installed.
 ## Setup
 
 1) Prepare `./.docker/.env` from `./.docker/.env.example` (source of truth template).
-2) Run: `sh manager.sh -a build`
-3) Start containers: `sh manager.sh -a start`
+2) Start containers: `sh manager.sh -a start`
 
 Notes:
 - `manager.sh` now runs with `./.docker/docker-compose.yml` and `./.docker/docker-compose.dev.yml` by default.
+- On a fresh checkout, `manager.sh -a start` will trigger the required build flow automatically if the shared frontend assets volume is missing.
 - Backend env variables are loaded from `./.docker/.env` via `docker-compose.yml`.
+- Plain Docker Compose startup is self-contained for frontend assets now: `docker compose up --build` brings up `assets-init`, populates `assetsData`, and only then starts nginx.
 
 ## Basic Usage
 
@@ -28,7 +29,7 @@ Notes:
    To disable Traefik:
    `sh manager.sh -a start -b -t off`
 4) Runtime containers are copy-only (no backend/frontend bind mounts), so source code changes require image rebuild + restart (`sh manager.sh -a build` then `sh manager.sh -a start`), or `sh manager.sh -a rebuild`.
-5) To fully **rebuild** the stack (down + build + prepare-db):
+5) To fully **rebuild** the stack (down + build, including DB prepare and seed):
    `sh manager.sh -a rebuild`
 6) To **remove all database data** (dangerous, deletes all data!):
    `sh manager.sh -a db-remove`
@@ -45,7 +46,8 @@ Notes:
     - `docker run --rm httpd:2.4-alpine htpasswd -nbB admin 'change-me'`
   - add host mapping in `/etc/hosts` for local setup (example): `127.0.0.1 traefik.jira-logger.io`
   - open: `https://traefik.jira-logger.io/dashboard/`
-- Frontend assets are stored in a shared Docker volume populated by `assets-init` during `build`/`rebuild`.
+- Frontend assets are stored in a shared Docker volume populated by `assets-init`, which is part of the default stack startup.
+- `assets-init` is the only container that writes `runtime-config.json` into the shared frontend assets volume.
 - On `start`, assets marker preflight rules are enforced:
   - Missing marker: interactive mode prompts to run `build`; non-interactive mode runs `build` automatically.
   - Marker mismatch: interactive mode prompts to run `rebuild`; non-interactive mode fails fast with a rebuild command.
