@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 
+import { BehaviorSubject } from 'rxjs';
+
 import { Setting } from '@core/models/setting.model';
 import { SettingsService } from '@core/services/settings.service';
-import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 
-import { BehaviorSubject } from 'rxjs';
+import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 
 import { LocaleService } from './locale.service';
 

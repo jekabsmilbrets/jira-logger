@@ -5,17 +5,17 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
-import { ReportService } from '@report/services/report.service';
+import { map, Observable } from 'rxjs';
+
 import { ReportDateSelectorComponent } from '@shared/components/report-menu/report-date-selector/report-date-selector.component';
 import { ReportHideUnreportedTasksComponent } from '@shared/components/report-menu/report-hide-unreported-tasks/report-hide-unreported-tasks.component';
 import { ReportModeSwitcherComponent } from '@shared/components/report-menu/report-mode-switcher/report-mode-switcher.component';
 import { ReportShowWeekendsComponent } from '@shared/components/report-menu/report-show-weekends/report-show-weekends.component';
 import { ReportTagFilterComponent } from '@shared/components/report-menu/report-tag-filter/report-tag-filter.component';
-
 import { Tag } from '@shared/models/tag.model';
 
-import { map, Observable } from 'rxjs';
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportService } from '@report/services/report.service';
 
 @Component({
   selector: 'report-menu',

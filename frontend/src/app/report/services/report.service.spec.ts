@@ -2,16 +2,18 @@ import { registerLocaleData } from '@angular/common';
 import localeLv from '@angular/common/locales/lv';
 import { TestBed } from '@angular/core/testing';
 
+import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
+
 import { StorageService } from '@core/services/storage.service';
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
-import { ReportService } from '@report/services/report.service';
+
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 
-import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportService } from '@report/services/report.service';
 
 const waitForDebounce = async () => {
   vi.advanceTimersByTime(260);

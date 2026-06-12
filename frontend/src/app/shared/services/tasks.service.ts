@@ -1,6 +1,9 @@
 import { formatDate } from '@angular/common';
 import { HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+
+import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { LocaleService } from '@core/services/locale.service';
@@ -17,8 +20,6 @@ import { ApiRequestService } from '@shared/services/api-request.service';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
 import { ApiRequestBody } from '@shared/types/api-request-body.type';
 import { QueryParams } from '@shared/types/query-params.type';
-
-import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',

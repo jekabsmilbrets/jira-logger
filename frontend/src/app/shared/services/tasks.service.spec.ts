@@ -2,11 +2,13 @@ import { registerLocaleData } from '@angular/common';
 import localeLv from '@angular/common/locales/lv';
 import { TestBed } from '@angular/core/testing';
 
+import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
+
 import { LoaderStateService } from '@core/services/loader-state.service';
+
 import { Task } from '@shared/models/task.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
-import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
 
 import { TasksService } from './tasks.service';
 

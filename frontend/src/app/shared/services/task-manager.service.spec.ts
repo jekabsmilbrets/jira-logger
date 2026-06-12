@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 
+import { BehaviorSubject, Subject } from 'rxjs';
+import { vi } from 'vitest';
+
 import { Task } from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
-import { BehaviorSubject, Subject } from 'rxjs';
-import { vi } from 'vitest';
 
 import { TaskManagerService } from './task-manager.service';
 

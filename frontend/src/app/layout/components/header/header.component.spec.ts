@@ -3,9 +3,10 @@ import { MatSidenav } from '@angular/material/sidenav';
 import { By } from '@angular/platform-browser';
 import { NavigationEnd, provideRouter } from '@angular/router';
 
-import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { vi } from 'vitest';
+
+import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
 import { HeaderComponent } from './header.component';
 

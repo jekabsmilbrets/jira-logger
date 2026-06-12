@@ -44,6 +44,7 @@
     "angular-eslint": "21.4.0",
     "del-cli": "^6.0.0",
     "eslint": "^10.3.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^29.1.1",
     "typescript": "~5.9.3",

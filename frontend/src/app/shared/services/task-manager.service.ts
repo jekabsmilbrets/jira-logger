@@ -1,12 +1,13 @@
 import { inject, Injectable } from '@angular/core';
+
+import { BehaviorSubject, catchError, filter, interval, map, Observable, of, switchMap, take, tap, withLatestFrom } from 'rxjs';
+
 import { TimezoneService } from '@core/services/timezone.service';
 import { toWallClockDateInTimezone } from '@core/utils/timezone-date.utility';
 
 import { Task } from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
-
-import { BehaviorSubject, catchError, filter, interval, map, Observable, of, switchMap, take, tap, withLatestFrom } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',

@@ -8,7 +8,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Column } from '../../interfaces/column.interface';
 import { AreYouSureService } from '../../services/are-you-sure.service';
-
 import { TableComponent } from './table.component';
 
 describe('Shared Components table.component', () => {

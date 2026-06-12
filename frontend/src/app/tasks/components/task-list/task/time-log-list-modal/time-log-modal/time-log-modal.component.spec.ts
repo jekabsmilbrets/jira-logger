@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
+
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import { TimezoneService } from '@core/services/timezone.service';
 
 import { TimeLog } from '@shared/models/time-log.model';
-import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TimeLogModalComponent } from './time-log-modal.component';
 

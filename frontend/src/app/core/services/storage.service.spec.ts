@@ -1,8 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 
+import { firstValueFrom } from 'rxjs';
+
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { storageIdbGateway } from '@core/services/storage-idb.gateway';
-import { firstValueFrom } from 'rxjs';
 
 import { StorageService } from './storage.service';
 

@@ -1,6 +1,6 @@
-import 'fake-indexeddb/auto';
-
 import { storageIdbGateway } from './storage-idb.gateway';
+
+import 'fake-indexeddb/auto';
 
 describe('Core Services storage-idb.gateway', () => {
   it('creates a store handle', () => {

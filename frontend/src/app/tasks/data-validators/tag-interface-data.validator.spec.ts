@@ -1,5 +1,6 @@
-import { Tag } from '@shared/models/tag.model';
 import { describe, expect, it } from 'vitest';
+
+import { Tag } from '@shared/models/tag.model';
 
 import { validateTagInterfaceData, validateTagsInterfaceData } from './tag-interface-data.validator';
 

@@ -1,11 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { convertToParamMap, Router } from '@angular/router';
 
+import { firstValueFrom } from 'rxjs';
+
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
 import { ReportResolver } from '@report/resolvers/report.resolver';
 import { ReportService } from '@report/services/report.service';
-
-import { firstValueFrom } from 'rxjs';
 
 class ReportServiceStub {
   public reportMode: ReportModeEnum = ReportModeEnum.total;

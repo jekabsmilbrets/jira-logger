@@ -4,17 +4,19 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { By } from '@angular/platform-browser';
 
+import { BehaviorSubject, of, throwError } from 'rxjs';
+
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
-import { ReportService } from '@report/services/report.service';
 import { TableComponent } from '@shared/components/table/table.component';
 import { Searchable } from '@shared/interfaces/searchable.interface';
 import { Task } from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
-import { BehaviorSubject, of, throwError } from 'rxjs';
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportService } from '@report/services/report.service';
+
 import { ReportViewComponent } from './report-view.component';
 
 class ReportServiceStub {

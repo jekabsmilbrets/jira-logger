@@ -1,12 +1,12 @@
 import { inject, Injectable } from '@angular/core';
 import { AbstractControl, AsyncValidatorFn, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 
+import { catchError, lastValueFrom, of, take } from 'rxjs';
+
 import { Tag } from '@shared/models/tag.model';
 import { TasksService } from '@shared/services/tasks.service';
 
 import { CreateTaskFromGroupInterface } from '@tasks/interfaces/create-task-from-group.interface';
-
-import { catchError, lastValueFrom, of, take } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',

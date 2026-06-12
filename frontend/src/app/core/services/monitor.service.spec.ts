@@ -2,8 +2,10 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
-import { LoaderStateService } from '@core/services/loader-state.service';
 import { firstValueFrom } from 'rxjs';
+
+import { LoaderStateService } from '@core/services/loader-state.service';
+
 import { MonitorService } from './monitor.service';
 
 describe('Core Services monitor.service', () => {

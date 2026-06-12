@@ -1,13 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Validators } from '@angular/forms';
-
 import { By } from '@angular/platform-browser';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+
+import { vi } from 'vitest';
 
 import { Setting } from '@core/models/setting.model';
 
 import { JiraApiSettings, JiraApiSettingSlugs } from '@settings/enums/jira-api-settings.enum';
-import { vi } from 'vitest';
 
 import { JiraApiConfiguratorComponent } from './jira-api-configurator.component';
 

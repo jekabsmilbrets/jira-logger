@@ -1,17 +1,19 @@
 import { TestBed } from '@angular/core/testing';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
-import { Tag } from '@shared/models/tag.model';
 
+import { of, throwError } from 'rxjs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
+
 import { CreateTaskFromGroupInterface } from '@tasks/interfaces/create-task-from-group.interface';
 import { TaskCreateService } from '@tasks/services/task-create.service';
 import { TaskImportService } from '@tasks/services/task-import.service';
 import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
-import { of, throwError } from 'rxjs';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TasksMenuComponent } from './tasks-menu.component';
 

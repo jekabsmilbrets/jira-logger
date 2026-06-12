@@ -1,5 +1,6 @@
 import { ApiTag } from '@shared/interfaces/api/api-tag.interface';
 import { Tag } from '@shared/models/tag.model';
+
 import { TagInterfaceData, TagsInterfaceData } from '@tasks/interfaces/imported-task-data.interface';
 
 export const validateTagInterfaceData: (tagInterfaceData: TagInterfaceData, tags: Tag[]) => (ApiTag | undefined) = (

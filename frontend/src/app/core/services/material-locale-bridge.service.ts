@@ -1,6 +1,7 @@
 import { effect, inject, Injectable } from '@angular/core';
 import { DateAdapter } from '@angular/material/core';
-import { environment } from 'environments/environment';
+
+import { environment } from '@environments/environment';
 
 import { LocaleService } from './locale.service';
 

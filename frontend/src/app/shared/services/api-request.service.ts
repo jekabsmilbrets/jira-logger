@@ -1,9 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { JsonApi } from '@core/interfaces/json-api.interface';
-import { ApiRequestBody } from '@shared/types/api-request-body.type';
-import { environment } from 'environments/environment';
+
 import { map, Observable } from 'rxjs';
+
+import { environment } from '@environments/environment';
+
+import { JsonApi } from '@core/interfaces/json-api.interface';
+
+import { ApiRequestBody } from '@shared/types/api-request-body.type';
 
 @Injectable({
   providedIn: 'root',

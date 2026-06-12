@@ -3,11 +3,14 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 
+import { BehaviorSubject } from 'rxjs';
+
 import { LoaderStateService } from '@core/services/loader-state.service';
+
+import { TaskManagerService } from '@shared/services/task-manager.service';
+
 import { HeaderComponent } from '@layout/components/header/header.component';
 import { SidenavComponent } from '@layout/components/sidenav/sidenav.component';
-import { TaskManagerService } from '@shared/services/task-manager.service';
-import { BehaviorSubject } from 'rxjs';
 
 import { LayoutComponent } from './layout.component';
 

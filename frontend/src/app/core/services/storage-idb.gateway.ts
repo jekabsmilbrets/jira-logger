@@ -1,5 +1,6 @@
-import { StorageIdbGateway } from '@core/interfaces/storage-idb-gateway.interface';
 import { createStore, del, entries, get, set, setMany, UseStore } from 'idb-keyval';
+
+import { StorageIdbGateway } from '@core/interfaces/storage-idb-gateway.interface';
 
 export const storageIdbGateway: StorageIdbGateway = {
   createStore: (dbName: string, storeName: string): UseStore => createStore(dbName, storeName),

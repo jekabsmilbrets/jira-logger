@@ -1,8 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
 import { describe, expect, it, vi } from 'vitest';
+
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
 
 import { ReportDateSelectorComponent } from './report-date-selector.component';
 

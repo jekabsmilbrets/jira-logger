@@ -8,9 +8,11 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatTimepickerModule } from '@angular/material/timepicker';
+
 import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
 import { fromWallClockDateInTimezone, toWallClockDateInTimezone } from '@core/utils/timezone-date.utility';
+
 import { TimeLog } from '@shared/models/time-log.model';
 
 import { TimeLogDialogDataInterface } from '@tasks/interfaces/time-log-dialog-data.interface';

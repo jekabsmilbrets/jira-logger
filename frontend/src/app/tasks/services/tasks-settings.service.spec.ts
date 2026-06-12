@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 
-import { Task } from '@shared/models/task.model';
-import { TasksSettingsDialogComponent } from '@tasks/components/tasks-menu/settings-dialog/tasks-settings-dialog.component';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
+
+import { Task } from '@shared/models/task.model';
+
+import { TasksSettingsDialogComponent } from '@tasks/components/tasks-menu/settings-dialog/tasks-settings-dialog.component';
 
 import { TasksSettingsService } from './tasks-settings.service';
 

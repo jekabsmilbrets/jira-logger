@@ -3,8 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
-import { ReportService } from '@report/services/report.service';
+import { BehaviorSubject, firstValueFrom } from 'rxjs';
+
 import { ReportDateSelectorComponent } from '@shared/components/report-menu/report-date-selector/report-date-selector.component';
 import { ReportHideUnreportedTasksComponent } from '@shared/components/report-menu/report-hide-unreported-tasks/report-hide-unreported-tasks.component';
 import { ReportModeSwitcherComponent } from '@shared/components/report-menu/report-mode-switcher/report-mode-switcher.component';
@@ -12,7 +12,8 @@ import { ReportShowWeekendsComponent } from '@shared/components/report-menu/repo
 import { ReportTagFilterComponent } from '@shared/components/report-menu/report-tag-filter/report-tag-filter.component';
 import { Tag } from '@shared/models/tag.model';
 
-import { BehaviorSubject, firstValueFrom } from 'rxjs';
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportService } from '@report/services/report.service';
 
 import { ReportMenuComponent } from './report-menu.component';
 

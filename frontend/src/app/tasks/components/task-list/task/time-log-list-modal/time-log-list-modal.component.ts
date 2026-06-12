@@ -5,10 +5,13 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
+
+import { concatMap, from, Observable, switchMap, take, tap, toArray } from 'rxjs';
+
 import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
-import { TableComponent } from '@shared/components/table/table.component';
 
+import { TableComponent } from '@shared/components/table/table.component';
 import { Column } from '@shared/interfaces/column.interface';
 import { Searchable } from '@shared/interfaces/searchable.interface';
 import { TimeLog } from '@shared/models/time-log.model';
@@ -19,8 +22,6 @@ import { TimeLogListDialogDataInterface } from '@tasks/interfaces/time-log-list-
 import { TimeLogModalResponseInterface } from '@tasks/interfaces/time-log-modal-response.interface';
 import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
 import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
-
-import { concatMap, from, Observable, switchMap, take, tap, toArray } from 'rxjs';
 
 interface SaveOperation {
   request$: Observable<TimeLog | void>;

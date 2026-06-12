@@ -1,12 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 
-import { Task } from '@shared/models/task.model';
-import { TimeLog } from '@shared/models/time-log.model';
-import { TimeLogListModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-list-modal.component';
-import { TimeLogModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-modal/time-log-modal.component';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
+
+import { Task } from '@shared/models/task.model';
+import { TimeLog } from '@shared/models/time-log.model';
+
+import { TimeLogListModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-list-modal.component';
+import { TimeLogModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-modal/time-log-modal.component';
 
 import { TimeLogEditService } from './time-log-edit.service';
 

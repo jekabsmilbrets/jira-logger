@@ -1,12 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { By } from '@angular/platform-browser';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+
+import { vi } from 'vitest';
 
 import { Setting } from '@core/models/setting.model';
 
 import { JiraUserSettings, JiraUserSettingSlugs } from '@settings/enums/jira-user-settings.enum';
-import { vi } from 'vitest';
 
 import { UserSettingsConfiguratorComponent } from './user-settings-configurator.component';
 

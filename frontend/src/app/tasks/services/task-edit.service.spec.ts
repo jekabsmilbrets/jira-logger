@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 
+import { BehaviorSubject, firstValueFrom } from 'rxjs';
+
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
-import { BehaviorSubject, firstValueFrom } from 'rxjs';
 
 import { TaskEditService } from './task-edit.service';
 

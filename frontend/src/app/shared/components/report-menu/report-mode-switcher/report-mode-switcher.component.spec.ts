@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+
 import { vi } from 'vitest';
+
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
 
 import { ReportModeSwitcherComponent } from './report-mode-switcher.component';
 

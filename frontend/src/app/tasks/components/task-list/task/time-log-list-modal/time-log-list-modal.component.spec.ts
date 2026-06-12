@@ -2,16 +2,19 @@ import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { By } from '@angular/platform-browser';
+
+import { of, throwError } from 'rxjs';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
-import { TableComponent } from '@shared/components/table/table.component';
 
+import { TableComponent } from '@shared/components/table/table.component';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TimeLogsService } from '@shared/services/time-logs.service';
+
 import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
-import { of, throwError } from 'rxjs';
-import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TimeLogListModalComponent } from './time-log-list-modal.component';
 

@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 
+import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
+
 import { LoaderStateService } from '@core/services/loader-state.service';
+
 import { Tag } from '@shared/models/tag.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
-import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
 
 import { TagsService } from './tags.service';
 

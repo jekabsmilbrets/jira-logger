@@ -6,6 +6,8 @@ import { MatSidenav } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 
+import { delay, filter, Observable, Subscription, switchMap, take, tap } from 'rxjs';
+
 import { DynamicMenuDirective } from '@core/directives/dynamic-menu.directive';
 import { DynamicMenuInterface } from '@core/interfaces/dynamic-menu.interface';
 import { DynamicMenu } from '@core/models/dynamic-menu';
@@ -13,8 +15,6 @@ import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
 import { Task } from '@shared/models/task.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
-
-import { delay, filter, Observable, Subscription, switchMap, take, tap } from 'rxjs';
 
 @Component({
   selector: 'layout-header',

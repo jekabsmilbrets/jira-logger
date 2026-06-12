@@ -1,7 +1,8 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { DateAdapter } from '@angular/material/core';
-import { environment } from 'environments/environment';
+
+import { environment } from '@environments/environment';
 
 import { LocaleService } from './locale.service';
 import { MaterialLocaleBridgeService } from './material-locale-bridge.service';

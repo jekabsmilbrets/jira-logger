@@ -1,15 +1,18 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
+import { BehaviorSubject, firstValueFrom, of } from 'rxjs';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
+
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
+
 import { TaskUpdateActionEnum } from '@tasks/enums/task-update-action.enum';
 import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
-import { BehaviorSubject, firstValueFrom, of } from 'rxjs';
-import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TasksViewComponent } from './tasks-view.component';
 

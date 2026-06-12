@@ -1,8 +1,9 @@
 // @ts-check
 
 import eslint from '@eslint/js';
-import tseslint from 'typescript-eslint';
 import angular from 'angular-eslint';
+import simpleImportSort from 'eslint-plugin-simple-import-sort';
+import tseslint from 'typescript-eslint';
 
 /**
  * ESLint Flat Config for Angular + TypeScript
@@ -15,6 +16,9 @@ export default tseslint.config(
   {
     files: ['**/*.ts'],
     processor: angular.processInlineTemplates,
+    plugins: {
+      'simple-import-sort': simpleImportSort,
+    },
     rules: {
       '@angular-eslint/directive-selector': [
         'warn',
@@ -33,9 +37,25 @@ export default tseslint.config(
         },
       ],
       '@angular-eslint/prefer-inject': 'off',
-      'import/no-unresolved': 'off',
-      'import/no-named-as-default': 'off',
       'no-underscore-dangle': 'off',
+      'simple-import-sort/imports': [
+        'error',
+        {
+          groups: [
+            ['^@angular/'],
+            ['^(?!@(?:angular|environments|core|shared|tasks|report|layout|settings)/)@?\\w'],
+            ['^@environments/'],
+            ['^@core/'],
+            ['^@shared/'],
+            ['^@tasks/'],
+            ['^@report/'],
+            ['^@layout/'],
+            ['^@settings/'],
+            ['^\\.'],
+          ],
+        },
+      ],
+      'simple-import-sort/exports': 'error',
       '@typescript-eslint/no-inferrable-types': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/typedef': [

@@ -1,11 +1,13 @@
 import { inject, Injectable } from '@angular/core';
 
+import { map } from 'rxjs';
+
+import { environment } from '@environments/environment';
+
 import { Setting } from '@core/models/setting.model';
 import { SettingsService } from '@core/services/settings.service';
-import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
-import { environment } from 'environments/environment';
 
-import { map } from 'rxjs';
+import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 
 @Injectable({
   providedIn: 'root',

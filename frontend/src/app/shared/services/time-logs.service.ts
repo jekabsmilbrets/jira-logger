@@ -1,6 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 
+import { BehaviorSubject, catchError, map, Observable, of, Subject, switchMap, tap, throwError } from 'rxjs';
+
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { waitForTurn } from '@core/utils/wait-for.utility';
@@ -14,8 +16,6 @@ import { TimeLog } from '@shared/models/time-log.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import { ApiRequestBody } from '@shared/types/api-request-body.type';
 import { toUnixMs } from '@shared/utils/to-unix-ms.util';
-
-import { BehaviorSubject, catchError, map, Observable, of, Subject, switchMap, tap, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',

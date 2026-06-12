@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+
 import { vi } from 'vitest';
 
 import { TasksSettingsToggleComponent } from './tasks-settings-toggle.component';

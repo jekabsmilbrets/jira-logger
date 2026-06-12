@@ -1,8 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 
-import { TasksService } from '@shared/services/tasks.service';
 import { firstValueFrom, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
+
+import { TasksService } from '@shared/services/tasks.service';
 
 import { TaskCreateService } from './task-create.service';
 

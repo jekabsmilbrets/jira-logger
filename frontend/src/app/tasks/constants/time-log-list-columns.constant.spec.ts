@@ -1,5 +1,6 @@
 import { registerLocaleData } from '@angular/common';
 import localeLv from '@angular/common/locales/lv';
+
 import { TimeLog } from '@shared/models/time-log.model';
 
 import { createTimeLogListColumns } from './time-log-list-columns.constant';

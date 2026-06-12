@@ -2,14 +2,16 @@ import { TestBed } from '@angular/core/testing';
 import { FormControl, FormGroup } from '@angular/forms';
 import { By } from '@angular/platform-browser';
 
+import { of } from 'rxjs';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
+
 import { TaskEditService } from '@tasks/services/task-edit.service';
 import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
-import { of } from 'rxjs';
-import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TaskComponent } from './task.component';
 

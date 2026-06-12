@@ -10,9 +10,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
+import { Observable, take } from 'rxjs';
+
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
-import { TimeLog } from '@shared/models/time-log.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
 
@@ -21,8 +22,6 @@ import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-moda
 import { TaskEditService } from '@tasks/services/task-edit.service';
 import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
 import { buildTaskUpdatePayload } from '@tasks/utils/task-payload-builder.util';
-
-import { Observable, take } from 'rxjs';
 
 @Component({
   selector: 'tasks-task',

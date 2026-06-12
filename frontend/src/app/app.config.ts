@@ -12,20 +12,24 @@ import {
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { provideRouter } from '@angular/router';
 import { provideServiceWorker } from '@angular/service-worker';
+
+import { environment } from '@environments/environment';
+
 import { runtimeConfigInitializer } from '@core/config/runtime-config.initializer';
-import { LocaleService } from '@core/services/locale.service';
 import { MaterialLocaleBridgeService } from '@core/services/material-locale-bridge.service';
 import { MonitorService } from '@core/services/monitor.service';
 import { SettingsService } from '@core/services/settings.service';
 import { StorageService } from '@core/services/storage.service';
+
 import { loadableServicesInitializerFactory } from '@shared/factories/loadable-services-initializer.factory';
 import { tagsPreloaderFactory } from '@shared/factories/tags-preloader.factory';
 import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
+
 import { TaskImportService } from '@tasks/services/task-import.service';
-import { environment } from 'environments/environment';
+
 import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {

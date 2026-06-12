@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { By } from '@angular/platform-browser';
+
 import { vi } from 'vitest';
 
 describe('Shared Components report-hide-unreported-tasks.component', () => {

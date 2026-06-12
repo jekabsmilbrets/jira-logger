@@ -2,10 +2,12 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
+import { firstValueFrom, of } from 'rxjs';
+
 import { Setting } from '@core/models/setting.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
+
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
-import { firstValueFrom, of } from 'rxjs';
 
 import { SettingsService } from './settings.service';
 

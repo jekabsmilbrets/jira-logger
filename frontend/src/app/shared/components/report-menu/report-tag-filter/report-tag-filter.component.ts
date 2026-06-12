@@ -1,13 +1,13 @@
 import { AsyncPipe } from '@angular/common';
-import { Component, inject, input, Input, InputSignal, output, OutputEmitterRef } from '@angular/core';
+import { Component, inject, Input, input, InputSignal, output, OutputEmitterRef } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 
+import { Observable } from 'rxjs';
+
 import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
-
-import { Observable } from 'rxjs';
 
 @Component({
   selector: 'shared-report-tag-filter',

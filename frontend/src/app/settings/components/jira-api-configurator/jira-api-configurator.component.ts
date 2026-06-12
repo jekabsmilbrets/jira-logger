@@ -10,8 +10,8 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { Setting } from '@core/models/setting.model';
 
 import { JiraApiSettings, JiraApiSettingSlugs } from '@settings/enums/jira-api-settings.enum';
-import { JiraApiFormGroupData } from '@settings/interfaces/jira-api-form-group-data.interface';
 import { JiraApiFormGroup } from '@settings/interfaces/jira-api-form-group.interface';
+import { JiraApiFormGroupData } from '@settings/interfaces/jira-api-form-group-data.interface';
 
 @Component({
   selector: 'settings-jira-api-configurator',

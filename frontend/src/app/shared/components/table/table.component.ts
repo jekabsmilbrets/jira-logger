@@ -18,6 +18,8 @@ import { MatSort, MatSortModule, SortDirection } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
+import { take } from 'rxjs';
+
 import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
 import { formatDateInTimezone } from '@core/utils/format-date-in-timezone.utility';
@@ -29,8 +31,6 @@ import { TimeLog } from '@shared/models/time-log.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
 import { getNestedObject } from '@shared/utils/get-nested-object.util';
-
-import { take } from 'rxjs';
 
 @Component({
   selector: 'shared-shared-table',

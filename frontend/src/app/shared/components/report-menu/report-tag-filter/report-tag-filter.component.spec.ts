@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { Tag } from '@shared/models/tag.model';
-import { TagsService } from '@shared/services/tags.service';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
+
+import { Tag } from '@shared/models/tag.model';
+import { TagsService } from '@shared/services/tags.service';
 
 import { ReportTagFilterComponent } from './report-tag-filter.component';
 

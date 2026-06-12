@@ -1,13 +1,15 @@
 import { registerLocaleData } from '@angular/common';
 import { inject, Injectable, Signal, signal } from '@angular/core';
 
+import { map } from 'rxjs';
+
+import { environment } from '@environments/environment';
+
 import { LocaleOption } from '@core/interfaces/locale-option.interface';
 import { Setting } from '@core/models/setting.model';
 import { SettingsService } from '@core/services/settings.service';
-import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
-import { environment } from 'environments/environment';
 
-import { map } from 'rxjs';
+import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 
 @Injectable({
   providedIn: 'root',

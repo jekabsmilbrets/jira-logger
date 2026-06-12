@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 
+import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
+
 import { LoaderStateService } from '@core/services/loader-state.service';
+
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
-import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
 
 import { TimeLogsService } from './time-logs.service';
 

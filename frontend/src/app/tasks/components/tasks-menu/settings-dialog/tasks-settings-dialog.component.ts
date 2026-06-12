@@ -9,6 +9,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
+import { take } from 'rxjs';
+
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
@@ -17,8 +19,6 @@ import { validateTasksInterfaceData } from '@tasks/data-validators/task-interfac
 import { TaskSettingsFormData } from '@tasks/interfaces/task-settings-form-data.interface';
 import { TaskSettingsFormGroup } from '@tasks/interfaces/task-settings-form-group.interface';
 import { TasksSettingsDialogDataInterface } from '@tasks/interfaces/tasks-settings-dialog-data.interface';
-
-import { take } from 'rxjs';
 
 @Component({
   selector: 'tasks-settings-dialog',

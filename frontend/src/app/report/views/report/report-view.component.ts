@@ -4,14 +4,12 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
+import { catchError, filter, map, Observable, of, switchMap, take } from 'rxjs';
+
 import { DynamicMenu } from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
-import { ReportMenuComponent } from '@report/components/report-menu/report-menu.component';
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
-import { ReportService } from '@report/services/report.service';
 import { TableComponent } from '@shared/components/table/table.component';
-
 import { Column } from '@shared/interfaces/column.interface';
 import { Searchable } from '@shared/interfaces/searchable.interface';
 import { Task } from '@shared/models/task.model';
@@ -19,7 +17,9 @@ import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
-import { catchError, filter, map, Observable, of, switchMap, take } from 'rxjs';
+import { ReportMenuComponent } from '@report/components/report-menu/report-menu.component';
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportService } from '@report/services/report.service';
 
 @Component({
   selector: 'report-view',

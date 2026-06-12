@@ -2,10 +2,11 @@ import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
 
-import { Tag } from '@shared/models/tag.model';
-import { TagsService } from '@shared/services/tags.service';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
+
+import { Tag } from '@shared/models/tag.model';
+import { TagsService } from '@shared/services/tags.service';
 
 import { TasksSettingsDialogComponent } from './tasks-settings-dialog.component';
 
