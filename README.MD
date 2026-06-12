@@ -37,6 +37,8 @@ Notes:
    `sh manager.sh -a db-dump`
 8) To run DB migrations using the `release` profile:
    `sh manager.sh -a migrate`
+9) To **upgrade an existing checkout** from the old stack layout to the new one:
+   `sh manager.sh -a upgrade`
 
 - Traefik is enabled by default. Use `-t off` to start without Traefik.
 - The `traefik` Docker network is created automatically by `manager.sh` when needed.
@@ -74,6 +76,20 @@ Notes:
 - Log rotation/cleanup runs on every `start`/`start-with-init`:
   - active `log-*.log` files are rotated to `./.logs/jira-logger/archive/log-*.YYYY-MM-DD_HHMMSS.log`
   - archived logs older than 7 days are deleted
+
+## Upgrading Older Checkouts
+
+If you are updating from an older checkout that still used `backend/.env` or bind-mounted frontend assets, run:
+
+`sh manager.sh -a upgrade`
+
+What `upgrade` does:
+- requires `./.docker/.env` to exist and treats it as the runtime config source of truth;
+- warns if `./backend/.env` is still present, because it is now legacy;
+- creates a timestamped pre-upgrade database backup such as `./db_dump.pre-upgrade.YYYY-MM-DD_HHMMSS.sql`;
+- stops the old stack, rebuilds images, refreshes shared assets, runs DB migrations, and starts the new stack;
+- does not run seed commands.
+- starts the upgraded stack in background by default; use `docker compose logs -f` or `sh manager.sh -a start` if you want attached logs afterward.
 
 After first start, a certificate will be generated at `.docker/nginx-selfsigned.crt`,
 which should be imported into your system's root certificates to allow SSL for API calls and Angular PWA.

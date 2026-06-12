@@ -7,6 +7,8 @@ ASSETS_VOLUME_NAME="${PROJECT_NAME}_assetsData"
 ASSETS_MARKER_PATH="/assets/.assets-version"
 HOST_LOG_DIR=".logs/${PROJECT_NAME}"
 HOST_LOG_ARCHIVE_DIR="${HOST_LOG_DIR}/archive"
+DOCKER_ENV_FILE="./.docker/.env"
+DOCKER_ENV_TEMPLATE="./.docker/.env.example"
 
 show_help() {
   cat <<EOF
@@ -24,9 +26,10 @@ Usage:
   manager.sh -a migrate
   manager.sh -a prepare-db
   manager.sh -a seed
+  manager.sh -a upgrade
 
 Options:
-  -a  Action [start|start-with-init|down|build|rebuild|db-remove|db-dump|migrate|prepare-db|seed]
+  -a  Action [start|start-with-init|down|build|rebuild|db-remove|db-dump|migrate|prepare-db|seed|upgrade]
   -b  Run docker containers in background
   -t  Traefik mode [on|off] (default: on)
   -h  Show help
@@ -112,6 +115,36 @@ run_with_log() {
 ensure_host_log_dir() {
   mkdir -p "${HOST_LOG_DIR}"
   mkdir -p "${HOST_LOG_ARCHIVE_DIR}"
+}
+
+ensure_docker_env_file() {
+  if [[ -f "${DOCKER_ENV_FILE}" ]]; then
+    return 0
+  fi
+
+  echo "Missing ${DOCKER_ENV_FILE}."
+  echo "Create it from ${DOCKER_ENV_TEMPLATE} and fill the required values before continuing."
+  exit 1
+}
+
+warn_legacy_backend_env() {
+  if [[ -s "./backend/.env" ]]; then
+    echo "Warning: ./backend/.env is legacy and is no longer used as the runtime config source."
+    echo "Use ${DOCKER_ENV_FILE} instead."
+  fi
+}
+
+append_compose_file_once() {
+  local file="$1"
+  local existing
+
+  for existing in "${COMPOSE_FILES[@]}"; do
+    if [[ "${existing}" == "${file}" ]]; then
+      return 0
+    fi
+  done
+
+  COMPOSE_FILES+=("${file}")
 }
 
 rotate_host_logs() {
@@ -209,6 +242,19 @@ run_assets_init() {
   run_with_log "log-assets-init.log" compose_cmd run --rm -e "ASSETS_VERSION=${assets_version}" assets-init
 }
 
+build_images() {
+  echo "Building docker images"
+  generate_certificates
+  ensure_host_log_dir
+  export COMPOSE_BAKE=true
+  compose_cmd build
+}
+
+build_runtime_artifacts() {
+  build_images
+  run_assets_init "$(get_expected_assets_version)"
+}
+
 preflight_assets_marker_for_start() {
   local expected marker
 
@@ -270,6 +316,98 @@ seed_db() {
   compose_cmd run --rm php-fpm php bin/console seed:tag
 }
 
+cleanup_compose_residuals() {
+  # Clean up profile/one-off containers that may remain after compose down.
+  docker ps -aq --filter "label=com.docker.compose.project=${PROJECT_NAME}" --filter "label=com.docker.compose.service=migrate" | xargs -r docker rm -f >/dev/null 2>&1 || true
+  docker ps -aq --filter "label=com.docker.compose.project=${PROJECT_NAME}" --filter "label=com.docker.compose.oneoff=True" | xargs -r docker rm -f >/dev/null 2>&1 || true
+}
+
+stop_stack() {
+  compose_cmd down --remove-orphans
+  cleanup_compose_residuals
+}
+
+wait_for_db_ready() {
+  local db_container="$1"
+  local db_user="$2"
+  local db_name="$3"
+  local attempt
+
+  for attempt in $(seq 1 30); do
+    if docker exec "${db_container}" pg_isready -U "${db_user}" -d "${db_name}" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "Database container '${db_container}' did not become ready in time."
+  exit 1
+}
+
+dump_db_to_file() {
+  local output_path="$1"
+  local db_container="${PROJECT_NAME}-db"
+  local started_db=0
+  local db_user
+  local db_name
+  local db_pass
+
+  ensure_docker_env_file
+
+  if ! docker ps --format '{{.Names}}' | grep -Fxq "${db_container}"; then
+    echo "Database container is not running. Starting db service for backup."
+    compose_cmd up -d db
+    started_db=1
+  fi
+
+  db_user="$(docker exec "${db_container}" printenv POSTGRES_USER 2>/dev/null || true)"
+  db_name="$(docker exec "${db_container}" printenv POSTGRES_DB 2>/dev/null || true)"
+  db_pass="$(docker exec "${db_container}" printenv POSTGRES_PASSWORD 2>/dev/null || true)"
+  if [[ -z "${db_user}" || -z "${db_name}" || -z "${db_pass}" ]]; then
+    echo "Could not fetch DB credentials from container '${db_container}'."
+    echo "Make sure the database service can start with ${DOCKER_ENV_FILE}."
+    exit 1
+  fi
+
+  wait_for_db_ready "${db_container}" "${db_user}" "${db_name}"
+
+  echo "Dumping database to ${output_path}"
+  export PGPASSWORD="${db_pass}"
+  docker exec "${db_container}" pg_dump -U "${db_user}" "${db_name}" > "${output_path}"
+  unset PGPASSWORD
+  echo "Database dump saved to ${output_path}"
+
+  if [[ "${started_db}" -eq 1 ]]; then
+    echo "Database service was started temporarily to create the backup."
+  fi
+}
+
+upgrade_stack() {
+  local dump_path
+  local upgrade_background="${BACKGROUND:--d}"
+
+  ensure_docker_env_file
+  warn_legacy_backend_env
+
+  dump_path="./db_dump.pre-upgrade.$(date +%F_%H%M%S).sql"
+  dump_db_to_file "${dump_path}"
+
+  echo "Stopping existing stack before upgrade"
+  append_compose_file_once "./.docker/docker-compose-traefik.yml"
+  stop_stack
+
+  build_runtime_artifacts
+  prepare_db
+
+  echo "Starting upgraded stack"
+  rotate_host_logs
+  compose_cmd up ${upgrade_background} --remove-orphans
+
+  if [[ -z "${BACKGROUND}" ]]; then
+    echo "Upgrade finished. Stack started in background by default."
+  fi
+}
+
 run_post_build_sequence() {
   prepare_db
   seed_db
@@ -278,11 +416,7 @@ run_post_build_sequence() {
 case "$ACTION" in
   build)
     echo "Running action $ACTION"
-    generate_certificates
-    ensure_host_log_dir
-    export COMPOSE_BAKE=true
-    compose_cmd build
-    run_assets_init "$(get_expected_assets_version)"
+    build_runtime_artifacts
     run_post_build_sequence
     ;;
   start)
@@ -303,11 +437,8 @@ case "$ACTION" in
     ;;
   down)
     echo "Running action $ACTION"
-    COMPOSE_FILES+=(./.docker/docker-compose-traefik.yml)
-    compose_cmd down --remove-orphans
-    # Clean up profile/one-off containers that may remain after compose down.
-    docker ps -aq --filter "label=com.docker.compose.project=${PROJECT_NAME}" --filter "label=com.docker.compose.service=migrate" | xargs -r docker rm -f >/dev/null 2>&1 || true
-    docker ps -aq --filter "label=com.docker.compose.project=${PROJECT_NAME}" --filter "label=com.docker.compose.oneoff=True" | xargs -r docker rm -f >/dev/null 2>&1 || true
+    append_compose_file_once "./.docker/docker-compose-traefik.yml"
+    stop_stack
     ;;
   rebuild)
     echo "Running action $ACTION"
@@ -319,20 +450,7 @@ case "$ACTION" in
     docker volume rm jira-logger_dbData || echo "Volume not found or already removed."
     ;;
   db-dump)
-    echo "Dumping database to ./db_dump.sql"
-    DB_CONTAINER="jira-logger-db"
-    # Get credentials from running container
-    DB_USER=$(docker exec "$DB_CONTAINER" printenv POSTGRES_USER)
-    DB_NAME=$(docker exec "$DB_CONTAINER" printenv POSTGRES_DB)
-    DB_PASS=$(docker exec "$DB_CONTAINER" printenv POSTGRES_PASSWORD)
-    if [[ -z "$DB_USER" || -z "$DB_NAME" || -z "$DB_PASS" ]]; then
-      echo "Could not fetch DB credentials from container. Is it running?"
-      exit 1
-    fi
-    export PGPASSWORD="$DB_PASS"
-    docker exec "$DB_CONTAINER" pg_dump -U "$DB_USER" "$DB_NAME" > ./db_dump.sql
-    unset PGPASSWORD
-    echo "Database dump saved to ./db_dump.sql"
+    dump_db_to_file "./db_dump.sql"
     ;;
   migrate)
     migrate_db
@@ -342,6 +460,10 @@ case "$ACTION" in
     ;;
   seed)
     seed_db
+    ;;
+  upgrade)
+    echo "Running action $ACTION"
+    upgrade_stack
     ;;
   *)
     show_help
