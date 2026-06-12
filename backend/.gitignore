@@ -21,3 +21,4 @@ cghooks.lock
 ###> phpstan/phpstan ###
 phpstan.neon
 ###< phpstan/phpstan ###
+/.phpunit.result.cache
