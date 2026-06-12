@@ -15,7 +15,7 @@ import { ApiRequestService } from '@shared/services/api-request.service';
 import { ApiRequestBody } from '@shared/types/api-request-body.type';
 import { toUnixMs } from '@shared/utils/to-unix-ms.util';
 
-import { BehaviorSubject, catchError, map, Observable, Subject, switchMap, tap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, map, Observable, of, Subject, switchMap, tap, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -54,6 +54,15 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
     return this.makeRequest<JsonApi<ApiTimeLog[]>>(url)
       .pipe(
         map((response: JsonApi<ApiTimeLog[]>): TimeLog[] => (response.data && adaptTimeLogs(response.data)) as TimeLog[]),
+        catchError((error: HttpErrorResponse) => {
+          const errors = Array.isArray(error.error?.errors) ? error.error.errors : [];
+
+          if (error.status === 404 && errors.includes('TimeLogs not found')) {
+            return of([]);
+          }
+
+          return throwError(() => error);
+        }),
       );
   }
 

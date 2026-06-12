@@ -4,7 +4,7 @@ import { LoaderStateService } from '@core/services/loader-state.service';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
-import { BehaviorSubject, firstValueFrom, of } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
 
 import { TimeLogsService } from './time-logs.service';
 
@@ -69,5 +69,30 @@ describe('Shared Services time-logs.service', () => {
     expect(body.startTime).toBeUndefined();
     expect(body.endTime).toBeUndefined();
     expect(body.description).toBeUndefined();
+  });
+
+  it('returns an empty list when the API reports no time logs for a task', async () => {
+    const task = new Task({ id: 'task-1', name: 'Task', tags: [], timeLogs: [] } as any);
+
+    apiRequestService.request.mockReturnValueOnce(throwError(() => ({
+      status: 404,
+      error: { errors: ['TimeLogs not found'] },
+    })));
+
+    await expect(firstValueFrom(service.list(task))).resolves.toEqual([]);
+  });
+
+  it('rethrows non-empty-list 404 responses from the API', async () => {
+    const task = new Task({ id: 'task-1', name: 'Task', tags: [], timeLogs: [] } as any);
+
+    apiRequestService.request.mockReturnValueOnce(throwError(() => ({
+      status: 404,
+      error: { errors: ['Task not found'] },
+    })));
+
+    await expect(firstValueFrom(service.list(task))).rejects.toMatchObject({
+      status: 404,
+      error: { errors: ['Task not found'] },
+    });
   });
 });

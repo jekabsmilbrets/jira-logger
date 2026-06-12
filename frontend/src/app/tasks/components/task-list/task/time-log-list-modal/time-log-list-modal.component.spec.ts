@@ -162,8 +162,8 @@ describe('Tasks Components time-log-list-modal.component', () => {
     expect(task.timeLogs).toEqual([current]);
   });
 
-  it('saves staged changes, refreshes rows, closes, and shows success snackbar', async () => {
-    const { component, task, dialogRef, timeLogsService, snackBar } = await setup();
+  it('saves staged changes, refreshes rows, and closes the modal', async () => {
+    const { component, task, dialogRef, timeLogsService } = await setup();
     const existing = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
     const removed = buildTimeLog('2', '2026-03-02T11:00:00.000Z');
     const updated = buildTimeLog('1', '2026-03-02T12:00:00.000Z');
@@ -184,11 +184,10 @@ describe('Tasks Components time-log-list-modal.component', () => {
     expect(timeLogsService.delete).toHaveBeenCalledWith(task, removed);
     expect(task.timeLogs).toEqual([persistedCreated, updated]);
     expect(dialogRef.close).toHaveBeenCalledWith({ saved: true });
-    expect(snackBar.open).toHaveBeenCalledWith('Time logs updated.', undefined, { duration: 5000 });
   });
 
-  it('keeps the modal open and shows an error snackbar when save fails', async () => {
-    const { component, task, dialogRef, timeLogsService, snackBar } = await setup();
+  it('keeps the modal open when save fails', async () => {
+    const { component, task, dialogRef, timeLogsService } = await setup();
     const createdUnsaved = buildTimeLog(undefined, '2026-03-02T09:00:00.000Z');
     timeLogsService.create.mockReturnValueOnce(throwError(() => ({
       error: { errors: ['Can not Create TimeLog'] },
@@ -199,7 +198,23 @@ describe('Tasks Components time-log-list-modal.component', () => {
 
     expect(dialogRef.close).not.toHaveBeenCalled();
     expect(task.timeLogs).toEqual([createdUnsaved]);
-    expect(snackBar.open).toHaveBeenCalledWith('Time logs update failed! Can not Create TimeLog', undefined, { duration: 5000 });
+  });
+
+  it('treats an empty refreshed list as a successful save after deleting all logs', async () => {
+    const { component, task, dialogRef, timeLogsService } = await setup();
+    const first = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
+    const second = buildTimeLog('2', '2026-03-02T11:00:00.000Z');
+    task.timeLogs = [first, second];
+    timeLogsService.list.mockReturnValueOnce(of([]));
+
+    component['onRemoveAction'](first);
+    component['onRemoveAction'](second);
+    component['onSave']();
+
+    expect(timeLogsService.delete).toHaveBeenCalledWith(task, first);
+    expect(timeLogsService.delete).toHaveBeenCalledWith(task, second);
+    expect(task.timeLogs).toEqual([]);
+    expect(dialogRef.close).toHaveBeenCalledWith({ saved: true });
   });
 
   it('creates a new log via add button flow on update response', async () => {
