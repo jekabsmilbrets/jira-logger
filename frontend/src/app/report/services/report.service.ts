@@ -1,20 +1,6 @@
 import { formatDate } from '@angular/common';
 import { inject, Injectable } from '@angular/core';
 
-import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
-import { StorageService } from '@core/services/storage.service';
-
-import { columns as monthModelColumns } from '@report/constants/report-date-range-columns.constant';
-import { columns as totalModelColumns } from '@report/constants/report-total-columns.constant';
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
-
-import { Column } from '@shared/interfaces/column.interface';
-import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
-import { Tag } from '@shared/models/tag.model';
-import { Task } from '@shared/models/task.model';
-import { TagsService } from '@shared/services/tags.service';
-import { TasksService } from '@shared/services/tasks.service';
-
 import {
   BehaviorSubject,
   catchError,
@@ -28,6 +14,22 @@ import {
   tap,
   withLatestFrom,
 } from 'rxjs';
+
+import { LocaleService } from '@core/services/locale.service';
+import { StorageService } from '@core/services/storage.service';
+import { TimezoneService } from '@core/services/timezone.service';
+
+import { Column } from '@shared/interfaces/column.interface';
+import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
+import { Tag } from '@shared/models/tag.model';
+import { Task } from '@shared/models/task.model';
+import { TagsService } from '@shared/services/tags.service';
+import { TasksService } from '@shared/services/tasks.service';
+
+import { columns as monthModelColumns } from '@report/constants/report-date-range-columns.constant';
+import { columns as totalModelColumns } from '@report/constants/report-total-columns.constant';
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportSettingsStorageValue } from '@report/interfaces/report-settings-storage-value.interface';
 
 @Injectable({
   providedIn: 'root',
@@ -48,6 +50,8 @@ export class ReportService {
   private readonly storageService: StorageService = inject(StorageService);
   private readonly tagsService: TagsService = inject(TagsService);
   private readonly tasksService: TasksService = inject(TasksService);
+  private readonly timezoneService: TimezoneService = inject(TimezoneService);
+  private readonly localeService: LocaleService = inject(LocaleService);
 
   private reportModeSubject: BehaviorSubject<ReportModeEnum> = new BehaviorSubject<ReportModeEnum>(ReportModeEnum.total);
   private tagsSubject: BehaviorSubject<Tag[]> = new BehaviorSubject<Tag[]>([]);
@@ -73,7 +77,8 @@ export class ReportService {
 
     this.initSettings();
 
-    this.listenToChanges().subscribe();
+    this.listenToChanges()
+      .subscribe();
 
     this.tasks$ = this.getTasks();
   }
@@ -245,7 +250,7 @@ export class ReportService {
   }
 
   private initSettings(): void {
-    this.storageService.read(
+    this.storageService.read<ReportSettingsStorageValue | undefined>(
       this.settingsKey,
       this.customStoreName,
     )
@@ -254,18 +259,7 @@ export class ReportService {
         withLatestFrom(this.tagsService.tags$),
         take(1),
         tap(
-          ([settings, tags]: [
-            {
-              reportMode: ReportModeEnum;
-              tags: string[];
-              date: Date | null;
-              startDate: Date | null;
-              endDate: Date | null;
-              showWeekends: boolean;
-              hideUnreportedTasks: boolean;
-            },
-            Tag[],
-          ]) => {
+          ([settings, tags]: [ReportSettingsStorageValue | undefined, Tag[]]) => {
             this.reportModeSubject.next(settings?.reportMode ?? ReportModeEnum.total);
             this.tagsSubject.next(tags.filter((t: Tag) => settings?.tags.includes(t.id)) ?? []);
             this.dateSubject.next(settings?.date ?? null);
@@ -347,17 +341,22 @@ export class ReportService {
 
       modifiedMonthModelColumns.push({
         columnDef: 'date-' + currentDate.getTime(),
-        header: formatDate(currentDate2, 'd. MMM', appLocale, appTimeZone),
+        header: formatDate(
+          currentDate2,
+          'd. MMM',
+          this.localeService.locale,
+          this.timezoneService.timezone,
+        ),
         sortable: false,
         hidden: reportMode !== ReportModeEnum.date ? shouldShowWeekends : false,
         pipe: 'readableTime',
         isClickable: true,
         cellClickType: 'readableTime',
         footerCellClickType: 'readableTime',
-        cell: (task: Task) => task.calcTimeLoggedForDate(currentDate2),
+        cell: (task: Task) => task.calcTimeLoggedForDate(currentDate2, this.timezoneService.timezone),
         hasFooter: true,
         footerCell: (tasks: Task[]) => tasks.map(
-          (task: Task) => task.calcTimeLoggedForDate(currentDate2),
+          (task: Task) => task.calcTimeLoggedForDate(currentDate2, this.timezoneService.timezone),
         )
           .reduce(reduceFn, 0),
       });
@@ -388,7 +387,7 @@ export class ReportService {
     if (reportMode === ReportModeEnum.date) {
       const taskSynced: (task: Task) => boolean = (
         task: Task,
-      ) => task.calcTimeLogged() > 0 && task.calcTimeLogged() === task.calcTimeSynced(startDate);
+      ) => task.calcTimeLogged() > 0 && task.calcTimeLogged() === task.calcTimeSynced(startDate, this.timezoneService.timezone);
 
       modifiedMonthModelColumns.push({
         columnDef: 'synced',
@@ -400,10 +399,10 @@ export class ReportService {
         taskSynced,
         pipe: 'readableTime',
         footerCellClickType: 'readableTime',
-        cell: (task: Task) => task.calcTimeSynced(startDate),
+        cell: (task: Task) => task.calcTimeSynced(startDate, this.timezoneService.timezone),
         hasFooter: true,
         footerCell: (tasks: Task[]) => tasks.map(
-          (task: Task) => task.calcTimeSynced(startDate),
+          (task: Task) => task.calcTimeSynced(startDate, this.timezoneService.timezone),
         )
           .reduce(reduceFn, 0),
       });
@@ -414,7 +413,11 @@ export class ReportService {
         excludeFromLoop: false,
         hidden: false,
         taskSynced,
-        cell: (task: Task) => undefined,
+        cell: (task: Task) => {
+          void task;
+
+          return undefined;
+        },
       });
     }
 

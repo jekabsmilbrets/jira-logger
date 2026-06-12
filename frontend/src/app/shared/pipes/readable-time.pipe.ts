@@ -36,7 +36,7 @@ export class ReadableTimePipe implements PipeTransform {
 
     let output: string = '';
 
-    for (let i = 0, max = levels.length; i < max; i++) {
+    for (let i: number = 0, max: number = levels.length; i < max; i++) {
       if (levels[i][0] === 0) {
         continue;
       }

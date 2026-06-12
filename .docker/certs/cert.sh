@@ -13,7 +13,12 @@ IFS=$'\n\t'
 # cert.key - Secret key good for proxy configs
 # cert.crt - Public cert good for proxy configs
 # cert.pem - Combo of those two good for browser/OS import
-DOMAIN_NAME=$1
+if [ -z "${1:-}" ]; then
+  echo "Usage: $0 <domain>" >&2
+  exit 1
+fi
+
+DOMAIN_NAME="$1"
 
 if [ ! -f "$DOMAIN_NAME.key" ]; then
 

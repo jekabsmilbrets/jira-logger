@@ -1,16 +1,16 @@
 import { Component, input, InputSignal, output, OutputEmitterRef } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
-
-import { ReportSettings } from '@settings/interfaces/report-settings.interface';
 import { ReportDateSelectorComponent } from '@shared/components/report-menu/report-date-selector/report-date-selector.component';
 import { ReportHideUnreportedTasksComponent } from '@shared/components/report-menu/report-hide-unreported-tasks/report-hide-unreported-tasks.component';
 import { ReportModeSwitcherComponent } from '@shared/components/report-menu/report-mode-switcher/report-mode-switcher.component';
 import { ReportShowWeekendsComponent } from '@shared/components/report-menu/report-show-weekends/report-show-weekends.component';
 import { ReportTagFilterComponent } from '@shared/components/report-menu/report-tag-filter/report-tag-filter.component';
-
 import { Tag } from '@shared/models/tag.model';
+
+import { ReportModeEnum } from '@report/enums/report-mode.enum';
+
+import { ReportSettings } from '@settings/interfaces/report-settings.interface';
 
 @Component({
   selector: 'settings-report-configurator',

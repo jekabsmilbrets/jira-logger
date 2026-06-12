@@ -8,7 +8,9 @@ use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Factory\Task\TaskFactory;
+use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Repository\Task\TaskRepository;
+use App\Utility\TimeLog\TimeLogRange;
 use Doctrine\Common\Collections\ArrayCollection;
 
 class TaskService
@@ -17,6 +19,7 @@ class TaskService
 
     public function __construct(
         private readonly TaskRepository $taskRepository,
+        private readonly TaskFilterDateRangeResolver $taskFilterDateRangeResolver,
     ) {
     }
 
@@ -27,17 +30,13 @@ class TaskService
     {
         if ($filter) {
             $tasks = new ArrayCollection($this->taskRepository->findByFilters($filter));
+            $dateRange = $this->taskFilterDateRangeResolver->resolve($filter);
 
             $tasks = $tasks->map(
-                function (Task $task) use ($filter) {
-                    if (
-                        isset($filter['date']) || isset($filter['startDate'], $filter['endDate'])
-                    ) {
-                        $startDate = new \DateTime($filter['date'] ?? $filter['startDate']);
-                        $endDate = new \DateTime($filter['date'] ?? $filter['endDate']);
-
-                        $endDate->setTime(23, 59, 59);
-
+                function (Task $task) use ($dateRange) {
+                    if (null !== $dateRange) {
+                        $startDate = $dateRange['startDate'];
+                        $endDate = $dateRange['endDate'];
                         $timeLogs = $task->getTimeLogs();
 
                         $timeLogs = $timeLogs->filter(
@@ -45,9 +44,7 @@ class TaskService
                                 $startTime = $timeLog->getStartTime();
                                 $endTime = $timeLog->getEndTime();
 
-                                return ($startDate <= $startTime && $startTime <= $endDate) ||
-                                    ($startTime <= $startDate && $startTime >= $endDate) ||
-                                    ($endTime >= $startDate && $endTime <= $endDate);
+                                return TimeLogRange::overlaps($startDate, $endDate, $startTime, $endTime);
                             }
                         );
 

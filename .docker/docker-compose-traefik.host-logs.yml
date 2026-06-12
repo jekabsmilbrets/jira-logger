@@ -1,0 +1,4 @@
+services:
+  traefik:
+    volumes:
+      - ./../.logs/jira-logger:/var/log/traefik:rw

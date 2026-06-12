@@ -1,21 +1,22 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
+
+import { map, Observable, of, switchMap, take } from 'rxjs';
 
 import { DynamicMenu } from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
+
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
-import { TaskListComponent } from '@tasks/components/task-list/task-list.component';
-import { TaskComponent } from '@tasks/components/task-list/task/task.component';
-import { TaskViewHeaderComponent } from '@tasks/components/task-view-header/task-view-header.component';
 
+import { TaskComponent } from '@tasks/components/task-list/task/task.component';
+import { TaskListComponent } from '@tasks/components/task-list/task-list.component';
+import { TaskViewHeaderComponent } from '@tasks/components/task-view-header/task-view-header.component';
 import { TasksMenuComponent } from '@tasks/components/tasks-menu/tasks-menu.component';
 import { TaskUpdateActionEnum } from '@tasks/enums/task-update-action.enum';
 import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
-
-import { map, Observable, of, switchMap, take } from 'rxjs';
 
 @Component({
   selector: 'tasks-view',
@@ -26,7 +27,7 @@ import { map, Observable, of, switchMap, take } from 'rxjs';
     TaskViewHeaderComponent,
     TaskListComponent,
     TaskComponent,
-    CommonModule,
+    AsyncPipe,
   ],
 })
 export class TasksViewComponent implements OnInit {
@@ -94,48 +95,9 @@ export class TasksViewComponent implements OnInit {
       .subscribe();
   }
 
-  protected onCreateTimeLog(
-    [task, timeLog]: [Task, TimeLog],
-  ): void {
-    this.timeLogsService.create(
-      task,
-      timeLog,
-    )
-      .pipe(
-        take(1),
-        switchMap(() => this.tasksService.list()),
-        take(1),
-      )
-      .subscribe();
-  }
-
-  protected onUpdateTimeLog(
-    [task, timeLog]: [Task, TimeLog],
-  ): void {
-    this.timeLogsService.update(
-      task,
-      timeLog,
-    )
-      .pipe(
-        take(1),
-        switchMap(() => this.tasksService.list()),
-        take(1),
-      )
-      .subscribe();
-  }
-
-  protected onRemoveTimeLog(
-    [task, timeLog]: [Task, TimeLog],
-  ): void {
-    this.timeLogsService.delete(
-      task,
-      timeLog,
-    )
-      .pipe(
-        take(1),
-        switchMap(() => this.tasksService.list()),
-        take(1),
-      )
+  protected onTimeLogsSaved(): void {
+    this.tasksService.list()
+      .pipe(take(1))
       .subscribe();
   }
 

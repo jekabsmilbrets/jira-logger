@@ -35,10 +35,10 @@ export const columns: Column[] = [
     header: 'Tags',
     sortable: true,
     hidden: false,
-    cell: (task: Task) => columnValue(
+    cell: (task: Task) => (columnValue(
       task,
-      'tags').map((t: Tag) => t.name,
-    ),
+      'tags',
+    ) as Tag[]).map((t: Tag) => t.name),
   },
   {
     columnDef: 'lastTimeLogStartTime',

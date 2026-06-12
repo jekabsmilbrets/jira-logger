@@ -4,53 +4,54 @@
     "name": "Jēkabs Milbrets",
     "email": "jekabs.milbrets@me.com"
   },
-  "version": "0.3.2",
+  "version": "0.4.0",
   "type": "project",
   "license": "MIT",
   "minimum-stability": "stable",
   "prefer-stable": true,
   "require": {
-    "php": "^8.4",
+    "php": ">=8.5.4 <9.0",
     "ext-ctype": "*",
     "ext-iconv": "*",
-    "doctrine/annotations": "^1.13",
-    "doctrine/doctrine-bundle": "^2.7",
-    "doctrine/doctrine-migrations-bundle": "^3.2",
-    "doctrine/orm": "^2.12",
-    "evotodi/seed-bundle": "^7.0",
+    "doctrine/doctrine-bundle": "^3.2",
+    "doctrine/doctrine-migrations-bundle": "^4.0",
+    "doctrine/orm": "^3.6",
     "lesstif/php-jira-rest-client": "^5.1",
-    "nelmio/api-doc-bundle": "^4.9",
+    "nelmio/api-doc-bundle": "^5.10",
     "nelmio/cors-bundle": "^2.5",
     "phpdocumentor/reflection-docblock": "^5.3",
-    "phpstan/phpdoc-parser": "^1.6",
-    "ramsey/uuid-doctrine": "^1.8",
-    "symfony/asset": "6.4.*",
-    "symfony/console": "6.4.*",
-    "symfony/dotenv": "6.4.*",
-    "symfony/event-dispatcher": "6.4.*",
+    "phpstan/phpdoc-parser": "^2.0",
+    "ramsey/uuid-doctrine": "^2.1",
+    "symfony/asset": "*",
+    "symfony/console": "*",
+    "symfony/dotenv": "*",
+    "symfony/event-dispatcher": "*",
     "symfony/flex": "^2",
-    "symfony/framework-bundle": "6.4.*",
-    "symfony/mime": "6.4.*",
-    "symfony/monolog-bundle": "^3.8",
-    "symfony/property-access": "6.4.*",
-    "symfony/property-info": "6.4.*",
-    "symfony/proxy-manager-bridge": "6.4.*",
-    "symfony/runtime": "6.4.*",
-    "symfony/serializer": "6.4.*",
-    "symfony/twig-bundle": "6.4.*",
-    "symfony/validator": "6.4.*",
-    "symfony/yaml": "6.4.*",
+    "symfony/framework-bundle": "*",
+    "symfony/mime": "*",
+    "symfony/monolog-bundle": "^4.0",
+    "symfony/property-access": "*",
+    "symfony/property-info": "*",
+    "symfony/runtime": "*",
+    "symfony/security-bundle": "*",
+    "symfony/serializer": "*",
+    "symfony/twig-bundle": "*",
+    "symfony/validator": "*",
     "twig/extra-bundle": "^2.12|^3.0",
-    "twig/twig": "^2.12|^3.0"
+    "twig/twig": "^2.12|^3.0",
+    "zircote/swagger-php": "^6.1"
   },
   "require-dev": {
-    "brainmaestro/composer-git-hooks": "dev-master",
     "friendsofphp/php-cs-fixer": "^3.9",
     "phpstan/phpstan": "^1.8",
+    "phpunit/phpunit": "^9.6",
     "roave/security-advisories": "dev-latest",
+    "symfony/browser-kit": "*",
+    "symfony/css-selector": "*",
     "symfony/maker-bundle": "^1.44",
-    "symfony/stopwatch": "6.4.*",
-    "symfony/web-profiler-bundle": "6.4.*"
+    "symfony/phpunit-bridge": "^8.1",
+    "symfony/stopwatch": "*",
+    "symfony/web-profiler-bundle": "*"
   },
   "config": {
     "allow-plugins": {
@@ -89,14 +90,11 @@
       "assets:install %PUBLIC_DIR%": "symfony-cmd"
     },
     "post-install-cmd": [
-      "@auto-scripts",
-      "cghooks add --ignore-lock --git-dir='../.git'"
+      "@auto-scripts"
     ],
     "post-update-cmd": [
-      "@auto-scripts",
-      "cghooks update --git-dir='../.git'"
+      "@auto-scripts"
     ],
-    "cghooks": "vendor/bin/cghooks",
     "format": [
       "php-cs-fixer fix src -v"
     ],
@@ -108,27 +106,7 @@
   "extra": {
     "symfony": {
       "allow-contrib": false,
-      "require": "6.4.*"
-    },
-    "hooks": {
-      "pre-commit": [
-        "CURRENT_DIRECTORY=`pwd`",
-        "cd ./backend",
-        "files_changed=false;",
-        "current_state=$(git diff)",
-        "composer format",
-        "new_state=$(git diff)",
-        "if [ \"$current_state\" != \"$new_state\" ]; then",
-        "   files_changed=true",
-        "fi",
-        "cd $CURRENT_DIRECTORY",
-        "if [ \"$files_changed\" = true ]; then",
-        "    echo \"PHP CS FIXER have updated files, please review the changes!\"",
-        "    exit 1",
-        "fi",
-        "echo \"All good! Proceed!\"",
-        "exit 0"
-      ]
+      "require": "8.*"
     }
   }
 }

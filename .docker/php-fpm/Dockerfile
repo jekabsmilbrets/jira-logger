@@ -1,18 +1,66 @@
-FROM php:8.4-fpm
+FROM composer:2.8 AS composer_binary
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends libssl-dev zlib1g-dev curl git unzip netcat-traditional libxml2-dev libpq-dev libzip-dev && \
-    pecl install apcu && \
-    docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql && \
-    docker-php-ext-install -j$(nproc) zip opcache intl pdo_pgsql pgsql && \
-    docker-php-ext-enable apcu pdo_pgsql sodium && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+FROM php:8.5-cli-bookworm AS composer_deps
+WORKDIR /app
+COPY --from=composer_binary /usr/bin/composer /usr/bin/composer
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        git \
+        unzip \
+    ; \
+    rm -rf /var/lib/apt/lists/*
+COPY backend/composer.json backend/composer.lock ./
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
 
+FROM php:8.5-fpm-bookworm
 
-COPY --from=composer /usr/bin/composer /usr/bin/composer
+ARG APCU_VERSION=5.1.28
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        $PHPIZE_DEPS \
+        ca-certificates \
+        curl \
+        libicu-dev \
+        libzip-dev \
+        zlib1g-dev \
+        libpq-dev \
+        libxml2-dev \
+        libssl-dev \
+        libsodium-dev \
+        unzip \
+        pkg-config \
+    ; \
+    rm -rf /var/lib/apt/lists/*
+
+RUN set -eux; \
+    curl -fsSL "https://github.com/krakjoe/apcu/archive/refs/tags/v${APCU_VERSION}.tar.gz" -o /tmp/apcu.tar.gz; \
+    mkdir -p /usr/src/php/ext/apcu; \
+    tar -xzf /tmp/apcu.tar.gz --strip-components=1 -C /usr/src/php/ext/apcu; \
+    rm -f /tmp/apcu.tar.gz; \
+    docker-php-ext-configure intl; \
+    docker-php-ext-install -j"$(nproc)" \
+        apcu \
+        intl \
+        zip \
+        pdo_pgsql \
+        pgsql; \
+    docker-php-ext-enable apcu
 
 WORKDIR /var/www
 
-CMD ["sh", "-c", "composer i -o && (php bin/console doctrine:database:create --no-interaction || true) && php bin/console doctrine:migrations:migrate --no-interaction && php bin/console seed:load && php bin/console c:c && php-fpm"]
+COPY backend/ ./
+COPY --from=composer_deps /app/vendor ./vendor
+COPY .docker/php-fpm/docker-entrypoint.sh /usr/local/bin/php-fpm-entrypoint.sh
+COPY .docker/php-fpm/zz-logging.conf /usr/local/etc/php-fpm.d/zz-logging.conf
+COPY .docker/php-fpm/zz-php-log.ini /usr/local/etc/php/conf.d/zz-php-log.ini
+
+RUN chmod +x /usr/local/bin/php-fpm-entrypoint.sh \
+    && chmod -R a+rX /var/www
+
+ENTRYPOINT ["/usr/local/bin/php-fpm-entrypoint.sh"]
+CMD ["php-fpm"]
 
 EXPOSE 9000

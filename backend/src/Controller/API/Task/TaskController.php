@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Controller\API\Task;
 
 use App\Controller\API\BaseApiController;
+use App\Dto\Task\TaskListFilterRequest;
 use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
 use App\Exception\JiraApiServiceException;
+use App\Service\DateTime\DateInputParser;
 use App\Service\JiraApi\JiraApiService;
 use App\Service\Task\TaskService;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -16,12 +18,13 @@ use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route(
@@ -43,6 +46,9 @@ class TaskController extends BaseApiController
     public function __construct(
         private readonly TaskService $taskService,
         private readonly JiraApiService $jiraApiService,
+        private readonly ValidatorInterface $validator,
+        private readonly SerializerInterface $serializer,
+        private readonly DateInputParser $dateInputParser,
     ) {
     }
 
@@ -65,19 +71,19 @@ class TaskController extends BaseApiController
         ),
         OA\Parameter(
             name: 'date',
-            description: 'Single date to filter Task by Time Log timestamps',
+            description: 'Single date filter. Accepted formats: Unix timestamp (seconds/milliseconds), ISO-8601/RFC3339, Y-m-d, Y-m-d H:i:s, d/m/Y',
             in: 'query',
             schema: new OA\Schema(type: 'string')
         ),
         OA\Parameter(
             name: 'startDate',
-            description: 'Start date to filter Task by Time Log timestamps',
+            description: 'Start date filter. Accepted formats: Unix timestamp (seconds/milliseconds), ISO-8601/RFC3339, Y-m-d, Y-m-d H:i:s, d/m/Y',
             in: 'query',
             schema: new OA\Schema(type: 'string')
         ),
         OA\Parameter(
             name: 'endDate',
-            description: 'End date to filter Task by Time Log timestamps',
+            description: 'End date filter. Accepted formats: Unix timestamp (seconds/milliseconds), ISO-8601/RFC3339, Y-m-d, Y-m-d H:i:s, d/m/Y',
             in: 'query',
             schema: new OA\Schema(type: 'string')
         ),
@@ -126,32 +132,31 @@ class TaskController extends BaseApiController
     final public function list(
         Request $request,
     ): JsonResponse {
-        $queryParameters = [
-            'tags',
-            'name',
-            'date',
-            'startDate',
-            'endDate',
-            'hideUnreported',
-        ];
+        try {
+            $filterRequest = new TaskListFilterRequest($this->dateInputParser);
+            /** @var TaskListFilterRequest $filterRequest */
+            $filterRequest = $this->serializer->denormalize(
+                data: $request->query->all(),
+                type: TaskListFilterRequest::class,
+                context: [
+                    AbstractNormalizer::OBJECT_TO_POPULATE => $filterRequest,
+                ]
+            );
+        } catch (UnexpectedValueException) {
+            return $this->badRequestJsonApi();
+        }
 
-        $filter = array_filter(
-            array: array_reduce(
-                array: $queryParameters,
-                callback: static fn (array $carry, string $queryParameter): array => array_merge(
-                    $carry,
-                    [
-                        $queryParameter => $request->query->get($queryParameter),
-                    ]
-                ),
-                initial: []
-            ),
-            callback: static function ($value): bool {
-                return null !== $value;
-            },
-            mode: \ARRAY_FILTER_USE_BOTH
+        $validationError = $this->validateRequestDto(
+            validator: $this->validator,
+            requestDto: $filterRequest,
+            group: 'list',
         );
 
+        if ($validationError instanceof JsonResponse) {
+            return $validationError;
+        }
+
+        $filter = $filterRequest->toFilterArray();
         $tasks = $this->taskService->list($filter);
 
         if (empty($tasks) || [] === $tasks) {
@@ -277,37 +282,28 @@ class TaskController extends BaseApiController
         ),
     ]
     final public function new(
-        ValidatorInterface $validator,
-        SerializerInterface $serializer,
         Request $request,
         TaskRequest $taskRequest,
     ): JsonResponse {
         try {
-            $taskRequest = $serializer->deserialize(
-                data: $request->getContent(),
+            $taskRequest = $this->deserializeJsonRequest(
+                serializer: $this->serializer,
+                request: $request,
                 type: TaskRequest::class,
-                format: 'json',
-                context: [
-                    AbstractNormalizer::OBJECT_TO_POPULATE => $taskRequest,
-                ]
+                populate: $taskRequest,
             );
         } catch (UnexpectedValueException) {
-            return $this->jsonApi(
-                errors: [self::BAD_REQUEST],
-                status: Response::HTTP_BAD_REQUEST
-            );
+            return $this->badRequestJsonApi();
         }
 
-        $errors = $validator->validate(
-            value: $taskRequest,
-            groups: ['create']
+        $validationError = $this->validateRequestDto(
+            validator: $this->validator,
+            requestDto: $taskRequest,
+            group: 'create',
         );
 
-        if (\count($errors) > 0) {
-            return $this->validationErrorJsonApi(
-                constraintViolationList: $errors,
-                status: Response::HTTP_NOT_ACCEPTABLE
-            );
+        if ($validationError instanceof JsonResponse) {
+            return $validationError;
         }
 
         try {
@@ -405,37 +401,28 @@ class TaskController extends BaseApiController
     ]
     final public function edit(
         string $id,
-        ValidatorInterface $validator,
-        SerializerInterface $serializer,
         Request $request,
         TaskRequest $taskRequest,
     ): JsonResponse {
         try {
-            $taskRequest = $serializer->deserialize(
-                data: $request->getContent(),
+            $taskRequest = $this->deserializeJsonRequest(
+                serializer: $this->serializer,
+                request: $request,
                 type: TaskRequest::class,
-                format: 'json',
-                context: [
-                    AbstractNormalizer::OBJECT_TO_POPULATE => $taskRequest,
-                ]
+                populate: $taskRequest,
             );
         } catch (UnexpectedValueException) {
-            return $this->jsonApi(
-                errors: [self::BAD_REQUEST],
-                status: Response::HTTP_BAD_REQUEST
-            );
+            return $this->badRequestJsonApi();
         }
 
-        $errors = $validator->validate(
-            value: $taskRequest,
-            groups: ['update']
+        $validationError = $this->validateRequestDto(
+            validator: $this->validator,
+            requestDto: $taskRequest,
+            group: 'update',
         );
 
-        if (\count($errors) > 0) {
-            return $this->validationErrorJsonApi(
-                constraintViolationList: $errors,
-                status: Response::HTTP_NOT_ACCEPTABLE
-            );
+        if ($validationError instanceof JsonResponse) {
+            return $validationError;
         }
 
         try {
@@ -588,11 +575,11 @@ class TaskController extends BaseApiController
                 'id' => Requirement::UUID,
                 'date' => Requirement::DATE_YMD,
             ],
-            methods: [Request::METHOD_GET],
+            methods: [Request::METHOD_POST],
             stateless: true
         ),
         OA\Tag(name: self::OA_TAG),
-        OA\Get(
+        OA\Post(
             operationId: 'sync-task-with-jira',
             summary: 'Sync Task with JIRA',
             tags: [self::OA_TAG],

@@ -8,7 +8,7 @@ use App\Controller\API\BaseApiController;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route(
     path: '/api',
@@ -54,7 +54,7 @@ class MonitorController extends BaseApiController
     {
         return $this->jsonApi(
             [
-                'time' => (new \DateTime())->format('Y-m-d\TH:i:sp'),
+                'time' => new \DateTimeImmutable(),
                 'message' => 'Welcome to Jira-logger API!',
             ]
         );

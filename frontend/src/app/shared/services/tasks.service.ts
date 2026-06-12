@@ -1,10 +1,12 @@
 import { formatDate } from '@angular/common';
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 
-import { appLocale, appTimeLogDateTimeFormat, appTimeZone } from '@core/constants/date-time.constant';
+import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
+import { LocaleService } from '@core/services/locale.service';
 import { waitForTurn } from '@core/utils/wait-for.utility';
 
 import { adaptTasks } from '@shared/adapters/task.adapter';
@@ -14,13 +16,10 @@ import { MakeRequestService } from '@shared/interfaces/make-request-service.inte
 import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
+import { ApiRequestService } from '@shared/services/api-request.service';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
 import { ApiRequestBody } from '@shared/types/api-request-body.type';
 import { QueryParams } from '@shared/types/query-params.type';
-
-import { environment } from 'environments/environment';
-
-import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -31,8 +30,9 @@ export class TasksService implements LoadableService, MakeRequestService {
   public isLoading$: Observable<boolean>;
   public tasks$: Observable<Task[]>;
 
-  private readonly httpClient: HttpClient = inject(HttpClient);
+  private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
   private readonly errorDialogService: ErrorDialogService = inject(ErrorDialogService);
+  private readonly localeService: LocaleService = inject(LocaleService);
 
   private tasksSubject: BehaviorSubject<Task[]> = new BehaviorSubject<Task[]>([]);
 
@@ -193,12 +193,16 @@ export class TasksService implements LoadableService, MakeRequestService {
     task: Task,
     date: Date,
   ): Observable<boolean> {
-    const formattedDate: string = formatDate(date, 'yyyy-MM-dd', 'lv');
+    const formattedDate: string = formatDate(
+      date,
+      'yyyy-MM-dd',
+      this.localeService.locale,
+    );
     const url: string = `/${ task.id }/${ formattedDate }`;
 
     return this.makeRequest<void>(
       url,
-      'get',
+      'post',
     )
       .pipe(
         map(() => true),
@@ -211,28 +215,11 @@ export class TasksService implements LoadableService, MakeRequestService {
     body: ApiRequestBody | null = null,
     reportError: boolean = false,
   ): Observable<T> {
-    let request$: Observable<T>;
-
-    url = `${ environment['apiHost'] }${ environment['apiBase'] }/${ this.basePath }` + url;
-
-    switch (method) {
-      case 'post':
-        request$ = this.httpClient.post<T>(url, body);
-        break;
-
-      case 'patch':
-        request$ = this.httpClient.patch<T>(url, body);
-        break;
-
-      case 'delete':
-        request$ = this.httpClient.delete<T>(url);
-        break;
-
-      case 'get':
-      default:
-        request$ = this.httpClient.get<T>(url);
-        break;
-    }
+    const request$: Observable<T> = this.apiRequestService.request<T>(
+      this.apiRequestService.buildApiUrl(this.basePath, url),
+      method,
+      body,
+    );
 
     return waitForTurn(
       this.isLoading$,
@@ -255,8 +242,6 @@ export class TasksService implements LoadableService, MakeRequestService {
   private buildQueryParams(
     filter: TaskListFilter,
   ): QueryParams {
-    const formatDateForUri: (date: Date) => string = (date: Date) => formatDate(date, appTimeLogDateTimeFormat, appLocale, appTimeZone);
-
     const outputQueryParams: QueryParams = {};
 
     if (filter.hideUnreported) {
@@ -264,15 +249,15 @@ export class TasksService implements LoadableService, MakeRequestService {
     }
 
     if (filter.date) {
-      outputQueryParams.date = formatDateForUri(filter.date);
+      outputQueryParams.date = this.formatDateForQuery(filter.date);
     }
 
     if (filter.startDate) {
-      outputQueryParams.startDate = formatDateForUri(filter.startDate);
+      outputQueryParams.startDate = this.formatDateForQuery(filter.startDate);
     }
 
     if (filter.endDate) {
-      outputQueryParams.endDate = formatDateForUri(filter.endDate);
+      outputQueryParams.endDate = this.formatDateForQuery(filter.endDate);
     }
 
     if (filter.tags) {
@@ -286,8 +271,18 @@ export class TasksService implements LoadableService, MakeRequestService {
     return outputQueryParams;
   }
 
+  private formatDateForQuery(
+    date: Date,
+  ): string {
+    const year: string = String(date.getFullYear());
+    const month: string = String(date.getMonth() + 1).padStart(2, '0');
+    const day: string = String(date.getDate()).padStart(2, '0');
+
+    return `${ year }-${ month }-${ day }`;
+  }
+
   private processError(
-    error: any,
+    error: unknown,
   ): Observable<never> {
     this.isLoadingSubject.next(false);
 

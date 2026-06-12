@@ -1,13 +1,7 @@
-import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
-
-const {
-  enabled,
-  host,
-  personalAccessToken,
-} = JiraApiSettings;
+import { JiraApiSettingSlugs } from '@settings/enums/jira-api-settings.enum';
 
 export interface JiraApiFormGroupData {
-  [enabled]: boolean;
-  [host]: string;
-  [personalAccessToken]: string;
+  [JiraApiSettingSlugs.enabled]: boolean;
+  [JiraApiSettingSlugs.host]: string;
+  [JiraApiSettingSlugs.personalAccessToken]: string;
 }

@@ -1,10 +1,13 @@
-export const getNestedObject: (nestedObj: any, pathArr: string[]) => any = (
-  nestedObj: any,
+export const getNestedObject: (nestedObj: object, pathArr: string[]) => unknown = (
+  nestedObj: object,
   pathArr: string[],
-): any => pathArr.reduce(
-  (obj, key) => (
-    obj && obj[key] !== 'undefined' ?
-      obj[key] :
+): unknown => pathArr.reduce<unknown>(
+  (obj: unknown, key: string) => (
+    obj &&
+    typeof obj === 'object' &&
+    key in obj &&
+    (obj as Record<string, unknown>)[key] !== 'undefined' ?
+      (obj as Record<string, unknown>)[key] :
       undefined
   ),
   nestedObj,

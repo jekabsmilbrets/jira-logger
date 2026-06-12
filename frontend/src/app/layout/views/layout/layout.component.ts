@@ -1,16 +1,17 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { RouterOutlet } from '@angular/router';
 
+import { Observable } from 'rxjs';
+
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { HeaderComponent } from '@layout/components/header/header.component';
-import { SidenavComponent } from '@layout/components/sidenav/sidenav.component';
 
 import { Task } from '@shared/models/task.model';
 import { TaskManagerService } from '@shared/services/task-manager.service';
 
-import { Observable } from 'rxjs';
+import { HeaderComponent } from '@layout/components/header/header.component';
+import { SidenavComponent } from '@layout/components/sidenav/sidenav.component';
 
 @Component({
   selector: 'layout-view',
@@ -18,11 +19,11 @@ import { Observable } from 'rxjs';
   styleUrls: ['./layout.component.scss'],
   standalone: true,
   imports: [
-    CommonModule,
     HeaderComponent,
     MatSidenavModule,
     SidenavComponent,
     RouterOutlet,
+    AsyncPipe,
   ],
 })
 export class LayoutComponent {

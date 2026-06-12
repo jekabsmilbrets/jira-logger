@@ -9,6 +9,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
+import { take } from 'rxjs';
+
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
@@ -17,8 +19,6 @@ import { validateTasksInterfaceData } from '@tasks/data-validators/task-interfac
 import { TaskSettingsFormData } from '@tasks/interfaces/task-settings-form-data.interface';
 import { TaskSettingsFormGroup } from '@tasks/interfaces/task-settings-form-group.interface';
 import { TasksSettingsDialogDataInterface } from '@tasks/interfaces/tasks-settings-dialog-data.interface';
-
-import { take } from 'rxjs';
 
 @Component({
   selector: 'tasks-settings-dialog',
@@ -63,10 +63,10 @@ export class TasksSettingsDialogComponent {
     let data: ApiTask[];
     const formData: TaskSettingsFormData = this.formGroup.getRawValue();
 
-    try {
-      this.tagsService.tags$
-        .pipe(take(1))
-        .subscribe((tags: Tag[]) => {
+    this.tagsService.tags$
+      .pipe(take(1))
+      .subscribe((tags: Tag[]) => {
+        try {
           data = validateTasksInterfaceData(
             JSON.parse(
               formData.json as string,
@@ -75,9 +75,9 @@ export class TasksSettingsDialogComponent {
           );
 
           this.dialogRef.close(data);
-        });
-    } catch (e) {
-      console.error({ e });
-    }
+        } catch (e) {
+          console.error({ e });
+        }
+      });
   }
 }

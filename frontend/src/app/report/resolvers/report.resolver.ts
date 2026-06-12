@@ -1,10 +1,10 @@
 import { inject, Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, ParamMap, Router, RouterStateSnapshot } from '@angular/router';
+import { ActivatedRouteSnapshot, ParamMap, Router } from '@angular/router';
+
+import { Observable, of } from 'rxjs';
 
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
-
-import { Observable, of } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -15,7 +15,6 @@ export class ReportResolver {
 
   resolve(
     route: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot,
   ): Observable<boolean> {
     const paramMap: ParamMap = route.paramMap;
 

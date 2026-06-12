@@ -1,5 +1,7 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+
+import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
@@ -10,12 +12,9 @@ import { ApiTag } from '@shared/interfaces/api/api-tag.interface';
 import { LoadableService } from '@shared/interfaces/loadable-service.interface';
 import { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
 import { Tag } from '@shared/models/tag.model';
+import { ApiRequestService } from '@shared/services/api-request.service';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
 import { ApiRequestBody } from '@shared/types/api-request-body.type';
-
-import { environment } from 'environments/environment';
-
-import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -25,8 +24,9 @@ export class TagsService implements LoadableService, MakeRequestService {
 
   public isLoading$: Observable<boolean>;
   public tags$: Observable<Tag[]>;
+  public preloadError$: Observable<boolean>;
 
-  private readonly httpClient: HttpClient = inject(HttpClient);
+  private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
   private readonly errorDialogService: ErrorDialogService = inject(ErrorDialogService);
 
   private tagsSubject: BehaviorSubject<Tag[]> = new BehaviorSubject<Tag[]>([]);
@@ -34,10 +34,12 @@ export class TagsService implements LoadableService, MakeRequestService {
   private basePath: string = 'tag';
 
   private isLoadingSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  private preloadErrorSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   constructor() {
     this.tags$ = this.tagsSubject.asObservable();
     this.isLoading$ = this.isLoadingSubject.asObservable();
+    this.preloadError$ = this.preloadErrorSubject.asObservable();
   }
 
   public init(): void {
@@ -45,7 +47,7 @@ export class TagsService implements LoadableService, MakeRequestService {
   }
 
   public list(): Observable<Tag[]> {
-    const url: string = `${ environment['apiHost'] }${ environment['apiBase'] }/${ this.basePath }`;
+    const url: string = this.apiRequestService.buildApiUrl(this.basePath);
 
     return this.makeRequest<JsonApi<ApiTag[]>>(
       url,
@@ -65,11 +67,24 @@ export class TagsService implements LoadableService, MakeRequestService {
       );
   }
 
+  public preloadForInit(): Observable<Tag[]> {
+    return this.list()
+      .pipe(
+        tap(() => this.preloadErrorSubject.next(false)),
+        catchError(() => {
+          this.tagsSubject.next([]);
+          this.preloadErrorSubject.next(true);
+
+          return of([]);
+        }),
+      );
+  }
+
   public create(
     tag: Tag,
     skipReload: boolean = false,
   ): Observable<Tag> {
-    const url: string = `${ environment['apiHost'] }${ environment['apiBase'] }/${ this.basePath }`;
+    const url: string = this.apiRequestService.buildApiUrl(this.basePath);
 
     const body: ApiRequestBody = {
       name: tag.name && tag.name.trim(),
@@ -91,7 +106,7 @@ export class TagsService implements LoadableService, MakeRequestService {
     tag: Tag,
     skipReload: boolean = false,
   ): Observable<Tag> {
-    const url: string = `${ environment['apiHost'] }${ environment['apiBase'] }/${ this.basePath }/${ tag.id }`;
+    const url: string = this.apiRequestService.buildApiUrl(this.basePath, `/${ tag.id }`);
 
     const body: ApiRequestBody = {
       id: tag.id,
@@ -114,7 +129,7 @@ export class TagsService implements LoadableService, MakeRequestService {
     tag: Tag,
     skipReload: boolean = false,
   ): Observable<void> {
-    const url: string = `${ environment['apiHost'] }${ environment['apiBase'] }/${ this.basePath }/${ tag.id }`;
+    const url: string = this.apiRequestService.buildApiUrl(this.basePath, `/${ tag.id }`);
 
     return this.makeRequest<void>(
       url,
@@ -133,26 +148,7 @@ export class TagsService implements LoadableService, MakeRequestService {
     body: ApiRequestBody | null = null,
     reportError: boolean = false,
   ): Observable<T> {
-    let request$: Observable<T>;
-
-    switch (method) {
-      case 'post':
-        request$ = this.httpClient.post<T>(url, body);
-        break;
-
-      case 'patch':
-        request$ = this.httpClient.patch<T>(url, body);
-        break;
-
-      case 'delete':
-        request$ = this.httpClient.delete<T>(url);
-        break;
-
-      case 'get':
-      default:
-        request$ = this.httpClient.get<T>(url);
-        break;
-    }
+    const request$: Observable<T> = this.apiRequestService.request<T>(url, method, body);
 
     return waitForTurn(
       this.isLoading$,

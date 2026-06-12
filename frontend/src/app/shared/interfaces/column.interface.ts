@@ -5,18 +5,18 @@ export interface Column {
   excludeFromLoop?: boolean;
   sortable?: boolean;
   hidden?: boolean;
-  taskSynced?: any;
+  taskSynced?: CallableFunction;
   sticky?: boolean;
   stickyEnd?: boolean;
   type?: string;
-  cell: any;
+  cell: CallableFunction;
   emptyCellValue?: string | null;
   index?: number;
   pipe?: string;
   isClickable?: boolean;
   disableFooterClick?: boolean;
   hasFooter?: boolean;
-  footerCell?: any;
+  footerCell?: CallableFunction;
   cellClickType?: 'string' | 'readableTime' | 'concatenatedString';
   footerCellClickType?: 'readableTime' | 'concatenatedString';
 }

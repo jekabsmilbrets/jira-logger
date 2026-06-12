@@ -7,7 +7,7 @@ namespace App\Dto\JiraWorkLog;
 use App\Entity\Task\Task;
 use App\Service\Task\TaskService;
 use OpenApi\Attributes as OA;
-use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class JiraWorkLogRequest

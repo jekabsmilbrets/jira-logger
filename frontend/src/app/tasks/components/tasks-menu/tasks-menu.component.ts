@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,20 +7,20 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
+import { catchError, debounceTime, distinctUntilChanged, Observable, of, startWith, switchMap, take } from 'rxjs';
+
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
+
 import { TasksSettingsToggleComponent } from '@tasks/components/tasks-menu/tasks-settings-toggler/tasks-settings-toggle.component';
 import { CreateTaskFromGroupInterface } from '@tasks/interfaces/create-task-from-group.interface';
 import { TaskCreateService } from '@tasks/services/task-create.service';
-
 import { TaskImportService } from '@tasks/services/task-import.service';
 import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
-
-import { catchError, debounceTime, distinctUntilChanged, Observable, of, startWith, switchMap, take } from 'rxjs';
 
 @Component({
   selector: 'tasks-menu',
@@ -34,8 +34,8 @@ import { catchError, debounceTime, distinctUntilChanged, Observable, of, startWi
     MatOptionModule,
     TasksSettingsToggleComponent,
     MatButtonModule,
-    CommonModule,
     MatInputModule,
+    AsyncPipe,
   ],
 })
 export class TasksMenuComponent {

@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { Component, inject, input, InputSignal, OnInit, output, OutputEmitterRef } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,9 +10,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
+import { Observable, take } from 'rxjs';
+
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
-import { TimeLog } from '@shared/models/time-log.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
 
@@ -20,8 +21,7 @@ import { TaskUpdateActionEnum } from '@tasks/enums/task-update-action.enum';
 import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
 import { TaskEditService } from '@tasks/services/task-edit.service';
 import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
-
-import { Observable, take } from 'rxjs';
+import { buildTaskUpdatePayload } from '@tasks/utils/task-payload-builder.util';
 
 @Component({
   selector: 'tasks-task',
@@ -37,9 +37,9 @@ import { Observable, take } from 'rxjs';
     ReadableTimePipe,
     MatButtonModule,
     MatIconModule,
-    CommonModule,
     MatTooltipModule,
     MatInputModule,
+    AsyncPipe,
   ],
 })
 export class TaskComponent implements OnInit {
@@ -52,18 +52,7 @@ export class TaskComponent implements OnInit {
   ]>();
   protected readonly update: OutputEmitterRef<Task> = output<Task>();
   protected readonly remove: OutputEmitterRef<Task> = output<Task>();
-  protected readonly createTimeLog: OutputEmitterRef<[Task, TimeLog]> = output<[
-    Task,
-    TimeLog
-  ]>();
-  protected readonly updateTimeLog: OutputEmitterRef<[Task, TimeLog]> = output<[
-    Task,
-    TimeLog
-  ]>();
-  protected readonly removeTimeLog: OutputEmitterRef<[Task, TimeLog]> = output<[
-    Task,
-    TimeLog
-  ]>();
+  protected readonly timeLogsSaved: OutputEmitterRef<void> = output<void>();
 
   protected formGroup!: FormGroup;
 
@@ -93,16 +82,9 @@ export class TaskComponent implements OnInit {
   }
 
   protected onUpdate(): void {
-    const task: Task = this.task();
-
-    Object.assign(
-      task,
-      this.formGroup.getRawValue() as Partial<Task>,
-    );
-
-    task.updateTimeLogged();
-
-    this.update.emit(task);
+    const taskPayload: Task = buildTaskUpdatePayload(this.task(), this.formGroup.getRawValue());
+    taskPayload.updateTimeLogged();
+    this.update.emit(taskPayload);
     this.onToggleEditMode();
   }
 
@@ -139,44 +121,9 @@ export class TaskComponent implements OnInit {
     this.timeLogEditService.openTimeLogsListDialog(this.task())
       .pipe(take(1))
       .subscribe((response: TimeLogsModalResponseInterface | undefined) => {
-        if (response) {
-          this.createTimeLogs(response.created);
-          this.updateTimeLogs(response.updated);
-          this.deleteTimeLogs(response.deleted);
+        if (response?.saved) {
+          this.timeLogsSaved.emit();
         }
       });
-  }
-
-  private createTimeLogs(
-    timeLogs: TimeLog[],
-  ): void {
-    timeLogs.forEach(
-      (timeLog: TimeLog) => this.createTimeLog.emit([
-        this.task(),
-        timeLog,
-      ]),
-    );
-  }
-
-  private updateTimeLogs(
-    timeLogs: TimeLog[],
-  ): void {
-    timeLogs.forEach(
-      (timeLog: TimeLog) => this.updateTimeLog.emit([
-        this.task(),
-        timeLog,
-      ]),
-    );
-  }
-
-  private deleteTimeLogs(
-    timeLogs: TimeLog[],
-  ): void {
-    timeLogs.forEach(
-      (timeLog: TimeLog) => this.removeTimeLog.emit([
-        this.task(),
-        timeLog,
-      ]),
-    );
   }
 }

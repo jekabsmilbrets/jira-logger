@@ -26,7 +26,7 @@ class TimeLogRepository extends ServiceEntityRepository
         parent::__construct($registry, TimeLog::class);
     }
 
-    final public function add(TimeLog $timeLog, bool $flush = false): void
+    public function add(TimeLog $timeLog, bool $flush = false): void
     {
         $this->save($timeLog, $flush);
     }
@@ -57,7 +57,7 @@ class TimeLogRepository extends ServiceEntityRepository
     /**
      * @throws Exception
      */
-    final public function stopAllTimeLog(): int|string
+    public function stopAllRunningTimeLogs(): int|string
     {
         $rawQuery = 'UPDATE time_log SET end_time = (NOW()) WHERE end_time IS NULL;';
 

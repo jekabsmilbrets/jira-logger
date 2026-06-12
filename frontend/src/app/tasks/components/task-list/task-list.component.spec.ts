@@ -1,25 +1,22 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
+
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { TaskListComponent } from './task-list.component';
 
-describe('TaskListComponent', () => {
-  let component: TaskListComponent;
-  let fixture: ComponentFixture<TaskListComponent>;
+describe('Tasks Components task-list.component', () => {
+  afterEach(() => {
+    TestBed.resetTestingModule();
+  });
 
-  beforeEach(async () => {
+  it('creates as a standalone component', async () => {
     await TestBed.configureTestingModule({
       imports: [TaskListComponent],
-    })
-      .compileComponents();
-  });
+    });
 
-  beforeEach(() => {
-    fixture = TestBed.createComponent(TaskListComponent);
-    component = fixture.componentInstance;
+    const fixture = TestBed.createComponent(TaskListComponent);
     fixture.detectChanges();
-  });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+    expect(fixture.componentInstance).toBeTruthy();
   });
 });
