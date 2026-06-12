@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 
 import { vi } from 'vitest';
 
@@ -22,7 +21,6 @@ describe('Settings Components user-settings-configurator.component', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [UserSettingsConfiguratorComponent],
-      providers: [provideNoopAnimations()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(UserSettingsConfiguratorComponent);

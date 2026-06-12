@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Validators } from '@angular/forms';
 import { By } from '@angular/platform-browser';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 
 import { vi } from 'vitest';
 
@@ -24,7 +23,6 @@ describe('Settings Components jira-api-configurator.component', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [JiraApiConfiguratorComponent],
-      providers: [provideNoopAnimations()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(JiraApiConfiguratorComponent);
