@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input, input, InputSignal, output, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, InputSignal, output, OutputEmitterRef } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
@@ -20,6 +20,8 @@ import { ReportModeEnum } from '@report/enums/report-mode.enum';
 })
 export class ReportModeSwitcherComponent {
   public readonly showLabel: InputSignal<boolean> = input<boolean>(false);
+  public readonly disabled: InputSignal<boolean | null | undefined> = input<boolean | null>();
+  public readonly reportMode: InputSignal<ReportModeEnum | null | undefined> = input<ReportModeEnum | null>();
 
   protected reportModes: {
     value: ReportModeEnum;
@@ -30,33 +32,26 @@ export class ReportModeSwitcherComponent {
 
   protected readonly reportModeChange: OutputEmitterRef<ReportModeEnum> = output<ReportModeEnum>();
 
-  // TODO: Skipped for migration because:
-  //  Accessor inputs cannot be migrated as they are too complex.
-  @Input()
-  public set disabled(
-    disabled: boolean | null,
-  ) {
-    if (disabled) {
-      this.reportModeFormControl.disable();
-    } else {
-      this.reportModeFormControl.enable();
-    }
-  }
+  constructor() {
+    effect(() => {
+      if (this.disabled()) {
+        this.reportModeFormControl.disable();
+      } else {
+        this.reportModeFormControl.enable();
+      }
+    });
 
-  // TODO: Skipped for migration because:
-  //  Accessor inputs cannot be migrated as they are too complex.
-  @Input()
-  public set reportMode(
-    reportMode: ReportModeEnum | null,
-  ) {
-    if (reportMode) {
-      this.reportModeFormControl.setValue(
-        reportMode,
-        {
-          emitEvent: false,
-        },
-      );
-    }
+    effect(() => {
+      const reportMode = this.reportMode();
+      if (reportMode) {
+        this.reportModeFormControl.setValue(
+          reportMode,
+          {
+            emitEvent: false,
+          },
+        );
+      }
+    });
   }
 
   protected reportModeValueChange(

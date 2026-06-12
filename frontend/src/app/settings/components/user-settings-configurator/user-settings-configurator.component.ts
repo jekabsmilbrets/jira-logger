@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, Input, input, InputSignal, OnInit, output, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, InputSignal, OnInit, output, OutputEmitterRef } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -30,6 +30,7 @@ export class UserSettingsConfiguratorComponent implements OnInit {
   private readonly localeService: LocaleService = inject(LocaleService);
 
   public readonly settings: InputSignal<Setting[]> = input<Setting[]>([]);
+  public readonly disabled: InputSignal<boolean | null | undefined> = input<boolean | null>();
 
   protected readonly settingsChange: OutputEmitterRef<Setting[]> = output<Setting[]>();
 
@@ -40,13 +41,14 @@ export class UserSettingsConfiguratorComponent implements OnInit {
   protected timezones: string[] = this.getSupportedTimezones();
   protected readonly locales: LocaleOption[] = this.localeService.localeOptions;
 
-  @Input()
-  public set disabled(disabled: boolean | null) {
-    if (disabled) {
-      this.formGroup.disable();
-    } else {
-      this.formGroup.enable();
-    }
+  constructor() {
+    effect(() => {
+      if (this.disabled()) {
+        this.formGroup.disable();
+      } else {
+        this.formGroup.enable();
+      }
+    });
   }
 
   public ngOnInit(): void {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input, input, InputSignal, OnInit, output, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, InputSignal, OnInit, output, OutputEmitterRef } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -31,6 +31,7 @@ import { JiraApiFormGroupData } from '@settings/interfaces/jira-api-form-group-d
 })
 export class JiraApiConfiguratorComponent implements OnInit {
   public readonly settings: InputSignal<Setting[]> = input<Setting[]>([]);
+  public readonly disabled: InputSignal<boolean | null | undefined> = input<boolean | null>();
 
   protected readonly settingsChange: OutputEmitterRef<Setting[]> = output<Setting[]>();
 
@@ -42,15 +43,14 @@ export class JiraApiConfiguratorComponent implements OnInit {
   protected hidePersonalAccessToken: boolean = true;
   protected hasStoredPersonalAccessToken: boolean = false;
 
-  // TODO: Skipped for migration because:
-  //  Accessor inputs cannot be migrated as they are too complex.
-  @Input()
-  public set disabled(disabled: boolean | null) {
-    if (disabled) {
-      this.formGroup.disable();
-    } else {
-      this.formGroup.enable();
-    }
+  constructor() {
+    effect(() => {
+      if (this.disabled()) {
+        this.formGroup.disable();
+      } else {
+        this.formGroup.enable();
+      }
+    });
   }
 
   public ngOnInit(): void {

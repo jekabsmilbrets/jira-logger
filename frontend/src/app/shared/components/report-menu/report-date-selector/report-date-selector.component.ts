@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input, input, InputSignal, output, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, InputSignal, output, OutputEmitterRef } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatNativeDateModule } from '@angular/material/core';
 import { DateRange, ExtractDateTypeFromSelection, MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
@@ -24,6 +24,10 @@ import { ReportModeEnum } from '@report/enums/report-mode.enum';
 export class ReportDateSelectorComponent {
   public readonly reportMode: InputSignal<ReportModeEnum> = input.required<ReportModeEnum>();
   public readonly showLabel: InputSignal<boolean> = input<boolean>(false);
+  public readonly disabled: InputSignal<boolean | null | undefined> = input<boolean | null>();
+  public readonly date: InputSignal<Date | null | undefined> = input<Date | null>();
+  public readonly startDate: InputSignal<Date | null | undefined> = input<Date | null>();
+  public readonly endDate: InputSignal<Date | null | undefined> = input<Date | null>();
 
   protected dateFormControl: FormControl<Date | null> = new FormControl<Date | null>(null);
   protected startDateFormControl: FormControl<Date | null> = new FormControl<Date | null>(null);
@@ -33,67 +37,54 @@ export class ReportDateSelectorComponent {
   protected readonly startDateChange: OutputEmitterRef<null | Date> = output<Date | null>();
   protected readonly endDateChange: OutputEmitterRef<null | Date> = output<Date | null>();
 
-  // TODO: Skipped for migration because:
-  //  Accessor inputs cannot be migrated as they are too complex.
-  @Input()
-  public set disabled(
-    disabled: boolean | null,
-  ) {
-    if (disabled) {
-      this.dateFormControl.disable();
-      this.startDateFormControl.disable();
-      this.endDateFormControl.disable();
-    } else {
-      this.dateFormControl.enable();
-      this.startDateFormControl.enable();
-      this.endDateFormControl.enable();
-    }
-  }
+  constructor() {
+    effect(() => {
+      if (this.disabled()) {
+        this.dateFormControl.disable();
+        this.startDateFormControl.disable();
+        this.endDateFormControl.disable();
+      } else {
+        this.dateFormControl.enable();
+        this.startDateFormControl.enable();
+        this.endDateFormControl.enable();
+      }
+    });
 
-  // TODO: Skipped for migration because:
-  //  Accessor inputs cannot be migrated as they are too complex.
-  @Input()
-  public set date(
-    value: Date | null,
-  ) {
-    if (value) {
-      this.dateFormControl.setValue(
-        value,
-        {
-          emitEvent: false,
-        },
-      );
-    }
-  }
+    effect(() => {
+      const value = this.date();
+      if (value) {
+        this.dateFormControl.setValue(
+          value,
+          {
+            emitEvent: false,
+          },
+        );
+      }
+    });
 
-  // TODO: Skipped for migration because:
-  //  Accessor inputs cannot be migrated as they are too complex.
-  @Input()
-  public set startDate(value: Date | null) {
-    if (value) {
-      this.startDateFormControl.setValue(
-        value,
-        {
-          emitEvent: false,
-        },
-      );
-    }
-  }
+    effect(() => {
+      const value = this.startDate();
+      if (value) {
+        this.startDateFormControl.setValue(
+          value,
+          {
+            emitEvent: false,
+          },
+        );
+      }
+    });
 
-  // TODO: Skipped for migration because:
-  //  Accessor inputs cannot be migrated as they are too complex.
-  @Input()
-  public set endDate(
-    value: Date | null,
-  ) {
-    if (value) {
-      this.endDateFormControl.setValue(
-        value,
-        {
-          emitEvent: false,
-        },
-      );
-    }
+    effect(() => {
+      const value = this.endDate();
+      if (value) {
+        this.endDateFormControl.setValue(
+          value,
+          {
+            emitEvent: false,
+          },
+        );
+      }
+    });
   }
 
   protected onStartDateChange(

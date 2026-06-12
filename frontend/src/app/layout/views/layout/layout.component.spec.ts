@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
@@ -21,10 +21,10 @@ import { LayoutComponent } from './layout.component';
   template: '',
 })
 class MockHeaderComponent {
-  @Input() public activeTask: unknown;
-  @Input() public isLoading: boolean = false;
-  @Input() public sidenav: unknown;
-  @Input() public timeLoggedToday: number = 0;
+  public readonly activeTask = input<unknown>();
+  public readonly isLoading = input<boolean>(false);
+  public readonly sidenav = input<unknown>();
+  public readonly timeLoggedToday = input<number>(0);
 }
 
 @Component({
@@ -34,7 +34,7 @@ class MockHeaderComponent {
   template: '',
 })
 class MockSidenavComponent {
-  @Output() public sidenavClose: EventEmitter<void> = new EventEmitter<void>();
+  public readonly sidenavClose = output<void>();
 }
 
 describe('Layout Views layout.component', () => {
@@ -95,10 +95,10 @@ describe('Layout Views layout.component', () => {
     const headerDebugEl = fixture.debugElement.query(By.directive(MockHeaderComponent));
     const headerComponent = headerDebugEl.componentInstance as MockHeaderComponent;
 
-    expect(headerComponent.isLoading).toBe(true);
-    expect(headerComponent.activeTask).toEqual({ name: 'TASK-1' });
-    expect(headerComponent.timeLoggedToday).toBe(321);
-    expect(headerComponent.sidenav).toBeTruthy();
+    expect(headerComponent.isLoading()).toBe(true);
+    expect(headerComponent.activeTask()).toEqual({ name: 'TASK-1' });
+    expect(headerComponent.timeLoggedToday()).toBe(321);
+    expect(headerComponent.sidenav()).toBeTruthy();
   });
 
 });

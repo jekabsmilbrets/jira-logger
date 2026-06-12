@@ -13,8 +13,8 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  effect,
   inject,
-  Input,
   input,
   InputSignal,
   output,
@@ -78,6 +78,7 @@ export class TableComponent implements AfterViewInit {
   public readonly sortField: InputSignal<string> = input('id');
   public readonly sortDirection: InputSignal<'' | 'asc' | 'desc'> = input<SortDirection>('asc');
   public readonly columns: InputSignal<Column[]> = input<Column[]>([]);
+  public readonly data: InputSignal<Searchable[] | null | undefined> = input<Searchable[] | null>();
 
   protected readonly cellClicked: OutputEmitterRef<[Searchable, Column]> = output<[
     Searchable,
@@ -104,14 +105,11 @@ export class TableComponent implements AfterViewInit {
 
   private _data: Searchable[] = [];
 
-  // TODO: Skipped for migration because:
-  //  Accessor inputs cannot be migrated as they are too complex.
-  @Input()
-  public set data(
-    data: Searchable[] | null,
-  ) {
-    this._data = data ?? [];
-    this.dataSource.data = this._data;
+  constructor() {
+    effect(() => {
+      this._data = this.data() ?? [];
+      this.dataSource.data = this._data;
+    });
   }
 
   protected get displayedColumns(): string[] {

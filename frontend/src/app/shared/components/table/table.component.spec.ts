@@ -66,7 +66,7 @@ describe('Shared Components table.component', () => {
     const paginator = (component as any).paginator();
 
     const row = { nested: { value: 123 } } as any;
-    component.data = [row];
+    fixture.componentRef.setInput('data', [row]);
     fixture.detectChanges();
 
     expect(component['dataSource'].data).toEqual([row]);
@@ -80,24 +80,26 @@ describe('Shared Components table.component', () => {
     const date = new Date('2026-05-31T12:00:00.000Z');
     const row = { meta: { createdAt: date } } as any;
 
-    component.data = [row];
+    fixture.componentRef.setInput('data', [row]);
     fixture.detectChanges();
 
     expect(component['dataSource'].sortingDataAccessor(row, 'meta.createdAt')).toBe(date.getTime());
   });
 
   it('maps null data input to empty data source', async () => {
-    const { component } = await createComponent();
+    const { fixture, component } = await createComponent();
 
-    component.data = null;
+    fixture.componentRef.setInput('data', null);
+    fixture.detectChanges();
 
     expect(component['dataSource'].data).toEqual([]);
   });
 
   it('checks and toggles selection state', async () => {
-    const { component } = await createComponent();
+    const { fixture, component } = await createComponent();
     const rows = [{ id: 1 } as any, { id: 2 } as any];
-    component.data = rows;
+    fixture.componentRef.setInput('data', rows);
+    fixture.detectChanges();
 
     expect(component['isAllSelected']()).toBe(false);
 
@@ -134,10 +136,11 @@ describe('Shared Components table.component', () => {
   });
 
   it('emits footer click only for clickable footer cells not disabled', async () => {
-    const { component } = await createComponent();
+    const { fixture, component } = await createComponent();
     const emitSpy = vi.spyOn(component['footerCellClicked'], 'emit');
     const rows = [{ id: 1 } as any];
-    component.data = rows;
+    fixture.componentRef.setInput('data', rows);
+    fixture.detectChanges();
 
     component['onFooterCellClicked'](createColumn({ isClickable: false }));
     component['onFooterCellClicked'](createColumn({ isClickable: true, disableFooterClick: true }));
@@ -265,7 +268,7 @@ describe('Shared Components table.component', () => {
         cell: () => undefined,
       } as any,
     ]);
-    component.data = [row];
+    fixture.componentRef.setInput('data', [row]);
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('mat-header-row'))).toBeTruthy();
@@ -289,7 +292,7 @@ describe('Shared Components table.component', () => {
     fixture.componentRef.setInput('columns', [
       { columnDef: 'plain', header: 'Plain', sortable: true, cell: () => 'abc' } as any,
     ]);
-    component.data = [{ id: '1' } as any];
+    fixture.componentRef.setInput('data', [{ id: '1' } as any]);
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('mat-row'))).toBeTruthy();
@@ -310,7 +313,7 @@ describe('Shared Components table.component', () => {
         footerCell: () => 'footer',
       } as any,
     ]);
-    component.data = [{ id: '1' } as any];
+    fixture.componentRef.setInput('data', [{ id: '1' } as any]);
     fixture.detectChanges();
 
     const clickableCell = fixture.debugElement.query(By.css('.mat-cell-clickable'));
@@ -329,7 +332,7 @@ describe('Shared Components table.component', () => {
     fixture.componentRef.setInput('columns', [
       { columnDef: 'plain', header: 'Plain', sortable: true, cell: () => 'abc' } as any,
     ]);
-    component.data = [{ id: '1' } as any, { id: '2' } as any];
+    fixture.componentRef.setInput('data', [{ id: '1' } as any, { id: '2' } as any]);
     fixture.detectChanges();
 
     const checkboxes = fixture.debugElement.queryAll(By.css('mat-checkbox'));

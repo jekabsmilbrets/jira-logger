@@ -67,10 +67,12 @@ describe('Settings Components jira-api-configurator.component', () => {
   });
 
   it('disables and enables form via disabled input setter', () => {
-    component.disabled = true;
+    fixture.componentRef.setInput('disabled', true);
+    fixture.detectChanges();
     expect((component as any).formGroup.controls[JiraApiSettingSlugs.host].disabled).toBe(true);
 
-    component.disabled = false;
+    fixture.componentRef.setInput('disabled', false);
+    fixture.detectChanges();
     expect((component as any).formGroup.controls[JiraApiSettingSlugs.host].enabled).toBe(true);
   });
 

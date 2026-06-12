@@ -1,5 +1,5 @@
 import { AsyncPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
@@ -30,16 +30,16 @@ import { SettingsComponent } from '@settings/views/settings/settings.component';
   template: '',
 })
 class ReportConfiguratorStubComponent {
-  @Input() public disabled = false;
-  @Input() public reportSettings!: ReportSettings;
+  public readonly disabled = input(false);
+  public readonly reportSettings = input.required<ReportSettings>();
 
-  @Output() public readonly reportModeChange = new EventEmitter<ReportModeEnum>();
-  @Output() public readonly tagChange = new EventEmitter<Tag[]>();
-  @Output() public readonly dateChange = new EventEmitter<Date | null>();
-  @Output() public readonly startDateChange = new EventEmitter<Date | null>();
-  @Output() public readonly endDateChange = new EventEmitter<Date | null>();
-  @Output() public readonly showWeekendsChange = new EventEmitter<boolean>();
-  @Output() public readonly hideUnreportedTasksChange = new EventEmitter<boolean>();
+  public readonly reportModeChange = output<ReportModeEnum>();
+  public readonly tagChange = output<Tag[]>();
+  public readonly dateChange = output<Date | null>();
+  public readonly startDateChange = output<Date | null>();
+  public readonly endDateChange = output<Date | null>();
+  public readonly showWeekendsChange = output<boolean>();
+  public readonly hideUnreportedTasksChange = output<boolean>();
 }
 
 @Component({
@@ -49,10 +49,10 @@ class ReportConfiguratorStubComponent {
   template: '',
 })
 class JiraApiConfiguratorStubComponent {
-  @Input() public disabled = false;
-  @Input() public settings: Setting[] = [];
+  public readonly disabled = input(false);
+  public readonly settings = input<Setting[]>([]);
 
-  @Output() public readonly settingsChange = new EventEmitter<Setting[]>();
+  public readonly settingsChange = output<Setting[]>();
 }
 
 @Component({
@@ -62,10 +62,10 @@ class JiraApiConfiguratorStubComponent {
   template: '',
 })
 class UserSettingsConfiguratorStubComponent {
-  @Input() public disabled = false;
-  @Input() public settings: Setting[] = [];
+  public readonly disabled = input(false);
+  public readonly settings = input<Setting[]>([]);
 
-  @Output() public readonly settingsChange = new EventEmitter<Setting[]>();
+  public readonly settingsChange = output<Setting[]>();
 }
 
 const reportSetters = {
@@ -188,12 +188,12 @@ describe('Settings Views settings.component', () => {
     const jiraCfg = fixture.debugElement.query(By.directive(JiraApiConfiguratorStubComponent)).componentInstance as JiraApiConfiguratorStubComponent;
     const timezoneCfg = fixture.debugElement.query(By.directive(UserSettingsConfiguratorStubComponent)).componentInstance as UserSettingsConfiguratorStubComponent;
 
-    expect(reportCfg.disabled).toBe(false);
-    expect(reportCfg.reportSettings.reportMode).toBe(ReportModeEnum.dateRange);
-    expect(jiraCfg.disabled).toBe(false);
-    expect(jiraCfg.settings.length).toBe(2);
-    expect(timezoneCfg.disabled).toBe(false);
-    expect(timezoneCfg.settings.length).toBe(2);
+    expect(reportCfg.disabled()).toBe(false);
+    expect(reportCfg.reportSettings().reportMode).toBe(ReportModeEnum.dateRange);
+    expect(jiraCfg.disabled()).toBe(false);
+    expect(jiraCfg.settings().length).toBe(2);
+    expect(timezoneCfg.disabled()).toBe(false);
+    expect(timezoneCfg.settings().length).toBe(2);
   });
 
   it('forwards child output events through template bindings', () => {
