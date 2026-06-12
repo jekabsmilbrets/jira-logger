@@ -1,8 +1,9 @@
+import { fromWallClockDateInTimezone } from '@core/utils/timezone-date.utility';
+
 import { JiraWorkLog } from './jira-work-log.model';
 import { Tag } from './tag.model';
 import { Task } from './task.model';
 import { TimeLog } from './time-log.model';
-import { fromWallClockDateInTimezone } from '@core/utils/timezone-date.utility';
 
 describe('Shared Models task.model', () => {
   it('calculates total logged time', () => {
