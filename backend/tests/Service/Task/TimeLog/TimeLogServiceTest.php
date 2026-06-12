@@ -12,6 +12,12 @@ use PHPUnit\Framework\TestCase;
 
 class TimeLogServiceTest extends TestCase
 {
+    private function assignEntityId(object $entity, string $id): void
+    {
+        $reflectionProperty = new \ReflectionProperty($entity, 'id');
+        $reflectionProperty->setValue($entity, $id);
+    }
+
     public function testStartTaskTimeLogStopsAllRunningTimeLogsGlobally(): void
     {
         $repository = $this->createMock(TimeLogRepository::class);
@@ -29,7 +35,7 @@ class TimeLogServiceTest extends TestCase
         self::assertInstanceOf(TimeLog::class, $timeLog);
         self::assertSame($task, $timeLog->getTask());
         self::assertNull($timeLog->getEndTime());
-        self::assertInstanceOf(\DateTime::class, $timeLog->getStartTime());
+        self::assertInstanceOf(\DateTimeImmutable::class, $timeLog->getStartTime());
     }
 
     public function testStopTaskTimeLogReturnsNullWhenTaskHasNoTimeLogs(): void
@@ -50,5 +56,22 @@ class TimeLogServiceTest extends TestCase
         $task->addTimeLog($timeLog);
 
         self::assertNull($service->stopTaskTimeLog($task, false));
+    }
+
+    public function testStopTaskTimeLogSetsImmutableEndTimeForOpenLog(): void
+    {
+        $repository = $this->createMock(TimeLogRepository::class);
+        $service = new TimeLogService($repository);
+        $task = new Task();
+        $timeLog = (new TimeLog())
+            ->setStartTime(new \DateTimeImmutable('2026-05-30 09:00:00'));
+        $this->assignEntityId($task, '5640e2d4-eff2-4f53-8e71-8cd305530f7f');
+        $this->assignEntityId($timeLog, 'f9d3d0b5-d71b-4758-b762-9b27c6125d20');
+        $task->addTimeLog($timeLog);
+
+        $updatedTimeLog = $service->stopTaskTimeLog($task, false);
+
+        self::assertSame($timeLog, $updatedTimeLog);
+        self::assertInstanceOf(\DateTimeImmutable::class, $updatedTimeLog?->getEndTime());
     }
 }

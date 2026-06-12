@@ -161,7 +161,7 @@ class TimeLogService
 
         $timeLog = new TimeLog();
         $timeLog->setTask($task)
-            ->setStartTime(new \DateTime());
+            ->setStartTime(new \DateTimeImmutable());
 
         return $this->new(
             timeLog: $timeLog,
@@ -185,7 +185,7 @@ class TimeLogService
             return null;
         }
 
-        $timeLog->setEndTime(new \DateTime());
+        $timeLog->setEndTime(new \DateTimeImmutable());
 
         return $this->edit(
             taskId: $task->getId(),
