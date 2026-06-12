@@ -20,6 +20,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
+import { formatDateInTimezone } from '@core/utils/format-date-in-timezone.utility';
 
 import { Column } from '@shared/interfaces/column.interface';
 import { Searchable } from '@shared/interfaces/searchable.interface';
@@ -201,14 +202,14 @@ export class TableComponent implements AfterViewInit {
       return;
     }
 
-    const timeLogDate: string = formatDate(timeLog.date, 'yyyy-MM-dd', this.localeService.locale, this.timezoneService.timezone);
+    const timeLogDate: string = formatDateInTimezone(timeLog.date, 'yyyy-MM-dd', this.localeService.locale, this.timezoneService.timezone);
     const timeLogStartTime: Date = timeLog.startTime;
     const timeLogStart: null | string = timeLogStartTime ?
-      formatDate(timeLogStartTime, 'HH:mm:ss', this.localeService.locale, this.timezoneService.timezone) :
+      formatDateInTimezone(timeLogStartTime, 'HH:mm:ss', this.localeService.locale, this.timezoneService.timezone) :
       null;
     const timeLogEndTime: undefined | Date = timeLog.endTime;
     const timeLogEnd: null | string = timeLogEndTime ?
-      formatDate(timeLogEndTime, 'HH:mm:ss', this.localeService.locale, this.timezoneService.timezone) :
+      formatDateInTimezone(timeLogEndTime, 'HH:mm:ss', this.localeService.locale, this.timezoneService.timezone) :
       null;
 
     const confirmation$: ReturnType<AreYouSureService['openDialog']> | undefined = this.areYouSureService.openDialog(
@@ -243,11 +244,15 @@ export class TableComponent implements AfterViewInit {
       return '';
     }
 
-    return formatDate(
-      value,
-      format,
-      this.localeService.locale,
-      this.timezoneService.timezone,
-    );
+    if (value instanceof Date) {
+      return formatDateInTimezone(
+        value,
+        format,
+        this.localeService.locale,
+        this.timezoneService.timezone,
+      );
+    }
+
+    return formatDate(value, format, this.localeService.locale, this.timezoneService.timezone);
   }
 }

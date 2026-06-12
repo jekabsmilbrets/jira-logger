@@ -35,4 +35,20 @@ describe('Tasks Constants time-log-list-columns.constant', () => {
     const logged = columns.find((c) => c.columnDef === 'timeLogged');
     expect(logged?.footerCell?.([timeLog])).toBe(60);
   });
+
+  it('formats time-log timestamps in the configured IANA timezone instead of browser local time', () => {
+    const columns = createTimeLogListColumns(
+      () => 'lv-LV',
+      () => 'Europe/Riga',
+    );
+
+    const timeLog = new TimeLog({
+      startTime: new Date('2026-06-12T15:00:54.000Z'),
+      endTime: new Date('2026-06-12T16:00:00.000Z'),
+    } as any);
+
+    expect(columns.find((column) => column.columnDef === 'startTime')?.cell(timeLog)).toBe('2026-06-12 18:00:54');
+    expect(columns.find((column) => column.columnDef === 'endTime')?.cell(timeLog)).toBe('2026-06-12 19:00:0');
+    expect(columns.find((column) => column.columnDef === 'date')?.cell(timeLog)).toBe('2026-06-12');
+  });
 });

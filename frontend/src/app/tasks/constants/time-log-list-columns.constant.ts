@@ -1,5 +1,4 @@
-import { formatDate } from '@angular/common';
-
+import { formatDateInTimezone } from '@core/utils/format-date-in-timezone.utility';
 import { Column } from '@shared/interfaces/column.interface';
 import { TimeLog } from '@shared/models/time-log.model';
 import { columnValue } from '@shared/utils/column-value.util';
@@ -33,7 +32,7 @@ export const createTimeLogListColumns: (
     sortable: true,
     hidden: false,
     isClickable: true,
-    cell: (timeLog: TimeLog) => timeLog.startTime && formatDate(timeLog.startTime, 'yyyy-MM-dd H:mm:s', getLocale(), getTimezone()),
+    cell: (timeLog: TimeLog) => timeLog.startTime && formatDateInTimezone(timeLog.startTime, 'yyyy-MM-dd H:mm:s', getLocale(), getTimezone()),
   },
   {
     columnDef: 'endTime',
@@ -41,14 +40,14 @@ export const createTimeLogListColumns: (
     sortable: true,
     hidden: false,
     isClickable: true,
-    cell: (timeLog: TimeLog) => timeLog.endTime && formatDate(timeLog.endTime, 'yyyy-MM-dd H:mm:s', getLocale(), getTimezone()),
+    cell: (timeLog: TimeLog) => timeLog.endTime && formatDateInTimezone(timeLog.endTime, 'yyyy-MM-dd H:mm:s', getLocale(), getTimezone()),
   },
   {
     columnDef: 'date',
     header: 'Date',
     sortable: true,
     hidden: false,
-    cell: (timeLog: TimeLog) => timeLog.date && formatDate(timeLog.date, 'yyyy-MM-dd', getLocale(), getTimezone()),
+    cell: (timeLog: TimeLog) => timeLog.date && formatDateInTimezone(timeLog.date, 'yyyy-MM-dd', getLocale(), getTimezone()),
   },
   {
     columnDef: 'year',
