@@ -39,7 +39,6 @@ class TaskController extends BaseApiController
     final public const CANNOT_DELETE_TASK = 'Can not Delete Task';
     final public const CANNOT_UPDATE_TASK = 'Can not Update Task';
     final public const DUPLICATE_TASK_NAME = 'Duplicate Task name';
-    final public const INVALID_DATE_FILTER = 'Invalid date filter values';
 
     final public const OA_TAG = 'Tasks';
     final public const MODEL_SCHEMA = '#/components/schemas/TaskModel';
@@ -158,13 +157,7 @@ class TaskController extends BaseApiController
         }
 
         $filter = $filterRequest->toFilterArray();
-//         dd($filter);
-
-        try {
-            $tasks = $this->taskService->list($filter);
-        } catch (\Throwable) {
-            return $this->badRequestJsonApi(self::INVALID_DATE_FILTER);
-        }
+        $tasks = $this->taskService->list($filter);
 
         if (empty($tasks) || [] === $tasks) {
             return $this->jsonApi(
