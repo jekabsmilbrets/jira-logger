@@ -43,3 +43,7 @@ Thumbs.db
 
 # Database dumps
 db_dump.sql
+
+/.logs
+
+.env

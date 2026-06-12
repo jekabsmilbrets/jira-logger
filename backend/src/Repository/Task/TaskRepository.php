@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository\Task;
 
 use App\Entity\Task\Task;
+use App\Service\DateTime\TaskFilterDateRangeResolver;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Ramsey\Uuid\Uuid;
@@ -21,7 +22,10 @@ use Ramsey\Uuid\Uuid;
  */
 class TaskRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(
+        ManagerRegistry $registry,
+        private readonly TaskFilterDateRangeResolver $taskFilterDateRangeResolver,
+    )
     {
         parent::__construct($registry, Task::class);
     }
@@ -85,21 +89,14 @@ class TaskRepository extends ServiceEntityRepository
             }
         }
 
-        if (
-            isset($filter['date']) || isset($filter['startDate'], $filter['endDate'])
-        ) {
-            $startDate = new \DateTime($filter['date'] ?? $filter['startDate']);
-            $endDate = new \DateTime($filter['date'] ?? $filter['endDate']);
-
-            $endDate->setTime(23, 59, 59);
+        $dateRange = $this->taskFilterDateRangeResolver->resolve($filter);
+        if (null !== $dateRange) {
+            $startDate = $dateRange['startDate'];
+            $endDate = $dateRange['endDate'];
 
             $queryBuilder
                 ->andWhere(
-                    '(
-                        (:startTime <= l.startTime AND l.startTime <= :endTime) OR
-                        (l.startTime <= :startTime AND l.endTime >= :endTime) OR
-                        (l.startTime >= :startTime AND l.endTime <= :endTime)
-                    )'
+                    '(l.startTime <= :endTime AND (l.endTime IS NULL OR l.endTime >= :startTime))'
                 )
                 ->setParameter('startTime', $startDate)
                 ->setParameter('endTime', $endDate);

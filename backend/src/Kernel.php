@@ -14,6 +14,11 @@ class Kernel extends BaseKernel
     final public function boot(): void
     {
         parent::boot();
-        date_default_timezone_set($this->getContainer()->getParameter('timezone'));
+
+        $internalTimezone = $_SERVER['APP_INTERNAL_TIMEZONE']
+            ?? $_ENV['APP_INTERNAL_TIMEZONE']
+            ?? 'UTC';
+
+        date_default_timezone_set($internalTimezone);
     }
 }

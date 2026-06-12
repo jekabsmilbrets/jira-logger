@@ -1,0 +1,51 @@
+<form (ngSubmit)="onSaveFormData()"
+      [formGroup]="formGroup">
+    <mat-card>
+        <mat-card-header>
+            <mat-card-title>User Time Zone</mat-card-title>
+        </mat-card-header>
+
+        @if (settings()) {
+            <mat-card-content>
+                <mat-form-field>
+                    <mat-label>Time Zone</mat-label>
+
+                    <mat-select formControlName="jira-user-time-zone">
+                        @for (timezone of timezones; track timezone) {
+                            <mat-option [value]="timezone">{{ timezone }}</mat-option>
+                        }
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-form-field>
+                    <mat-label>Locale</mat-label>
+
+                    <mat-select formControlName="jira-locale">
+                        @for (locale of locales; track locale.value) {
+                            <mat-option [value]="locale.value">{{ locale.label }}</mat-option>
+                        }
+                    </mat-select>
+                </mat-form-field>
+            </mat-card-content>
+        }
+
+        <mat-card-actions>
+            <button (click)="onCancel()"
+                    [disabled]="formGroup.disabled"
+                    aria-label="Cancel"
+                    color="danger"
+                    mat-raised-button
+                    type="button">
+                Cancel
+            </button>
+
+            <button [disabled]="formGroup.disabled || !formGroup.dirty"
+                    aria-label="Save"
+                    color="primary"
+                    mat-raised-button
+                    type="submit">
+                Save
+            </button>
+        </mat-card-actions>
+    </mat-card>
+</form>

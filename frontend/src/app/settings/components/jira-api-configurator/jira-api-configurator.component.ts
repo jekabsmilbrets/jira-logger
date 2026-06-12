@@ -9,9 +9,9 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { Setting } from '@core/models/setting.model';
 
-import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
-import { JiraApiFormGroupData } from '@settings/interfaces/jira-api-form-group-data.interface';
+import { JiraApiSettings, JiraApiSettingSlugs } from '@settings/enums/jira-api-settings.enum';
 import { JiraApiFormGroup } from '@settings/interfaces/jira-api-form-group.interface';
+import { JiraApiFormGroupData } from '@settings/interfaces/jira-api-form-group-data.interface';
 
 @Component({
   selector: 'settings-jira-api-configurator',
@@ -34,11 +34,12 @@ export class JiraApiConfiguratorComponent implements OnInit {
   protected readonly settingsChange: OutputEmitterRef<Setting[]> = output<Setting[]>();
 
   protected formGroup: FormGroup<JiraApiFormGroup> = new FormGroup<JiraApiFormGroup>({
-    [JiraApiSettings.enabled]: new FormControl(false, Validators.required),
-    [JiraApiSettings.host]: new FormControl('', Validators.required),
-    [JiraApiSettings.personalAccessToken]: new FormControl('', Validators.required),
+    [JiraApiSettingSlugs.enabled]: new FormControl(false, Validators.required),
+    [JiraApiSettingSlugs.host]: new FormControl('', Validators.required),
+    [JiraApiSettingSlugs.personalAccessToken]: new FormControl(''),
   });
   protected hidePersonalAccessToken: boolean = true;
+  protected hasStoredPersonalAccessToken: boolean = false;
 
   // TODO: Skipped for migration because:
   //  Accessor inputs cannot be migrated as they are too complex.
@@ -53,6 +54,7 @@ export class JiraApiConfiguratorComponent implements OnInit {
 
   public ngOnInit(): void {
     this.patchFormData();
+    this.formGroup.controls[JiraApiSettingSlugs.enabled].valueChanges.subscribe(() => this.updateTokenValidator());
   }
 
   protected onCancel(): void {
@@ -60,6 +62,11 @@ export class JiraApiConfiguratorComponent implements OnInit {
   }
 
   protected onSaveFormData(): void {
+    if (this.formGroup.invalid) {
+      this.formGroup.markAllAsTouched();
+      return;
+    }
+
     const formData: JiraApiFormGroupData = this.formGroup.getRawValue() as JiraApiFormGroupData;
     const changedSettings: Setting[] = [];
 
@@ -70,9 +77,32 @@ export class JiraApiConfiguratorComponent implements OnInit {
         const originalSetting: undefined | Setting = this.getSetting(key);
 
         if (originalSetting) {
-          originalSetting.value = value;
+          if (key === JiraApiSettings.personalAccessToken) {
+            if (typeof value !== 'string') {
+              continue;
+            }
 
-          changedSettings.push(originalSetting);
+            if (!value.trim()) {
+              if (this.formGroup.controls[JiraApiSettingSlugs.enabled].value === false && this.hasStoredPersonalAccessToken) {
+                changedSettings.push(
+                  new Setting({
+                    ...originalSetting,
+                    value: '',
+                  }),
+                );
+              }
+              continue;
+            }
+          }
+
+          changedSettings.push(
+            new Setting({
+              ...originalSetting,
+              value: typeof value === 'boolean' ?
+                String(value) :
+                value ?? '',
+            }),
+          );
         }
       }
     }
@@ -83,13 +113,28 @@ export class JiraApiConfiguratorComponent implements OnInit {
   }
 
   private patchFormData(): void {
+    this.hasStoredPersonalAccessToken = !!this.getSettingValue(JiraApiSettings.personalAccessToken, '');
     const newFormData: Record<string, string | boolean> = {
-      [`${ JiraApiSettings.enabled }`]: this.getSettingValue(JiraApiSettings.enabled, false),
-      [`${ JiraApiSettings.host }`]: this.getSettingValue(JiraApiSettings.host, ''),
-      [`${ JiraApiSettings.personalAccessToken }`]: this.getSettingValue(JiraApiSettings.personalAccessToken, ''),
+      [`${ JiraApiSettingSlugs.enabled }`]: this.getSettingValue(JiraApiSettings.enabled, false),
+      [`${ JiraApiSettingSlugs.host }`]: this.getSettingValue(JiraApiSettings.host, ''),
+      [`${ JiraApiSettingSlugs.personalAccessToken }`]: '',
     };
 
     this.formGroup.patchValue(newFormData);
+    this.formGroup.controls[JiraApiSettingSlugs.personalAccessToken].markAsPristine();
+    this.updateTokenValidator();
+  }
+
+  private updateTokenValidator(): void {
+    const tokenControl: FormControl<string | null> = this.formGroup.controls[JiraApiSettingSlugs.personalAccessToken];
+    const jiraEnabled: boolean = !!this.formGroup.controls[JiraApiSettingSlugs.enabled].value;
+    const requireToken: boolean = jiraEnabled && !this.hasStoredPersonalAccessToken;
+
+    tokenControl.clearValidators();
+    if (requireToken) {
+      tokenControl.setValidators(Validators.required);
+    }
+    tokenControl.updateValueAndValidity({ emitEvent: false });
   }
 
   private getSetting(
@@ -125,7 +170,9 @@ export class JiraApiConfiguratorComponent implements OnInit {
           return setting.value.toLowerCase() === 'true';
         }
 
-        return setting.value;
+        if (typeof setting.value === 'string' || typeof setting.value === 'boolean') {
+          return setting.value;
+        }
       }
     }
 

@@ -1,9 +1,9 @@
 import { FormControl } from '@angular/forms';
 
-import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
+import { JiraApiSettingSlugs } from '@settings/enums/jira-api-settings.enum';
 
 export interface JiraApiFormGroup {
-  [JiraApiSettings.enabled]: FormControl<boolean | null>;
-  [JiraApiSettings.host]: FormControl<string | null>;
-  [JiraApiSettings.personalAccessToken]: FormControl<string | null>;
+  [JiraApiSettingSlugs.enabled]: FormControl<boolean | null>;
+  [JiraApiSettingSlugs.host]: FormControl<string | null>;
+  [JiraApiSettingSlugs.personalAccessToken]: FormControl<string | null>;
 }

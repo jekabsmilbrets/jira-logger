@@ -1,5 +1,5 @@
-export interface JsonApi<DataGeneric = any, ErrorsGeneric = any, MetaGeneric = any> {
+export interface JsonApi<DataGeneric = unknown, ErrorsGeneric = unknown, MetaGeneric = unknown> {
   data?: DataGeneric;
-  errors?: Record<string, any> | ErrorsGeneric;
-  meta?: Record<string, any> | MetaGeneric;
+  errors?: Record<string, unknown> | ErrorsGeneric;
+  meta?: Record<string, unknown> | MetaGeneric;
 }

@@ -9,19 +9,21 @@ use App\Controller\API\Task\TaskController;
 use App\Dto\Task\TimeLog\TimeLogRequest;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
+use App\Service\DateTime\DateInputParser;
 use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
-use Exception;
 use OpenApi\Attributes as OA;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Throwable;
 
 #[Route(
     path: '/api/task/{taskId}/time-log',
@@ -41,6 +43,8 @@ class TimeLogController extends BaseApiController
     public function __construct(
         private readonly TimeLogService $timeLogService,
         private readonly TaskService $taskService,
+        private readonly DateInputParser $dateInputParser,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -224,11 +228,11 @@ class TimeLogController extends BaseApiController
         ValidatorInterface $validator,
         SerializerInterface $serializer,
         Request $request,
-        TaskService $taskService,
     ): JsonResponse {
         try {
             $timeLogRequest = new TimeLogRequest(
-                taskService: $taskService
+                taskService: $this->taskService,
+                dateInputParser: $this->dateInputParser,
             );
             $timeLogRequest = $serializer->deserialize(
                 data: $request->getContent(),
@@ -263,7 +267,17 @@ class TimeLogController extends BaseApiController
 
         try {
             $timeLog = $this->timeLogService->new($timeLogRequest);
-        } catch (Exception) {
+        } catch (Throwable $throwable) {
+            $this->logger->error(
+                'Failed to create time log.',
+                [
+                    'taskId' => $taskId,
+                    'requestStartTime' => $timeLogRequest->getStartTime(),
+                    'requestEndTime' => $timeLogRequest->getEndTime(),
+                    'exception' => $throwable,
+                ]
+            );
+
             return $this->jsonApi(
                 errors: [self::CANNOT_CREATE_TIME_LOG],
                 status: Response::HTTP_BAD_REQUEST
@@ -355,11 +369,11 @@ class TimeLogController extends BaseApiController
         ValidatorInterface $validator,
         SerializerInterface $serializer,
         Request $request,
-        TaskService $taskService
     ): JsonResponse {
         try {
             $timeLogRequest = new TimeLogRequest(
-                taskService: $taskService
+                taskService: $this->taskService,
+                dateInputParser: $this->dateInputParser,
             );
             $timeLogRequest = $serializer->deserialize(
                 data: $request->getContent(),
@@ -394,7 +408,18 @@ class TimeLogController extends BaseApiController
                 id: $id,
                 timeLogRequest: $timeLogRequest
             );
-        } catch (Exception) {
+        } catch (Throwable $throwable) {
+            $this->logger->error(
+                'Failed to update time log.',
+                [
+                    'taskId' => $taskId,
+                    'timeLogId' => $id,
+                    'requestStartTime' => $timeLogRequest->getStartTime(),
+                    'requestEndTime' => $timeLogRequest->getEndTime(),
+                    'exception' => $throwable,
+                ]
+            );
+
             return $this->jsonApi(
                 errors: [self::CANNOT_UPDATE_TIME_LOG],
                 status: Response::HTTP_BAD_REQUEST
@@ -500,11 +525,11 @@ class TimeLogController extends BaseApiController
             path: '/start',
             name: 'start-task',
             requirements: ['id' => Requirement::UUID],
-            methods: [Request::METHOD_GET],
+            methods: [Request::METHOD_POST],
             stateless: true
         ),
         OA\Tag(name: self::OA_TAG),
-        OA\Get(
+        OA\Post(
             operationId: 'start-task',
             summary: 'Start Task TimeLog',
             tags: [self::OA_TAG],
@@ -545,11 +570,11 @@ class TimeLogController extends BaseApiController
             path: '/stop',
             name: 'stop-task',
             requirements: ['id' => Requirement::UUID],
-            methods: [Request::METHOD_GET],
+            methods: [Request::METHOD_POST],
             stateless: true
         ),
         OA\Tag(name: self::OA_TAG),
-        OA\Get(
+        OA\Post(
             operationId: 'stop-task',
             summary: 'Stop Task TimeLog',
             tags: [self::OA_TAG],

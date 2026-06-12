@@ -1,13 +1,14 @@
 import { inject, Injectable } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 
+import { Observable, of, switchMap, take } from 'rxjs';
+
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
-import { TaskFormGroup } from '@tasks/interfaces/task-form-group.interface';
 
-import { Observable, of, switchMap, take } from 'rxjs';
+import { TaskFormGroup } from '@tasks/interfaces/task-form-group.interface';
 
 @Injectable({
   providedIn: 'root',

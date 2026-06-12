@@ -20,12 +20,12 @@ class TimeLogFactory
             $timeLog = new TimeLog();
         }
 
-        if (null !== ($startTime = $timeLogRequest->getStartTime())) {
-            $timeLog->setStartTime(new \DateTime($startTime));
+        if (null !== ($startTime = $timeLogRequest->getStartTimeValue())) {
+            $timeLog->setStartTime($startTime);
         }
 
-        if (null !== ($endTime = $timeLogRequest->getEndTime())) {
-            $timeLog->setEndTime(new \DateTime($endTime));
+        if (null !== ($endTime = $timeLogRequest->getEndTimeValue())) {
+            $timeLog->setEndTime($endTime);
         }
 
         if (null !== ($description = $timeLogRequest->getDescription())) {

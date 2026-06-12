@@ -1,18 +1,42 @@
 services:
+  assets-init:
+    container_name: "jira-logger-assets-init"
+    build:
+      context: ./../
+      dockerfile: ./.docker/assets-init/Dockerfile
+    environment:
+      - ASSETS_VERSION=${ASSETS_VERSION:-unknown}
+      - API_HOST=${API_HOST:-https://jira-logger.io}
+      - API_BASE=${API_BASE:-/api}
+    volumes:
+      - assetsData:/assets:rw
+    command: ["/usr/local/bin/assets-init.sh"]
+    restart: "no"
+    labels:
+      - "traefik.enable=false"
+
   db:
     container_name: "jira-logger-db"
     image: postgres:${POSTGRES_VERSION}-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_USER: ${POSTGRES_USER}
-      TZ: 'Europe/Riga'
-      PGTZ: 'Europe/Riga'
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      TZ: 'UTC'
+      PGTZ: 'UTC'
     volumes:
       - dbData:/var/lib/postgresql/data:rw
-      - ./postgresql/postgresql.conf:/etc/postgresql/postgresql.conf
-    ports:
-      - "15432:5432"
+      - ./postgresql/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command:
+      - postgres
+      - -c
+      - log_destination=stderr
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     labels:
       - "traefik.enable=false"
 
@@ -22,52 +46,94 @@ services:
       context: ./../
       dockerfile: ./.docker/php-fpm/Dockerfile
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
-      - APP_ENV=${APP_ENV}
-      - APP_SECRET=${APP_SECRET}
-      - DATABASE_URL=${DATABASE_URL}
+      - APP_ENV=${APP_ENV:-prod}
+      - APP_SECRET=${APP_SECRET:?APP_SECRET is required}
+      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL is required}
+      - APP_INTERNAL_TIMEZONE=${APP_INTERNAL_TIMEZONE:?APP_INTERNAL_TIMEZONE is required}
+      - APP_DEFAULT_USER_TIMEZONE=${APP_DEFAULT_USER_TIMEZONE:?APP_DEFAULT_USER_TIMEZONE is required}
+      - CORS_ALLOW_ORIGIN=${CORS_ALLOW_ORIGIN:?CORS_ALLOW_ORIGIN is required}
+      - API_AUTH_USERNAME=${API_AUTH_USERNAME:?API_AUTH_USERNAME is required}
+      - API_AUTH_PASSWORD=${API_AUTH_PASSWORD:?API_AUTH_PASSWORD is required}
+      - JIRA_PERSONAL_ACCESS_TOKEN=${JIRA_PERSONAL_ACCESS_TOKEN-}
+    volumes:
+      - assetsData:/var/www/public/ng:ro
+    healthcheck:
+      test: ["CMD-SHELL", "php-fpm -t"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     labels:
       - "traefik.enable=false"
-    volumes:
-      - ./../backend/:/var/www
-      - ./../frontend/dist/jira-logger/browser/:/var/www/public/ng
 
   nginx:
     container_name: "jira-logger-nginx"
     build:
       context: ./../
       dockerfile: ./.docker/nginx/Dockerfile
-    volumes:
-      - ./../backend/:/var/www
-      - ./../frontend/dist/jira-logger/browser/:/var/www/public/ng
-      - ./certs/:/etc/ssl/certs/
-      - ./nginx/sites/:/etc/nginx/sites-available
-      - ./nginx/conf.d/:/etc/nginx/conf.d
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - php-fpm
-      - db
+      assets-init:
+        condition: service_completed_successfully
+      php-fpm:
+        condition: service_healthy
+      db:
+        condition: service_healthy
     labels:
       traefik.enable: true
       traefik.http.routers.jira-logger-nginx.rule: Host(`jira-logger.io`)
       traefik.http.routers.jira-logger-nginx.entrypoints: websecure
       traefik.http.routers.jira-logger-nginx.tls: true
       traefik.http.services.jira-logger-nginx.loadbalancer.server.port: 80
+    environment:
+      - API_HOST=${API_HOST:-https://jira-logger.io}
+      - API_BASE=${API_BASE:-/api}
+    volumes:
+      - assetsData:/var/www/public/ng:ro
     ports:
       - "80"
-      - "4433:443"
+    healthcheck:
+      test: ["CMD-SHELL", "nginx -t"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - traefik
+      - default
 
-  node:
-    container_name: "jira-logger-node"
+  migrate:
+    container_name: "jira-logger-migrate"
     build:
       context: ./../
-      dockerfile: ./.docker/node/Dockerfile
-    working_dir: /home/node/app
-    volumes:
-      - ./../frontend/:/home/node/app
-    labels:
-      - "traefik.enable=false"
+      dockerfile: ./.docker/php-fpm/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - APP_ENV=${APP_ENV:-prod}
+      - APP_SECRET=${APP_SECRET:?APP_SECRET is required}
+      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL is required}
+      - APP_INTERNAL_TIMEZONE=${APP_INTERNAL_TIMEZONE:?APP_INTERNAL_TIMEZONE is required}
+      - APP_DEFAULT_USER_TIMEZONE=${APP_DEFAULT_USER_TIMEZONE:?APP_DEFAULT_USER_TIMEZONE is required}
+      - CORS_ALLOW_ORIGIN=${CORS_ALLOW_ORIGIN:?CORS_ALLOW_ORIGIN is required}
+      - API_AUTH_USERNAME=${API_AUTH_USERNAME:?API_AUTH_USERNAME is required}
+      - API_AUTH_PASSWORD=${API_AUTH_PASSWORD:?API_AUTH_PASSWORD is required}
+      - JIRA_PERSONAL_ACCESS_TOKEN=${JIRA_PERSONAL_ACCESS_TOKEN-}
+    command:
+      - sh
+      - -c
+      - php bin/console doctrine:database:create --if-not-exists --no-interaction; php bin/console doctrine:migrations:migrate --no-interaction
+    restart: "no"
+    profiles:
+      - release
 
 volumes:
   dbData:
+  assetsData:
+
+networks:
+  traefik:
+    external: true

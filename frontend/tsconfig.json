@@ -33,7 +33,7 @@
       "@settings/*": [
         "./src/app/settings/*"
       ],
-      "environments/*": [
+      "@environments/*": [
         "./src/environments/*"
       ]
     }

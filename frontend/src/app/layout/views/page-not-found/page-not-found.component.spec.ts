@@ -1,25 +1,21 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 
 import { PageNotFoundComponent } from './page-not-found.component';
 
-describe('PageNotFoundComponent', () => {
-  let component: PageNotFoundComponent;
-  let fixture: ComponentFixture<PageNotFoundComponent>;
-
+describe('Layout Views page-not-found.component', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [PageNotFoundComponent],
-    })
-      .compileComponents();
+    }).compileComponents();
   });
 
-  beforeEach(() => {
-    fixture = TestBed.createComponent(PageNotFoundComponent);
-    component = fixture.componentInstance;
+  it('renders not-found message', () => {
+    const fixture = TestBed.createComponent(PageNotFoundComponent);
+
     fixture.detectChanges();
-  });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+    const message: string = fixture.nativeElement.textContent;
+
+    expect(message).toContain('Page not found!');
   });
 });

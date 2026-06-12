@@ -1,6 +1,6 @@
 <div class="dialog-title"
      mat-dialog-title>
-    <h2>Time Log {{ data.timeLog.startTime | date: 'yyyy-MM-dd HH:mm:ss' }}</h2>
+    <h2>Time Log {{ modalTitleDateTime }}</h2>
 
     <button (click)="onCancel()"
             aria-label="close dialog"
@@ -72,6 +72,10 @@
             <mat-timepicker-toggle [for]="endTimepicker"
                                    matSuffix/>
         </mat-form-field>
+
+        @if (formGroup.errors?.['invalidChronology']) {
+            <p>End time must be later than start time.</p>
+        }
     </form>
 </mat-dialog-content>
 

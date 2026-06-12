@@ -13,12 +13,10 @@ use App\Utility\Entity\EntityBaseInterface;
 use App\Utility\Traits\BaseEntityTrait;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\Common\Collections\Order;
 use OpenApi\Attributes as OA;
-use Symfony\Component\Serializer\Annotation\Groups;
-use Symfony\Component\Serializer\Annotation\MaxDepth;
+use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Serializer\Attribute\MaxDepth;
 
 #[
     ORM\Entity(repositoryClass: TaskRepository::class),
@@ -208,17 +206,28 @@ class Task implements EntityBaseInterface
 
     final public function getLastTimeLog(): ?TimeLog
     {
-        $criteria = Criteria::create()
-            ->orderBy(
-                [
-                    'createdAt' => Order::Descending,
-                    'updatedAt' => Order::Descending,
-                ]
-            );
+        $timeLogs = $this->timeLogs->toArray();
 
-        $timeLog = $this->timeLogs->matching($criteria)->first();
+        usort(
+            $timeLogs,
+            static function (TimeLog $left, TimeLog $right): int {
+                $startTimeComparison = $right->getStartTime() <=> $left->getStartTime();
 
-        return $timeLog instanceof TimeLog ? $timeLog : null;
+                if (0 !== $startTimeComparison) {
+                    return $startTimeComparison;
+                }
+
+                return $right->getCreatedAt() <=> $left->getCreatedAt();
+            }
+        );
+
+        foreach ($timeLogs as $timeLog) {
+            if (null === $timeLog->getEndTime()) {
+                return $timeLog;
+            }
+        }
+
+        return $timeLogs[0] ?? null;
     }
 
     final public function getJiraWorkLogs(): Collection

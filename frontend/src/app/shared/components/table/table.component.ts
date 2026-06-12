@@ -8,7 +8,7 @@ import {
   CdkHeaderRowDef,
   CdkRowDef,
 } from '@angular/cdk/table';
-import { CommonModule, formatDate } from '@angular/common';
+import { formatDate } from '@angular/common';
 import { AfterViewInit, Component, inject, Input, input, InputSignal, output, OutputEmitterRef, Signal, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -18,7 +18,11 @@ import { MatSort, MatSortModule, SortDirection } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { appLocale, appTimeZone } from '@core/constants/date-time.constant';
+import { take } from 'rxjs';
+
+import { LocaleService } from '@core/services/locale.service';
+import { TimezoneService } from '@core/services/timezone.service';
+import { formatDateInTimezone } from '@core/utils/format-date-in-timezone.utility';
 
 import { Column } from '@shared/interfaces/column.interface';
 import { Searchable } from '@shared/interfaces/searchable.interface';
@@ -27,8 +31,6 @@ import { TimeLog } from '@shared/models/time-log.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
 import { getNestedObject } from '@shared/utils/get-nested-object.util';
-
-import { take } from 'rxjs';
 
 @Component({
   selector: 'shared-shared-table',
@@ -43,7 +45,6 @@ import { take } from 'rxjs';
     MatIconModule,
     MatButtonModule,
     MatPaginatorModule,
-    CommonModule,
     ReadableTimePipe,
     CdkHeaderCellDef,
     CdkColumnDef,
@@ -85,6 +86,8 @@ export class TableComponent implements AfterViewInit {
   protected dataSource: MatTableDataSource<Searchable> = new MatTableDataSource<Searchable>([]);
 
   private readonly areYouSureService: AreYouSureService = inject(AreYouSureService);
+  private readonly timezoneService: TimezoneService = inject(TimezoneService);
+  private readonly localeService: LocaleService = inject(LocaleService);
 
   private _data: Searchable[] = [];
 
@@ -108,9 +111,10 @@ export class TableComponent implements AfterViewInit {
       columns.push('remove');
     }
 
-    if (this.enableSyncAction()) {
-      // columns.push('sync');
-    }
+    // TODO: Enable when bug in table is resolved
+    // if (this.enableSyncAction()) {
+    //   columns.push('sync');
+    // }
 
     if (this.isSelectable()) {
       columns.unshift('select');
@@ -121,10 +125,18 @@ export class TableComponent implements AfterViewInit {
 
   public ngAfterViewInit(): void {
     this.dataSource.sort = this.sort();
-    this.dataSource.sortingDataAccessor = (item: any, property: string) => getNestedObject(
-      item,
-      property.split('.'),
-    );
+    this.dataSource.sortingDataAccessor = (item: Searchable, property: string): string | number => {
+      const value: unknown = getNestedObject(
+        item,
+        property.split('.'),
+      );
+
+      if (value instanceof Date) {
+        return value.getTime();
+      }
+
+      return (typeof value === 'number' || typeof value === 'string') ? value : '';
+    };
     this.dataSource.paginator = this.paginator();
   }
 
@@ -190,19 +202,25 @@ export class TableComponent implements AfterViewInit {
       return;
     }
 
-    const timeLogDate: string = formatDate(timeLog.date, 'yyyy-MM-dd', appLocale, appTimeZone);
+    const timeLogDate: string = formatDateInTimezone(timeLog.date, 'yyyy-MM-dd', this.localeService.locale, this.timezoneService.timezone);
     const timeLogStartTime: Date = timeLog.startTime;
     const timeLogStart: null | string = timeLogStartTime ?
-      formatDate(timeLogStartTime, 'HH:mm:ss', appLocale, appTimeZone) :
+      formatDateInTimezone(timeLogStartTime, 'HH:mm:ss', this.localeService.locale, this.timezoneService.timezone) :
       null;
     const timeLogEndTime: undefined | Date = timeLog.endTime;
     const timeLogEnd: null | string = timeLogEndTime ?
-      formatDate(timeLogEndTime, 'HH:mm:ss', appLocale, appTimeZone) :
+      formatDateInTimezone(timeLogEndTime, 'HH:mm:ss', this.localeService.locale, this.timezoneService.timezone) :
       null;
 
-    this.areYouSureService.openDialog(
+    const confirmation$: ReturnType<AreYouSureService['openDialog']> | undefined = this.areYouSureService.openDialog(
       `Time log "${ timeLogDate } ${ timeLogStart }-${ timeLogEnd }"`,
-    )
+    );
+
+    if (!confirmation$) {
+      return;
+    }
+
+    confirmation$
       .pipe(take(1))
       .subscribe((response: boolean | undefined) => {
         if (response === true) {
@@ -216,5 +234,25 @@ export class TableComponent implements AfterViewInit {
   ): void {
     const task: Task | undefined = row as Task;
     this.syncAction.emit(task);
+  }
+
+  protected formatDateValue(
+    value: Date | string | number | null | undefined,
+    format: string = 'yyyy-MM-dd',
+  ): string {
+    if (!value) {
+      return '';
+    }
+
+    if (value instanceof Date) {
+      return formatDateInTimezone(
+        value,
+        format,
+        this.localeService.locale,
+        this.timezoneService.timezone,
+      );
+    }
+
+    return formatDate(value, format, this.localeService.locale, this.timezoneService.timezone);
   }
 }

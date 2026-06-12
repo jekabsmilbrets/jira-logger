@@ -10,7 +10,7 @@ use App\Utility\Entity\EntityBaseInterface;
 use App\Utility\Traits\BaseEntityTrait;
 use Doctrine\ORM\Mapping as ORM;
 use OpenApi\Attributes as OA;
-use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[
     ORM\Entity(repositoryClass: SettingRepository::class),

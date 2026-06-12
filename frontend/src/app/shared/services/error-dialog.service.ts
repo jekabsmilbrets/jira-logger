@@ -1,10 +1,10 @@
 import { inject, Injectable } from '@angular/core';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 
+import { Observable } from 'rxjs';
+
 import { ErrorDialogComponent } from '@shared/components/error-dialog/error-dialog.component';
 import { ErrorDialogDataInterface } from '@shared/interfaces/error-dialog-data.interface';
-
-import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',

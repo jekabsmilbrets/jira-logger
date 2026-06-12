@@ -7,13 +7,15 @@
 
         @if (settings()) {
             <mat-card-content>
-                <mat-slide-toggle formControlName="jira.enabled">Enabled</mat-slide-toggle>
+                <mat-slide-toggle formControlName="jira-enabled">Enabled</mat-slide-toggle>
 
                 <mat-form-field>
                     <mat-label>Jira Host</mat-label>
 
-                    <input formControlName="jira.host"
+                    <input formControlName="jira-host"
                            matInput/>
+
+                    <mat-error>Host is required.</mat-error>
                 </mat-form-field>
 
                 <mat-form-field>
@@ -21,11 +23,17 @@
 
                     <input [type]="hidePersonalAccessToken ? 'password' : 'text'"
                            autoComplete="off"
-                           formControlName="jira.personal-access-token"
+                           formControlName="jira-personal-access-token"
                            matInput/>
 
+                    <mat-error>Token is required.</mat-error>
+
+                    @if (hasStoredPersonalAccessToken) {
+                        <mat-hint>Token already configured. Leave blank to keep it, or enter a new token.</mat-hint>
+                    }
+
                     <button (click)="hidePersonalAccessToken = !hidePersonalAccessToken"
-                            [attr.aria-label]="'Hide token'"
+                            [attr.aria-label]="hidePersonalAccessToken ? 'Show token' : 'Hide token'"
                             [attr.aria-pressed]="hidePersonalAccessToken"
                             mat-icon-button
                             matSuffix
@@ -46,7 +54,7 @@
                 Cancel
             </button>
 
-            <button [disabled]="formGroup.disabled || !formGroup.dirty"
+            <button [disabled]="formGroup.disabled || !formGroup.dirty || formGroup.invalid"
                     aria-label="Save"
                     color="primary"
                     mat-raised-button

@@ -1,8 +1,10 @@
 import { ApiTag } from '@shared/interfaces/api/api-tag.interface';
 import { Tag } from '@shared/models/tag.model';
 
-export const validateTagInterfaceData: (tagInterfaceData: any, tags: Tag[]) => (ApiTag | undefined) = (
-  tagInterfaceData: any,
+import { TagInterfaceData, TagsInterfaceData } from '@tasks/interfaces/imported-task-data.interface';
+
+export const validateTagInterfaceData: (tagInterfaceData: TagInterfaceData, tags: Tag[]) => (ApiTag | undefined) = (
+  tagInterfaceData: TagInterfaceData,
   tags: Tag[],
 ): ApiTag | undefined => {
   let existingTag: Tag | undefined;
@@ -29,13 +31,12 @@ export const validateTagInterfaceData: (tagInterfaceData: any, tags: Tag[]) => (
   return undefined;
 };
 
-export const validateTagsInterfaceData: (tagsInterfaceData: any[], tags: Tag[]) => ApiTag[] = (
-  tagsInterfaceData: any[],
+export const validateTagsInterfaceData: (tagsInterfaceData: TagsInterfaceData, tags: Tag[]) => ApiTag[] = (
+  tagsInterfaceData: TagsInterfaceData,
   tags: Tag[],
 ): ApiTag[] => tagsInterfaceData
-  .map((tagInterfaceData: any) => validateTagInterfaceData(
+  .map((tagInterfaceData: TagInterfaceData) => validateTagInterfaceData(
     tagInterfaceData,
     tags,
   ))
-  .filter((tag: ApiTag | undefined): boolean => tag !== undefined)
-  .map((tagInterfaceData: ApiTag | undefined) => tagInterfaceData as ApiTag);
+  .filter((tag: ApiTag | undefined): tag is ApiTag => tag !== undefined);

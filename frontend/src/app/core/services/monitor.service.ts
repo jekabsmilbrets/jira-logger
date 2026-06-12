@@ -1,6 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 
+import { BehaviorSubject, catchError, map, Observable, switchMap, tap, throwError } from 'rxjs';
+
+import { environment } from '@environments/environment';
+
 import { adaptMonitor } from '@core/adapters/monitor.adapter';
 import { ApiMonitor } from '@core/interfaces/api/monitor.interface';
 import { JsonApi } from '@core/interfaces/json-api.interface';
@@ -9,10 +13,6 @@ import { LoaderStateService } from '@core/services/loader-state.service';
 import { waitForTurn } from '@core/utils/wait-for.utility';
 
 import { LoadableService } from '@shared/interfaces/loadable-service.interface';
-
-import { environment } from 'environments/environment';
-
-import { BehaviorSubject, catchError, map, Observable, switchMap, tap, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',

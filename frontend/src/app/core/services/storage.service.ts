@@ -1,14 +1,15 @@
 import { inject, Injectable } from '@angular/core';
 
+import { UseStore } from 'idb-keyval';
+import { BehaviorSubject, catchError, from, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+
 import { DbFailInterface } from '@core/interfaces/db-fail.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
+import { storageIdbGateway } from '@core/services/storage-idb.gateway';
+import { KeyValueEntry } from '@core/types/key-value-entry.type';
 import { waitForTurn } from '@core/utils/wait-for.utility';
 
 import { LoadableService } from '@shared/interfaces/loadable-service.interface';
-
-import { createStore, del, entries, get, set, setMany, UseStore } from 'idb-keyval';
-
-import { BehaviorSubject, catchError, from, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -35,7 +36,7 @@ export class StorageService implements LoadableService {
     const dbName: string = `${ name }-db`;
     const storeName: string = `${ name }-store`;
 
-    return createStore(
+    return storageIdbGateway.createStore(
       dbName,
       storeName,
     );
@@ -51,17 +52,17 @@ export class StorageService implements LoadableService {
 
   public list(
     customStoreName?: string,
-  ): Observable<any> {
+  ): Observable<KeyValueEntry[]> {
     if (customStoreName) {
       if (!this.stores.has(customStoreName)) {
         throw new Error('Invalid store!');
       }
     }
 
-    const request: (csn?: string) => Observable<[IDBValidKey, any][]> = (
+    const request: (csn?: string) => Observable<KeyValueEntry[]> = (
       csn?: string,
-    ): Observable<[IDBValidKey, any][]> => from(
-      entries(
+    ): Observable<KeyValueEntry[]> => from(
+      storageIdbGateway.entries(
         this.getUseStore(csn),
       ),
     );
@@ -84,25 +85,27 @@ export class StorageService implements LoadableService {
       );
   }
 
-  public read(
+  // Allows callers to request a concrete decoded value type.
+  // Storage itself is untyped, so default remains unknown.
+  public read<TValue = unknown>(
     key: IDBValidKey,
     customStoreName?: string,
-  ): Observable<any> {
+  ): Observable<TValue> {
     if (customStoreName) {
       if (!this.stores.has(customStoreName)) {
         throw new Error('Invalid store!');
       }
     }
 
-    const request: (k: IDBValidKey, csn?: string) => Observable<any> = (
+    const request: (k: IDBValidKey, csn?: string) => Observable<TValue> = (
       k: IDBValidKey,
       csn?: string,
-    ) => from(
-      get(
+    ): Observable<TValue> => from(
+      storageIdbGateway.get(
         k,
         this.getUseStore(csn),
       ),
-    );
+    ) as Observable<TValue>;
 
     return waitForTurn(
       this.isLoading$,
@@ -128,7 +131,7 @@ export class StorageService implements LoadableService {
 
   public create(
     key: IDBValidKey,
-    value: any,
+    value: unknown,
     customStoreName?: string,
   ): Observable<void> {
     if (customStoreName) {
@@ -137,12 +140,12 @@ export class StorageService implements LoadableService {
       }
     }
 
-    const request: (k: IDBValidKey, v: any, csn?: string) => Observable<void> = (
+    const request: (k: IDBValidKey, v: unknown, csn?: string) => Observable<void> = (
       k: IDBValidKey,
-      v: any,
+      v: unknown,
       csn?: string,
     ) => from(
-      set(
+      storageIdbGateway.set(
         k,
         v,
         this.getUseStore(csn),
@@ -175,7 +178,7 @@ export class StorageService implements LoadableService {
 
   public update(
     key: IDBValidKey,
-    value: any,
+    value: unknown,
     customStoreName?: string,
   ): Observable<void> {
     return this.create(
@@ -188,7 +191,7 @@ export class StorageService implements LoadableService {
   public massUpdate(
     data: {
       key: IDBValidKey;
-      value: any
+      value: unknown
     }[],
     customStoreName?: string,
   ): Observable<void> {
@@ -198,20 +201,20 @@ export class StorageService implements LoadableService {
       }
     }
 
-    const dataEntries: [IDBValidKey, any][] = data.map(
+    const dataEntries: KeyValueEntry[] = data.map(
       (dataRow: {
         key: IDBValidKey;
-        value: any
+        value: unknown
       }) => [
         dataRow.key,
         dataRow.value,
       ]);
 
-    const request: (d: [IDBValidKey, any][], csn?: string) => Observable<void> = (
-      d: [IDBValidKey, any][],
+    const request: (d: KeyValueEntry[], csn?: string) => Observable<void> = (
+      d: KeyValueEntry[],
       csn?: string,
     ) => from(
-      setMany(
+      storageIdbGateway.setMany(
         d,
         this.getUseStore(csn),
       ),
@@ -253,7 +256,7 @@ export class StorageService implements LoadableService {
       k: IDBValidKey,
       csn?: string,
     ) => from(
-      del(
+      storageIdbGateway.del(
         k,
         this.getUseStore(csn),
       ),
@@ -284,7 +287,7 @@ export class StorageService implements LoadableService {
   public recreateStore(
     data: {
       key: IDBValidKey;
-      value: any;
+      value: unknown;
     }[],
     customStoreName: string,
   ): Observable<boolean> {
@@ -311,14 +314,14 @@ export class StorageService implements LoadableService {
     return Array.from(this.stores.keys());
   }
 
-  private reportError(
-    error: any,
-    request: (...rArgs: any) => Observable<any>,
+  private reportError<TArgs extends unknown[]>(
+    error: unknown,
+    request: (...rArgs: TArgs) => Observable<unknown>,
     args: {
       customStoreName?: string;
       key?: IDBValidKey;
-      value?: any;
-      dataEntries?: [IDBValidKey, any][]
+      value?: unknown;
+      dataEntries?: KeyValueEntry[]
     },
   ): Observable<never> {
     this.isDbFailedSubject.next({

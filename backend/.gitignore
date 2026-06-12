@@ -1,5 +1,6 @@
 
 ###> symfony/framework-bundle ###
+/.env
 /.env.dev
 /.env.local
 /.env.local.php
@@ -20,3 +21,4 @@ cghooks.lock
 ###> phpstan/phpstan ###
 phpstan.neon
 ###< phpstan/phpstan ###
+/.phpunit.result.cache

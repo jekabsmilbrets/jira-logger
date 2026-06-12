@@ -7,11 +7,15 @@ global:
 # log default is ERROR, but WARN is more helpful
 log:
   level: WARN
+  filePath: /var/log/traefik/log-traefik.log
   # level: INFO
+
+accessLog:
+  filePath: /var/log/traefik/log-traefik-access.log
 
 # enable dashboard on 8080 with auth
 api:
-  insecure: true
+  insecure: false
   dashboard: true
 
 # enable ping so the `traefik healthcheck` works
@@ -21,6 +25,7 @@ ping: { }
 # and also use this file for dynamic config (tls)
 providers:
   docker:
+    endpoint: tcp://docker-socket-proxy:2375
     exposedByDefault: false
     watch: true
   file:
@@ -53,4 +58,5 @@ tls:
       # in browser
   options:
     default:
-    sniStrict: true
+      sniStrict: true
+      minVersion: VersionTLS12

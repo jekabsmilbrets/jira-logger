@@ -1,6 +1,6 @@
 <form (ngSubmit)="onUpdate()"
       [formGroup]="formGroup">
-    <mat-card [ngClass]="{
+    <mat-card [class]="{
             'task-card-editing': editMode,
             'task-card--started': isTimeLogRunning() && !editMode,
         }"
@@ -31,6 +31,8 @@
 
                     <input formControlName="name"
                            matInput/>
+
+                    <mat-error>Task name is required.</mat-error>
                 </mat-form-field>
 
                 <mat-form-field class="input-form-field">
@@ -50,6 +52,8 @@
 
                     <textarea formControlName="description"
                               matInput></textarea>
+
+                    <mat-error>Description is required.</mat-error>
                 </mat-form-field>
             </mat-card-content>
         }
@@ -74,7 +78,7 @@
 
             <button (click)="onOpenTimeLogsModal()"
                     [disabled]="isLoading() || editMode"
-                    aria-label="Remove"
+                    aria-label="View Time Log History"
                     color="warn"
                     mat-icon-button
                     type="button">
@@ -101,7 +105,7 @@
             }
 
             @if (editMode) {
-                <button [disabled]="false"
+                <button [disabled]="isLoading() || formGroup.invalid || !formGroup.dirty"
                         aria-label="Update"
                         mat-icon-button
                         color="primary"

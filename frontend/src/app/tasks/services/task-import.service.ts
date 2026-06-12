@@ -1,6 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 
+import { BehaviorSubject, catchError, concat, map, Observable, of, switchMap, tap, throwError, toArray } from 'rxjs';
+
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { waitForTurn } from '@core/utils/wait-for.utility';
 
@@ -11,8 +13,6 @@ import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
-
-import { BehaviorSubject, catchError, concat, map, Observable, of, switchMap, tap, throwError, toArray } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',

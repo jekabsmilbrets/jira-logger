@@ -1,0 +1,22 @@
+services:
+  db:
+    ports:
+      - "15432:5432"
+
+  nginx:
+    volumes:
+      - ./certs/:/etc/ssl/certs/
+      - ./nginx/sites/:/etc/nginx/sites-available
+      - ./nginx/conf.d/:/etc/nginx/conf.d
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "4433:443"
+
+  node:
+    container_name: "jira-logger-node"
+    build:
+      context: ./../
+      dockerfile: ./.docker/node/Dockerfile
+    working_dir: /home/node/app
+    labels:
+      - "traefik.enable=false"

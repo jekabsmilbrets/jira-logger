@@ -1,27 +1,33 @@
 import { getNestedObject } from '@shared/utils/get-nested-object.util';
 
-export const columnValue: (element: any, column: string, join?: boolean, joinCallback?: CallableFunction) => any = (
-  element: any,
+type JoinCallback = (value: unknown, index: number, array: unknown[]) => unknown;
+
+export const columnValue: (element: object, column: string, join?: boolean, joinCallback?: JoinCallback) => unknown = (
+  element: object,
   column: string,
   join?: boolean,
-  joinCallback?: CallableFunction,
-): any => {
-  element = Object(element);
+  joinCallback?: JoinCallback,
+): unknown => {
+  const safeElement: Record<string, unknown> = Object(element);
 
   if (true === join) {
     if (joinCallback) {
-      if (Object.prototype.hasOwnProperty.call(element, column)) {
-        return element[column].map(joinCallback).join(', ');
+      if (Object.prototype.hasOwnProperty.call(safeElement, column)) {
+        const value: unknown = safeElement[column];
+
+        return Array.isArray(value) ? value.map(joinCallback).join(', ') : '';
       } else {
         return '';
       }
     }
-    if (Object.prototype.hasOwnProperty.call(element, column)) {
-      return element[column].join(', ');
+    if (Object.prototype.hasOwnProperty.call(safeElement, column)) {
+      const value: unknown = safeElement[column];
+
+      return Array.isArray(value) ? value.join(', ') : '';
     } else {
       return '';
     }
   }
 
-  return getNestedObject(element, column.split('.')) ?? '';
+  return getNestedObject(safeElement, column.split('.')) ?? '';
 };
