@@ -1,4 +1,4 @@
-import { Component, input, InputSignal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, InputSignal } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 
 @Component({
@@ -6,6 +6,7 @@ import { MatCardModule } from '@angular/material/card';
   templateUrl: './task-list-configurator.component.html',
   styleUrls: ['./task-list-configurator.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     MatCardModule,
   ],

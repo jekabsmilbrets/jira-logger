@@ -9,7 +9,19 @@ import {
   CdkRowDef,
 } from '@angular/cdk/table';
 import { formatDate } from '@angular/common';
-import { AfterViewInit, Component, inject, Input, input, InputSignal, output, OutputEmitterRef, Signal, viewChild } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  Input,
+  input,
+  InputSignal,
+  output,
+  OutputEmitterRef,
+  Signal,
+  viewChild,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
@@ -37,6 +49,7 @@ import { getNestedObject } from '@shared/utils/get-nested-object.util';
   templateUrl: './table.component.html',
   styleUrls: ['./table.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     MatTableModule,
     MatSortModule,

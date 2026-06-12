@@ -1,5 +1,5 @@
 import { AsyncPipe } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
 
 import { map, Observable, of, switchMap, take } from 'rxjs';
 
@@ -23,6 +23,7 @@ import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
   templateUrl: './tasks-view.component.html',
   styleUrls: ['./tasks-view.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     TaskViewHeaderComponent,
     TaskListComponent,

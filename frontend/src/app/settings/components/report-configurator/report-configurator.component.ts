@@ -1,4 +1,4 @@
-import { Component, input, InputSignal, output, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, InputSignal, output, OutputEmitterRef } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 
 import { ReportDateSelectorComponent } from '@shared/components/report-menu/report-date-selector/report-date-selector.component';
@@ -17,6 +17,7 @@ import { ReportSettings } from '@settings/interfaces/report-settings.interface';
   templateUrl: './report-configurator.component.html',
   styleUrls: ['./report-configurator.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     MatCardModule,
     ReportModeSwitcherComponent,

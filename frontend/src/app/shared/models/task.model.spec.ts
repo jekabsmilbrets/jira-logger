@@ -2,6 +2,7 @@ import { JiraWorkLog } from './jira-work-log.model';
 import { Tag } from './tag.model';
 import { Task } from './task.model';
 import { TimeLog } from './time-log.model';
+import { fromWallClockDateInTimezone } from '@core/utils/timezone-date.utility';
 
 describe('Shared Models task.model', () => {
   it('calculates total logged time', () => {
@@ -66,6 +67,9 @@ describe('Shared Models task.model', () => {
   });
 
   it('groups logged and synced time using the provided timezone instead of browser local time', () => {
+    const timezone = 'Europe/Vienna';
+    const june2InVienna = fromWallClockDateInTimezone(new Date(2026, 5, 2, 12, 0, 0), timezone);
+    const june3InVienna = fromWallClockDateInTimezone(new Date(2026, 5, 3, 12, 0, 0), timezone);
     const task = new Task({
       timeLogs: [
         new TimeLog({
@@ -81,10 +85,10 @@ describe('Shared Models task.model', () => {
       ],
     } as any);
 
-    expect(task.calcTimeLoggedForDate(new Date(2026, 5, 2), 'Europe/Vienna')).toBe(0);
-    expect(task.calcTimeLoggedForDate(new Date(2026, 5, 3), 'Europe/Vienna')).toBe(1800);
-    expect(task.calcTimeSynced(new Date(2026, 5, 3), 'Europe/Vienna')).toBe(1800);
-    expect(task.calcTimeSynced(new Date(2026, 5, 2), 'Europe/Vienna')).toBe(0);
+    expect(task.calcTimeLoggedForDate(june2InVienna, timezone)).toBe(1800);
+    expect(task.calcTimeLoggedForDate(june3InVienna, timezone)).toBe(0);
+    expect(task.calcTimeSynced(june2InVienna, timezone)).toBe(1800);
+    expect(task.calcTimeSynced(june3InVienna, timezone)).toBe(0);
   });
 
   it('splits time logs by overlap with each timezone day instead of assigning all time to the start day', () => {

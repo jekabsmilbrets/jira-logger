@@ -1,6 +1,6 @@
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 import { AsyncPipe, NgTemplateOutlet } from '@angular/common';
-import { Component, inject, Signal, TemplateRef, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, Signal, TemplateRef, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -22,6 +22,7 @@ import { ReportService } from '@report/services/report.service';
   templateUrl: './report-menu.component.html',
   styleUrls: ['./report-menu.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     ReportTagFilterComponent,
     ReportModeSwitcherComponent,

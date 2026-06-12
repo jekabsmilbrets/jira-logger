@@ -1,4 +1,4 @@
-import { Component, Input, input, InputSignal, output, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, input, InputSignal, output, OutputEmitterRef } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatNativeDateModule } from '@angular/material/core';
 import { DateRange, ExtractDateTypeFromSelection, MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
@@ -12,6 +12,7 @@ import { ReportModeEnum } from '@report/enums/report-mode.enum';
   templateUrl: './report-date-selector.component.html',
   styleUrls: ['./report-date-selector.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     MatFormFieldModule,
     MatNativeDateModule,

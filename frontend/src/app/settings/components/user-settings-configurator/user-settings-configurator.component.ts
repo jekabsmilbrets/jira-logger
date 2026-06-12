@@ -1,4 +1,4 @@
-import { Component, inject, Input, input, InputSignal, OnInit, output, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, Input, input, InputSignal, OnInit, output, OutputEmitterRef } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -17,6 +17,7 @@ import { TimeZoneFormGroup } from '@settings/interfaces/time-zone-form-group.int
   templateUrl: './user-settings-configurator.component.html',
   styleUrls: ['./user-settings-configurator.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     ReactiveFormsModule,
     MatCardModule,

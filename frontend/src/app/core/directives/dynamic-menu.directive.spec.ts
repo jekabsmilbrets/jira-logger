@@ -1,10 +1,11 @@
-import { Component, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewChild } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { DynamicMenuDirective } from './dynamic-menu.directive';
 
 @Component({
   template: '<ng-container appDynamicMenu></ng-container>',
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [DynamicMenuDirective],
 })
 class HostComponent {

@@ -1,4 +1,4 @@
-import { Component, output, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, output, OutputEmitterRef } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListItem, MatNavList } from '@angular/material/list';
 import { RouterLink, RouterLinkActive } from '@angular/router';
@@ -10,6 +10,7 @@ import { SideNavInterface } from '@layout/interfaces/side-nav.interface';
   templateUrl: './sidenav.component.html',
   styleUrls: ['./sidenav.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     MatNavList,
     MatListItem,

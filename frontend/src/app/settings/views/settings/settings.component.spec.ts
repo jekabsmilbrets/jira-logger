@@ -1,5 +1,5 @@
 import { AsyncPipe } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
@@ -26,6 +26,7 @@ import { SettingsComponent } from '@settings/views/settings/settings.component';
 @Component({
   selector: 'settings-report-configurator',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: '',
 })
 class ReportConfiguratorStubComponent {
@@ -44,6 +45,7 @@ class ReportConfiguratorStubComponent {
 @Component({
   selector: 'settings-jira-api-configurator',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: '',
 })
 class JiraApiConfiguratorStubComponent {
@@ -56,6 +58,7 @@ class JiraApiConfiguratorStubComponent {
 @Component({
   selector: 'settings-timezone-configurator',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: '',
 })
 class UserSettingsConfiguratorStubComponent {

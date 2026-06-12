@@ -1,4 +1,4 @@
-import { Component, Input, input, InputSignal, OnInit, output, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, input, InputSignal, OnInit, output, OutputEmitterRef } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -18,6 +18,7 @@ import { JiraApiFormGroupData } from '@settings/interfaces/jira-api-form-group-d
   templateUrl: './jira-api-configurator.component.html',
   styleUrls: ['./jira-api-configurator.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     ReactiveFormsModule,
     MatCardModule,

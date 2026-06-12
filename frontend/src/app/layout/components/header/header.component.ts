@@ -1,4 +1,15 @@
-import { Component, inject, Injector, input, InputSignal, OnDestroy, Signal, viewChild, ViewContainerRef } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  Injector,
+  input,
+  InputSignal,
+  OnDestroy,
+  Signal,
+  viewChild,
+  ViewContainerRef,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -21,6 +32,7 @@ import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [MatToolbarModule, MatButtonModule, RouterLink, MatIconModule, ReadableTimePipe, DynamicMenuDirective, MatProgressBarModule],
 })
 export class HeaderComponent implements OnDestroy {

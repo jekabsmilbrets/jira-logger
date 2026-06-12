@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
@@ -17,6 +17,7 @@ import { LayoutComponent } from './layout.component';
 @Component({
   selector: 'layout-header',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: '',
 })
 class MockHeaderComponent {
@@ -29,6 +30,7 @@ class MockHeaderComponent {
 @Component({
   selector: 'layout-sidenav',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: '',
 })
 class MockSidenavComponent {

@@ -1,5 +1,5 @@
 import { AsyncPipe } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import { combineLatest, forkJoin, map, Observable, shareReplay, switchMap, take } from 'rxjs';
 
@@ -24,6 +24,7 @@ import { ReportSettings } from '@settings/interfaces/report-settings.interface';
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     JiraApiConfiguratorComponent,
     UserSettingsConfiguratorComponent,
