@@ -1,0 +1,48 @@
+services:
+  log-governor:
+    container_name: "jira-logger-log-governor"
+    image: alpine:3.20
+    environment:
+      - LOG_DIR=/logs
+      - LOG_CAP_BYTES=52428800
+      - LOG_SCAN_INTERVAL_SEC=5
+      - LOG_FILES=log-php-fpm-error.log log-php-fpm-access.log log-php-fpm-slow.log log-symfony-main.log log-symfony-deprecation.log log-symfony-jira-api-service.log log-nginx-access.log log-nginx-error.log log-postgres.log log-traefik.log log-traefik-access.log log-assets-init.log log-migrate.log
+    volumes:
+      - ./../.logs/jira-logger:/logs:rw
+      - ./logging/log-cap-governor.sh:/opt/logging/log-cap-governor.sh:ro
+    command:
+      - /bin/sh
+      - /opt/logging/log-cap-governor.sh
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=false"
+
+  db:
+    volumes:
+      - ./../.logs/jira-logger:/var/log/postgresql:rw
+    command:
+      - postgres
+      - -c
+      - logging_collector=on
+      - -c
+      - log_destination=stderr
+      - -c
+      - log_directory=/var/log/postgresql
+      - -c
+      - log_filename=log-postgres.log
+      - -c
+      - log_truncate_on_rotation=off
+
+  php-fpm:
+    volumes:
+      - ./../.logs/jira-logger:/var/www/var/log:rw
+      - ./../.logs/jira-logger:/var/log/php-fpm:rw
+
+  nginx:
+    volumes:
+      - ./../.logs/jira-logger:/var/log/nginx:rw
+
+  migrate:
+    volumes:
+      - ./../.logs/jira-logger:/var/www/var/log:rw
+      - ./../.logs/jira-logger:/var/log/php-fpm:rw

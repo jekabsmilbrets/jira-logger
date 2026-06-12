@@ -42,7 +42,6 @@ services:
     volumes:
       - "./traefik.yaml:/etc/traefik/traefik.yaml:ro"
       - "./certs/:/certs/:ro"
-      - "./../.logs/jira-logger:/var/log/traefik:rw"
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
       interval: 10s

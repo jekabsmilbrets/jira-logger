@@ -9,6 +9,8 @@ HOST_LOG_DIR=".logs/${PROJECT_NAME}"
 HOST_LOG_ARCHIVE_DIR="${HOST_LOG_DIR}/archive"
 DOCKER_ENV_FILE="./.docker/.env"
 DOCKER_ENV_TEMPLATE="./.docker/.env.example"
+HOST_LOG_PERSISTENCE="false"
+LOGGING_MODE="off"
 
 show_help() {
   cat <<EOF
@@ -19,6 +21,7 @@ Usage:
   manager.sh -a start -b
   manager.sh -a start -b
   manager.sh -a start -b -t off
+  manager.sh -a start -l on
   manager.sh -a down
   manager.sh -a rebuild
   manager.sh -a db-remove
@@ -31,6 +34,7 @@ Usage:
 Options:
   -a  Action [start|start-with-init|down|build|rebuild|db-remove|db-dump|migrate|prepare-db|seed|upgrade]
   -b  Run docker containers in background
+  -l  Host log persistence [on|off] (default: off)
   -t  Traefik mode [on|off] (default: on)
   -h  Show help
 EOF
@@ -65,6 +69,14 @@ while [[ $# -gt 0 ]]; do
       BACKGROUND="-d"
       shift
       ;;
+    -l)
+      if [[ "${2:-}" == "on" || "${2:-}" == "off" ]]; then
+        LOGGING_MODE="$2"
+        shift 2
+      else
+        shift
+      fi
+      ;;
     -t)
       if [[ "${2:-}" == "on" || "${2:-}" == "off" ]]; then
         TRAEFIK_MODE="$2"
@@ -90,8 +102,21 @@ if [[ "$TRAEFIK_MODE" != "on" && "$TRAEFIK_MODE" != "off" ]]; then
   exit 1
 fi
 
+if [[ "$LOGGING_MODE" != "on" && "$LOGGING_MODE" != "off" ]]; then
+  echo "Invalid value for -l: '$LOGGING_MODE' (allowed: on|off)"
+  exit 1
+fi
+
+if [[ "${LOGGING_MODE}" == "on" ]]; then
+  HOST_LOG_PERSISTENCE="true"
+  COMPOSE_FILES+=(./.docker/docker-compose.host-logs.yml)
+fi
+
 if [[ "$TRAEFIK_MODE" == "on" ]]; then
   COMPOSE_FILES+=(./.docker/docker-compose-traefik.yml)
+  if [[ "${LOGGING_MODE}" == "on" ]]; then
+    COMPOSE_FILES+=(./.docker/docker-compose-traefik.host-logs.yml)
+  fi
 fi
 
 TRAEFIK_ARGS=()
@@ -99,14 +124,26 @@ if [[ "$TRAEFIK_MODE" == "off" ]]; then
   TRAEFIK_ARGS=(-t off)
 fi
 
+LOGGING_ARGS=()
+if [[ "$LOGGING_MODE" == "on" ]]; then
+  LOGGING_ARGS=(-l on)
+fi
+
 compose_cmd() {
   ensure_traefik_network
-  COMPOSE_PROJECT_NAME="${PROJECT_NAME}" docker compose $(printf -- '-f %s ' "${COMPOSE_FILES[@]}") "$@"
+  ensure_docker_env_file
+  COMPOSE_PROJECT_NAME="${PROJECT_NAME}" docker compose --env-file "${DOCKER_ENV_FILE}" $(printf -- '-f %s ' "${COMPOSE_FILES[@]}") "$@"
 }
 
 run_with_log() {
   local logfile="$1"
   shift
+
+  if [[ "${HOST_LOG_PERSISTENCE}" != "true" ]]; then
+    "$@"
+    return $?
+  fi
+
   ensure_host_log_dir
   "$@" 2>&1 | tee -a "${HOST_LOG_DIR}/${logfile}"
   return "${PIPESTATUS[0]}"
@@ -148,6 +185,10 @@ append_compose_file_once() {
 }
 
 rotate_host_logs() {
+  if [[ "${HOST_LOG_PERSISTENCE}" != "true" ]]; then
+    return 0
+  fi
+
   local stamp
   local file
   local active
@@ -245,7 +286,6 @@ run_assets_init() {
 build_images() {
   echo "Building docker images"
   generate_certificates
-  ensure_host_log_dir
   export COMPOSE_BAKE=true
   compose_cmd build
 }
@@ -265,14 +305,14 @@ preflight_assets_marker_for_start() {
     if is_interactive_tty; then
       echo "Assets marker is missing."
       if prompt_yes_no_default_yes "Run build now?"; then
-        bash "$0" -a build "${TRAEFIK_ARGS[@]}"
+        bash "$0" -a build "${TRAEFIK_ARGS[@]}" "${LOGGING_ARGS[@]}"
       else
         echo "Start aborted. Run: sh manager.sh -a build"
         exit 1
       fi
     else
       echo "Assets marker is missing. Running build automatically before start."
-      bash "$0" -a build "${TRAEFIK_ARGS[@]}"
+      bash "$0" -a build "${TRAEFIK_ARGS[@]}" "${LOGGING_ARGS[@]}"
     fi
     return 0
   fi
@@ -283,7 +323,7 @@ preflight_assets_marker_for_start() {
       echo "  marker:   $marker"
       echo "  expected: $expected"
       if prompt_yes_no_default_yes "Run rebuild now?"; then
-        bash "$0" -a rebuild "${TRAEFIK_ARGS[@]}"
+        bash "$0" -a rebuild "${TRAEFIK_ARGS[@]}" "${LOGGING_ARGS[@]}"
       else
         echo "Start aborted. Run: sh manager.sh -a rebuild"
         exit 1
@@ -442,8 +482,8 @@ case "$ACTION" in
     ;;
   rebuild)
     echo "Running action $ACTION"
-    bash "$0" -a down "${TRAEFIK_ARGS[@]}"
-    bash "$0" -a build "${TRAEFIK_ARGS[@]}"
+    bash "$0" -a down "${TRAEFIK_ARGS[@]}" "${LOGGING_ARGS[@]}"
+    bash "$0" -a build "${TRAEFIK_ARGS[@]}" "${LOGGING_ARGS[@]}"
     ;;
   db-remove)
     echo "Removing database data volume 'jira-logger_dbData'..."
