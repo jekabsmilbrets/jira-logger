@@ -1,7 +1,11 @@
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 
-export const JIRA_API_FORM_KEYS = {
+export const JIRA_API_FORM_KEYS: {
+  readonly enabled: 'enabled';
+  readonly host: 'host';
+  readonly personalAccessToken: 'personalAccessToken';
+} = {
   enabled: 'enabled',
   host: 'host',
   personalAccessToken: 'personalAccessToken',
@@ -15,7 +19,10 @@ export const JIRA_API_FORM_TO_SETTING: Record<JiraApiFormKey, JiraApiSettings> =
   [JIRA_API_FORM_KEYS.personalAccessToken]: JiraApiSettings.personalAccessToken,
 };
 
-export const USER_SETTINGS_FORM_KEYS = {
+export const USER_SETTINGS_FORM_KEYS: {
+  readonly userTimeZone: 'userTimeZone';
+  readonly locale: 'locale';
+} = {
   userTimeZone: 'userTimeZone',
   locale: 'locale',
 } as const;

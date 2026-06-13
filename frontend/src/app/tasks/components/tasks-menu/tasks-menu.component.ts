@@ -1,13 +1,14 @@
 import { AsyncPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { rxResource, takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { form, FormField, required, validateAsync } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatOptionModule } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
-import { catchError, debounceTime, distinctUntilChanged, Observable, of, startWith, switchMap, take } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, map, Observable, of, startWith, switchMap, take } from 'rxjs';
 
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
@@ -17,8 +18,7 @@ import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 
 import { TasksSettingsToggleComponent } from '@tasks/components/tasks-menu/tasks-settings-toggler/tasks-settings-toggle.component';
-import { CreateTaskFromGroupInterface } from '@tasks/interfaces/create-task-from-group.interface';
-import { TaskCreateService } from '@tasks/services/task-create.service';
+import { CreateTaskFormValue } from '@tasks/interfaces/create-task-form-value.interface';
 import { TaskImportService } from '@tasks/services/task-import.service';
 import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
 
@@ -27,9 +27,8 @@ import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
   templateUrl: './tasks-menu.component.html',
   styleUrls: ['./tasks-menu.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ReactiveFormsModule,
     MatFormFieldModule,
     MatSelectModule,
     MatOptionModule,
@@ -37,31 +36,64 @@ import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
     MatButtonModule,
     MatInputModule,
     AsyncPipe,
+    FormField,
   ],
 })
 export class TasksMenuComponent {
   protected tags$: Observable<Tag[]>;
   protected isLoading$: Observable<boolean>;
+  protected readonly createTaskFormModel = signal<CreateTaskFormValue>({
+    name: '',
+    description: '',
+    tags: [],
+  });
+  protected readonly createTaskForm = form(this.createTaskFormModel, (path) => {
+    required(path.name, { message: 'Task name is required.' });
+    validateAsync(path.name, {
+      params: ({ value }) => {
+        const name: string = value().trim();
+        return name ? name : undefined;
+      },
+      debounce: 300,
+      factory: (name) => rxResource({
+        params: name,
+        stream: ({ params }) => {
+          if (!params) {
+            return of(false);
+          }
 
-  protected createTaskForm: FormGroup<CreateTaskFromGroupInterface>;
+          return this.tasksService.taskExist(params).pipe(
+            map(() => false),
+            catchError(() => of(true)),
+          );
+        },
+      }),
+      onSuccess: (isDuplicate) => isDuplicate ? {
+        kind: 'duplicate-task',
+        message: 'Task already exists.',
+      } : null,
+      onError: () => ({
+        kind: 'duplicate-task',
+        message: 'Task already exists.',
+      }),
+    });
+  });
 
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly tasksSettingsService: TasksSettingsService = inject(TasksSettingsService);
   private readonly taskImportService: TaskImportService = inject(TaskImportService);
-  private readonly taskCreateService: TaskCreateService = inject(TaskCreateService);
   private readonly tagsService: TagsService = inject(TagsService);
 
   constructor() {
     this.isLoading$ = this.tasksService.isLoading$;
     this.tags$ = this.tagsService.tags$;
-    this.createTaskForm = this.taskCreateService.createFormGroup();
 
-    this.createTaskForm.get('name')?.valueChanges
+    toObservable(this.createTaskForm.name().value)
       .pipe(
-        startWith(''),
+        startWith(this.createTaskFormModel().name),
         debounceTime(300),
         distinctUntilChanged(),
-        switchMap((value: string | null) => {
+        switchMap((value: string) => {
           const filter: TaskListFilter = {};
 
           if (value) {
@@ -77,6 +109,7 @@ export class TasksMenuComponent {
               catchError(() => of(null)),
             );
         }),
+        takeUntilDestroyed(),
       )
       .subscribe();
   }
@@ -100,16 +133,36 @@ export class TasksMenuComponent {
       .subscribe();
   }
 
-  protected onCreate(): void {
-    const task: Task = new Task(this.createTaskForm.getRawValue() as Partial<Task>);
+  protected onTagsChange(tags: Tag[]): void {
+    const field: ReturnType<typeof this.createTaskForm.tags> = this.createTaskForm.tags();
+    field.value.set(tags);
+    field.markAsDirty();
+    field.markAsTouched({ skipDescendants: true });
+  }
+
+  protected isSameTag(tag1: Tag, tag2: Tag): boolean {
+    return tag1.id === tag2.id;
+  }
+
+  protected onCreate(event?: Event): void {
+    event?.preventDefault?.();
+
+    if (!this.createTaskForm().valid()) {
+      this.createTaskForm().markAsTouched();
+      return;
+    }
+
+    const task: Task = new Task(this.createTaskFormModel() as Partial<Task>);
 
     this.tasksService.create(task)
       .pipe(take(1))
-      .subscribe(() => this.resetFormGroup());
+      .subscribe(() => this.resetForm());
   }
 
-  private resetFormGroup(): void {
-    this.createTaskForm.reset({
+  private resetForm(): void {
+    this.createTaskForm().reset({
+      name: '',
+      description: '',
       tags: [],
     });
   }

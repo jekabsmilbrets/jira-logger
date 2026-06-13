@@ -6,7 +6,7 @@ import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/sl
   templateUrl: './report-show-weekends.component.html',
   styleUrls: ['./report-show-weekends.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatSlideToggleModule,
   ],

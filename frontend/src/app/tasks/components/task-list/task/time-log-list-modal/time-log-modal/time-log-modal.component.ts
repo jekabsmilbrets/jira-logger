@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
-import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { form, FormField, required, validate } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -17,7 +17,7 @@ import { TimeLog } from '@shared/models/time-log.model';
 
 import { TimeLogDialogDataInterface } from '@tasks/interfaces/time-log-dialog-data.interface';
 import { TimeLogFormData } from '@tasks/interfaces/time-log-form-data.interface';
-import { TimeLogFormGroup } from '@tasks/interfaces/time-log-form-group.interface';
+import { TimeLogFormValue } from '@tasks/interfaces/time-log-form-value.interface';
 import { TimeLogModalResponseInterface } from '@tasks/interfaces/time-log-modal-response.interface';
 import { buildTimeLogPayload } from '@tasks/utils/task-payload-builder.util';
 
@@ -26,7 +26,7 @@ import { buildTimeLogPayload } from '@tasks/utils/task-payload-builder.util';
   templateUrl: './time-log-modal.component.html',
   styleUrls: ['./time-log-modal.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatButtonModule,
     MatIconModule,
@@ -36,29 +36,48 @@ import { buildTimeLogPayload } from '@tasks/utils/task-payload-builder.util';
     MatNativeDateModule,
     MatDatepickerModule,
     MatTimepickerModule,
-    ReactiveFormsModule,
+    FormField,
   ],
 })
-export class TimeLogModalComponent implements OnInit {
+export class TimeLogModalComponent {
   protected data: TimeLogDialogDataInterface = inject<TimeLogDialogDataInterface>(MAT_DIALOG_DATA);
+  protected readonly timeLogFormModel = signal<TimeLogFormValue>({
+    startTime: null,
+    endTime: null,
+    description: '',
+  });
+  protected readonly timeLogForm = form(this.timeLogFormModel, (path) => {
+    required(path.startTime, { message: 'Start time is required.' });
+    validate(path.endTime, ({ value, valueOf }) => {
+      const startTime: Date | null = valueOf(path.startTime);
+      const endTime: Date | null = value();
 
-  protected formGroup: FormGroup<TimeLogFormGroup> = new FormGroup<TimeLogFormGroup>({
-    startTime: new FormControl<Date | null>(null, Validators.required),
-    endTime: new FormControl<Date | null>(null),
-    description: new FormControl<string | null>(null),
-  }, { validators: TimeLogModalComponent.validateChronology });
+      if (startTime === null || endTime === null || endTime.getTime() === 0) {
+        return null;
+      }
+
+      return endTime.getTime() > startTime.getTime() ?
+        null :
+        {
+          kind: 'invalidChronology',
+          message: 'End time must be later than start time.',
+        };
+    });
+  });
 
   private dialogRef: MatDialogRef<TimeLogModalComponent, undefined | TimeLogModalResponseInterface> = inject<MatDialogRef<TimeLogModalComponent, TimeLogModalResponseInterface | undefined>>(MatDialogRef);
   private readonly localeService: LocaleService = inject(LocaleService);
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
 
-  public ngOnInit(): void {
-    const timezone = this.timezoneService.timezone;
+  constructor() {
+    const timezone: string = this.timezoneService.timezone;
 
-    this.formGroup.patchValue({
+    this.timeLogForm().reset({
       startTime: this.data.timeLog.startTime && toWallClockDateInTimezone(this.data.timeLog.startTime, timezone),
-      endTime: this.data.timeLog.endTime && toWallClockDateInTimezone(this.data.timeLog.endTime, timezone),
-      description: this.data.timeLog.description,
+      endTime: this.data.timeLog.endTime ?
+        toWallClockDateInTimezone(this.data.timeLog.endTime, timezone) :
+        null,
+      description: this.data.timeLog.description ?? '',
     });
   }
 
@@ -69,7 +88,12 @@ export class TimeLogModalComponent implements OnInit {
   }
 
   protected onSave(): void {
-    const formData: TimeLogFormData = this.formGroup.getRawValue();
+    if (this.timeLogForm().invalid()) {
+      this.timeLogForm().markAsTouched();
+      return;
+    }
+
+    const formData: TimeLogFormData = this.timeLogFormModel();
 
     if (formData.endTime === undefined || formData.endTime?.getTime() === 0) {
       formData.endTime = null;
@@ -96,17 +120,6 @@ export class TimeLogModalComponent implements OnInit {
     this.dialogRef.close({
       responseType: 'delete',
     });
-  }
-
-  private static validateChronology(control: AbstractControl): ValidationErrors | null {
-    const startTime: Date | null = control.get('startTime')?.value ?? null;
-    const endTime: Date | null = control.get('endTime')?.value ?? null;
-
-    if (null === startTime || null === endTime) {
-      return null;
-    }
-
-    return endTime.getTime() > startTime.getTime() ? null : { invalidChronology: true };
   }
 
   protected get modalTitleDateTime(): string {

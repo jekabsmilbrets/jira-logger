@@ -22,7 +22,7 @@ import { ReportService } from '@report/services/report.service';
   templateUrl: './report-menu.component.html',
   styleUrls: ['./report-menu.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReportTagFilterComponent,
     ReportModeSwitcherComponent,

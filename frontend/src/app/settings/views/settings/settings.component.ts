@@ -24,7 +24,7 @@ import { ReportSettings } from '@settings/interfaces/report-settings.interface';
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     JiraApiConfiguratorComponent,
     UserSettingsConfiguratorComponent,

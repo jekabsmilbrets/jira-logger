@@ -1,6 +1,7 @@
 import { AsyncPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, input, InputSignal, OnInit, output, OutputEmitterRef } from '@angular/core';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, effect, inject, input, InputSignal, output, OutputEmitterRef, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { form, FormField, required, validate } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -16,10 +17,12 @@ import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
+import { TagsService } from '@shared/services/tags.service';
+import { TasksService } from '@shared/services/tasks.service';
 
 import { TaskUpdateActionEnum } from '@tasks/enums/task-update-action.enum';
+import { TaskFormValue } from '@tasks/interfaces/task-form-value.interface';
 import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
-import { TaskEditService } from '@tasks/services/task-edit.service';
 import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
 import { buildTaskUpdatePayload } from '@tasks/utils/task-payload-builder.util';
 
@@ -28,9 +31,8 @@ import { buildTaskUpdatePayload } from '@tasks/utils/task-payload-builder.util';
   templateUrl: './task.component.html',
   styleUrls: ['./task.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ReactiveFormsModule,
     MatCardModule,
     MatChipsModule,
     MatFormFieldModule,
@@ -41,9 +43,10 @@ import { buildTaskUpdatePayload } from '@tasks/utils/task-payload-builder.util';
     MatTooltipModule,
     MatInputModule,
     AsyncPipe,
+    FormField,
   ],
 })
-export class TaskComponent implements OnInit {
+export class TaskComponent {
   public readonly task: InputSignal<Task> = input.required<Task>();
   public readonly isLoading: InputSignal<boolean> = input.required<boolean>();
 
@@ -54,21 +57,46 @@ export class TaskComponent implements OnInit {
   protected readonly update: OutputEmitterRef<Task> = output<Task>();
   protected readonly remove: OutputEmitterRef<Task> = output<Task>();
   protected readonly timeLogsSaved: OutputEmitterRef<void> = output<void>();
+  protected readonly taskFormModel = signal<TaskFormValue>({
+    name: '',
+    description: '',
+    tags: [],
+  });
+  protected readonly taskForm = form(this.taskFormModel, (path) => {
+    required(path.name, { message: 'Task name is required.' });
+    validate(path.name, ({ value }) => {
+      const name: string = value().trim();
 
-  protected formGroup!: FormGroup;
+      if (!name) {
+        return null;
+      }
 
-  protected editMode: boolean = false;
+      return this.tasks().some((task) => task.id !== this.task().id && task.name === name) ?
+        {
+          kind: 'duplicate-task',
+          message: 'Task already exists.',
+        } :
+        null;
+    });
+  });
+  protected readonly editMode = signal(false);
 
   private readonly areYouSureService: AreYouSureService = inject(AreYouSureService);
-  private readonly taskEditService: TaskEditService = inject(TaskEditService);
+  private readonly tagsService: TagsService = inject(TagsService);
+  private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogEditService: TimeLogEditService = inject(TimeLogEditService);
+  private readonly tasks = toSignal(this.tasksService.tasks$, { initialValue: [] as Task[] });
 
   protected get tags$(): Observable<Tag[]> {
-    return this.taskEditService.tags$;
+    return this.tagsService.tags$;
   }
 
-  public ngOnInit(): void {
-    this.formGroup = this.taskEditService.createFormGroup(this.task());
+  constructor() {
+    effect(() => {
+      if (!this.editMode()) {
+        this.taskForm().reset(this.buildFormValue(this.task()));
+      }
+    });
   }
 
   protected isSameTag(
@@ -82,11 +110,25 @@ export class TaskComponent implements OnInit {
     return this.task().isTimeLogRunning;
   }
 
-  protected onUpdate(): void {
-    const taskPayload: Task = buildTaskUpdatePayload(this.task(), this.formGroup.getRawValue());
+  protected onTagsChange(tags: Tag[]): void {
+    const field: ReturnType<typeof this.taskForm.tags> = this.taskForm.tags();
+    field.value.set(tags);
+    field.markAsDirty();
+    field.markAsTouched({ skipDescendants: true });
+  }
+
+  protected onUpdate(event?: Event): void {
+    event?.preventDefault?.();
+
+    if (!this.taskForm().valid()) {
+      this.taskForm().markAsTouched();
+      return;
+    }
+
+    const taskPayload: Task = buildTaskUpdatePayload(this.task(), this.taskFormModel());
     taskPayload.updateTimeLogged();
     this.update.emit(taskPayload);
-    this.onToggleEditMode();
+    this.editMode.set(false);
   }
 
   protected onRemove(): void {
@@ -100,10 +142,11 @@ export class TaskComponent implements OnInit {
   }
 
   protected onToggleEditMode(): void {
-    this.editMode = !this.editMode;
+    const nextEditMode: boolean = !this.editMode();
+    this.editMode.set(nextEditMode);
 
-    if (this.editMode) {
-      this.formGroup = this.taskEditService.createFormGroup(this.task());
+    if (nextEditMode) {
+      this.taskForm().reset(this.buildFormValue(this.task()));
     }
   }
 
@@ -126,5 +169,13 @@ export class TaskComponent implements OnInit {
           this.timeLogsSaved.emit();
         }
       });
+  }
+
+  private buildFormValue(task: Task): TaskFormValue {
+    return {
+      name: task.name,
+      description: task.description ?? '',
+      tags: [...task.tags],
+    };
   }
 }

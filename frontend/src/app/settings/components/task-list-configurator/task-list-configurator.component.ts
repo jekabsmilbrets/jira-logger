@@ -6,7 +6,7 @@ import { MatCardModule } from '@angular/material/card';
   templateUrl: './task-list-configurator.component.html',
   styleUrls: ['./task-list-configurator.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatCardModule,
   ],

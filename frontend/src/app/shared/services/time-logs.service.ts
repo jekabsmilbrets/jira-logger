@@ -55,7 +55,7 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
       .pipe(
         map((response: JsonApi<ApiTimeLog[]>): TimeLog[] => (response.data && adaptTimeLogs(response.data)) as TimeLog[]),
         catchError((error: HttpErrorResponse) => {
-          const errors = Array.isArray(error.error?.errors) ? error.error.errors : [];
+          const errors: string[] = Array.isArray(error.error?.errors) ? error.error.errors : [];
 
           if (error.status === 404 && errors.includes('TimeLogs not found')) {
             return of([]);

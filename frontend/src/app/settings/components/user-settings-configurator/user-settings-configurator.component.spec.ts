@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 
 import { Setting } from '@core/models/setting.model';
 
-import { JiraUserSettings, JiraUserSettingSlugs } from '@settings/enums/jira-user-settings.enum';
+import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 
 import { UserSettingsConfiguratorComponent } from './user-settings-configurator.component';
 
@@ -31,22 +31,18 @@ describe('Settings Components user-settings-configurator.component', () => {
 
   it('renders timezone/locale card and patches initial values', () => {
     const title = fixture.debugElement.query(By.css('mat-card-title'))?.nativeElement as HTMLElement;
-    const timezoneSelect = fixture.debugElement.query(By.css('mat-select[formControlName="jira-user-time-zone"]'));
-    const localeSelect = fixture.debugElement.query(By.css('mat-select[formControlName="jira-locale"]'));
-    const formGroup = (component as any).formGroup;
+    const selects = fixture.debugElement.queryAll(By.css('mat-select'));
 
     expect(title.textContent?.trim()).toBe('User Time Zone');
-    expect(timezoneSelect).toBeTruthy();
-    expect(localeSelect).toBeTruthy();
-    expect(formGroup.controls[JiraUserSettingSlugs.userTimeZone].value).toBe('Europe/Riga');
-    expect(formGroup.controls[JiraUserSettingSlugs.locale].value).toBe('lv-LV');
+    expect(selects).toHaveLength(2);
+    expect((component as any).userSettingsFormModel().timezone).toBe('Europe/Riga');
+    expect((component as any).userSettingsFormModel().locale).toBe('lv-LV');
   });
 
   it('emits changed setting when timezone value changes', () => {
     const emitSpy = vi.spyOn((component as any).settingsChange, 'emit');
-    const formGroup = (component as any).formGroup;
 
-    formGroup.controls[JiraUserSettingSlugs.userTimeZone].setValue('UTC');
+    (component as any).onTimezoneChange('UTC');
 
     (component as any).onSaveFormData();
 
@@ -58,21 +54,18 @@ describe('Settings Components user-settings-configurator.component', () => {
   });
 
   it('resets form values on cancel', () => {
-    const formGroup = (component as any).formGroup;
-
-    formGroup.controls[JiraUserSettingSlugs.userTimeZone].setValue('UTC');
-    formGroup.controls[JiraUserSettingSlugs.locale].setValue('en-US');
+    (component as any).onTimezoneChange('UTC');
+    (component as any).onLocaleChange('en-US');
     (component as any).onCancel();
 
-    expect(formGroup.controls[JiraUserSettingSlugs.userTimeZone].value).toBe('Europe/Riga');
-    expect(formGroup.controls[JiraUserSettingSlugs.locale].value).toBe('lv-LV');
+    expect((component as any).userSettingsFormModel().timezone).toBe('Europe/Riga');
+    expect((component as any).userSettingsFormModel().locale).toBe('lv-LV');
   });
 
   it('emits changed locale setting when locale value changes', () => {
     const emitSpy = vi.spyOn((component as any).settingsChange, 'emit');
-    const formGroup = (component as any).formGroup;
 
-    formGroup.controls[JiraUserSettingSlugs.locale].setValue('en-US');
+    (component as any).onLocaleChange('en-US');
 
     (component as any).onSaveFormData();
 

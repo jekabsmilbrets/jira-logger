@@ -10,7 +10,7 @@ import { SideNavInterface } from '@layout/interfaces/side-nav.interface';
   templateUrl: './sidenav.component.html',
   styleUrls: ['./sidenav.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatNavList,
     MatListItem,

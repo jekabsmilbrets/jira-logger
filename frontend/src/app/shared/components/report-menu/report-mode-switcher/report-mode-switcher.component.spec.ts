@@ -36,17 +36,17 @@ describe('Shared Components report-mode-switcher.component', () => {
     const component = fixture.componentInstance as any;
     fixture.componentRef.setInput('disabled', true);
     fixture.detectChanges();
-    expect(component.reportModeFormControl.disabled).toBe(true);
+    expect(component.reportModeForm().disabled()).toBe(true);
 
     fixture.componentRef.setInput('disabled', false);
     fixture.componentRef.setInput('reportMode', ReportModeEnum.date);
     fixture.detectChanges();
-    expect(component.reportModeFormControl.enabled).toBe(true);
-    expect(component.reportModeFormControl.value).toBe(ReportModeEnum.date);
+    expect(component.reportModeForm().disabled()).toBe(false);
+    expect(component.reportModeFormModel().reportMode).toBe(ReportModeEnum.date);
 
     fixture.componentRef.setInput('reportMode', null);
     fixture.detectChanges();
-    expect(component.reportModeFormControl.value).toBe(ReportModeEnum.date);
+    expect(component.reportModeFormModel().reportMode).toBe(ReportModeEnum.total);
   });
 
   it('triggers mat-select valueChange listener from template', async () => {

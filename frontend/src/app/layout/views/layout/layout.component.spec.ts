@@ -17,7 +17,7 @@ import { LayoutComponent } from './layout.component';
 @Component({
   selector: 'layout-header',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
 class MockHeaderComponent {
@@ -30,7 +30,7 @@ class MockHeaderComponent {
 @Component({
   selector: 'layout-sidenav',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
 class MockSidenavComponent {

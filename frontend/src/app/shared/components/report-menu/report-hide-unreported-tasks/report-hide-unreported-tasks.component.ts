@@ -6,7 +6,7 @@ import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/sl
   templateUrl: './report-hide-unreported-tasks.component.html',
   styleUrls: ['./report-hide-unreported-tasks.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatSlideToggleModule,
   ],

@@ -7,7 +7,9 @@ export interface TimezoneDateParts {
   second: number;
 }
 
-const createFormatter = (
+const createFormatter: (
+  timezone: string,
+) => Intl.DateTimeFormat = (
   timezone: string,
 ): Intl.DateTimeFormat => new Intl.DateTimeFormat('en-CA', {
   timeZone: timezone,
@@ -20,7 +22,9 @@ const createFormatter = (
   hourCycle: 'h23',
 });
 
-const getLocalDateParts = (
+const getLocalDateParts: (
+  date: Date,
+) => TimezoneDateParts = (
   date: Date,
 ): TimezoneDateParts => ({
   year: date.getFullYear(),
@@ -31,7 +35,9 @@ const getLocalDateParts = (
   second: date.getSeconds(),
 });
 
-const partsToUtcMs = (
+const partsToUtcMs: (
+  parts: TimezoneDateParts,
+) => number = (
   parts: TimezoneDateParts,
 ): number => Date.UTC(
   parts.year,
@@ -43,12 +49,15 @@ const partsToUtcMs = (
   0,
 );
 
-export const getDateTimePartsInTimezone = (
+export const getDateTimePartsInTimezone: (
+  date: Date,
+  timezone: string,
+) => TimezoneDateParts = (
   date: Date,
   timezone: string,
 ): TimezoneDateParts => {
   try {
-    const parts = createFormatter(timezone)
+    const parts: Record<string, string> = createFormatter(timezone)
       .formatToParts(date)
       .reduce<Record<string, string>>((accumulator: Record<string, string>, part: Intl.DateTimeFormatPart) => {
         if (part.type !== 'literal') {
@@ -71,11 +80,14 @@ export const getDateTimePartsInTimezone = (
   }
 };
 
-export const toWallClockDateInTimezone = (
+export const toWallClockDateInTimezone: (
+  instant: Date,
+  timezone: string,
+) => Date = (
   instant: Date,
   timezone: string,
 ): Date => {
-  const parts = getDateTimePartsInTimezone(instant, timezone);
+  const parts: TimezoneDateParts = getDateTimePartsInTimezone(instant, timezone);
 
   return new Date(
     parts.year,
@@ -88,12 +100,15 @@ export const toWallClockDateInTimezone = (
   );
 };
 
-export const fromWallClockDateInTimezone = (
+export const fromWallClockDateInTimezone: (
+  wallClockDate: Date,
+  timezone: string,
+) => Date = (
   wallClockDate: Date,
   timezone: string,
 ): Date => {
-  const desiredParts = getLocalDateParts(wallClockDate);
-  let utcMs = Date.UTC(
+  const desiredParts: TimezoneDateParts = getLocalDateParts(wallClockDate);
+  let utcMs: number = Date.UTC(
     desiredParts.year,
     desiredParts.month - 1,
     desiredParts.day,
@@ -103,9 +118,9 @@ export const fromWallClockDateInTimezone = (
     wallClockDate.getMilliseconds(),
   );
 
-  for (let iteration = 0; iteration < 3; iteration += 1) {
-    const actualParts = getDateTimePartsInTimezone(new Date(utcMs), timezone);
-    const diffMs = partsToUtcMs(desiredParts) - partsToUtcMs(actualParts);
+  for (let iteration: number = 0; iteration < 3; iteration += 1) {
+    const actualParts: TimezoneDateParts = getDateTimePartsInTimezone(new Date(utcMs), timezone);
+    const diffMs: number = partsToUtcMs(desiredParts) - partsToUtcMs(actualParts);
 
     if (diffMs === 0) {
       return new Date(utcMs);
@@ -117,13 +132,17 @@ export const fromWallClockDateInTimezone = (
   return new Date(utcMs);
 };
 
-export const isSameCalendarDateInTimezone = (
+export const isSameCalendarDateInTimezone: (
+  left: Date,
+  right: Date,
+  timezone: string,
+) => boolean = (
   left: Date,
   right: Date,
   timezone: string,
 ): boolean => {
-  const leftParts = getDateTimePartsInTimezone(left, timezone);
-  const rightParts = getDateTimePartsInTimezone(right, timezone);
+  const leftParts: TimezoneDateParts = getDateTimePartsInTimezone(left, timezone);
+  const rightParts: TimezoneDateParts = getDateTimePartsInTimezone(right, timezone);
 
   return leftParts.year === rightParts.year &&
     leftParts.month === rightParts.month &&

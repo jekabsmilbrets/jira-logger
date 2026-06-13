@@ -9,7 +9,7 @@ import { AreYouSureDialogDataInterface } from '@shared/interfaces/are-you-sure-d
   templateUrl: './are-you-sure-dialog.component.html',
   styleUrls: ['./are-you-sure-dialog.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatDialogModule,
     MatButtonModule,

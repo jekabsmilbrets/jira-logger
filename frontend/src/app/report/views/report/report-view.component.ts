@@ -26,7 +26,7 @@ import { ReportService } from '@report/services/report.service';
   templateUrl: './report-view.component.html',
   styleUrls: ['./report-view.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     TableComponent,
     AsyncPipe,

@@ -27,15 +27,17 @@ describe('Shared Components report-date-selector.component', () => {
 
     fixture.componentRef.setInput('disabled', true);
     fixture.detectChanges();
-    expect(component['dateFormControl'].disabled).toBe(true);
-    expect(component['startDateFormControl'].disabled).toBe(true);
-    expect(component['endDateFormControl'].disabled).toBe(true);
+    expect(component['reportDateForm']().disabled()).toBe(true);
+    expect(component['reportDateForm'].date().disabled()).toBe(true);
+    expect(component['reportDateForm'].startDate().disabled()).toBe(true);
+    expect(component['reportDateForm'].endDate().disabled()).toBe(true);
 
     fixture.componentRef.setInput('disabled', false);
     fixture.detectChanges();
-    expect(component['dateFormControl'].enabled).toBe(true);
-    expect(component['startDateFormControl'].enabled).toBe(true);
-    expect(component['endDateFormControl'].enabled).toBe(true);
+    expect(component['reportDateForm']().disabled()).toBe(false);
+    expect(component['reportDateForm'].date().disabled()).toBe(false);
+    expect(component['reportDateForm'].startDate().disabled()).toBe(false);
+    expect(component['reportDateForm'].endDate().disabled()).toBe(false);
   });
 
   it('sets control values only when date inputs are non-null', async () => {
@@ -50,18 +52,18 @@ describe('Shared Components report-date-selector.component', () => {
     fixture.componentRef.setInput('endDate', null);
     fixture.detectChanges();
 
-    expect(component['dateFormControl'].value).toBeNull();
-    expect(component['startDateFormControl'].value).toBeNull();
-    expect(component['endDateFormControl'].value).toBeNull();
+    expect(component['reportDateFormModel']().date).toBeNull();
+    expect(component['reportDateFormModel']().startDate).toBeNull();
+    expect(component['reportDateFormModel']().endDate).toBeNull();
 
     fixture.componentRef.setInput('date', date);
     fixture.componentRef.setInput('startDate', startDate);
     fixture.componentRef.setInput('endDate', endDate);
     fixture.detectChanges();
 
-    expect(component['dateFormControl'].value).toEqual(date);
-    expect(component['startDateFormControl'].value).toEqual(startDate);
-    expect(component['endDateFormControl'].value).toEqual(endDate);
+    expect(component['reportDateFormModel']().date).toEqual(date);
+    expect(component['reportDateFormModel']().startDate).toEqual(startDate);
+    expect(component['reportDateFormModel']().endDate).toEqual(endDate);
   });
 
   it('normalizes and emits start/end/single date change events', async () => {

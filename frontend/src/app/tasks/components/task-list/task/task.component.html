@@ -1,11 +1,10 @@
-<form (ngSubmit)="onUpdate()"
-      [formGroup]="formGroup">
+<form (submit)="onUpdate($event)">
     <mat-card [class]="{
-            'task-card-editing': editMode,
-            'task-card--started': isTimeLogRunning() && !editMode,
+            'task-card-editing': editMode(),
+            'task-card--started': isTimeLogRunning() && !editMode(),
         }"
               class="task-card">
-        @if (!editMode) {
+        @if (!editMode()) {
             <mat-card-header>
                 <mat-card-title>
                     <span class="card-title"
@@ -24,21 +23,26 @@
             </mat-card-header>
         }
 
-        @if (editMode) {
+        @if (editMode()) {
             <mat-card-content>
                 <mat-form-field class="input-form-field">
                     <mat-label>Task</mat-label>
 
-                    <input formControlName="name"
+                    <input [formField]="taskForm.name"
                            matInput/>
 
-                    <mat-error>Task name is required.</mat-error>
+                    @if (taskForm.name().touched() && taskForm.name().invalid()) {
+                        <mat-error>Task name is required.</mat-error>
+                    }
                 </mat-form-field>
 
                 <mat-form-field class="input-form-field">
                     <mat-label>Tags</mat-label>
 
-                    <mat-select [compareWith]="isSameTag" formControlName="tags" multiple>
+                    <mat-select (valueChange)="onTagsChange($event)"
+                                [compareWith]="isSameTag"
+                                [value]="taskFormModel().tags"
+                                multiple>
                         @for (tag of tags$ | async; track tag.id) {
                             <mat-option [value]="tag">
                                 {{ tag.name }}
@@ -50,10 +54,8 @@
                 <mat-form-field class="input-form-field">
                     <mat-label>Description</mat-label>
 
-                    <textarea formControlName="description"
+                    <textarea [formField]="taskForm.description"
                               matInput></textarea>
-
-                    <mat-error>Description is required.</mat-error>
                 </mat-form-field>
             </mat-card-content>
         }
@@ -66,7 +68,7 @@
             </div>
 
             <button (click)="onToggleTimeLogging()"
-                    [disabled]="isLoading() || editMode"
+                    [disabled]="isLoading() || editMode()"
                     aria-label="Start Timer"
                     class="play-pause-button"
                     color="primary"
@@ -77,7 +79,7 @@
             </button>
 
             <button (click)="onOpenTimeLogsModal()"
-                    [disabled]="isLoading() || editMode"
+                    [disabled]="isLoading() || editMode()"
                     aria-label="View Time Log History"
                     color="warn"
                     mat-icon-button
@@ -85,7 +87,7 @@
                 <mat-icon>history</mat-icon>
             </button>
 
-            @if (!editMode) {
+            @if (!editMode()) {
                 <button (click)="onToggleEditMode()"
                         [disabled]="isLoading()"
                         aria-label="Edit"
@@ -95,7 +97,7 @@
                 </button>
             }
 
-            @if (editMode) {
+            @if (editMode()) {
                 <button (click)="onToggleEditMode()"
                         aria-label="Edit"
                         mat-icon-button
@@ -104,8 +106,8 @@
                 </button>
             }
 
-            @if (editMode) {
-                <button [disabled]="isLoading() || formGroup.invalid || !formGroup.dirty"
+            @if (editMode()) {
+                <button [disabled]="isLoading() || taskForm().invalid() || !taskForm().dirty()"
                         aria-label="Update"
                         mat-icon-button
                         color="primary"
@@ -115,7 +117,7 @@
             }
 
             <button (click)="onRemove()"
-                    [disabled]="isLoading() || editMode"
+                    [disabled]="isLoading() || editMode()"
                     aria-label="Remove"
                     color="warn"
                     mat-icon-button

@@ -11,7 +11,7 @@ import { ErrorDialogDataInterface } from '@shared/interfaces/error-dialog-data.i
   templateUrl: './error-dialog.component.html',
   styleUrls: ['./error-dialog.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatDialogModule,
     MatButtonModule,

@@ -7,7 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
   templateUrl: './tasks-settings-toggle.component.html',
   styleUrls: ['./tasks-settings-toggle.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatButtonModule,
     MatIconModule,

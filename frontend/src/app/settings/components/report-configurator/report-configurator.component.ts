@@ -17,7 +17,7 @@ import { ReportSettings } from '@settings/interfaces/report-settings.interface';
   templateUrl: './report-configurator.component.html',
   styleUrls: ['./report-configurator.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatCardModule,
     ReportModeSwitcherComponent,

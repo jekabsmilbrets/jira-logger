@@ -18,7 +18,7 @@ import { SidenavComponent } from '@layout/components/sidenav/sidenav.component';
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     HeaderComponent,
     MatSidenavModule,

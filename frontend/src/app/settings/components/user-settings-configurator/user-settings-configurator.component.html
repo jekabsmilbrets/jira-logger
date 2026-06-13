@@ -1,5 +1,4 @@
-<form (ngSubmit)="onSaveFormData()"
-      [formGroup]="formGroup">
+<form (submit)="onSaveFormData($event)">
     <mat-card>
         <mat-card-header>
             <mat-card-title>User Time Zone</mat-card-title>
@@ -10,7 +9,9 @@
                 <mat-form-field>
                     <mat-label>Time Zone</mat-label>
 
-                    <mat-select formControlName="jira-user-time-zone">
+                    <mat-select (valueChange)="onTimezoneChange($event)"
+                                [disabled]="userSettingsForm().disabled()"
+                                [value]="userSettingsFormModel().timezone">
                         @for (timezone of timezones; track timezone) {
                             <mat-option [value]="timezone">{{ timezone }}</mat-option>
                         }
@@ -20,7 +21,9 @@
                 <mat-form-field>
                     <mat-label>Locale</mat-label>
 
-                    <mat-select formControlName="jira-locale">
+                    <mat-select (valueChange)="onLocaleChange($event)"
+                                [disabled]="userSettingsForm().disabled()"
+                                [value]="userSettingsFormModel().locale">
                         @for (locale of locales; track locale.value) {
                             <mat-option [value]="locale.value">{{ locale.label }}</mat-option>
                         }
@@ -31,7 +34,7 @@
 
         <mat-card-actions>
             <button (click)="onCancel()"
-                    [disabled]="formGroup.disabled"
+                    [disabled]="userSettingsForm().disabled()"
                     aria-label="Cancel"
                     color="danger"
                     mat-raised-button
@@ -39,7 +42,7 @@
                 Cancel
             </button>
 
-            <button [disabled]="formGroup.disabled || !formGroup.dirty"
+            <button [disabled]="userSettingsForm().disabled() || !userSettingsForm().dirty()"
                     aria-label="Save"
                     color="primary"
                     mat-raised-button

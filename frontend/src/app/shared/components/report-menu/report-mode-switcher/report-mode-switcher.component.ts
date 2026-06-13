@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, effect, input, InputSignal, output, OutputEmitterRef } from '@angular/core';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, effect, input, InputSignal, output, OutputEmitterRef, signal } from '@angular/core';
+import { disabled, form } from '@angular/forms/signals';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 
@@ -11,11 +11,10 @@ import { ReportModeEnum } from '@report/enums/report-mode.enum';
   templateUrl: './report-mode-switcher.component.html',
   styleUrls: ['./report-mode-switcher.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatFormFieldModule,
     MatSelectModule,
-    ReactiveFormsModule,
   ],
 })
 export class ReportModeSwitcherComponent {
@@ -27,36 +26,31 @@ export class ReportModeSwitcherComponent {
     value: ReportModeEnum;
     viewValue: string;
   }[] = reportModes;
-
-  protected reportModeFormControl: FormControl<ReportModeEnum | null> = new FormControl<ReportModeEnum | null>(ReportModeEnum.total);
+  protected readonly reportModeFormModel = signal<{ reportMode: ReportModeEnum | null }>({
+    reportMode: ReportModeEnum.total,
+  });
+  protected readonly reportModeForm = form(this.reportModeFormModel, (path) => {
+    disabled(path, () => !!this.disabled());
+  });
 
   protected readonly reportModeChange: OutputEmitterRef<ReportModeEnum> = output<ReportModeEnum>();
 
   constructor() {
     effect(() => {
-      if (this.disabled()) {
-        this.reportModeFormControl.disable();
-      } else {
-        this.reportModeFormControl.enable();
-      }
-    });
-
-    effect(() => {
-      const reportMode = this.reportMode();
-      if (reportMode) {
-        this.reportModeFormControl.setValue(
-          reportMode,
-          {
-            emitEvent: false,
-          },
-        );
-      }
+      const reportMode: ReportModeEnum | null | undefined = this.reportMode();
+      this.reportModeForm().reset({
+        reportMode: reportMode ?? ReportModeEnum.total,
+      });
     });
   }
 
   protected reportModeValueChange(
     value: ReportModeEnum,
   ): void {
+    const field: ReturnType<typeof this.reportModeForm.reportMode> = this.reportModeForm.reportMode();
+    field.value.set(value);
+    field.markAsDirty();
+    field.markAsTouched({ skipDescendants: true });
     this.reportModeChange.emit(value);
   }
 }

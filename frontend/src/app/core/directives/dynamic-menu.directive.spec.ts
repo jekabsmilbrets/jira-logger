@@ -5,7 +5,7 @@ import { DynamicMenuDirective } from './dynamic-menu.directive';
 
 @Component({
   template: '<ng-container appDynamicMenu />',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DynamicMenuDirective],
 })
 class HostComponent {

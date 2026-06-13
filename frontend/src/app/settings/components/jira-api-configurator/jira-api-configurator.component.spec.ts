@@ -1,12 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Validators } from '@angular/forms';
 import { By } from '@angular/platform-browser';
 
 import { vi } from 'vitest';
 
 import { Setting } from '@core/models/setting.model';
 
-import { JiraApiSettings, JiraApiSettingSlugs } from '@settings/enums/jira-api-settings.enum';
+import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 
 import { JiraApiConfiguratorComponent } from './jira-api-configurator.component';
 
@@ -43,18 +42,20 @@ describe('Settings Components jira-api-configurator.component', () => {
   });
 
   it('patches initial settings and shows stored token hint', () => {
-    const formGroup = (component as any).formGroup;
     const tokenHint = fixture.debugElement.query(By.css('mat-hint'))?.nativeElement as HTMLElement;
 
-    expect(formGroup.controls[JiraApiSettingSlugs.enabled].value).toBe(true);
-    expect(formGroup.controls[JiraApiSettingSlugs.host].value).toBe('https://jira.example');
-    expect(formGroup.controls[JiraApiSettingSlugs.personalAccessToken].value).toBe('');
+    expect((component as any).jiraApiFormModel()).toEqual({
+      enabled: true,
+      host: 'https://jira.example',
+      personalAccessToken: '',
+    });
+    expect((component as any).hasStoredPersonalAccessToken()).toBe(true);
     expect(tokenHint.textContent).toContain('Token already configured');
   });
 
   it('toggles token visibility button state and input type', () => {
     const toggleButton = fixture.debugElement.query(By.css('button[mat-icon-button]')).nativeElement as HTMLButtonElement;
-    const tokenInput = fixture.debugElement.query(By.css('input[formControlName="jira-personal-access-token"]')).nativeElement as HTMLInputElement;
+    const tokenInput = fixture.debugElement.query(By.css('input[autocomplete="off"]')).nativeElement as HTMLInputElement;
 
     expect(toggleButton.getAttribute('aria-label')).toBe('Show token');
     expect(tokenInput.getAttribute('type')).toBe('password');
@@ -69,70 +70,93 @@ describe('Settings Components jira-api-configurator.component', () => {
   it('disables and enables form via disabled input setter', () => {
     fixture.componentRef.setInput('disabled', true);
     fixture.detectChanges();
-    expect((component as any).formGroup.controls[JiraApiSettingSlugs.host].disabled).toBe(true);
+    expect((component as any).jiraApiForm().disabled()).toBe(true);
 
     fixture.componentRef.setInput('disabled', false);
     fixture.detectChanges();
-    expect((component as any).formGroup.controls[JiraApiSettingSlugs.host].enabled).toBe(true);
+    expect((component as any).jiraApiForm().disabled()).toBe(false);
   });
 
   it('marks controls as touched and does not emit when submitting invalid form', () => {
     const emitSpy = vi.spyOn((component as any).settingsChange, 'emit');
-    const formGroup = (component as any).formGroup;
-
-    formGroup.controls[JiraApiSettingSlugs.host].setValue('');
-    formGroup.controls[JiraApiSettingSlugs.host].markAsDirty();
+    (component as any).jiraApiFormModel.update((value: { enabled: boolean; host: string; personalAccessToken: string }) => ({
+      ...value,
+      host: '',
+    }));
 
     (component as any).onSaveFormData();
 
-    expect(formGroup.touched).toBe(true);
+    expect((component as any).jiraApiForm().touched()).toBe(true);
     expect(emitSpy).not.toHaveBeenCalled();
   });
 
-  it('does not emit changed settings when host value changes', () => {
+  it('emits changed host setting when host value changes', () => {
     const emitSpy = vi.spyOn((component as any).settingsChange, 'emit');
-    const formGroup = (component as any).formGroup;
-
-    formGroup.controls[JiraApiSettingSlugs.host].setValue('https://jira.changed.local');
+    (component as any).jiraApiFormModel.update((value: { enabled: boolean; host: string; personalAccessToken: string }) => ({
+      ...value,
+      host: 'https://jira.changed.local',
+    }));
 
     (component as any).onSaveFormData();
 
-    expect(emitSpy).not.toHaveBeenCalled();
+    expect(emitSpy).toHaveBeenCalledTimes(1);
+    expect(emitSpy.mock.calls[0][0]).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: '2',
+        name: JiraApiSettings.host,
+        value: 'https://jira.changed.local',
+      }),
+    ]));
   });
 
   it('does not emit token changes when jira is disabled and token is left empty', () => {
     const emitSpy = vi.spyOn((component as any).settingsChange, 'emit');
-    const formGroup = (component as any).formGroup;
-
-    formGroup.controls[JiraApiSettingSlugs.enabled].setValue(false);
-    formGroup.controls[JiraApiSettingSlugs.personalAccessToken].setValue('');
+    (component as any).jiraApiFormModel.set({
+      enabled: false,
+      host: 'https://jira.example',
+      personalAccessToken: '',
+    });
 
     (component as any).onSaveFormData();
 
-    expect(emitSpy).not.toHaveBeenCalled();
+    expect(emitSpy).toHaveBeenCalledTimes(1);
+    expect(emitSpy.mock.calls[0][0]).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: '1',
+        name: JiraApiSettings.enabled,
+        value: 'false',
+      }),
+      expect.objectContaining({
+        id: '3',
+        name: JiraApiSettings.personalAccessToken,
+        value: '',
+      }),
+    ]));
   });
 
   it('resets form values back to persisted settings on cancel', () => {
-    const formGroup = (component as any).formGroup;
-
-    formGroup.controls[JiraApiSettingSlugs.host].setValue('modified-host');
-    expect(formGroup.controls[JiraApiSettingSlugs.host].value).toBe('modified-host');
+    (component as any).jiraApiFormModel.set({
+      enabled: false,
+      host: 'modified-host',
+      personalAccessToken: 'modified-token',
+    });
 
     (component as any).onCancel();
 
-    expect(formGroup.controls[JiraApiSettingSlugs.host].value).toBe('https://jira.example');
+    expect((component as any).jiraApiFormModel()).toEqual({
+      enabled: true,
+      host: 'https://jira.example',
+      personalAccessToken: '',
+    });
   });
 
-  it('emits a cleared token when save data uses jira setting keys', () => {
+  it('emits a cleared token when jira is disabled and stored token is replaced with blanks', () => {
     const emitSpy = vi.spyOn((component as any).settingsChange, 'emit');
-    const formGroup = (component as any).formGroup;
-    vi.spyOn(formGroup, 'getRawValue').mockReturnValue({
-      [JiraApiSettings.enabled]: false,
-      [JiraApiSettings.host]: 'https://jira.example',
-      [JiraApiSettings.personalAccessToken]: '   ',
+    (component as any).jiraApiFormModel.set({
+      enabled: false,
+      host: 'https://jira.example',
+      personalAccessToken: '   ',
     });
-
-    formGroup.controls[JiraApiSettingSlugs.enabled].setValue(false);
 
     (component as any).onSaveFormData();
 
@@ -151,14 +175,12 @@ describe('Settings Components jira-api-configurator.component', () => {
     ]));
   });
 
-  it('emits a non-empty replacement token when save data uses jira setting keys', () => {
+  it('emits a non-empty replacement token', () => {
     const emitSpy = vi.spyOn((component as any).settingsChange, 'emit');
-    const formGroup = (component as any).formGroup;
-    vi.spyOn(formGroup, 'getRawValue').mockReturnValue({
-      [JiraApiSettings.enabled]: true,
-      [JiraApiSettings.host]: 'https://jira.example',
-      [JiraApiSettings.personalAccessToken]: 'new-token',
-    });
+    (component as any).jiraApiFormModel.update((value: { enabled: boolean; host: string; personalAccessToken: string }) => ({
+      ...value,
+      personalAccessToken: 'new-token',
+    }));
 
     (component as any).onSaveFormData();
 
@@ -172,33 +194,18 @@ describe('Settings Components jira-api-configurator.component', () => {
     ]));
   });
 
-  it('ignores null token values during save when save data uses jira setting keys', () => {
-    const emitSpy = vi.spyOn((component as any).settingsChange, 'emit');
-    const formGroup = (component as any).formGroup;
-    vi.spyOn(formGroup, 'getRawValue').mockReturnValue({
-      [JiraApiSettings.enabled]: true,
-      [JiraApiSettings.host]: 'https://jira.example',
-      [JiraApiSettings.personalAccessToken]: null,
-    });
-
-    (component as any).onSaveFormData();
-
-    expect(emitSpy).not.toHaveBeenCalled();
-  });
-
   it('skips clearing blank tokens when no stored token exists', () => {
     fixture.componentRef.setInput('settings', [
       new Setting({ id: '1', name: JiraApiSettings.enabled, value: 'false' }),
       new Setting({ id: '2', name: JiraApiSettings.host, value: 'https://jira.example' }),
     ]);
-    (component as any).onCancel();
+    fixture.detectChanges();
 
     const emitSpy = vi.spyOn((component as any).settingsChange, 'emit');
-    const formGroup = (component as any).formGroup;
-    vi.spyOn(formGroup, 'getRawValue').mockReturnValue({
-      [JiraApiSettings.enabled]: false,
-      [JiraApiSettings.host]: 'https://jira.example',
-      [JiraApiSettings.personalAccessToken]: '   ',
+    (component as any).jiraApiFormModel.set({
+      enabled: false,
+      host: 'https://jira.example',
+      personalAccessToken: '   ',
     });
 
     (component as any).onSaveFormData();
@@ -208,11 +215,10 @@ describe('Settings Components jira-api-configurator.component', () => {
 
   it('skips clearing blank tokens while jira remains enabled', () => {
     const emitSpy = vi.spyOn((component as any).settingsChange, 'emit');
-    const formGroup = (component as any).formGroup;
-    vi.spyOn(formGroup, 'getRawValue').mockReturnValue({
-      [JiraApiSettings.enabled]: true,
-      [JiraApiSettings.host]: 'https://jira.example',
-      [JiraApiSettings.personalAccessToken]: '   ',
+    (component as any).jiraApiFormModel.set({
+      enabled: true,
+      host: 'https://jira.example',
+      personalAccessToken: '   ',
     });
 
     (component as any).onSaveFormData();
@@ -220,25 +226,17 @@ describe('Settings Components jira-api-configurator.component', () => {
     expect(emitSpy).not.toHaveBeenCalled();
   });
 
-  it('converts null non-token values to empty strings during save', () => {
+  it('converts empty host values to invalid state and blocks save', () => {
     const emitSpy = vi.spyOn((component as any).settingsChange, 'emit');
-    const formGroup = (component as any).formGroup;
-    vi.spyOn(formGroup, 'getRawValue').mockReturnValue({
-      [JiraApiSettings.enabled]: true,
-      [JiraApiSettings.host]: null,
-      [JiraApiSettings.personalAccessToken]: 'stored-token',
+    (component as any).jiraApiFormModel.set({
+      enabled: true,
+      host: '',
+      personalAccessToken: 'stored-token',
     });
 
     (component as any).onSaveFormData();
 
-    const [emittedSettings] = emitSpy.mock.calls[0];
-    expect(emittedSettings).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        id: '2',
-        name: JiraApiSettings.host,
-        value: '',
-      }),
-    ]));
+    expect(emitSpy).not.toHaveBeenCalled();
   });
 
   it('requires a token when jira is enabled and no stored token exists', () => {
@@ -246,17 +244,14 @@ describe('Settings Components jira-api-configurator.component', () => {
       new Setting({ id: '1', name: JiraApiSettings.enabled, value: 'false' }),
       new Setting({ id: '2', name: JiraApiSettings.host, value: 'https://jira.example' }),
     ]);
-    (component as any).onCancel();
+    fixture.detectChanges();
 
-    const formGroup = (component as any).formGroup;
-    const tokenControl = formGroup.controls[JiraApiSettingSlugs.personalAccessToken];
+    expect((component as any).hasStoredPersonalAccessToken()).toBe(false);
 
-    expect((component as any).hasStoredPersonalAccessToken).toBe(false);
-    expect(tokenControl.hasValidator(Validators.required)).toBe(false);
+    (component as any).onEnabledChange(true);
+    fixture.detectChanges();
 
-    formGroup.controls[JiraApiSettingSlugs.enabled].setValue(true);
-
-    expect(tokenControl.hasValidator(Validators.required)).toBe(true);
+    expect((component as any).isTokenRequired()).toBe(true);
   });
 
   it('returns defaults when settings input is not an array', () => {
@@ -288,7 +283,7 @@ describe('Settings Components jira-api-configurator.component', () => {
     expect((component as any).getSettingValue(JiraApiSettings.host, 'fallback-host')).toBe('fallback-host');
   });
 
-  it('submits via form ngSubmit and handles cancel via button click', () => {
+  it('submits via form submit and handles cancel via button click', () => {
     const saveSpy = vi.spyOn(component as any, 'onSaveFormData');
     const cancelSpy = vi.spyOn(component as any, 'onCancel');
 

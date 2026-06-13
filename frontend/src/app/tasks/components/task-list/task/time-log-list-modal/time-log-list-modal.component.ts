@@ -33,7 +33,7 @@ interface SaveOperation {
   templateUrl: './time-log-list-modal.component.html',
   styleUrls: ['./time-log-list-modal.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatDialogModule,
     MatButtonModule,
@@ -81,7 +81,7 @@ export class TimeLogListModalComponent {
       return;
     }
 
-    const operations = this.buildSaveOperations();
+    const operations: SaveOperation[] = this.buildSaveOperations();
     if (operations.length === 0) {
       this.dialogRef.close();
 
@@ -152,7 +152,7 @@ export class TimeLogListModalComponent {
     sourceTimeLog: TimeLog,
     nextTimeLog: TimeLog,
   ): void {
-    const indexOfTimeLog = this.findTimeLogIndex(sourceTimeLog);
+    const indexOfTimeLog: number = this.findTimeLogIndex(sourceTimeLog);
     if (indexOfTimeLog < 0) {
       return;
     }
@@ -161,7 +161,7 @@ export class TimeLogListModalComponent {
     timeLogs.splice(indexOfTimeLog, 1, nextTimeLog);
     this.data.task.timeLogs = timeLogs;
 
-    const createdTimeLogIndex = this.createdTimeLogs.findIndex(
+    const createdTimeLogIndex: number = this.createdTimeLogs.findIndex(
       (createdTimeLog: TimeLog) => createdTimeLog === sourceTimeLog,
     );
 
@@ -178,7 +178,7 @@ export class TimeLogListModalComponent {
     timeLog: Searchable,
   ): void {
     const timeLogModel: TimeLog = timeLog as TimeLog;
-    const indexOfTimeLog = this.findTimeLogIndex(timeLogModel);
+    const indexOfTimeLog: number = this.findTimeLogIndex(timeLogModel);
     if (indexOfTimeLog < 0) {
       return;
     }
@@ -187,7 +187,7 @@ export class TimeLogListModalComponent {
     timeLogs.splice(indexOfTimeLog, 1);
     this.data.task.timeLogs = timeLogs;
 
-    const createdTimeLogIndex = this.createdTimeLogs.findIndex(
+    const createdTimeLogIndex: number = this.createdTimeLogs.findIndex(
       (createdTimeLog: TimeLog) => createdTimeLog === timeLogModel,
     );
 
@@ -241,7 +241,7 @@ export class TimeLogListModalComponent {
   private upsertUpdatedTimeLog(
     timeLog: TimeLog,
   ): void {
-    const existingIndex = this.updatedTimeLogs.findIndex(
+    const existingIndex: number = this.updatedTimeLogs.findIndex(
       (updatedTimeLog: TimeLog) => updatedTimeLog.id === timeLog.id,
     );
 
@@ -295,12 +295,12 @@ export class TimeLogListModalComponent {
     sourceTimeLog: TimeLog,
     nextTimeLog: TimeLog,
   ): void {
-    const timeLogIndex = this.findTimeLogIndex(sourceTimeLog);
+    const timeLogIndex: number = this.findTimeLogIndex(sourceTimeLog);
     if (timeLogIndex < 0) {
       return;
     }
 
-    const timeLogs = [...this.data.task.timeLogs];
+    const timeLogs: TimeLog[] = [...this.data.task.timeLogs];
     timeLogs.splice(timeLogIndex, 1, nextTimeLog);
     this.data.task.timeLogs = timeLogs;
   }
@@ -314,7 +314,7 @@ export class TimeLogListModalComponent {
   private buildSaveErrorMessage(
     error: HttpErrorResponse,
   ): string {
-    const errors = Array.isArray(error.error?.errors) ? error.error.errors.join(', ') : '';
+    const errors: string = Array.isArray(error.error?.errors) ? error.error.errors.join(', ') : '';
 
     return errors ? `Time logs update failed! ${ errors }` : 'Time logs update failed!';
   }

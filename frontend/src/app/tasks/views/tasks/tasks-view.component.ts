@@ -23,7 +23,7 @@ import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
   templateUrl: './tasks-view.component.html',
   styleUrls: ['./tasks-view.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     TaskViewHeaderComponent,
     TaskListComponent,

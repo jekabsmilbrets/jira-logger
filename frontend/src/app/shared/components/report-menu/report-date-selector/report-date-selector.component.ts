@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, effect, input, InputSignal, output, OutputEmitterRef } from '@angular/core';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, effect, input, InputSignal, output, OutputEmitterRef, signal } from '@angular/core';
+import { disabled, form, FormField } from '@angular/forms/signals';
 import { MatNativeDateModule } from '@angular/material/core';
 import { DateRange, ExtractDateTypeFromSelection, MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -12,12 +12,12 @@ import { ReportModeEnum } from '@report/enums/report-mode.enum';
   templateUrl: './report-date-selector.component.html',
   styleUrls: ['./report-date-selector.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatFormFieldModule,
     MatNativeDateModule,
     MatDatepickerModule,
-    ReactiveFormsModule,
+    FormField,
     MatInputModule,
   ],
 })
@@ -28,10 +28,14 @@ export class ReportDateSelectorComponent {
   public readonly date: InputSignal<Date | null | undefined> = input<Date | null>();
   public readonly startDate: InputSignal<Date | null | undefined> = input<Date | null>();
   public readonly endDate: InputSignal<Date | null | undefined> = input<Date | null>();
-
-  protected dateFormControl: FormControl<Date | null> = new FormControl<Date | null>(null);
-  protected startDateFormControl: FormControl<Date | null> = new FormControl<Date | null>(null);
-  protected endDateFormControl: FormControl<Date | null> = new FormControl<Date | null>(null);
+  protected readonly reportDateFormModel = signal({
+    date: null as Date | null,
+    startDate: null as Date | null,
+    endDate: null as Date | null,
+  });
+  protected readonly reportDateForm = form(this.reportDateFormModel, (path) => {
+    disabled(path, () => !!this.disabled());
+  });
 
   protected readonly dateChange: OutputEmitterRef<null | Date> = output<Date | null>();
   protected readonly startDateChange: OutputEmitterRef<null | Date> = output<Date | null>();
@@ -39,51 +43,11 @@ export class ReportDateSelectorComponent {
 
   constructor() {
     effect(() => {
-      if (this.disabled()) {
-        this.dateFormControl.disable();
-        this.startDateFormControl.disable();
-        this.endDateFormControl.disable();
-      } else {
-        this.dateFormControl.enable();
-        this.startDateFormControl.enable();
-        this.endDateFormControl.enable();
-      }
-    });
-
-    effect(() => {
-      const value = this.date();
-      if (value) {
-        this.dateFormControl.setValue(
-          value,
-          {
-            emitEvent: false,
-          },
-        );
-      }
-    });
-
-    effect(() => {
-      const value = this.startDate();
-      if (value) {
-        this.startDateFormControl.setValue(
-          value,
-          {
-            emitEvent: false,
-          },
-        );
-      }
-    });
-
-    effect(() => {
-      const value = this.endDate();
-      if (value) {
-        this.endDateFormControl.setValue(
-          value,
-          {
-            emitEvent: false,
-          },
-        );
-      }
+      this.reportDateForm().reset({
+        date: this.date() ?? null,
+        startDate: this.startDate() ?? null,
+        endDate: this.endDate() ?? null,
+      });
     });
   }
 

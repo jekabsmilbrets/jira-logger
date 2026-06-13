@@ -1,17 +1,22 @@
-export const formatDateInTimezone = (
+export const formatDateInTimezone: (
+  value: Date | string | number,
+  format: string,
+  locale: string,
+  timezone: string,
+) => string = (
   value: Date | string | number,
   format: string,
   locale: string,
   timezone: string,
 ): string => {
-  const date = value instanceof Date ? value : new Date(value);
+  const date: Date = value instanceof Date ? value : new Date(value);
 
   if (Number.isNaN(date.getTime())) {
     return '';
   }
 
   try {
-    const parts = new Intl.DateTimeFormat(locale, {
+    const parts: Record<string, string> = new Intl.DateTimeFormat(locale, {
       timeZone: timezone,
       year: 'numeric',
       month: '2-digit',
@@ -20,7 +25,7 @@ export const formatDateInTimezone = (
       minute: '2-digit',
       second: '2-digit',
       hourCycle: 'h23',
-    }).formatToParts(date).reduce<Record<string, string>>((accumulator, part) => {
+    }).formatToParts(date).reduce<Record<string, string>>((accumulator: Record<string, string>, part: Intl.DateTimeFormatPart) => {
       if (part.type !== 'literal') {
         accumulator[part.type] = part.value;
       }

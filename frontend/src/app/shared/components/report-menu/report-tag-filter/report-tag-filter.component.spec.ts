@@ -40,18 +40,18 @@ describe('Shared Components report-tag-filter.component', () => {
 
     fixture.componentRef.setInput('disabled', true);
     fixture.detectChanges();
-    expect(component.tagFormControl.disabled).toBe(true);
+    expect(component.reportTagForm().disabled()).toBe(true);
 
     const tags = [{ id: '2', name: 'Frontend' } as Tag];
     fixture.componentRef.setInput('disabled', false);
     fixture.componentRef.setInput('tags', tags);
     fixture.detectChanges();
-    expect(component.tagFormControl.enabled).toBe(true);
-    expect(component.tagFormControl.value).toEqual(tags);
+    expect(component.reportTagForm().disabled()).toBe(false);
+    expect(component.reportTagFormModel().tags).toEqual(tags);
 
     fixture.componentRef.setInput('tags', null);
     fixture.detectChanges();
-    expect(component.tagFormControl.value).toEqual(tags);
+    expect(component.reportTagFormModel().tags).toBeNull();
   });
 
   it('triggers mat-select valueChange listener from template', async () => {

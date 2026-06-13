@@ -1,13 +1,14 @@
-<form (ngSubmit)="onCreate()"
-      [formGroup]="createTaskForm">
+<form (submit)="onCreate($event)">
     <mat-form-field>
-        <input formControlName="name"
+        <input [formField]="createTaskForm.name"
                matInput
                placeholder="Task name"/>
     </mat-form-field>
 
     <mat-form-field>
-        <mat-select formControlName="tags"
+        <mat-select (valueChange)="onTagsChange($event)"
+                    [compareWith]="isSameTag"
+                    [value]="createTaskFormModel().tags"
                     multiple
                     placeholder="Tags">
             @for (tag of tags$ | async; track tag.id) {
@@ -18,7 +19,7 @@
         </mat-select>
     </mat-form-field>
 
-    <button [disabled]="!createTaskForm.valid || (isLoading$ | async)"
+    <button [disabled]="!createTaskForm().valid() || (isLoading$ | async)"
             mat-raised-button
             type="submit">
         Create

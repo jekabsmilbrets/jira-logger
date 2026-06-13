@@ -1,6 +1,6 @@
 import { AsyncPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, effect, inject, input, InputSignal, output, OutputEmitterRef } from '@angular/core';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, effect, inject, input, InputSignal, output, OutputEmitterRef, signal } from '@angular/core';
+import { disabled, form } from '@angular/forms/signals';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 
@@ -14,11 +14,10 @@ import { TagsService } from '@shared/services/tags.service';
   templateUrl: './report-tag-filter.component.html',
   styleUrls: ['./report-tag-filter.component.scss'],
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatFormFieldModule,
     MatSelectModule,
-    ReactiveFormsModule,
     AsyncPipe,
   ],
 })
@@ -28,8 +27,12 @@ export class ReportTagFilterComponent {
   public readonly tags: InputSignal<Tag[] | null | undefined> = input<Tag[] | null>();
 
   protected tags$: Observable<Tag[]>;
-
-  protected tagFormControl: FormControl<Tag[] | null> = new FormControl<Tag[] | null>(null);
+  protected readonly reportTagFormModel = signal<{ tags: Tag[] | null }>({
+    tags: null,
+  });
+  protected readonly reportTagForm = form(this.reportTagFormModel, (path) => {
+    disabled(path, () => !!this.disabled());
+  });
 
   protected readonly tagChange: OutputEmitterRef<Tag[]> = output<Tag[]>();
 
@@ -38,29 +41,20 @@ export class ReportTagFilterComponent {
   constructor() {
     this.tags$ = this.tagsService.tags$;
     effect(() => {
-      if (this.disabled()) {
-        this.tagFormControl.disable();
-      } else {
-        this.tagFormControl.enable();
-      }
-    });
-
-    effect(() => {
-      const tags = this.tags();
-      if (tags) {
-        this.tagFormControl.setValue(
-          tags,
-          {
-            emitEvent: false,
-          },
-        );
-      }
+      const tags: Tag[] | null | undefined = this.tags();
+      this.reportTagForm().reset({
+        tags: tags ?? null,
+      });
     });
   }
 
   protected tagValueChange(
     value: Tag[],
   ): void {
+    const field: ReturnType<typeof this.reportTagForm.tags> = this.reportTagForm.tags();
+    field.value.set(value);
+    field.markAsDirty();
+    field.markAsTouched({ skipDescendants: true });
     this.tagChange.emit(value);
   }
 }

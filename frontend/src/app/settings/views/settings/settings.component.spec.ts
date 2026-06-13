@@ -26,7 +26,7 @@ import { SettingsComponent } from '@settings/views/settings/settings.component';
 @Component({
   selector: 'settings-report-configurator',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
 class ReportConfiguratorStubComponent {
@@ -45,7 +45,7 @@ class ReportConfiguratorStubComponent {
 @Component({
   selector: 'settings-jira-api-configurator',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
 class JiraApiConfiguratorStubComponent {
@@ -58,7 +58,7 @@ class JiraApiConfiguratorStubComponent {
 @Component({
   selector: 'settings-timezone-configurator',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
 class UserSettingsConfiguratorStubComponent {

@@ -1,5 +1,4 @@
 import { TestBed } from '@angular/core/testing';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
 
 import { of, throwError } from 'rxjs';
@@ -10,26 +9,19 @@ import { Task } from '@shared/models/task.model';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 
-import { CreateTaskFromGroupInterface } from '@tasks/interfaces/create-task-from-group.interface';
-import { TaskCreateService } from '@tasks/services/task-create.service';
 import { TaskImportService } from '@tasks/services/task-import.service';
 import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
 
 import { TasksMenuComponent } from './tasks-menu.component';
 
 describe('Tasks Components tasks-menu.component', () => {
-  const createTaskFormFactory = (): FormGroup<CreateTaskFromGroupInterface> => new FormGroup({
-    name: new FormControl<string | null>(null),
-    description: new FormControl<string | null>(null),
-    tags: new FormControl<Tag[] | null>([]),
-  });
-
   const tasksServiceMock = {
     isLoading$: of(false),
     tasks$: of<Task[]>([]),
     filteredList: vi.fn(),
     create: vi.fn(),
     list: vi.fn(),
+    taskExist: vi.fn(),
   };
 
   const tasksSettingsServiceMock = {
@@ -38,10 +30,6 @@ describe('Tasks Components tasks-menu.component', () => {
 
   const taskImportServiceMock = {
     importData: vi.fn(),
-  };
-
-  const taskCreateServiceMock = {
-    createFormGroup: vi.fn(),
   };
 
   const tagsServiceMock = {
@@ -54,24 +42,23 @@ describe('Tasks Components tasks-menu.component', () => {
     tasksServiceMock.filteredList.mockReset();
     tasksServiceMock.create.mockReset();
     tasksServiceMock.list.mockReset();
+    tasksServiceMock.taskExist.mockReset();
     tasksSettingsServiceMock.openDialog.mockReset();
     taskImportServiceMock.importData.mockReset();
-    taskCreateServiceMock.createFormGroup.mockReset();
 
     tasksServiceMock.filteredList.mockReturnValue(of([]));
     tasksServiceMock.create.mockImplementation((task: Task) => of(task));
     tasksServiceMock.list.mockReturnValue(of([]));
+    tasksServiceMock.taskExist.mockReturnValue(of(null));
     tasksSettingsServiceMock.openDialog.mockReturnValue(of(undefined));
     taskImportServiceMock.importData.mockReturnValue(of(true));
-    taskCreateServiceMock.createFormGroup.mockImplementation(createTaskFormFactory);
 
     await TestBed.configureTestingModule({
-      imports: [TasksMenuComponent, ReactiveFormsModule],
+      imports: [TasksMenuComponent],
       providers: [
         { provide: TasksService, useValue: tasksServiceMock },
         { provide: TasksSettingsService, useValue: tasksSettingsServiceMock },
         { provide: TaskImportService, useValue: taskImportServiceMock },
-        { provide: TaskCreateService, useValue: taskCreateServiceMock },
         { provide: TagsService, useValue: tagsServiceMock },
       ],
     }).compileComponents();
@@ -84,12 +71,13 @@ describe('Tasks Components tasks-menu.component', () => {
 
   it('filters tasks by name when name field changes', () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
-    const component = fixture.componentInstance as unknown as { createTaskForm: FormGroup };
+    const component = fixture.componentInstance as any;
 
-    component.createTaskForm.get('name')?.setValue('Build docs');
+    component.createTaskForm.name().value.set('Build docs');
+    fixture.detectChanges();
     vi.advanceTimersByTime(301);
 
-    expect(tasksServiceMock.filteredList).toHaveBeenCalledWith({ name: 'Build docs' }, true);
+    expect(tasksServiceMock.filteredList).toHaveBeenLastCalledWith({ name: 'Build docs' }, true);
   });
 
   it('handles filteredList errors through catchError branch', () => {
@@ -97,51 +85,54 @@ describe('Tasks Components tasks-menu.component', () => {
     tasksServiceMock.filteredList.mockReturnValueOnce(throwError(() => new Error('failed filter')));
 
     const fixture = TestBed.createComponent(TasksMenuComponent);
-    const component = fixture.componentInstance as unknown as { createTaskForm: FormGroup };
+    const component = fixture.componentInstance as any;
 
-    component.createTaskForm.get('name')?.setValue('first');
+    component.createTaskForm.name().value.set('first');
+    fixture.detectChanges();
     vi.advanceTimersByTime(301);
-    component.createTaskForm.get('name')?.setValue('second');
+    component.createTaskForm.name().value.set('second');
+    fixture.detectChanges();
     vi.advanceTimersByTime(301);
 
     expect(tasksServiceMock.filteredList).toHaveBeenCalledTimes(2);
   });
 
-  it('creates task and resets tags to empty array', () => {
+  it('creates task and resets tags to empty array', async () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
-    const component = fixture.componentInstance as unknown as {
-      onCreate: () => void;
-      createTaskForm: FormGroup;
-    };
+    const component = fixture.componentInstance as any;
 
-    component.createTaskForm.setValue({
+    component.createTaskFormModel.set({
       name: 'New Task',
       description: 'Desc',
       tags: [new Tag({ id: '1', name: 'Frontend' })],
     });
+    fixture.detectChanges();
+    vi.advanceTimersByTime(301);
+    await fixture.whenStable();
 
     component.onCreate();
 
     expect(tasksServiceMock.create).toHaveBeenCalledTimes(1);
     const createdTask = tasksServiceMock.create.mock.calls[0][0] as Task;
     expect(createdTask.name).toBe('New Task');
-    expect(component.createTaskForm.get('name')?.value).toBeNull();
-    expect(component.createTaskForm.get('tags')?.value).toEqual([]);
+    expect(component.createTaskFormModel().name).toBe('');
+    expect(component.createTaskFormModel().tags).toEqual([]);
   });
 
   it('submits create form from DOM and triggers task creation', () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
-    const component = fixture.componentInstance as unknown as { createTaskForm: FormGroup };
+    const component = fixture.componentInstance as any;
 
-    component.createTaskForm.setValue({
+    component.createTaskFormModel.set({
       name: 'From DOM',
-      description: null,
+      description: '',
       tags: [],
     });
+    vi.advanceTimersByTime(301);
     fixture.detectChanges();
 
     const submitForm = fixture.debugElement.query(By.css('form'));
-    submitForm.triggerEventHandler('ngSubmit', {});
+    submitForm.triggerEventHandler('submit', { preventDefault: vi.fn() });
 
     expect(tasksServiceMock.create).toHaveBeenCalledTimes(1);
     const createdTask = tasksServiceMock.create.mock.calls[0][0] as Task;
@@ -166,12 +157,11 @@ describe('Tasks Components tasks-menu.component', () => {
 
     await TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
-      imports: [TasksMenuComponent, ReactiveFormsModule],
+      imports: [TasksMenuComponent],
       providers: [
         { provide: TasksService, useValue: tasksServiceMock },
         { provide: TasksSettingsService, useValue: tasksSettingsServiceMock },
         { provide: TaskImportService, useValue: taskImportServiceMock },
-        { provide: TaskCreateService, useValue: taskCreateServiceMock },
         { provide: TagsService, useValue: tagsServiceMock },
       ],
     }).compileComponents();
