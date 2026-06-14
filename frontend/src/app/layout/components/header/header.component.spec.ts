@@ -128,9 +128,9 @@ describe('Layout Components header.component', () => {
       },
     }]);
 
+    fixture.detectChanges();
     await router.navigateByUrl('/tasks');
     fixture.detectChanges();
-    await fixture.whenStable();
 
     expect(clear).toHaveBeenCalled();
     expect(createComponent).not.toHaveBeenCalled();
@@ -157,9 +157,9 @@ describe('Layout Components header.component', () => {
 
     dynamicMenusSignal.set([{ data: { route: '/tasks', providers: [] }, component: DummyDynamicComponent }]);
 
+    fixture.detectChanges();
     await router.navigateByUrl('/tasks/list');
     fixture.detectChanges();
-    await fixture.whenStable();
 
     expect(clear).toHaveBeenCalled();
     expect(createComponent).toHaveBeenCalledWith(

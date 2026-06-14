@@ -2,7 +2,7 @@ import { WritableSignal } from '@angular/core';
 
 import { Observable } from 'rxjs';
 
-import { RequestGateWaiter } from './request-gate-waiter.interface';
+import { RequestGateWaiter } from '@core/interfaces/request-gate-waiter.interface';
 
 export class RequestGate {
   private locked: boolean = false;

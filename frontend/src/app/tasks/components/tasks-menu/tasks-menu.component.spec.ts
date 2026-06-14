@@ -108,8 +108,8 @@ describe('Tasks Components tasks-menu.component', () => {
       tags: [new Tag({ id: '1', name: 'Frontend' })],
     });
     fixture.detectChanges();
-    vi.advanceTimersByTime(301);
-    await fixture.whenStable();
+    await vi.advanceTimersByTimeAsync(301);
+    fixture.detectChanges();
 
     component.onCreate();
 
@@ -129,6 +129,7 @@ describe('Tasks Components tasks-menu.component', () => {
       description: '',
       tags: [],
     });
+    fixture.detectChanges();
     vi.advanceTimersByTime(301);
     fixture.detectChanges();
 
