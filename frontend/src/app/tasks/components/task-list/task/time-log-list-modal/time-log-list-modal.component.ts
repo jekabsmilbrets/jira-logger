@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, WritableSignal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -47,19 +47,18 @@ export class TimeLogListModalComponent {
   protected data: TimeLogListDialogDataInterface = inject<TimeLogListDialogDataInterface>(MAT_DIALOG_DATA);
 
   protected columns: Column[];
-
   private readonly timeLogEditService: TimeLogEditService = inject(TimeLogEditService);
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
   private readonly localeService: LocaleService = inject(LocaleService);
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
-
   private dialogRef: MatDialogRef<TimeLogListModalComponent, undefined | TimeLogsModalResponseInterface> = inject<MatDialogRef<TimeLogListModalComponent, TimeLogsModalResponseInterface | undefined>>(MatDialogRef);
-
-  private createdTimeLogs: TimeLog[] = [];
-  private updatedTimeLogs: TimeLog[] = [];
-  private deletedTimeLogs: TimeLog[] = [];
-  private isSaving: boolean = false;
+  private readonly timeLogsState: WritableSignal<TimeLog[]> = signal([...this.data.task.timeLogs]);
+  protected readonly timeLogs = computed(() => this.timeLogsState());
+  private readonly createdTimeLogs: WritableSignal<TimeLog[]> = signal([]);
+  private readonly updatedTimeLogs: WritableSignal<TimeLog[]> = signal([]);
+  private readonly deletedTimeLogs: WritableSignal<TimeLog[]> = signal([]);
+  private readonly isSaving: WritableSignal<boolean> = signal(false);
 
   constructor() {
     this.columns = createTimeLogListColumns(
@@ -68,16 +67,12 @@ export class TimeLogListModalComponent {
     );
   }
 
-  protected get timeLogs(): TimeLog[] {
-    return this.data.task.timeLogs;
-  }
-
   protected onCancel(): void {
     this.dialogRef.close();
   }
 
   protected onSave(): void {
-    if (this.isSaving) {
+    if (this.isSaving()) {
       return;
     }
 
@@ -88,7 +83,7 @@ export class TimeLogListModalComponent {
       return;
     }
 
-    this.isSaving = true;
+    this.isSaving.set(true);
 
     from(operations)
       .pipe(
@@ -101,14 +96,19 @@ export class TimeLogListModalComponent {
       )
       .subscribe({
         next: (timeLogs: TimeLog[]) => {
-          this.data.task.timeLogs = [...timeLogs];
+          const nextTimeLogs: TimeLog[] = [...timeLogs];
+
+          this.timeLogsState.set(nextTimeLogs);
           this.resetTrackedChanges();
-          this.isSaving = false;
+          this.isSaving.set(false);
           this.openSnackBar('Time logs updated.');
-          this.dialogRef.close({ saved: true });
+          this.dialogRef.close({
+            saved: true,
+            timeLogs: nextTimeLogs,
+          });
         },
         error: (error: HttpErrorResponse) => {
-          this.isSaving = false;
+          this.isSaving.set(false);
           this.openSnackBar(this.buildSaveErrorMessage(error));
         },
       });
@@ -141,11 +141,14 @@ export class TimeLogListModalComponent {
   protected onCreateAction(
     timeLog: TimeLog,
   ): void {
-    this.createdTimeLogs.push(timeLog);
-    this.data.task.timeLogs = [
-      ...this.data.task.timeLogs,
+    this.createdTimeLogs.update((createdTimeLogs: TimeLog[]) => [
+      ...createdTimeLogs,
       timeLog,
-    ];
+    ]);
+    this.timeLogsState.update((timeLogs: TimeLog[]) => [
+      ...timeLogs,
+      timeLog,
+    ]);
   }
 
   protected onUpdateAction(
@@ -157,16 +160,22 @@ export class TimeLogListModalComponent {
       return;
     }
 
-    const timeLogs: TimeLog[] = [...this.data.task.timeLogs];
+    const timeLogs: TimeLog[] = [...this.timeLogsState()];
     timeLogs.splice(indexOfTimeLog, 1, nextTimeLog);
-    this.data.task.timeLogs = timeLogs;
+    this.timeLogsState.set(timeLogs);
 
-    const createdTimeLogIndex: number = this.createdTimeLogs.findIndex(
+    const createdTimeLogs: TimeLog[] = this.createdTimeLogs();
+    const createdTimeLogIndex: number = createdTimeLogs.findIndex(
       (createdTimeLog: TimeLog) => createdTimeLog === sourceTimeLog,
     );
 
     if (createdTimeLogIndex >= 0) {
-      this.createdTimeLogs.splice(createdTimeLogIndex, 1, nextTimeLog);
+      this.createdTimeLogs.update((currentCreatedTimeLogs: TimeLog[]) => {
+        const nextCreatedTimeLogs: TimeLog[] = [...currentCreatedTimeLogs];
+        nextCreatedTimeLogs.splice(createdTimeLogIndex, 1, nextTimeLog);
+
+        return nextCreatedTimeLogs;
+      });
 
       return;
     }
@@ -183,26 +192,35 @@ export class TimeLogListModalComponent {
       return;
     }
 
-    const timeLogs: TimeLog[] = [...this.data.task.timeLogs];
+    const timeLogs: TimeLog[] = [...this.timeLogsState()];
     timeLogs.splice(indexOfTimeLog, 1);
-    this.data.task.timeLogs = timeLogs;
+    this.timeLogsState.set(timeLogs);
 
-    const createdTimeLogIndex: number = this.createdTimeLogs.findIndex(
+    const createdTimeLogs: TimeLog[] = this.createdTimeLogs();
+    const createdTimeLogIndex: number = createdTimeLogs.findIndex(
       (createdTimeLog: TimeLog) => createdTimeLog === timeLogModel,
     );
 
     if (createdTimeLogIndex >= 0) {
-      this.createdTimeLogs.splice(createdTimeLogIndex, 1);
+      this.createdTimeLogs.update((currentCreatedTimeLogs: TimeLog[]) => {
+        const nextCreatedTimeLogs: TimeLog[] = [...currentCreatedTimeLogs];
+        nextCreatedTimeLogs.splice(createdTimeLogIndex, 1);
+
+        return nextCreatedTimeLogs;
+      });
 
       return;
     }
 
-    this.updatedTimeLogs = this.updatedTimeLogs.filter(
+    this.updatedTimeLogs.set(this.updatedTimeLogs().filter(
       (updatedTimeLog: TimeLog) => updatedTimeLog.id !== timeLogModel.id,
-    );
+    ));
 
-    if (timeLogModel.id && !this.deletedTimeLogs.some((deletedTimeLog: TimeLog) => deletedTimeLog.id === timeLogModel.id)) {
-      this.deletedTimeLogs.push(timeLogModel);
+    if (timeLogModel.id && !this.deletedTimeLogs().some((deletedTimeLog: TimeLog) => deletedTimeLog.id === timeLogModel.id)) {
+      this.deletedTimeLogs.update((deletedTimeLogs: TimeLog[]) => [
+        ...deletedTimeLogs,
+        timeLogModel,
+      ]);
     }
   }
 
@@ -232,7 +250,7 @@ export class TimeLogListModalComponent {
   private findTimeLogIndex(
     timeLog: TimeLog,
   ): number {
-    return this.data.task.timeLogs.findIndex(
+    return this.timeLogsState().findIndex(
       (currentTimeLog: TimeLog) => currentTimeLog === timeLog ||
         (Boolean(currentTimeLog.id) && Boolean(timeLog.id) && currentTimeLog.id === timeLog.id),
     );
@@ -241,51 +259,59 @@ export class TimeLogListModalComponent {
   private upsertUpdatedTimeLog(
     timeLog: TimeLog,
   ): void {
-    const existingIndex: number = this.updatedTimeLogs.findIndex(
+    const existingIndex: number = this.updatedTimeLogs().findIndex(
       (updatedTimeLog: TimeLog) => updatedTimeLog.id === timeLog.id,
     );
 
     if (existingIndex >= 0) {
-      this.updatedTimeLogs.splice(existingIndex, 1, timeLog);
+      this.updatedTimeLogs.update((updatedTimeLogs: TimeLog[]) => {
+        const nextUpdatedTimeLogs: TimeLog[] = [...updatedTimeLogs];
+        nextUpdatedTimeLogs.splice(existingIndex, 1, timeLog);
+
+        return nextUpdatedTimeLogs;
+      });
 
       return;
     }
 
-    this.updatedTimeLogs.push(timeLog);
+    this.updatedTimeLogs.update((updatedTimeLogs: TimeLog[]) => [
+      ...updatedTimeLogs,
+      timeLog,
+    ]);
   }
 
   private buildSaveOperations(): SaveOperation[] {
     return [
-      ...this.createdTimeLogs.map((timeLog: TimeLog) => ({
+      ...this.createdTimeLogs().map((timeLog: TimeLog) => ({
         request$: this.timeLogsService.create(this.data.task, timeLog),
         onSuccess: (result: TimeLog | void) => {
           if (result instanceof TimeLog) {
             this.replaceTimeLog(timeLog, result);
           }
 
-          this.createdTimeLogs = this.createdTimeLogs.filter(
+          this.createdTimeLogs.set(this.createdTimeLogs().filter(
             (createdTimeLog: TimeLog) => createdTimeLog !== timeLog,
-          );
+          ));
         },
       })),
-      ...this.updatedTimeLogs.map((timeLog: TimeLog) => ({
+      ...this.updatedTimeLogs().map((timeLog: TimeLog) => ({
         request$: this.timeLogsService.update(this.data.task, timeLog),
         onSuccess: (result: TimeLog | void) => {
           if (result instanceof TimeLog) {
             this.replaceTimeLog(timeLog, result);
           }
 
-          this.updatedTimeLogs = this.updatedTimeLogs.filter(
+          this.updatedTimeLogs.set(this.updatedTimeLogs().filter(
             (updatedTimeLog: TimeLog) => updatedTimeLog.id !== timeLog.id,
-          );
+          ));
         },
       })),
-      ...this.deletedTimeLogs.map((timeLog: TimeLog) => ({
+      ...this.deletedTimeLogs().map((timeLog: TimeLog) => ({
         request$: this.timeLogsService.delete(this.data.task, timeLog),
         onSuccess: () => {
-          this.deletedTimeLogs = this.deletedTimeLogs.filter(
+          this.deletedTimeLogs.set(this.deletedTimeLogs().filter(
             (deletedTimeLog: TimeLog) => deletedTimeLog.id !== timeLog.id,
-          );
+          ));
         },
       })),
     ];
@@ -300,15 +326,15 @@ export class TimeLogListModalComponent {
       return;
     }
 
-    const timeLogs: TimeLog[] = [...this.data.task.timeLogs];
+    const timeLogs: TimeLog[] = [...this.timeLogsState()];
     timeLogs.splice(timeLogIndex, 1, nextTimeLog);
-    this.data.task.timeLogs = timeLogs;
+    this.timeLogsState.set(timeLogs);
   }
 
   private resetTrackedChanges(): void {
-    this.createdTimeLogs = [];
-    this.updatedTimeLogs = [];
-    this.deletedTimeLogs = [];
+    this.createdTimeLogs.set([]);
+    this.updatedTimeLogs.set([]);
+    this.deletedTimeLogs.set([]);
   }
 
   private buildSaveErrorMessage(

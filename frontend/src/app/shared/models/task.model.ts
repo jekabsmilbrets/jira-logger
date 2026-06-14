@@ -35,11 +35,11 @@ export class Task extends Base implements Searchable {
   }
 
   public get jiraWorkLogs(): JiraWorkLog[] {
-    return this._jiraWorkLogs;
+    return [...this._jiraWorkLogs];
   }
 
   public set jiraWorkLogs(value: JiraWorkLog[]) {
-    this._jiraWorkLogs = value;
+    this._jiraWorkLogs = [...(value ?? [])];
   }
 
   public get name(): string {
@@ -59,11 +59,12 @@ export class Task extends Base implements Searchable {
   }
 
   public get timeLogs(): TimeLog[] {
-    return this._timeLogs;
+    return [...this._timeLogs];
   }
 
   public set timeLogs(value: TimeLog[]) {
-    this._timeLogs = value;
+    this._timeLogs = [...(value ?? [])];
+    this.updateTimeLogged();
   }
 
   public get description(): string {
@@ -83,11 +84,11 @@ export class Task extends Base implements Searchable {
   }
 
   public get tags(): Tag[] {
-    return this._tags;
+    return [...this._tags];
   }
 
   public set tags(value: Tag[]) {
-    this._tags = value;
+    this._tags = [...(value ?? [])];
   }
 
   public get lastTimeLogStartTime(): Date | null {
@@ -111,7 +112,10 @@ export class Task extends Base implements Searchable {
 
   public addTag(tag: Tag): void {
     if (!this.tags.includes(tag)) {
-      this.tags.push(tag);
+      this.tags = [
+        ...this.tags,
+        tag,
+      ];
     }
   }
 

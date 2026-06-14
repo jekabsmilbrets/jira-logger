@@ -1,5 +1,5 @@
 import { formatDate } from '@angular/common';
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, Signal, signal } from '@angular/core';
 
 import {
   BehaviorSubject,
@@ -7,6 +7,7 @@ import {
   combineLatest,
   debounceTime,
   distinctUntilChanged,
+  map,
   Observable,
   of,
   switchMap,
@@ -15,7 +16,9 @@ import {
   withLatestFrom,
 } from 'rxjs';
 
+import { Setting } from '@core/models/setting.model';
 import { LocaleService } from '@core/services/locale.service';
+import { SettingsService } from '@core/services/settings.service';
 import { StorageService } from '@core/services/storage.service';
 import { TimezoneService } from '@core/services/timezone.service';
 
@@ -31,6 +34,8 @@ import { columns as totalModelColumns } from '@report/constants/report-total-col
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
 import { ReportSettingsStorageValue } from '@report/interfaces/report-settings-storage-value.interface';
 
+import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -45,9 +50,10 @@ export class ReportService {
   public hideUnreportedTasks$: Observable<boolean>;
   public reload$: Observable<void>;
 
-  public columns: Column[] = [];
+  public readonly columns: Signal<Column[]>;
 
   private readonly storageService: StorageService = inject(StorageService);
+  private readonly settingsService: SettingsService = inject(SettingsService);
   private readonly tagsService: TagsService = inject(TagsService);
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
@@ -61,6 +67,8 @@ export class ReportService {
   private showWeekendsSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   private hideUnreportedTasksSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   private reloadSubject: BehaviorSubject<void> = new BehaviorSubject<void>(undefined);
+  private jiraApiEnabledSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  private readonly columnsSignal = signal<Column[]>([]);
 
   private settingsKey: IDBValidKey = 'report';
   private customStoreName: string = 'settings';
@@ -74,10 +82,14 @@ export class ReportService {
     this.showWeekends$ = this.showWeekendsSubject.asObservable();
     this.hideUnreportedTasks$ = this.hideUnreportedTasksSubject.asObservable();
     this.reload$ = this.reloadSubject.asObservable();
+    this.columns = this.columnsSignal.asReadonly();
 
     this.initSettings();
 
     this.listenToChanges()
+      .subscribe();
+
+    this.listenToSettings()
       .subscribe();
 
     this.tasks$ = this.getTasks();
@@ -86,22 +98,19 @@ export class ReportService {
   public set date(
     date: Date | null,
   ) {
-    date?.setHours(0, 0, 0, 0);
-    this.dateSubject.next(date);
+    this.dateSubject.next(this.normalizeStartOfDay(date));
   }
 
   public set startDate(
     startDate: Date | null,
   ) {
-    startDate?.setHours(0, 0, 0, 0);
-    this.startDateSubject.next(startDate);
+    this.startDateSubject.next(this.normalizeStartOfDay(startDate));
   }
 
   public set endDate(
     endDate: Date | null,
   ) {
-    endDate?.setHours(23, 59, 59);
-    this.endDateSubject.next(endDate);
+    this.endDateSubject.next(this.normalizeEndOfDay(endDate));
   }
 
   public set reportMode(
@@ -113,7 +122,7 @@ export class ReportService {
   public set tags(
     tags: Tag[],
   ) {
-    this.tagsSubject.next(tags);
+    this.tagsSubject.next([...(tags ?? [])]);
   }
 
   public set showWeekends(
@@ -132,7 +141,7 @@ export class ReportService {
     this.reloadSubject.next();
   }
 
-  private getAllChanges(): Observable<[Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean, void]> {
+  private getAllChanges(): Observable<[Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean, void, boolean]> {
     return combineLatest([
       this.tags$,
       this.date$,
@@ -142,6 +151,7 @@ export class ReportService {
       this.showWeekends$,
       this.hideUnreportedTasks$,
       this.reload$,
+      this.jiraApiEnabledSubject.asObservable(),
     ])
       .pipe(
         debounceTime(250),
@@ -153,7 +163,7 @@ export class ReportService {
     return this.getAllChanges()
       .pipe(
         switchMap(
-          ([tags, date, startDate, endDate, reportMode, showWeekends, hideUnreportedTasks]: [
+          ([tags, date, startDate, endDate, reportMode, showWeekends, hideUnreportedTasks, , jiraApiEnabled]: [
             Tag[],
               Date | null,
               Date | null,
@@ -162,6 +172,7 @@ export class ReportService {
             boolean,
             boolean,
             void,
+            boolean,
           ]) => this.filterTasks(
             reportMode,
             tags,
@@ -170,6 +181,7 @@ export class ReportService {
             endDate,
             showWeekends,
             hideUnreportedTasks,
+            jiraApiEnabled,
           ),
         ),
       );
@@ -183,6 +195,7 @@ export class ReportService {
     endDate: Date | null,
     showWeekends: boolean,
     hideUnreportedTasks: boolean,
+    jiraApiEnabled: boolean,
   ): Observable<Task[]> {
     const filter: TaskListFilter = {
       tags: tags.map((t: Tag) => t.id),
@@ -216,30 +229,32 @@ export class ReportService {
         delete filter.endDate;
         delete filter.startDate;
 
-        this.columns = totalModelColumns;
+        this.columnsSignal.set([...totalModelColumns]);
         break;
 
       case ReportModeEnum.date:
         delete filter.endDate;
         delete filter.startDate;
 
-        this.columns = this.generateMonthColumns(
+        this.columnsSignal.set(this.generateMonthColumns(
           date as Date,
           date as Date,
           showWeekends,
           reportMode,
-        );
+          jiraApiEnabled,
+        ));
         break;
 
       case ReportModeEnum.dateRange:
         delete filter.date;
 
-        this.columns = this.generateMonthColumns(
+        this.columnsSignal.set(this.generateMonthColumns(
           startDate as Date,
           endDate as Date,
           showWeekends,
           reportMode,
-        );
+          jiraApiEnabled,
+        ));
         break;
     }
 
@@ -262,9 +277,9 @@ export class ReportService {
           ([settings, tags]: [ReportSettingsStorageValue | undefined, Tag[]]) => {
             this.reportModeSubject.next(settings?.reportMode ?? ReportModeEnum.total);
             this.tagsSubject.next(tags.filter((t: Tag) => settings?.tags.includes(t.id)) ?? []);
-            this.dateSubject.next(settings?.date ?? null);
-            this.startDateSubject.next(settings?.startDate ?? null);
-            this.endDateSubject.next(settings?.endDate ?? null);
+            this.dateSubject.next(this.cloneDate(settings?.date));
+            this.startDateSubject.next(this.cloneDate(settings?.startDate));
+            this.endDateSubject.next(this.cloneDate(settings?.endDate));
             this.showWeekendsSubject.next(settings?.showWeekends ?? false);
             this.hideUnreportedTasksSubject.next(settings?.hideUnreportedTasks ?? false);
           },
@@ -277,7 +292,7 @@ export class ReportService {
     return this.getAllChanges()
       .pipe(
         switchMap(
-          ([tags, date, startDate, endDate, reportMode, showWeekends, hideUnreportedTasks, reload]: [
+          ([tags, date, startDate, endDate, reportMode, showWeekends, hideUnreportedTasks, reload, jiraApiEnabled]: [
             Tag[],
               Date | null,
               Date | null,
@@ -286,6 +301,7 @@ export class ReportService {
             boolean,
             boolean,
             void,
+            boolean,
           ]) => this.storageService.create(
             this.settingsKey,
             {
@@ -311,10 +327,19 @@ export class ReportService {
                   showWeekends,
                   hideUnreportedTasks,
                   reload,
+                  jiraApiEnabled,
                 ]);
               }),
             ),
         ),
+      );
+  }
+
+  private listenToSettings(): Observable<boolean> {
+    return this.settingsService.settings$
+      .pipe(
+        map((settings: Setting[]) => this.isJiraApiEnabled(settings)),
+        tap((jiraApiEnabled: boolean) => this.jiraApiEnabledSubject.next(jiraApiEnabled)),
       );
   }
 
@@ -323,6 +348,7 @@ export class ReportService {
     endDate: Date,
     showWeekends: boolean,
     reportMode: ReportModeEnum,
+    jiraApiEnabled: boolean,
   ): Column[] {
     const modifiedMonthModelColumns: Column[] = [...monthModelColumns];
     const currentDate: Date = new Date(startDate);
@@ -384,7 +410,7 @@ export class ReportService {
       });
     }
 
-    if (reportMode === ReportModeEnum.date) {
+    if (reportMode === ReportModeEnum.date && jiraApiEnabled) {
       const taskSynced: (task: Task) => boolean = (
         task: Task,
       ) => task.calcTimeLogged() > 0 && task.calcTimeLogged() === task.calcTimeSynced(startDate, this.timezoneService.timezone);
@@ -422,5 +448,51 @@ export class ReportService {
     }
 
     return modifiedMonthModelColumns;
+  }
+
+  private cloneDate(
+    date: Date | null | undefined,
+  ): Date | null {
+    return date ? new Date(date.getTime()) : null;
+  }
+
+  private normalizeStartOfDay(
+    date: Date | null,
+  ): Date | null {
+    const nextDate: Date | null = this.cloneDate(date);
+    nextDate?.setHours(0, 0, 0, 0);
+
+    return nextDate;
+  }
+
+  private normalizeEndOfDay(
+    date: Date | null,
+  ): Date | null {
+    const nextDate: Date | null = this.cloneDate(date);
+    nextDate?.setHours(23, 59, 59, 999);
+
+    return nextDate;
+  }
+
+  private isJiraApiEnabled(
+    settings: Setting[],
+  ): boolean {
+    const jiraEnabledSetting: Setting | undefined = settings.find(
+      (setting: Setting) => setting.name === JiraApiSettings.enabled,
+    );
+
+    if (!jiraEnabledSetting) {
+      return false;
+    }
+
+    if (typeof jiraEnabledSetting.value === 'boolean') {
+      return jiraEnabledSetting.value;
+    }
+
+    if (typeof jiraEnabledSetting.value === 'string') {
+      return jiraEnabledSetting.value.toLowerCase() === 'true';
+    }
+
+    return false;
   }
 }

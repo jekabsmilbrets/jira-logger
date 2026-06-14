@@ -29,11 +29,13 @@ describe('Core Services dynamic-menu.service', () => {
     service.dynamicMenus$.subscribe((v) => values.push(v));
 
     service.addDynamicMenu(new DynamicMenu(C1 as any, { route: '/a', providers: [] }));
+    const firstEmission = values.at(-1);
     service.addDynamicMenu(new DynamicMenu(C2 as any, { route: '/b', providers: [] }));
     service.addDynamicMenu(new DynamicMenu(C1 as any, { route: '/b', providers: [] }));
 
     expect(values.at(-1)).toHaveLength(2);
     expect(values.at(-1)?.[0].data.route).toBe('/a');
     expect(values.at(-1)?.[1].data.route).toBe('/b');
+    expect(values.at(-1)).not.toBe(firstEmission);
   });
 });

@@ -13,6 +13,7 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   input,
@@ -94,6 +95,22 @@ export class TableComponent implements AfterViewInit {
   protected readonly sort: Signal<MatSort> = viewChild.required(MatSort);
 
   protected readonly paginator: Signal<MatPaginator> = viewChild.required(MatPaginator);
+  protected readonly displayedColumns = computed(() => {
+    const columns: string[] = this.columns()
+      .filter(({ hidden }: Column) => !hidden)
+      .filter(({ excludeFromLoop }: Column) => !excludeFromLoop)
+      .map(({ columnDef }: Column) => columnDef);
+
+    if (this.enableRemoveAction()) {
+      columns.push('remove');
+    }
+
+    if (this.isSelectable()) {
+      columns.unshift('select');
+    }
+
+    return columns;
+  });
 
   protected selection: SelectionModel<Searchable> = new SelectionModel<Searchable>(true, []);
 
@@ -107,31 +124,10 @@ export class TableComponent implements AfterViewInit {
 
   constructor() {
     effect(() => {
-      this._data = this.data() ?? [];
+      this._data = [...(this.data() ?? [])];
+      this.selection.clear();
       this.dataSource.data = this._data;
     });
-  }
-
-  protected get displayedColumns(): string[] {
-    const columns: string[] = this.columns()
-      .filter(({ hidden }: Column) => !hidden)
-      .filter(({ excludeFromLoop }: Column) => !excludeFromLoop)
-      .map(({ columnDef }: Column) => columnDef);
-
-    if (this.enableRemoveAction()) {
-      columns.push('remove');
-    }
-
-    // TODO: Enable when bug in table is resolved
-    // if (this.enableSyncAction()) {
-    //   columns.push('sync');
-    // }
-
-    if (this.isSelectable()) {
-      columns.unshift('select');
-    }
-
-    return columns;
   }
 
   public ngAfterViewInit(): void {

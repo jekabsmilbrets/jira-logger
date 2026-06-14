@@ -120,18 +120,13 @@ describe('Settings Components jira-api-configurator.component', () => {
     (component as any).onSaveFormData();
 
     expect(emitSpy).toHaveBeenCalledTimes(1);
-    expect(emitSpy.mock.calls[0][0]).toEqual(expect.arrayContaining([
+    expect(emitSpy.mock.calls[0][0]).toEqual([
       expect.objectContaining({
         id: '1',
         name: JiraApiSettings.enabled,
         value: 'false',
       }),
-      expect.objectContaining({
-        id: '3',
-        name: JiraApiSettings.personalAccessToken,
-        value: '',
-      }),
-    ]));
+    ]);
   });
 
   it('resets form values back to persisted settings on cancel', () => {
@@ -150,7 +145,7 @@ describe('Settings Components jira-api-configurator.component', () => {
     });
   });
 
-  it('emits a cleared token when jira is disabled and stored token is replaced with blanks', () => {
+  it('does not clear the stored token when jira is disabled and token field is blank', () => {
     const emitSpy = vi.spyOn((component as any).settingsChange, 'emit');
     (component as any).jiraApiFormModel.set({
       enabled: false,
@@ -161,18 +156,13 @@ describe('Settings Components jira-api-configurator.component', () => {
     (component as any).onSaveFormData();
 
     const [emittedSettings] = emitSpy.mock.calls[0];
-    expect(emittedSettings).toEqual(expect.arrayContaining([
+    expect(emittedSettings).toEqual([
       expect.objectContaining({
         id: '1',
         name: JiraApiSettings.enabled,
         value: 'false',
       }),
-      expect.objectContaining({
-        id: '3',
-        name: JiraApiSettings.personalAccessToken,
-        value: '',
-      }),
-    ]));
+    ]);
   });
 
   it('emits a non-empty replacement token', () => {

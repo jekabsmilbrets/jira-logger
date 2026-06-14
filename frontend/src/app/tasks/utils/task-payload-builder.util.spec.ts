@@ -49,7 +49,8 @@ describe('Tasks Utils task-payload-builder.util', () => {
 
     expect(out.name).toBe(sourceTask.name);
     expect(out.description).toBe(sourceTask.description);
-    expect(out.tags).toBe(sourceTask.tags);
+    expect(out.tags).toEqual(sourceTask.tags);
+    expect(out.tags).not.toBe(sourceTask.tags);
   });
 
   it('buildTimeLogPayload applies form values and maps nullable end/description to undefined', () => {

@@ -1,24 +1,38 @@
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatSidenav } from '@angular/material/sidenav';
 import { By } from '@angular/platform-browser';
-import { NavigationEnd, provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 
-import { BehaviorSubject, firstValueFrom } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { vi } from 'vitest';
 
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
 import { HeaderComponent } from './header.component';
 
+@Component({
+  template: '',
+  standalone: true,
+})
+class DummyRouteComponent {
+}
+
 describe('Layout Components header.component', () => {
   const dynamicMenusSubject = new BehaviorSubject<any[]>([]);
 
   beforeEach(async () => {
     dynamicMenusSubject.next([]);
+
     await TestBed.configureTestingModule({
       imports: [HeaderComponent],
       providers: [
-        provideRouter([]),
+        provideRouter([
+          { path: '', component: DummyRouteComponent },
+          { path: 'tasks', component: DummyRouteComponent },
+          { path: 'tasks/list', component: DummyRouteComponent },
+          { path: 'report', component: DummyRouteComponent },
+        ]),
         {
           provide: DynamicMenuService,
           useValue: {
@@ -95,10 +109,10 @@ describe('Layout Components header.component', () => {
 
   it('clears dynamic menu container when no menu matches current route', async () => {
     const { fixture } = createComponentWithRequiredInputs();
-    fixture.detectChanges();
     const component = fixture.componentInstance as any;
     const clear = vi.fn();
     const createComponent = vi.fn();
+    const router = TestBed.inject(Router);
 
     Object.defineProperty(component, 'dynamicMenu', {
       value: () => ({
@@ -110,10 +124,14 @@ describe('Layout Components header.component', () => {
     });
 
     dynamicMenusSubject.next([{
-      data: { route: '/other' }, component: class Dummy {
+      data: { route: '/other', providers: [] },
+      component: class Dummy {
       },
     }]);
-    await firstValueFrom(component['loadDynamicMenu'](new NavigationEnd(1, '/tasks', '/tasks')));
+
+    await router.navigateByUrl('/tasks');
+    fixture.detectChanges();
+    await fixture.whenStable();
 
     expect(clear).toHaveBeenCalled();
     expect(createComponent).not.toHaveBeenCalled();
@@ -121,10 +139,10 @@ describe('Layout Components header.component', () => {
 
   it('creates dynamic menu component when route matches', async () => {
     const { fixture } = createComponentWithRequiredInputs();
-    fixture.detectChanges();
     const component = fixture.componentInstance as any;
     const clear = vi.fn();
     const createComponent = vi.fn();
+    const router = TestBed.inject(Router);
 
     class DummyDynamicComponent {
     }
@@ -139,22 +157,15 @@ describe('Layout Components header.component', () => {
     });
 
     dynamicMenusSubject.next([{ data: { route: '/tasks', providers: [] }, component: DummyDynamicComponent }]);
-    await firstValueFrom(component['loadDynamicMenu'](new NavigationEnd(1, '/tasks', '/tasks/list')));
+
+    await router.navigateByUrl('/tasks/list');
+    fixture.detectChanges();
+    await fixture.whenStable();
 
     expect(clear).toHaveBeenCalled();
     expect(createComponent).toHaveBeenCalledWith(
       DummyDynamicComponent,
       expect.objectContaining({ injector: expect.any(Object) }),
     );
-  });
-
-  it('unsubscribes router subscription on destroy', () => {
-    const { fixture } = createComponentWithRequiredInputs();
-    fixture.detectChanges();
-    const component = fixture.componentInstance as any;
-    const unsub = vi.spyOn(component['routerEventsSubscription'], 'unsubscribe');
-
-    component.ngOnDestroy();
-    expect(unsub).toHaveBeenCalledTimes(1);
   });
 });

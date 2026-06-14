@@ -1,7 +1,7 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import { AsyncPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, Signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { catchError, filter, map, Observable, of, switchMap, take } from 'rxjs';
@@ -29,14 +29,9 @@ import { ReportService } from '@report/services/report.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     TableComponent,
-    AsyncPipe,
   ],
 })
 export class ReportViewComponent implements OnInit {
-  protected tasks$!: Observable<Task[]>;
-
-  protected ReportModeEnum = ReportModeEnum;
-
   private readonly dynamicMenuService: DynamicMenuService = inject(DynamicMenuService);
   private readonly reportService: ReportService = inject(ReportService);
   private readonly tasksService: TasksService = inject(TasksService);
@@ -44,16 +39,13 @@ export class ReportViewComponent implements OnInit {
   private readonly clipboard: Clipboard = inject(Clipboard);
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
 
-  constructor() {
-    this.tasks$ = this.reportService.tasks$;
-  }
+  protected readonly tasks = toSignal(this.reportService.tasks$, { initialValue: [] as Task[] });
+  protected readonly reportMode = toSignal(this.reportService.reportMode$, { initialValue: ReportModeEnum.total });
 
-  protected get columns(): Column[] {
+  protected ReportModeEnum = ReportModeEnum;
+
+  protected get columns(): Signal<Column[]> {
     return this.reportService.columns;
-  }
-
-  protected get reportMode$(): Observable<ReportModeEnum> {
-    return this.reportService.reportMode$;
   }
 
   public ngOnInit(): void {

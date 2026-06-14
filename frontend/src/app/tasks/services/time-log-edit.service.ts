@@ -24,7 +24,7 @@ export class TimeLogEditService {
       TimeLogListModalComponent,
       {
         data: {
-          task,
+          task: this.cloneTask(task),
         },
       },
     );
@@ -45,5 +45,20 @@ export class TimeLogEditService {
     );
 
     return timeLogDialogRef.afterClosed();
+  }
+
+  private cloneTask(
+    task: Task,
+  ): Task {
+    return new Task({
+      id: task.id,
+      name: task.name,
+      description: task.description,
+      lastTimeLog: task.lastTimeLog,
+      timeLogs: task.timeLogs,
+      jiraWorkLogs: task.jiraWorkLogs,
+      timeLogged: task.timeLogged,
+      tags: task.tags,
+    });
   }
 }

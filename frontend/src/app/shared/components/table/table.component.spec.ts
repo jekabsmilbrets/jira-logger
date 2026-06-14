@@ -44,20 +44,23 @@ describe('Shared Components table.component', () => {
     const { fixture, component } = await createComponent();
     fixture.componentRef.setInput('columns', [
       createColumn({ columnDef: 'name' }),
+      createColumn({ columnDef: 'sync' }),
       createColumn({ columnDef: 'hidden', hidden: true }),
       createColumn({ columnDef: 'excluded', excludeFromLoop: true }),
     ]);
     fixture.componentRef.setInput('enableRemoveAction', true);
+    fixture.componentRef.setInput('enableSyncAction', true);
     fixture.componentRef.setInput('isSelectable', true);
     fixture.detectChanges();
 
-    expect(component['displayedColumns']).toEqual(['select', 'name', 'remove']);
+    expect(component['displayedColumns']()).toEqual(['select', 'name', 'sync', 'remove']);
 
     fixture.componentRef.setInput('enableRemoveAction', false);
+    fixture.componentRef.setInput('enableSyncAction', false);
     fixture.componentRef.setInput('isSelectable', false);
     fixture.detectChanges();
 
-    expect(component['displayedColumns']).toEqual(['name']);
+    expect(component['displayedColumns']()).toEqual(['name', 'sync']);
   });
 
   it('wires real sort/paginator and nested sorting accessor in ngAfterViewInit', async () => {

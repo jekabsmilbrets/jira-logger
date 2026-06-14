@@ -25,9 +25,10 @@ export class DynamicMenuService {
     ) >= 0;
 
     if (!dynamicMenuExists) {
-      currentDynamicMenus.push(dynamicMenu);
-
-      this.dynamicMenusSubject.next(currentDynamicMenus);
+      this.dynamicMenusSubject.next([
+        ...currentDynamicMenus,
+        dynamicMenu,
+      ]);
     }
   }
 }

@@ -26,6 +26,23 @@ describe('Shared Models task.model', () => {
     expect(task.tags).toHaveLength(0);
   });
 
+  it('clones mutable arrays on set/get boundaries', () => {
+    const tag = new Tag({ id: '1', name: 'a' } as any);
+    const timeLog = new TimeLog({ startTime: new Date('2024-01-01T10:00:00.000Z') } as any);
+    const tags = [tag];
+    const timeLogs = [timeLog];
+    const task = new Task({ tags, timeLogs } as any);
+
+    tags.push(new Tag({ id: '2', name: 'b' } as any));
+    timeLogs.push(new TimeLog({ startTime: new Date('2024-01-01T11:00:00.000Z') } as any));
+
+    const readTags = task.tags;
+    readTags.push(new Tag({ id: '3', name: 'c' } as any));
+
+    expect(task.tags).toHaveLength(1);
+    expect(task.timeLogs).toHaveLength(1);
+  });
+
   it('computes running state and lastTimeLogStartTime', () => {
     const running = new TimeLog({ startTime: new Date('2024-01-01T10:00:00.000Z') } as any);
     const stopped = new TimeLog({ startTime: new Date('2024-01-01T10:00:00.000Z'), endTime: new Date('2024-01-01T11:00:00.000Z') } as any);

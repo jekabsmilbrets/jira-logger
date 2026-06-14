@@ -1,15 +1,17 @@
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  effect,
   inject,
   Injector,
   input,
   InputSignal,
-  OnDestroy,
   Signal,
   viewChild,
   ViewContainerRef,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -17,7 +19,7 @@ import { MatSidenav } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 
-import { delay, filter, Observable, Subscription, switchMap, take, tap } from 'rxjs';
+import { filter, map, startWith } from 'rxjs';
 
 import { DynamicMenuDirective } from '@core/directives/dynamic-menu.directive';
 import { DynamicMenuInterface } from '@core/interfaces/dynamic-menu.interface';
@@ -35,7 +37,7 @@ import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MatToolbarModule, MatButtonModule, RouterLink, MatIconModule, ReadableTimePipe, DynamicMenuDirective, MatProgressBarModule],
 })
-export class HeaderComponent implements OnDestroy {
+export class HeaderComponent implements AfterViewInit {
   public readonly sidenav: InputSignal<MatSidenav> = input.required<MatSidenav>();
   public readonly activeTask: InputSignal<null | Task> = input.required<Task | null>();
   public readonly isLoading: InputSignal<boolean> = input(false);
@@ -46,22 +48,15 @@ export class HeaderComponent implements OnDestroy {
   private readonly _injector: Injector = inject(Injector);
 
   private readonly dynamicMenu: Signal<DynamicMenuDirective> = viewChild.required(DynamicMenuDirective);
-
-  private routerEventsSubscription: Subscription;
-
-  constructor() {
-    this.routerEventsSubscription = this.router.events
-      .pipe(
-        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-        delay(100), // hax :D :D without it loadingDynamicMenu causes loading empty dynamic menus
-        switchMap((navigationEndEvent: NavigationEnd) => this.loadDynamicMenu(navigationEndEvent)),
-      )
-      .subscribe();
-  }
-
-  public ngOnDestroy(): void {
-    this.routerEventsSubscription.unsubscribe();
-  }
+  private readonly dynamicMenus = toSignal(this.dynamicMenuService.dynamicMenus$, { initialValue: [] as DynamicMenu[] });
+  private readonly activeRoute = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event: NavigationEnd) => event.urlAfterRedirects),
+      startWith(this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
 
   protected reportDateLink(): string {
     const date: Date = new Date();
@@ -72,34 +67,26 @@ export class HeaderComponent implements OnDestroy {
     return `/report/date/${ currentDate }`;
   }
 
-  private loadDynamicMenu(
-    navigationEndEvent: NavigationEnd,
-  ): Observable<DynamicMenu[]> {
-    return this.dynamicMenuService.dynamicMenus$
-      .pipe(
-        take(1),
-        tap((dynamicMenus: DynamicMenu[]) => {
-          const dynamicMenu: DynamicMenu | undefined = dynamicMenus.find(
-            (dM: DynamicMenu) => navigationEndEvent.urlAfterRedirects.includes(dM.data.route),
-          );
-
-          if (dynamicMenu) {
-            const viewContainerRef: ViewContainerRef = this.dynamicMenu().viewContainerRef;
-            viewContainerRef.clear();
-
-            viewContainerRef.createComponent<DynamicMenuInterface>(
-              dynamicMenu.component as never,
-              {
-                injector: Injector.create({
-                  providers: dynamicMenu.data?.providers ?? [],
-                  parent: this._injector,
-                }),
-              },
-            );
-          } else {
-            this.dynamicMenu().viewContainerRef.clear();
-          }
-        }),
+  public ngAfterViewInit(): void {
+    effect(() => {
+      const dynamicMenu: DynamicMenu | undefined = this.dynamicMenus().find(
+        (menu: DynamicMenu) => this.activeRoute().includes(menu.data.route),
       );
+      const viewContainerRef: ViewContainerRef = this.dynamicMenu().viewContainerRef;
+
+      viewContainerRef.clear();
+
+      if (dynamicMenu) {
+        viewContainerRef.createComponent<DynamicMenuInterface>(
+          dynamicMenu.component as never,
+          {
+            injector: Injector.create({
+              providers: dynamicMenu.data?.providers ?? [],
+              parent: this._injector,
+            }),
+          },
+        );
+      }
+    }, { injector: this._injector });
   }
 }

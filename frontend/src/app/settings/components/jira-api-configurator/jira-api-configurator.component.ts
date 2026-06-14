@@ -48,6 +48,8 @@ export class JiraApiConfiguratorComponent {
     host: '',
     personalAccessToken: '',
   });
+  protected readonly hidePersonalAccessToken = signal(true);
+  protected readonly hasStoredPersonalAccessToken = signal(false);
   protected readonly jiraApiForm = form(this.jiraApiFormModel, (path) => {
     required(path.host, { message: 'Host is required.' });
     required(path.personalAccessToken, {
@@ -56,8 +58,6 @@ export class JiraApiConfiguratorComponent {
     });
     disabled(path, () => !!this.disabled());
   });
-  protected readonly hidePersonalAccessToken = signal(true);
-  protected readonly hasStoredPersonalAccessToken = signal(false);
 
   constructor() {
     effect(() => {
@@ -104,14 +104,6 @@ export class JiraApiConfiguratorComponent {
             }
 
             if (!value.trim()) {
-              if (!formData.enabled && this.hasStoredPersonalAccessToken()) {
-                changedSettings.push(
-                  new Setting({
-                    ...originalSetting,
-                    value: '',
-                  }),
-                );
-              }
               continue;
             }
           }

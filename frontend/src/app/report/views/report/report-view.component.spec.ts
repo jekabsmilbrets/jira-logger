@@ -1,5 +1,6 @@
 import { Clipboard } from '@angular/cdk/clipboard';
 import { HttpErrorResponse } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { By } from '@angular/platform-browser';
@@ -24,7 +25,11 @@ class ReportServiceStub {
   public readonly reportMode$ = of(ReportModeEnum.date);
   public readonly dateSubject = new BehaviorSubject<Date | null>(null);
   public readonly date$ = this.dateSubject.asObservable();
-  public readonly columns = [];
+  public readonly columns = signal([{
+    columnDef: 'sync',
+    header: 'Sync',
+    cell: () => undefined,
+  }] as any[]);
   public readonly reload = vi.fn();
 }
 
