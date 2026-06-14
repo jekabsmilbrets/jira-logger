@@ -1,7 +1,6 @@
 import { Clipboard } from '@angular/cdk/clipboard';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, OnInit, Signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { catchError, Observable, of, switchMap } from 'rxjs';
@@ -39,7 +38,7 @@ export class ReportViewComponent implements OnInit {
   private readonly clipboard: Clipboard = inject(Clipboard);
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
 
-  protected readonly tasks = toSignal(this.reportService.tasks$, { initialValue: [] as Task[] });
+  protected readonly tasks = this.reportService.tasks;
   protected readonly reportMode = this.reportService.reportMode;
 
   protected ReportModeEnum = ReportModeEnum;

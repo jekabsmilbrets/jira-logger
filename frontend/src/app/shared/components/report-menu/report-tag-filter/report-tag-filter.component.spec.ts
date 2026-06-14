@@ -1,7 +1,7 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { of } from 'rxjs';
 import { vi } from 'vitest';
 
 import { Tag } from '@shared/models/tag.model';
@@ -13,7 +13,7 @@ describe('Shared Components report-tag-filter.component', () => {
   it('renders select and emits tagChange on value change callback', async () => {
     await TestBed.configureTestingModule({
       imports: [ReportTagFilterComponent],
-      providers: [{ provide: TagsService, useValue: { tags$: of([{ id: '1', name: 'Backend' } as Tag]) } }],
+      providers: [{ provide: TagsService, useValue: { tags: signal([{ id: '1', name: 'Backend' } as Tag]).asReadonly() } }],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(ReportTagFilterComponent);
@@ -32,7 +32,7 @@ describe('Shared Components report-tag-filter.component', () => {
   it('handles disabled and tags inputs', async () => {
     await TestBed.configureTestingModule({
       imports: [ReportTagFilterComponent],
-      providers: [{ provide: TagsService, useValue: { tags$: of([]) } }],
+      providers: [{ provide: TagsService, useValue: { tags: signal<Tag[]>([]).asReadonly() } }],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(ReportTagFilterComponent);
@@ -57,7 +57,7 @@ describe('Shared Components report-tag-filter.component', () => {
   it('triggers mat-select valueChange listener from template', async () => {
     await TestBed.configureTestingModule({
       imports: [ReportTagFilterComponent],
-      providers: [{ provide: TagsService, useValue: { tags$: of([]) } }],
+      providers: [{ provide: TagsService, useValue: { tags: signal<Tag[]>([]).asReadonly() } }],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(ReportTagFilterComponent);

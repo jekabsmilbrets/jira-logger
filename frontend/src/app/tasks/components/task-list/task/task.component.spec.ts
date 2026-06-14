@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
@@ -42,14 +43,14 @@ describe('Tasks Components task.component', () => {
     };
 
     const tagsService = {
-      tags$: of([
+      tags: signal([
         new Tag({ id: '1', name: 'Frontend' }),
         new Tag({ id: '2', name: 'Backend' }),
-      ]),
+      ]).asReadonly(),
     };
 
     const tasksService = {
-      tasks$: of([baseTask]),
+      tasks: signal([baseTask]).asReadonly(),
     };
 
     const timeLogEditService = {

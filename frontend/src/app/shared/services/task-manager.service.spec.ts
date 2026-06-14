@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { BehaviorSubject, Subject } from 'rxjs';
@@ -22,13 +23,13 @@ describe('Shared Services task-manager.service', () => {
   it('tracks active task from start/finish streams and computes logged time', async () => {
     const taskStarted$ = new Subject<Task>();
     const taskFinished$ = new Subject<Task>();
-    const tasks$ = new BehaviorSubject<Task[]>([]);
+    const tasks = signal<Task[]>([]);
 
     const runningTask = new Task({ id: '1', name: 'A' } as any);
     const finishedTask = new Task({ id: '2', name: 'B' } as any);
 
     const tasksServiceMock = {
-      tasks$,
+      tasks: tasks.asReadonly(),
       filteredList: vi.fn(() => new BehaviorSubject<Task[]>([runningTask])),
     } as any;
 
@@ -64,11 +65,11 @@ describe('Shared Services task-manager.service', () => {
 
   it('swallows start stream errors and still initializes', async () => {
     const taskFinished$ = new Subject<Task>();
-    const tasks$ = new BehaviorSubject<Task[]>([]);
+    const tasks = signal<Task[]>([]);
     const runningTask = new Task({ id: '1', name: 'A' } as any);
 
     const tasksServiceMock = {
-      tasks$,
+      tasks: tasks.asReadonly(),
       filteredList: vi.fn(() => new BehaviorSubject<Task[]>([runningTask])),
     } as any;
 
@@ -97,10 +98,10 @@ describe('Shared Services task-manager.service', () => {
     const runningLog = new Date('2026-01-01T10:00:00.000Z');
     const runningTask = new Task({ id: '1', name: 'A', timeLogs: [{ startTime: runningLog }] } as any);
     runningTask.lastTimeLog = runningTask.timeLogs[0];
-    const tasks$ = new BehaviorSubject<Task[]>([runningTask]);
+    const tasks = signal<Task[]>([runningTask]);
 
     const tasksServiceMock = {
-      tasks$,
+      tasks: tasks.asReadonly(),
       filteredList: vi.fn(() => new BehaviorSubject<Task[]>([runningTask])),
     } as any;
 
@@ -117,6 +118,7 @@ describe('Shared Services task-manager.service', () => {
     });
 
     const service = TestBed.inject(TaskManagerService);
+    await Promise.resolve();
     expect((await new Promise<Task | null>((resolve) => service.activeTask$.subscribe(resolve)))?.id).toBe('1');
   });
 });

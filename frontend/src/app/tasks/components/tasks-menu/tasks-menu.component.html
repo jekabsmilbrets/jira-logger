@@ -11,7 +11,7 @@
                     [value]="createTaskFormModel().tags"
                     multiple
                     placeholder="Tags">
-            @for (tag of tags$ | async; track tag.id) {
+            @for (tag of tags(); track tag.id) {
                 <mat-option [value]="tag">
                     {{ tag.name }}
                 </mat-option>
@@ -19,7 +19,7 @@
         </mat-select>
     </mat-form-field>
 
-    <button [disabled]="!createTaskForm().valid() || (isLoading$ | async)"
+    <button [disabled]="!createTaskForm().valid() || isLoading()"
             mat-raised-button
             type="submit">
         Create

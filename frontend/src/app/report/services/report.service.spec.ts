@@ -1,8 +1,9 @@
 import { registerLocaleData } from '@angular/common';
 import localeLv from '@angular/common/locales/lv';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { Setting } from '@core/models/setting.model';
 import { SettingsService } from '@core/services/settings.service';
@@ -28,8 +29,8 @@ describe('ReportService', () => {
   let service: ReportService;
   let tasksService: { filteredList: ReturnType<typeof vi.fn> };
   let storageService: { read: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> };
-  let tagsSubject: BehaviorSubject<Tag[]>;
-  let settingsSubject: BehaviorSubject<Setting[]>;
+  let tagsState: ReturnType<typeof signal<Tag[]>>;
+  let settingsState: ReturnType<typeof signal<Setting[]>>;
 
   beforeEach(() => {
     registerLocaleData(localeLv, 'lv-LV');
@@ -54,21 +55,21 @@ describe('ReportService', () => {
       create: vi.fn().mockReturnValue(of(undefined)),
     };
 
-    tagsSubject = new BehaviorSubject<Tag[]>([
+    tagsState = signal<Tag[]>([
       { id: 'tag-1', name: 'Backend' } as Tag,
       { id: 'tag-2', name: 'Frontend' } as Tag,
     ]);
-    settingsSubject = new BehaviorSubject<Setting[]>([]);
+    settingsState = signal<Setting[]>([]);
 
     TestBed.configureTestingModule({
       providers: [
         ReportService,
         { provide: TasksService, useValue: tasksService },
         { provide: StorageService, useValue: storageService },
-        { provide: SettingsService, useValue: { settings$: settingsSubject.asObservable() } },
+        { provide: SettingsService, useValue: { settings: settingsState.asReadonly() } },
         {
           provide: TagsService,
-          useValue: { tags$: tagsSubject.asObservable() },
+          useValue: { tags: tagsState.asReadonly() },
         },
       ],
     });
@@ -80,9 +81,9 @@ describe('ReportService', () => {
     vi.useRealTimers();
   });
 
-  it('initializes persisted settings and maps saved tag ids', async () => {
-    const tags = await firstValueFrom(service.tags$);
-    const mode = await firstValueFrom(service.reportMode$);
+  it('initializes persisted settings and maps saved tag ids', () => {
+    const tags = service.tags();
+    const mode = service.reportMode();
 
     expect(storageService.read).toHaveBeenCalledWith('report', 'settings');
     expect(mode).toBe(ReportModeEnum.total);
@@ -94,16 +95,16 @@ describe('ReportService', () => {
 
     (service as any).initSettings();
 
-    expect(await firstValueFrom(service.reportMode$)).toBe(ReportModeEnum.total);
-    expect(await firstValueFrom(service.tags$)).toEqual([]);
-    expect(await firstValueFrom(service.showWeekends$)).toBe(false);
-    expect(await firstValueFrom(service.hideUnreportedTasks$)).toBe(false);
+    expect(service.reportMode()).toBe(ReportModeEnum.total);
+    expect(service.tags()).toEqual([]);
+    expect(service.showWeekends()).toBe(false);
+    expect(service.hideUnreportedTasks()).toBe(false);
   });
 
   it('handles persisted settings without tags list', async () => {
     TestBed.resetTestingModule();
 
-    const localTagsSubject = new BehaviorSubject<Tag[]>([
+    const localTagsState = signal<Tag[]>([
       new Tag({ id: 'tag-1', name: 'Backend' }),
     ]);
     const localTasksService = {
@@ -126,13 +127,14 @@ describe('ReportService', () => {
         ReportService,
         { provide: TasksService, useValue: localTasksService },
         { provide: StorageService, useValue: localStorageService },
-        { provide: TagsService, useValue: { tags$: localTagsSubject.asObservable() } },
+        { provide: SettingsService, useValue: { settings: signal<Setting[]>([]).asReadonly() } },
+        { provide: TagsService, useValue: { tags: localTagsState.asReadonly() } },
       ],
     });
 
     const localService = TestBed.inject(ReportService);
 
-    expect(await firstValueFrom(localService.tags$)).toEqual([]);
+    expect(localService.tags()).toEqual([]);
   });
 
   it('falls back to empty tags when tags filter returns undefined', async () => {
@@ -159,17 +161,18 @@ describe('ReportService', () => {
         ReportService,
         { provide: TasksService, useValue: localTasksService },
         { provide: StorageService, useValue: localStorageService },
+        { provide: SettingsService, useValue: { settings: signal<Setting[]>([]).asReadonly() } },
         {
           provide: TagsService,
           useValue: {
-            tags$: of({ filter: () => undefined } as any),
+            tags: signal({ filter: () => undefined } as any).asReadonly(),
           },
         },
       ],
     });
 
     const localService = TestBed.inject(ReportService);
-    expect(await firstValueFrom(localService.tags$)).toEqual([]);
+    expect(localService.tags()).toEqual([]);
   });
 
   it('normalizes date, startDate and endDate setters', async () => {
@@ -184,11 +187,11 @@ describe('ReportService', () => {
     service.startDate = startDate;
     service.endDate = endDate;
 
-    expect((await firstValueFrom(service.date$))?.getHours()).toBe(0);
-    expect((await firstValueFrom(service.startDate$))?.getHours()).toBe(0);
-    expect((await firstValueFrom(service.endDate$))?.getHours()).toBe(23);
-    expect((await firstValueFrom(service.endDate$))?.getMinutes()).toBe(59);
-    expect((await firstValueFrom(service.endDate$))?.getSeconds()).toBe(59);
+    expect(service.date()?.getHours()).toBe(0);
+    expect(service.startDate()?.getHours()).toBe(0);
+    expect(service.endDate()?.getHours()).toBe(23);
+    expect(service.endDate()?.getMinutes()).toBe(59);
+    expect(service.endDate()?.getSeconds()).toBe(59);
     expect(date.getTime()).toBe(dateTimestamp);
     expect(startDate.getTime()).toBe(startDateTimestamp);
     expect(endDate.getTime()).toBe(endDateTimestamp);
@@ -198,9 +201,8 @@ describe('ReportService', () => {
     service.tags = [];
     service.reportMode = ReportModeEnum.date;
 
-    const tasksPromise = firstValueFrom(service.tasks$);
     await waitForDebounce();
-    await tasksPromise;
+    service.tasks();
 
     expect(tasksService.filteredList).toHaveBeenLastCalledWith(
       {
@@ -212,16 +214,15 @@ describe('ReportService', () => {
   });
 
   it('builds day/sync columns for date mode when date is provided', async () => {
-    settingsSubject.next([
+    settingsState.set([
       new Setting({ id: 'jira-enabled', name: JiraApiSettings.enabled, value: 'true' }),
     ]);
     service.tags = [{ id: 'tag-2', name: 'Frontend' } as Tag];
     service.reportMode = ReportModeEnum.date;
     service.date = new Date('2026-05-30T10:00:00.000Z');
 
-    const tasksPromise = firstValueFrom(service.tasks$);
     await waitForDebounce();
-    await tasksPromise;
+    service.tasks();
 
     expect(tasksService.filteredList).toHaveBeenLastCalledWith(
       {
@@ -236,15 +237,14 @@ describe('ReportService', () => {
   });
 
   it('does not build sync columns for date mode when jira api is disabled', async () => {
-    settingsSubject.next([
+    settingsState.set([
       new Setting({ id: 'jira-enabled', name: JiraApiSettings.enabled, value: 'false' }),
     ]);
     service.reportMode = ReportModeEnum.date;
     service.date = new Date('2026-05-30T10:00:00.000Z');
 
-    const tasksPromise = firstValueFrom(service.tasks$);
     await waitForDebounce();
-    await tasksPromise;
+    service.tasks();
 
     expect(service.columns().some((column) => column.columnDef === 'synced')).toBe(false);
     expect(service.columns().some((column) => column.columnDef === 'sync')).toBe(false);
@@ -255,9 +255,8 @@ describe('ReportService', () => {
     service.startDate = new Date('2026-05-01T00:00:00.000Z');
     service.endDate = null;
 
-    const tasksPromise = firstValueFrom(service.tasks$);
     await waitForDebounce();
-    await tasksPromise;
+    service.tasks();
 
     expect(tasksService.filteredList).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -274,9 +273,8 @@ describe('ReportService', () => {
     service.startDate = new Date('2026-05-01T00:00:00.000Z');
     service.endDate = new Date('2026-05-03T00:00:00.000Z');
 
-    const tasksPromise = firstValueFrom(service.tasks$);
     await waitForDebounce();
-    await tasksPromise;
+    service.tasks();
 
     expect(tasksService.filteredList).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -317,10 +315,9 @@ describe('ReportService', () => {
   });
 
   it('reload triggers tasks recalculation stream', async () => {
-    const tasksPromise = firstValueFrom(service.tasks$);
     service.reload();
     await waitForDebounce();
-    await tasksPromise;
+    service.tasks();
 
     expect(tasksService.filteredList).toHaveBeenCalled();
   });

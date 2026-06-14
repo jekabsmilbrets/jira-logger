@@ -1,13 +1,13 @@
 <tasks-view-header/>
 
-@if (tasks$ | async; as taskList) {
+@if (tasks(); as taskList) {
     <tasks-task-list>
         @for (task of taskList; track task.id) {
             <tasks-task (action)="onAction($event)"
                         (remove)="onRemove($event)"
                         (timeLogsSaved)="onTimeLogsSaved()"
                         (update)="onUpdate($event)"
-                        [isLoading]="(isLoading$ | async) ?? false"
+                        [isLoading]="isLoading()"
                         [task]="task"/>
         }
     </tasks-task-list>

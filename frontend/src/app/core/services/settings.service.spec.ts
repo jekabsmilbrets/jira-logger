@@ -58,7 +58,7 @@ describe('Core Services settings.service', () => {
     const result = await promise;
     expect(result).toHaveLength(1);
     expect(result[0].name).toBe('theme');
-    expect((await firstValueFrom(service.settings$))).toHaveLength(1);
+    expect(service.settings()).toHaveLength(1);
   });
 
   it('returns empty list on 404', async () => {

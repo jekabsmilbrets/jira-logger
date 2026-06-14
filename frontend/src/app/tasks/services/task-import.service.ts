@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { inject, Injectable, Injector, Signal, signal } from '@angular/core';
+import { inject, Injectable, Signal, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 
 import { catchError, concat, filter, map, Observable, of, switchMap, take, tap, throwError, toArray } from 'rxjs';
@@ -24,7 +24,6 @@ export class TaskImportService implements LoadableService {
 
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
-  private readonly injector: Injector = inject(Injector);
 
   private readonly isLoadingSignal = signal<boolean>(false);
 
@@ -33,7 +32,7 @@ export class TaskImportService implements LoadableService {
   }
 
   constructor() {
-    this.isLoading$ = toObservable(this.isLoading, { injector: this.injector });
+    this.isLoading$ = toObservable(this.isLoading);
   }
 
   public importData(

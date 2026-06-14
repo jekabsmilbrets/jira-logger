@@ -1,7 +1,8 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { BehaviorSubject, firstValueFrom, of } from 'rxjs';
+import { of } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
@@ -29,11 +30,12 @@ describe('Tasks Views tasks-view.component', () => {
   };
 
   const setup = async () => {
-    const tasksSubject = new BehaviorSubject<Task[]>([]);
+    const tasksState = signal<Task[]>([]);
+    const isLoadingState = signal(false);
 
     const tasksService = {
-      isLoading$: of(false),
-      tasks$: tasksSubject.asObservable(),
+      isLoading: isLoadingState.asReadonly(),
+      tasks: tasksState.asReadonly(),
       list: vi.fn(() => of([])),
       update: vi.fn(() => of(true)),
       delete: vi.fn(() => of(true)),
@@ -65,7 +67,7 @@ describe('Tasks Views tasks-view.component', () => {
     return {
       fixture,
       component,
-      tasksSubject,
+      tasksState,
       tasksService,
       timeLogsService,
       dynamicMenuService,
@@ -88,37 +90,37 @@ describe('Tasks Views tasks-view.component', () => {
   });
 
   it('sorts tasks by latest time log descending', async () => {
-    const { component, tasksSubject } = await setup();
+    const { component, tasksState } = await setup();
 
     const newer = buildTask([buildTimeLog('2026-03-02T10:00:00.000Z')]);
     const older = buildTask([buildTimeLog('2026-03-01T10:00:00.000Z')]);
 
-    tasksSubject.next([older, newer]);
+    tasksState.set([older, newer]);
 
-    const sorted = await firstValueFrom(component['tasks$']);
+    const sorted = component['tasks']();
 
     expect(sorted[0]).toBe(newer);
     expect(sorted[1]).toBe(older);
   });
 
   it('renders one tasks-task item per emitted task', async () => {
-    const { fixture, tasksSubject } = await setup();
+    const { fixture, tasksState } = await setup();
     const first = buildTask([buildTimeLog('2026-03-02T10:00:00.000Z')]);
     const second = buildTask([buildTimeLog('2026-03-01T10:00:00.000Z')]);
 
-    tasksSubject.next([first, second]);
+    tasksState.set([first, second]);
     fixture.detectChanges();
 
     expect(fixture.debugElement.queryAll(By.css('tasks-task')).length).toBe(2);
   });
 
   it('wires child tasks-task outputs to parent handlers', async () => {
-    const { fixture, tasksSubject, component } = await setup();
+    const { fixture, tasksState, component } = await setup();
     const task = buildTask([buildTimeLog('2026-03-02T10:00:00.000Z')]);
     const onActionSpy = vi.spyOn(component as any, 'onAction');
     const onSavedSpy = vi.spyOn(component as any, 'onTimeLogsSaved');
 
-    tasksSubject.next([task]);
+    tasksState.set([task]);
     fixture.detectChanges();
 
     const taskEl = fixture.debugElement.query(By.css('tasks-task'));

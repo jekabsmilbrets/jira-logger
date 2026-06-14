@@ -8,7 +8,7 @@
                 [value]="reportTagFormModel().tags"
                 multiple
                 placeholder="Tags">
-        @for (tag of tags$ | async; track $index) {
+        @for (tag of availableTags(); track tag.id) {
             <mat-option [value]="tag">
                 {{ tag.name }}
             </mat-option>

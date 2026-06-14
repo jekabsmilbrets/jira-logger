@@ -39,8 +39,8 @@ describe('Core Services monitor.service', () => {
     req.flush({ data: { time: '2024-01-01T00:00:00.000Z', message: 'ok' } });
 
     const result = await promise;
-    const monitor = await firstValueFrom(service.monitor$);
-    const hasIssues = await firstValueFrom(service.hasIssues$);
+    const monitor = service.monitor();
+    const hasIssues = service.hasIssues();
 
     expect(result.message).toBe('ok');
     expect(monitor?.message).toBe('ok');
@@ -56,7 +56,7 @@ describe('Core Services monitor.service', () => {
     req.flush('x', { status: 500, statusText: 'Server Error' });
 
     await expect(promise).rejects.toEqual(new Error('Monitor unavailable'));
-    expect(await firstValueFrom(service.hasIssues$)).toBe(true);
+    expect(service.hasIssues()).toBe(true);
 
     http.verify();
   });

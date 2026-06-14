@@ -1,8 +1,7 @@
 import { formatDate } from '@angular/common';
-import { computed, inject, Injectable, Injector, Signal, signal } from '@angular/core';
-import { toObservable } from '@angular/core/rxjs-interop';
+import { computed, effect, inject, Injectable, Signal, signal } from '@angular/core';
 
-import { catchError, combineLatest, debounceTime, map, Observable, of, Subscription, switchMap, take, tap, withLatestFrom } from 'rxjs';
+import { catchError, Observable, of, take, tap } from 'rxjs';
 
 import { Setting } from '@core/models/setting.model';
 import { LocaleService } from '@core/services/locale.service';
@@ -21,6 +20,7 @@ import { columns as monthModelColumns } from '@report/constants/report-date-rang
 import { columns as totalModelColumns } from '@report/constants/report-total-columns.constant';
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
 import { ReportSettingsStorageValue } from '@report/interfaces/report-settings-storage-value.interface';
+import { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
 
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 
@@ -28,15 +28,6 @@ import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
   providedIn: 'root',
 })
 export class ReportService {
-  public readonly tasks$: Observable<Task[]>;
-  public readonly reportMode$: Observable<ReportModeEnum>;
-  public readonly tags$: Observable<Tag[]>;
-  public readonly date$: Observable<Date | null>;
-  public readonly startDate$: Observable<Date | null>;
-  public readonly endDate$: Observable<Date | null>;
-  public readonly showWeekends$: Observable<boolean>;
-  public readonly hideUnreportedTasks$: Observable<boolean>;
-  public readonly reload$: Observable<void>;
   public readonly columns: Signal<Column[]>;
 
   private readonly storageService: StorageService = inject(StorageService);
@@ -45,7 +36,6 @@ export class ReportService {
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
   private readonly localeService: LocaleService = inject(LocaleService);
-  private readonly injector: Injector = inject(Injector);
 
   private readonly reportModeSignal = signal<ReportModeEnum>(ReportModeEnum.total);
   private readonly tagsSignal = signal<Tag[]>([]);
@@ -55,7 +45,8 @@ export class ReportService {
   private readonly showWeekendsSignal = signal<boolean>(false);
   private readonly hideUnreportedTasksSignal = signal<boolean>(false);
   private readonly reloadVersionSignal = signal<number>(0);
-  private readonly jiraApiEnabledSignal = signal<boolean>(false);
+  private readonly tasksSignal = signal<Task[]>([]);
+  private readonly jiraApiEnabled = computed(() => this.isJiraApiEnabled(this.settingsService.settings()));
 
   private settingsKey: IDBValidKey = 'report';
   private customStoreName: string = 'settings';
@@ -130,76 +121,20 @@ export class ReportService {
     this.hideUnreportedTasksSignal.set(hideUnreportedTasks);
   }
 
+  public get tasks(): Signal<Task[]> {
+    return this.tasksSignal.asReadonly();
+  }
+
   constructor() {
-    this.reportMode$ = this.asStateObservable(this.reportModeSignal.asReadonly());
-    this.tags$ = this.asStateObservable(this.tagsSignal.asReadonly());
-    this.date$ = this.asStateObservable(this.dateSignal.asReadonly());
-    this.startDate$ = this.asStateObservable(this.startDateSignal.asReadonly());
-    this.endDate$ = this.asStateObservable(this.endDateSignal.asReadonly());
-    this.showWeekends$ = this.asStateObservable(this.showWeekendsSignal.asReadonly());
-    this.hideUnreportedTasks$ = this.asStateObservable(this.hideUnreportedTasksSignal.asReadonly());
-    this.reload$ = this.asStateObservable(this.reloadVersionSignal.asReadonly())
-      .pipe(map(() => undefined));
     this.columns = computed(() => this.buildColumns());
 
     this.initSettings();
-
-    this.listenToChanges()
-      .subscribe();
-
-    this.listenToSettings()
-      .subscribe();
-
-    this.tasks$ = this.getTasks();
+    this.registerSettingsPersistence();
+    this.registerTaskRefresh();
   }
 
   public reload(): void {
     this.reloadVersionSignal.update((value: number) => value + 1);
-  }
-
-  private getAllChanges(): Observable<[Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean, void, boolean]> {
-    return combineLatest([
-      this.tags$,
-      this.date$,
-      this.startDate$,
-      this.endDate$,
-      this.reportMode$,
-      this.showWeekends$,
-      this.hideUnreportedTasks$,
-      this.reload$,
-      this.asStateObservable(this.jiraApiEnabledSignal.asReadonly()),
-    ])
-      .pipe(
-        debounceTime(250),
-      );
-  }
-
-  private getTasks(): Observable<Task[]> {
-    return this.getAllChanges()
-      .pipe(
-        switchMap(
-          ([tags, date, startDate, endDate, reportMode, showWeekends, hideUnreportedTasks, , jiraApiEnabled]: [
-            Tag[],
-              Date | null,
-              Date | null,
-              Date | null,
-            ReportModeEnum,
-            boolean,
-            boolean,
-            void,
-            boolean,
-          ]) => this.filterTasks(
-            reportMode,
-            tags,
-            date,
-            startDate,
-            endDate,
-            showWeekends,
-            hideUnreportedTasks,
-            jiraApiEnabled,
-          ),
-        ),
-      );
   }
 
   private filterTasks(
@@ -255,6 +190,60 @@ export class ReportService {
     );
   }
 
+  private registerSettingsPersistence(): void {
+    effect((onCleanup) => {
+      const state: ReportStateSnapshot = this.getStateSnapshot();
+      const timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {
+        this.storageService.create(
+          this.settingsKey,
+          {
+            reportMode: state.reportMode,
+            tags: state.tags.map((tag: Tag) => tag.id),
+            date: state.date,
+            startDate: state.startDate,
+            endDate: state.endDate,
+            showWeekends: state.showWeekends,
+            hideUnreportedTasks: state.hideUnreportedTasks,
+          },
+          this.customStoreName,
+        )
+          .pipe(
+            take(1),
+            catchError(() => of(undefined)),
+          )
+          .subscribe();
+      }, 250);
+
+      onCleanup(() => clearTimeout(timeoutId));
+    });
+  }
+
+  private registerTaskRefresh(): void {
+    effect((onCleanup) => {
+      const state: ReportStateSnapshot = this.getStateSnapshot();
+      const jiraApiEnabled: boolean = this.jiraApiEnabled();
+
+      void this.reloadVersionSignal();
+
+      const timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {
+        this.filterTasks(
+          state.reportMode,
+          state.tags,
+          state.date,
+          state.startDate,
+          state.endDate,
+          state.showWeekends,
+          state.hideUnreportedTasks,
+          jiraApiEnabled,
+        )
+          .pipe(take(1))
+          .subscribe((tasks: Task[]) => this.tasksSignal.set(tasks));
+      }, 250);
+
+      onCleanup(() => clearTimeout(timeoutId));
+    });
+  }
+
   private initSettings(): void {
     this.storageService.read<ReportSettingsStorageValue | undefined>(
       this.settingsKey,
@@ -262,76 +251,26 @@ export class ReportService {
     )
       .pipe(
         take(1),
-        withLatestFrom(this.tagsService.tags$),
         take(1),
-        tap(
-          ([settings, tags]: [ReportSettingsStorageValue | undefined, Tag[]]) => {
-            this.reportModeSignal.set(settings?.reportMode ?? ReportModeEnum.total);
-            this.tagsSignal.set(tags.filter((t: Tag) => settings?.tags.includes(t.id)) ?? []);
-            this.dateSignal.set(this.cloneDate(settings?.date));
-            this.startDateSignal.set(this.cloneDate(settings?.startDate));
-            this.endDateSignal.set(this.cloneDate(settings?.endDate));
-            this.showWeekendsSignal.set(settings?.showWeekends ?? false);
-            this.hideUnreportedTasksSignal.set(settings?.hideUnreportedTasks ?? false);
-          },
-        ),
+        tap((settings: ReportSettingsStorageValue | undefined) => {
+          const availableTags: Tag[] | {
+            filter?: (callback: (tag: Tag) => boolean) => Tag[] | undefined
+          } = this.tagsService.tags() as Tag[];
+          const selectedTagIds: string[] = settings?.tags ?? [];
+          const selectedTags: Tag[] = availableTags && typeof availableTags === 'object' && 'filter' in availableTags ?
+            availableTags.filter?.((tag: Tag) => selectedTagIds.includes(tag.id)) ?? [] :
+            [];
+
+          this.reportModeSignal.set(settings?.reportMode ?? ReportModeEnum.total);
+          this.tagsSignal.set(selectedTags);
+          this.dateSignal.set(this.cloneDate(settings?.date));
+          this.startDateSignal.set(this.cloneDate(settings?.startDate));
+          this.endDateSignal.set(this.cloneDate(settings?.endDate));
+          this.showWeekendsSignal.set(settings?.showWeekends ?? false);
+          this.hideUnreportedTasksSignal.set(settings?.hideUnreportedTasks ?? false);
+        }),
       )
       .subscribe();
-  }
-
-  private listenToChanges(): Observable<void | (null | false | true | void | Tag[] | Date | ReportModeEnum | number)[]> {
-    return this.getAllChanges()
-      .pipe(
-        switchMap(
-          ([tags, date, startDate, endDate, reportMode, showWeekends, hideUnreportedTasks, reload, jiraApiEnabled]: [
-            Tag[],
-              Date | null,
-              Date | null,
-              Date | null,
-            ReportModeEnum,
-            boolean,
-            boolean,
-            void,
-            boolean,
-          ]) => this.storageService.create(
-            this.settingsKey,
-            {
-              reportMode,
-              tags: tags.map((t: Tag) => t.id),
-              date,
-              startDate,
-              endDate,
-              showWeekends,
-              hideUnreportedTasks,
-            },
-            this.customStoreName,
-          )
-            .pipe(
-              take(1),
-              catchError(() => {
-                return of([
-                  tags,
-                  date,
-                  startDate,
-                  endDate,
-                  reportMode,
-                  showWeekends,
-                  hideUnreportedTasks,
-                  reload,
-                  jiraApiEnabled,
-                ]);
-              }),
-            ),
-        ),
-      );
-  }
-
-  private listenToSettings(): Observable<boolean> {
-    return this.settingsService.settings$
-      .pipe(
-        map((settings: Setting[]) => this.isJiraApiEnabled(settings)),
-        tap((jiraApiEnabled: boolean) => this.jiraApiEnabledSignal.set(jiraApiEnabled)),
-      );
   }
 
   private buildColumns(): Column[] {
@@ -355,7 +294,7 @@ export class ReportService {
           date,
           this.showWeekendsSignal(),
           reportMode,
-          this.jiraApiEnabledSignal(),
+          this.jiraApiEnabled(),
         ) :
         [...totalModelColumns];
     }
@@ -369,7 +308,7 @@ export class ReportService {
         endDate,
         this.showWeekendsSignal(),
         reportMode,
-        this.jiraApiEnabledSignal(),
+        this.jiraApiEnabled(),
       ) :
       [...totalModelColumns];
   }
@@ -544,29 +483,15 @@ export class ReportService {
     return false;
   }
 
-  private asStateObservable<T>(
-    source: Signal<T>,
-  ): Observable<T> {
-    return new Observable<T>((subscriber) => {
-      let currentValue: T = source();
-
-      subscriber.next(currentValue);
-
-      const subscription: Subscription = toObservable(source, { injector: this.injector })
-        .subscribe({
-          next: (value: T) => {
-            if (Object.is(value, currentValue)) {
-              return;
-            }
-
-            currentValue = value;
-            subscriber.next(value);
-          },
-          error: (error: unknown) => subscriber.error(error),
-          complete: () => subscriber.complete(),
-        });
-
-      return () => subscription.unsubscribe();
-    });
+  private getStateSnapshot(): ReportStateSnapshot {
+    return {
+      reportMode: this.reportModeSignal(),
+      tags: [...this.tagsSignal()],
+      date: this.cloneDate(this.dateSignal()),
+      startDate: this.cloneDate(this.startDateSignal()),
+      endDate: this.cloneDate(this.endDateSignal()),
+      showWeekends: this.showWeekendsSignal(),
+      hideUnreportedTasks: this.hideUnreportedTasksSignal(),
+    };
   }
 }

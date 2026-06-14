@@ -1,6 +1,6 @@
-import { inject, Injectable } from '@angular/core';
+import { effect, inject, Injectable } from '@angular/core';
 
-import { BehaviorSubject, catchError, filter, interval, map, Observable, of, switchMap, take, tap, withLatestFrom } from 'rxjs';
+import { BehaviorSubject, catchError, interval, map, Observable, of, switchMap, take, tap, withLatestFrom } from 'rxjs';
 
 import { TimezoneService } from '@core/services/timezone.service';
 import { toWallClockDateInTimezone } from '@core/utils/timezone-date.utility';
@@ -32,8 +32,8 @@ export class TaskManagerService {
     this.listenActiveTaskStart().subscribe();
 
     this.listenActiveTaskFinish().subscribe();
-
-    this.getActiveTaskFromTasksList().subscribe();
+    this.syncActiveTaskFromTasks();
+    this.registerActiveTaskSync();
   }
 
   private calculateTimeLoggedToday(): Observable<number> {
@@ -100,17 +100,18 @@ export class TaskManagerService {
       );
   }
 
-  private getActiveTaskFromTasksList(): Observable<Task | undefined> {
-    return this.tasksService.tasks$
-      .pipe(
-        filter((tasks: Task[]) => tasks && tasks.length > 0),
-        take(1),
-        map((tasks: Task[]) => tasks.find((task: Task) => task.isTimeLogRunning)),
-        tap((task: Task | undefined) => {
-          if (task) {
-            this.activeTaskSubject.next(task);
-          }
-        }),
-      );
+  private registerActiveTaskSync(): void {
+    effect(() => {
+      this.syncActiveTaskFromTasks();
+    });
+  }
+
+  private syncActiveTaskFromTasks(): void {
+    const activeTask: Task | undefined = this.tasksService.tasks()
+      .find((task: Task) => task.isTimeLogRunning);
+
+    if (activeTask) {
+      this.activeTaskSubject.next(activeTask);
+    }
   }
 }

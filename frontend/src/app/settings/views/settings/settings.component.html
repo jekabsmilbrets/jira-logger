@@ -1,5 +1,5 @@
 <div class="settings-container">
-    <!--    <app-task-list-configurator [disabled]="isLoading$ | async"></app-task-list-configurator>-->
+    <!--    <app-task-list-configurator [disabled]="isLoading()"></app-task-list-configurator>-->
 
     <settings-report-configurator (dateChange)="onDateChange($event)"
                                   (endDateChange)="onEndDateChange($event)"
@@ -8,14 +8,14 @@
                                   (showWeekendsChange)="onShowWeekendsChange($event)"
                                   (startDateChange)="onStartDateChange($event)"
                                   (tagChange)="onTagChange($event)"
-                                  [disabled]="(isLoading$ | async) ?? false"
-                                  [reportSettings]="(reportSettings$ | async)!"/>
+                                  [disabled]="isLoading()"
+                                  [reportSettings]="reportSettings()"/>
 
     <settings-jira-api-configurator (settingsChange)="onSettingsChange($event)"
-                                    [disabled]="isLoading$ | async"
-                                    [settings]="(jiraApiSettings$ | async) ?? []"/>
+                                    [disabled]="isLoading()"
+                                    [settings]="jiraApiSettings()"/>
 
     <settings-timezone-configurator (settingsChange)="onSettingsChange($event)"
-                                    [disabled]="isLoading$ | async"
-                                    [settings]="(jiraUserSettings$ | async) ?? []"/>
+                                    [disabled]="isLoading()"
+                                    [settings]="jiraUserSettings()"/>
 </div>

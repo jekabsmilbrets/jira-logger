@@ -43,7 +43,7 @@
                                 [compareWith]="isSameTag"
                                 [value]="taskFormModel().tags"
                                 multiple>
-                        @for (tag of tags$ | async; track tag.id) {
+                        @for (tag of tags(); track tag.id) {
                             <mat-option [value]="tag">
                                 {{ tag.name }}
                             </mat-option>

@@ -1,10 +1,7 @@
-import { AsyncPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect, inject, input, InputSignal, output, OutputEmitterRef, signal } from '@angular/core';
 import { disabled, form } from '@angular/forms/signals';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
-
-import { Observable } from 'rxjs';
 
 import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
@@ -18,7 +15,6 @@ import { TagsService } from '@shared/services/tags.service';
   imports: [
     MatFormFieldModule,
     MatSelectModule,
-    AsyncPipe,
   ],
 })
 export class ReportTagFilterComponent {
@@ -26,7 +22,6 @@ export class ReportTagFilterComponent {
   public readonly disabled: InputSignal<boolean | null | undefined> = input<boolean | null>();
   public readonly tags: InputSignal<Tag[] | null | undefined> = input<Tag[] | null>();
 
-  protected tags$: Observable<Tag[]>;
   protected readonly reportTagFormModel = signal<{ tags: Tag[] | null }>({
     tags: null,
   });
@@ -37,9 +32,9 @@ export class ReportTagFilterComponent {
   protected readonly tagChange: OutputEmitterRef<Tag[]> = output<Tag[]>();
 
   private readonly tagsService: TagsService = inject(TagsService);
+  protected readonly availableTags = this.tagsService.tags;
 
   constructor() {
-    this.tags$ = this.tagsService.tags$;
     effect(() => {
       const tags: Tag[] | null | undefined = this.tags();
       this.reportTagForm().reset({

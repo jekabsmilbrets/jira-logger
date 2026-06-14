@@ -1,6 +1,4 @@
-import { inject, Injectable } from '@angular/core';
-
-import { map } from 'rxjs';
+import { effect, inject, Injectable } from '@angular/core';
 
 import { environment } from '@environments/environment';
 
@@ -22,21 +20,11 @@ export class TimezoneService {
   }
 
   constructor() {
-    this.settingsService?.settings$
-      .pipe(
-        map((settings: Setting[]) =>
-          settings.find(
-            (setting: Setting) => setting.name === JiraUserSettings.userTimeZone,
-          )?.value,
-        ),
-      )
-      .subscribe((timezone: string | undefined) => {
-        if (typeof timezone === 'string' && this.isValidTimezone(timezone)) {
-          this._timezone = timezone.trim();
-        } else {
-          this._timezone = environment['appTimeZone'] as string;
-        }
-      });
+    this.applyTimezoneFromSettings(this.settingsService?.settings());
+
+    effect(() => {
+      this.applyTimezoneFromSettings(this.settingsService?.settings());
+    });
   }
 
   private isValidTimezone(timezone: string): boolean {
@@ -53,5 +41,18 @@ export class TimezoneService {
     } catch {
       return false;
     }
+  }
+
+  private applyTimezoneFromSettings(settings: Setting[] | undefined): void {
+    const timezone: string | undefined = settings?.find(
+      (setting: Setting) => setting.name === JiraUserSettings.userTimeZone,
+    )?.value as string | undefined;
+
+    if (typeof timezone === 'string' && this.isValidTimezone(timezone)) {
+      this._timezone = timezone.trim();
+      return;
+    }
+
+    this._timezone = environment['appTimeZone'] as string;
   }
 }

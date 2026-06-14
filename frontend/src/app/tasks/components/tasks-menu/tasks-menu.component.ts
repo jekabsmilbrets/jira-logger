@@ -1,4 +1,3 @@
-import { AsyncPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { rxResource, takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { form, FormField, required, validateAsync } from '@angular/forms/signals';
@@ -8,7 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
-import { catchError, debounceTime, distinctUntilChanged, map, Observable, of, startWith, switchMap, take } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, map, of, startWith, switchMap, take } from 'rxjs';
 
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
@@ -35,13 +34,10 @@ import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
     TasksSettingsToggleComponent,
     MatButtonModule,
     MatInputModule,
-    AsyncPipe,
     FormField,
   ],
 })
 export class TasksMenuComponent {
-  protected tags$: Observable<Tag[]>;
-  protected isLoading$: Observable<boolean>;
   protected readonly createTaskFormModel = signal<CreateTaskFormValue>({
     name: '',
     description: '',
@@ -83,11 +79,10 @@ export class TasksMenuComponent {
   private readonly tasksSettingsService: TasksSettingsService = inject(TasksSettingsService);
   private readonly taskImportService: TaskImportService = inject(TaskImportService);
   private readonly tagsService: TagsService = inject(TagsService);
+  protected readonly isLoading = this.tasksService.isLoading;
+  protected readonly tags = this.tagsService.tags;
 
   constructor() {
-    this.isLoading$ = this.tasksService.isLoading$;
-    this.tags$ = this.tagsService.tags$;
-
     toObservable(this.createTaskForm.name().value)
       .pipe(
         startWith(this.createTaskFormModel().name),
@@ -115,10 +110,8 @@ export class TasksMenuComponent {
   }
 
   protected onOpenSettingsDialog(): void {
-    this.tasksService.tasks$
+    this.tasksSettingsService.openDialog(this.tasksService.tasks())
       .pipe(
-        take(1),
-        switchMap((tasks: Task[]) => this.tasksSettingsService.openDialog(tasks)),
         take(1),
         switchMap((result: ApiTask[] | undefined) => result ?
           this.taskImportService.importData(result)

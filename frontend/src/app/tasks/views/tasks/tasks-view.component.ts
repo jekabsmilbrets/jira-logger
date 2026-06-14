@@ -1,5 +1,4 @@
-import { AsyncPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, Signal } from '@angular/core';
 
 import { map, Observable, of, switchMap, take } from 'rxjs';
 
@@ -28,24 +27,15 @@ import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
     TaskViewHeaderComponent,
     TaskListComponent,
     TaskComponent,
-    AsyncPipe,
   ],
 })
 export class TasksViewComponent implements OnInit {
-  protected tasks$: Observable<Task[]>;
-  protected isLoading$: Observable<boolean>;
-
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
   private readonly tasksSettingsService: TasksSettingsService = inject(TasksSettingsService);
   private readonly dynamicMenuService: DynamicMenuService = inject(DynamicMenuService);
-
-  constructor() {
-    this.isLoading$ = this.tasksService.isLoading$;
-    this.tasks$ = this.tasksService.tasks$.pipe(
-      switchMap((tasks: Task[]) => of([...tasks].sort(this.taskSort))),
-    );
-  }
+  protected readonly isLoading = this.tasksService.isLoading;
+  protected readonly tasks: Signal<Task[]> = computed(() => [...this.tasksService.tasks()].sort(this.taskSort));
 
   public ngOnInit(): void {
     this.createDynamicMenu();

@@ -1,7 +1,5 @@
 import { registerLocaleData } from '@angular/common';
-import { inject, Injectable, Signal, signal } from '@angular/core';
-
-import { map } from 'rxjs';
+import { effect, inject, Injectable, Signal, signal } from '@angular/core';
 
 import { environment } from '@environments/environment';
 
@@ -44,22 +42,11 @@ export class LocaleService {
 
   constructor() {
     this.setLocale(environment['appLocale'] as string);
+    this.applyLocaleFromSettings(this.settingsService?.settings());
 
-    this.settingsService?.settings$
-      .pipe(
-        map((settings: Setting[]) =>
-          settings.find(
-            (setting: Setting) => setting.name === JiraUserSettings.locale,
-          )?.value,
-        ),
-      )
-      .subscribe((locale: string | undefined) => {
-        if (typeof locale === 'string' && this.isSupportedLocale(locale)) {
-          this.setLocale(locale);
-        } else {
-          this.setLocale(environment['appLocale'] as string);
-        }
-      });
+    effect(() => {
+      this.applyLocaleFromSettings(this.settingsService?.settings());
+    });
   }
 
   private isSupportedLocale(locale: string): boolean {
@@ -71,6 +58,19 @@ export class LocaleService {
 
     this._locale.set(normalizedLocale);
     void this.ensureLocaleDataLoaded(normalizedLocale);
+  }
+
+  private applyLocaleFromSettings(settings: Setting[] | undefined): void {
+    const locale: string | undefined = settings?.find(
+      (setting: Setting) => setting.name === JiraUserSettings.locale,
+    )?.value as string | undefined;
+
+    if (typeof locale === 'string' && this.isSupportedLocale(locale)) {
+      this.setLocale(locale);
+      return;
+    }
+
+    this.setLocale(environment['appLocale'] as string);
   }
 
   private async ensureLocaleDataLoaded(locale: string): Promise<void> {

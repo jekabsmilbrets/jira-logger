@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
@@ -16,8 +17,8 @@ import { TasksMenuComponent } from './tasks-menu.component';
 
 describe('Tasks Components tasks-menu.component', () => {
   const tasksServiceMock = {
-    isLoading$: of(false),
-    tasks$: of<Task[]>([]),
+    isLoading: signal(false).asReadonly(),
+    tasks: signal<Task[]>([]).asReadonly(),
     filteredList: vi.fn(),
     create: vi.fn(),
     list: vi.fn(),
@@ -33,7 +34,7 @@ describe('Tasks Components tasks-menu.component', () => {
   };
 
   const tagsServiceMock = {
-    tags$: of([]),
+    tags: signal<Tag[]>([]).asReadonly(),
   };
 
   beforeEach(async () => {
@@ -150,10 +151,10 @@ describe('Tasks Components tasks-menu.component', () => {
   });
 
   it('renders tag options from tags$ in template', async () => {
-    tagsServiceMock.tags$ = of([
+    tagsServiceMock.tags = signal([
       new Tag({ id: '1', name: 'Frontend' }),
       new Tag({ id: '2', name: 'Backend' }),
-    ]) as any;
+    ]).asReadonly();
 
     await TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
@@ -201,7 +202,7 @@ describe('Tasks Components tasks-menu.component', () => {
     const task = new Task({ id: '1', name: 'Existing', tags: [], timeLogs: [] });
     const result = [{ id: '10', createdAt: '2026-01-01T00:00:00.000Z', name: 'Imported', timeLogs: [], tags: [] }];
 
-    tasksServiceMock.tasks$ = of([task]);
+    tasksServiceMock.tasks = signal([task]).asReadonly();
     tasksSettingsServiceMock.openDialog.mockReturnValue(of(result));
 
     component.onOpenSettingsDialog();

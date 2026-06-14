@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { inject, Injectable, Injector, Signal, signal } from '@angular/core';
+import { inject, Injectable, Signal, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 
 import { catchError, filter, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
@@ -23,12 +23,9 @@ export class TagsService implements LoadableService, MakeRequestService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   public readonly isLoading$: Observable<boolean>;
-  public readonly tags$: Observable<Tag[]>;
-  public readonly preloadError$: Observable<boolean>;
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
   private readonly errorDialogService: ErrorDialogService = inject(ErrorDialogService);
-  private readonly injector: Injector = inject(Injector);
 
   private readonly tagsSignal = signal<Tag[]>([]);
   private readonly isLoadingSignal = signal<boolean>(false);
@@ -49,9 +46,7 @@ export class TagsService implements LoadableService, MakeRequestService {
   }
 
   constructor() {
-    this.tags$ = toObservable(this.tags, { injector: this.injector });
-    this.isLoading$ = toObservable(this.isLoading, { injector: this.injector });
-    this.preloadError$ = toObservable(this.preloadError, { injector: this.injector });
+    this.isLoading$ = toObservable(this.isLoading);
   }
 
   public init(): void {

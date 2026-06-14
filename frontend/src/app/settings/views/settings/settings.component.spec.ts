@@ -1,9 +1,8 @@
-import { AsyncPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, Signal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { firstValueFrom, Observable, of } from 'rxjs';
+import { of } from 'rxjs';
 import { vi } from 'vitest';
 
 import { Setting } from '@core/models/setting.model';
@@ -79,36 +78,64 @@ const reportSetters = {
 };
 
 class ReportServiceMock {
-  public readonly reportMode$ = of(ReportModeEnum.dateRange);
-  public readonly tags$ = of([{ id: 'tag-1', name: 'Tag 1' } as Tag]);
-  public readonly date$ = of(new Date('2026-01-01T00:00:00.000Z'));
-  public readonly startDate$ = of(new Date('2026-01-02T00:00:00.000Z'));
-  public readonly endDate$ = of(new Date('2026-01-03T00:00:00.000Z'));
-  public readonly showWeekends$ = of(true);
-  public readonly hideUnreportedTasks$ = of(false);
+  private readonly reportModeSignal = signal(ReportModeEnum.dateRange);
+  private readonly tagsSignal = signal([{ id: 'tag-1', name: 'Tag 1' } as Tag]);
+  private readonly dateSignal = signal(new Date('2026-01-01T00:00:00.000Z'));
+  private readonly startDateSignal = signal(new Date('2026-01-02T00:00:00.000Z'));
+  private readonly endDateSignal = signal(new Date('2026-01-03T00:00:00.000Z'));
+  private readonly showWeekendsSignal = signal(true);
+  private readonly hideUnreportedTasksSignal = signal(false);
+
+  public get reportMode(): Signal<ReportModeEnum> {
+    return this.reportModeSignal.asReadonly();
+  }
 
   public set reportMode(value: ReportModeEnum) {
     reportSetters.reportMode(value);
+  }
+
+  public get tags(): Signal<Tag[]> {
+    return this.tagsSignal.asReadonly();
   }
 
   public set tags(value: Tag[]) {
     reportSetters.tags(value);
   }
 
+  public get date(): Signal<Date | null> {
+    return this.dateSignal.asReadonly();
+  }
+
   public set date(value: Date | null) {
     reportSetters.date(value);
+  }
+
+  public get startDate(): Signal<Date | null> {
+    return this.startDateSignal.asReadonly();
   }
 
   public set startDate(value: Date | null) {
     reportSetters.startDate(value);
   }
 
+  public get endDate(): Signal<Date | null> {
+    return this.endDateSignal.asReadonly();
+  }
+
   public set endDate(value: Date | null) {
     reportSetters.endDate(value);
   }
 
+  public get showWeekends(): Signal<boolean> {
+    return this.showWeekendsSignal.asReadonly();
+  }
+
   public set showWeekends(value: boolean) {
     reportSetters.showWeekends(value);
+  }
+
+  public get hideUnreportedTasks(): Signal<boolean> {
+    return this.hideUnreportedTasksSignal.asReadonly();
   }
 
   public set hideUnreportedTasks(value: boolean) {
@@ -120,9 +147,9 @@ describe('Settings Views settings.component', () => {
   let fixture: ComponentFixture<SettingsComponent>;
   let component: SettingsComponent;
   let settingsServiceMock: {
-    settings$: Observable<Setting[]>;
-    update: (setting: Setting, reload: boolean) => Observable<Setting>;
-    list: () => Observable<Setting[]>;
+    settings: Signal<Setting[]>;
+    update: ReturnType<typeof vi.fn>;
+    list: ReturnType<typeof vi.fn>;
   };
   let windowMock: Window;
 
@@ -130,13 +157,13 @@ describe('Settings Views settings.component', () => {
     Object.values(reportSetters).forEach((setter) => setter.mockReset());
 
     settingsServiceMock = {
-      settings$: of([
+      settings: signal([
         new Setting({ id: '1', name: JiraApiSettings.enabled, value: 'true' }),
         new Setting({ id: '2', name: JiraApiSettings.host, value: 'https://jira.local' }),
         new Setting({ id: '4', name: JiraUserSettings.userTimeZone, value: 'Europe/Riga' }),
         new Setting({ id: '5', name: JiraUserSettings.locale, value: 'lv-LV' }),
         new Setting({ id: '3', name: 'non-jira-setting', value: 'value' }),
-      ]),
+      ]).asReadonly(),
       update: vi.fn((setting: Setting) => of(setting)),
       list: vi.fn(() => of([])),
     };
@@ -162,7 +189,6 @@ describe('Settings Views settings.component', () => {
         {
           set: {
             imports: [
-              AsyncPipe,
               ReportConfiguratorStubComponent,
               JiraApiConfiguratorStubComponent,
               UserSettingsConfiguratorStubComponent,
@@ -183,7 +209,7 @@ describe('Settings Views settings.component', () => {
     expect(fixture.debugElement.query(By.css('settings-timezone-configurator'))).toBeTruthy();
   });
 
-  it('binds configurator inputs from async state', async () => {
+  it('binds configurator inputs from signal state', async () => {
     const reportCfg = fixture.debugElement.query(By.directive(ReportConfiguratorStubComponent)).componentInstance as ReportConfiguratorStubComponent;
     const jiraCfg = fixture.debugElement.query(By.directive(JiraApiConfiguratorStubComponent)).componentInstance as JiraApiConfiguratorStubComponent;
     const timezoneCfg = fixture.debugElement.query(By.directive(UserSettingsConfiguratorStubComponent)).componentInstance as UserSettingsConfiguratorStubComponent;
@@ -225,15 +251,15 @@ describe('Settings Views settings.component', () => {
     expect(settingsServiceMock.update).toHaveBeenCalledWith(timezoneChangedSettings[0], true);
   });
 
-  it('filters jira settings from full settings stream', async () => {
-    const jiraSettings = await firstValueFrom((component as any).jiraApiSettings$ as Observable<Setting[]>);
+  it('filters jira settings from full settings state', async () => {
+    const jiraSettings = (component as any).jiraApiSettings() as Setting[];
 
     expect(jiraSettings).toHaveLength(2);
     expect(jiraSettings.every((setting) => Object.values(JiraApiSettings).includes(setting.name as JiraApiSettings))).toBe(true);
   });
 
-  it('maps report service streams into reportSettings$', async () => {
-    const reportSettings = await firstValueFrom((component as any).reportSettings$ as Observable<ReportSettings>);
+  it('maps report service signals into reportSettings', async () => {
+    const reportSettings = (component as any).reportSettings() as ReportSettings;
 
     expect(reportSettings.reportMode).toBe(ReportModeEnum.dateRange);
     expect(reportSettings.tags).toHaveLength(1);
@@ -290,10 +316,10 @@ describe('Settings Views settings.component', () => {
 describe('Settings Views settings.component integration', () => {
   it('renders real settings template with configurators', async () => {
     const settingsServiceMock = {
-      settings$: of([
+      settings: signal([
         new Setting({ id: '1', name: JiraApiSettings.enabled, value: 'true' }),
         new Setting({ id: '2', name: JiraApiSettings.host, value: 'https://jira.local' }),
-      ]),
+      ]).asReadonly(),
       update: vi.fn((setting: Setting) => of(setting)),
       list: vi.fn(() => of([])),
     };
@@ -327,10 +353,10 @@ describe('Settings Views settings.component integration', () => {
 
   it('wires real child outputs through template listeners', async () => {
     const settingsServiceMock = {
-      settings$: of([
+      settings: signal([
         new Setting({ id: '1', name: JiraApiSettings.enabled, value: 'true' }),
         new Setting({ id: '2', name: JiraApiSettings.host, value: 'https://jira.local' }),
-      ]),
+      ]).asReadonly(),
       update: vi.fn((setting: Setting) => of(setting)),
       list: vi.fn(() => of([])),
     };

@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable, Injector, Signal, signal } from '@angular/core';
+import { inject, Injectable, Signal, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 
 import { catchError, filter, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
@@ -21,11 +21,8 @@ export class MonitorService implements LoadableService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   public readonly isLoading$: Observable<boolean>;
-  public readonly monitor$: Observable<Monitor | undefined>;
-  public readonly hasIssues$: Observable<boolean>;
 
   private readonly httpClient: HttpClient = inject(HttpClient);
-  private readonly injector: Injector = inject(Injector);
 
   private readonly monitorSignal = signal<Monitor | undefined>(undefined);
   private readonly hasIssuesSignal = signal<boolean>(false);
@@ -46,9 +43,7 @@ export class MonitorService implements LoadableService {
   }
 
   constructor() {
-    this.isLoading$ = toObservable(this.isLoading, { injector: this.injector });
-    this.monitor$ = toObservable(this.monitor, { injector: this.injector });
-    this.hasIssues$ = toObservable(this.hasIssues, { injector: this.injector });
+    this.isLoading$ = toObservable(this.isLoading);
   }
 
   public init(): void {

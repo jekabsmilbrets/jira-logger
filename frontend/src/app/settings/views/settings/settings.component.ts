@@ -1,7 +1,7 @@
-import { AsyncPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 
-import { combineLatest, forkJoin, map, Observable, shareReplay, switchMap, take } from 'rxjs';
+import { forkJoin, switchMap, take } from 'rxjs';
 
 import { Setting } from '@core/models/setting.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
@@ -29,71 +29,26 @@ import { ReportSettings } from '@settings/interfaces/report-settings.interface';
     JiraApiConfiguratorComponent,
     UserSettingsConfiguratorComponent,
     ReportConfiguratorComponent,
-    AsyncPipe,
   ],
 })
 export class SettingsComponent {
   protected readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
-  protected isLoading$: Observable<boolean>;
-  protected settings$: Observable<Setting[]>;
-  protected jiraApiSettings$: Observable<Setting[]>;
-  protected jiraUserSettings$: Observable<Setting[]>;
-  protected reportSettings$: Observable<ReportSettings>;
-
   private readonly settingsService: SettingsService = inject(SettingsService);
   private readonly reportService: ReportService = inject(ReportService);
-
-  constructor() {
-    this.isLoading$ = this.loaderStateService.isLoading$.pipe(shareReplay());
-    this.settings$ = this.settingsService.settings$;
-    this.jiraApiSettings$ = this.settings$.pipe(
-      map(
-        (settings: Setting[]) => settings.filter(
-          (setting: Setting) => Object.values(JiraApiSettings)
-            .includes(setting.name as JiraApiSettings),
-        ),
-      ),
-    );
-    this.jiraUserSettings$ = this.settings$.pipe(
-      map(
-        (settings: Setting[]) => settings.filter(
-          (setting: Setting) => Object.values(JiraUserSettings)
-            .includes(setting.name as JiraUserSettings),
-        ),
-      ),
-    );
-    this.reportSettings$ = combineLatest([
-      this.reportService.reportMode$,
-      this.reportService.tags$,
-      this.reportService.date$,
-      this.reportService.startDate$,
-      this.reportService.endDate$,
-      this.reportService.showWeekends$,
-      this.reportService.hideUnreportedTasks$,
-    ])
-      .pipe(
-        map(
-          ([reportMode, tags, date, startDate, endDate, showWeekends, hideUnreportedTasks]: [
-            ReportModeEnum,
-            Tag[],
-              Date | null,
-              Date | null,
-              Date | null,
-            boolean,
-            boolean,
-          ]) => ({
-            reportMode,
-            tags,
-            date,
-            startDate,
-            endDate,
-            showWeekends,
-            hideUnreportedTasks,
-          }),
-        ),
-      );
-  }
+  protected readonly isLoading = toSignal(this.loaderStateService.isLoading$, { initialValue: false });
+  protected readonly settings = this.settingsService.settings;
+  protected readonly jiraApiSettings = computed(() => this.filterSettings(Object.values(JiraApiSettings)));
+  protected readonly jiraUserSettings = computed(() => this.filterSettings(Object.values(JiraUserSettings)));
+  protected readonly reportSettings = computed<ReportSettings>(() => ({
+    reportMode: this.reportService.reportMode(),
+    tags: this.reportService.tags(),
+    date: this.reportService.date(),
+    startDate: this.reportService.startDate(),
+    endDate: this.reportService.endDate(),
+    showWeekends: this.reportService.showWeekends(),
+    hideUnreportedTasks: this.reportService.hideUnreportedTasks(),
+  }));
 
   protected onReportModeChange(
     value: ReportModeEnum,
@@ -151,5 +106,9 @@ export class SettingsComponent {
         take(1),
       )
       .subscribe();
+  }
+
+  private filterSettings(settingNames: string[]): Setting[] {
+    return this.settings().filter((setting: Setting) => settingNames.includes(setting.name));
   }
 }

@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { inject, Injectable, Injector, Signal, signal } from '@angular/core';
+import { inject, Injectable, Signal, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 
 import { catchError, filter, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
@@ -23,11 +23,9 @@ export class SettingsService implements LoadableService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   public readonly isLoading$: Observable<boolean>;
-  public readonly settings$: Observable<Setting[]>;
 
   private readonly httpClient: HttpClient = inject(HttpClient);
   private readonly errorDialogService: ErrorDialogService = inject(ErrorDialogService);
-  private readonly injector: Injector = inject(Injector);
 
   private readonly isLoadingSignal = signal<boolean>(false);
   private readonly settingsSignal = signal<Setting[]>([]);
@@ -43,8 +41,7 @@ export class SettingsService implements LoadableService {
   }
 
   constructor() {
-    this.isLoading$ = toObservable(this.isLoading, { injector: this.injector });
-    this.settings$ = toObservable(this.settings, { injector: this.injector });
+    this.isLoading$ = toObservable(this.isLoading);
   }
 
   public init(): void {
@@ -159,7 +156,7 @@ export class SettingsService implements LoadableService {
   ): Observable<Setting[]> {
     return (
       skipReload ?
-        this.settings$ :
+        of(this.settings()) :
         this.list()
     )
       .pipe(take(1));

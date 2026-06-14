@@ -1,6 +1,4 @@
-import { AsyncPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect, inject, input, InputSignal, output, OutputEmitterRef, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { form, FormField, required, validate } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -11,7 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { Observable, take } from 'rxjs';
+import { take } from 'rxjs';
 
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
@@ -42,7 +40,6 @@ import { buildTaskUpdatePayload } from '@tasks/utils/task-payload-builder.util';
     MatIconModule,
     MatTooltipModule,
     MatInputModule,
-    AsyncPipe,
     FormField,
   ],
 })
@@ -83,13 +80,10 @@ export class TaskComponent {
 
   private readonly areYouSureService: AreYouSureService = inject(AreYouSureService);
   private readonly tagsService: TagsService = inject(TagsService);
-  private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogEditService: TimeLogEditService = inject(TimeLogEditService);
-  private readonly tasks = toSignal(this.tasksService.tasks$, { initialValue: [] as Task[] });
-
-  protected get tags$(): Observable<Tag[]> {
-    return this.tagsService.tags$;
-  }
+  private readonly tasksService: TasksService = inject(TasksService);
+  private readonly tasks = this.tasksService.tasks;
+  protected readonly tags = this.tagsService.tags;
 
   constructor() {
     effect(() => {

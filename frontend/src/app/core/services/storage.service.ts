@@ -1,4 +1,4 @@
-import { inject, Injectable, Injector, Signal, signal } from '@angular/core';
+import { inject, Injectable, Signal, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 
 import { UseStore } from 'idb-keyval';
@@ -18,11 +18,9 @@ export class StorageService implements LoadableService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   public readonly isLoading$: Observable<boolean>;
-  public readonly isDbFailed$: Observable<DbFailInterface | undefined>;
 
   protected stores: Map<string, UseStore> = new Map<string, UseStore>([]);
 
-  private readonly injector: Injector = inject(Injector);
   private readonly isLoadingSignal = signal<boolean>(false);
   private readonly isDbFailedSignal = signal<DbFailInterface | undefined>(undefined);
 
@@ -35,8 +33,7 @@ export class StorageService implements LoadableService {
   }
 
   constructor() {
-    this.isLoading$ = toObservable(this.isLoading, { injector: this.injector });
-    this.isDbFailed$ = toObservable(this.isDbFailed, { injector: this.injector });
+    this.isLoading$ = toObservable(this.isLoading);
   }
 
   private static createStore(

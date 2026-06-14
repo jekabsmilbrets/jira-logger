@@ -1,6 +1,6 @@
 import { formatDate } from '@angular/common';
 import { HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { inject, Injectable, Injector, Signal, signal } from '@angular/core';
+import { inject, Injectable, Signal, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 
 import { catchError, filter, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
@@ -28,12 +28,10 @@ export class TasksService implements LoadableService, MakeRequestService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   public readonly isLoading$: Observable<boolean>;
-  public readonly tasks$: Observable<Task[]>;
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
   private readonly errorDialogService: ErrorDialogService = inject(ErrorDialogService);
   private readonly localeService: LocaleService = inject(LocaleService);
-  private readonly injector: Injector = inject(Injector);
 
   private readonly tasksSignal = signal<Task[]>([]);
   private readonly isLoadingSignal = signal<boolean>(false);
@@ -49,8 +47,7 @@ export class TasksService implements LoadableService, MakeRequestService {
   }
 
   constructor() {
-    this.tasks$ = toObservable(this.tasks, { injector: this.injector });
-    this.isLoading$ = toObservable(this.isLoading, { injector: this.injector });
+    this.isLoading$ = toObservable(this.isLoading);
   }
 
   public init(): void {
@@ -307,7 +304,7 @@ export class TasksService implements LoadableService, MakeRequestService {
   ): Observable<Task[]> {
     return (
       skipReload ?
-        this.tasks$ :
+        of(this.tasks()) :
         this.list()
     )
       .pipe(take(1));

@@ -9,8 +9,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
-import { take } from 'rxjs';
-
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
@@ -67,21 +65,19 @@ export class TasksSettingsDialogComponent {
     let data: ApiTask[];
     const formData: TaskSettingsFormData = this.tasksSettingsFormModel();
 
-    this.tagsService.tags$
-      .pipe(take(1))
-      .subscribe((tags: Tag[]) => {
-        try {
-          data = validateTasksInterfaceData(
-            JSON.parse(
-              formData.json as string,
-            ),
-            tags,
-          );
+    const tags: Tag[] = this.tagsService.tags();
 
-          this.dialogRef.close(data);
-        } catch (e) {
-          console.error({ e });
-        }
-      });
+    try {
+      data = validateTasksInterfaceData(
+        JSON.parse(
+          formData.json as string,
+        ),
+        tags,
+      );
+
+      this.dialogRef.close(data);
+    } catch (e) {
+      console.error({ e });
+    }
   }
 }

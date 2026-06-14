@@ -126,7 +126,7 @@ describe('Core Services storage.service', () => {
     const promise = firstValueFrom(service.list('task'));
 
     await expect(promise).rejects.toThrow('boom');
-    await expect(firstValueFrom(service.isDbFailed$)).resolves.toEqual({
+    expect(service.isDbFailed()).toEqual({
       customStoreName: 'task',
       data: {
         key: undefined,

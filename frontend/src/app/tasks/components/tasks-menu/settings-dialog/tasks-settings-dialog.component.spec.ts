@@ -1,8 +1,8 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
 
-import { of } from 'rxjs';
 import { vi } from 'vitest';
 
 import { Tag } from '@shared/models/tag.model';
@@ -16,7 +16,7 @@ describe('Tasks Components tasks-settings-dialog.component', () => {
   };
 
   const tagsServiceMock = {
-    tags$: of<Tag[]>([]),
+    tags: signal<Tag[]>([]).asReadonly(),
   };
 
   beforeEach(async () => {
@@ -74,7 +74,7 @@ describe('Tasks Components tasks-settings-dialog.component', () => {
     };
     const tag = new Tag({ id: '1', name: 'Frontend' });
 
-    tagsServiceMock.tags$ = of([tag]);
+    tagsServiceMock.tags = signal([tag]).asReadonly();
 
     component.tasksSettingsFormModel.set({
       json: JSON.stringify([

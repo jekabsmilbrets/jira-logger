@@ -21,7 +21,7 @@ import { ReportService } from '@report/services/report.service';
 import { ReportViewComponent } from './report-view.component';
 
 class ReportServiceStub {
-  public readonly tasks$ = of([] as Task[]);
+  public readonly tasks = signal([] as Task[]);
   private readonly reportModeSignal = signal(ReportModeEnum.date);
   private readonly dateSignal = signal<Date | null>(null);
   public readonly columns = signal([{
