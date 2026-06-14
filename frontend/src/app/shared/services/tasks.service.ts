@@ -1,13 +1,13 @@
 import { formatDate } from '@angular/common';
 import { HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable, Signal, signal } from '@angular/core';
-import { toObservable } from '@angular/core/rxjs-interop';
 
-import { catchError, filter, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, finalize, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { LocaleService } from '@core/services/locale.service';
+import { RequestGate, waitForTurn } from '@core/utils/wait-for.utility';
 
 import { adaptTasks } from '@shared/adapters/task.adapter';
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
@@ -27,14 +27,13 @@ import { QueryParams } from '@shared/types/query-params.type';
 export class TasksService implements LoadableService, MakeRequestService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
-  public readonly isLoading$: Observable<boolean>;
-
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
   private readonly errorDialogService: ErrorDialogService = inject(ErrorDialogService);
   private readonly localeService: LocaleService = inject(LocaleService);
 
   private readonly tasksSignal = signal<Task[]>([]);
   private readonly isLoadingSignal = signal<boolean>(false);
+  private readonly requestGate = new RequestGate();
 
   private basePath: string = 'task';
 
@@ -46,12 +45,8 @@ export class TasksService implements LoadableService, MakeRequestService {
     return this.tasksSignal.asReadonly();
   }
 
-  constructor() {
-    this.isLoading$ = toObservable(this.isLoading);
-  }
-
   public init(): void {
-    this.loaderStateService.addLoader(this.isLoading$, this.constructor.name);
+    this.loaderStateService.addLoader(this.isLoading, this.constructor.name);
   }
 
   public list(): Observable<Task[]> {
@@ -226,18 +221,21 @@ export class TasksService implements LoadableService, MakeRequestService {
       body,
     );
 
-    return this.waitForTurn()
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => request$),
-        catchError((error) => {
-          if (reportError) {
-            return this.processError(error);
-          }
+        switchMap((release: VoidFunction) => request$
+          .pipe(
+            catchError((error) => {
+              release();
 
-          this.isLoadingSignal.set(false);
-          return throwError(() => error);
-        }),
-        tap(() => this.isLoadingSignal.set(false)),
+              if (reportError) {
+                return this.processError(error);
+              }
+
+              return throwError(() => error);
+            }),
+            finalize(release),
+          )),
       );
   }
 
@@ -308,20 +306,6 @@ export class TasksService implements LoadableService, MakeRequestService {
         this.list()
     )
       .pipe(take(1));
-  }
-
-  private waitForTurn(): Observable<boolean> {
-    if (!this.isLoadingSignal()) {
-      this.isLoadingSignal.set(true);
-      return of(true);
-    }
-
-    return this.isLoading$
-      .pipe(
-        filter((isLoading: boolean) => !isLoading),
-        take(1),
-        tap(() => this.isLoadingSignal.set(true)),
-      );
   }
 
   private findTask(

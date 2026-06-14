@@ -1,39 +1,35 @@
-import { Injectable } from '@angular/core';
-
-import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, map, Observable, share, switchMap } from 'rxjs';
+import { computed, effect, Injectable, Signal, signal } from '@angular/core';
 
 @Injectable({
   providedIn: 'root',
 })
 export class LoaderStateService {
-  public isLoading$: Observable<boolean>;
+  private readonly loaderMarks = signal<Map<string, Signal<boolean>>>(new Map<string, Signal<boolean>>());
+  private readonly aggregateLoading = computed(() => [...this.loaderMarks().values()].some((loader: Signal<boolean>) => loader()));
+  private readonly isLoadingSignal = signal<boolean>(false);
 
-  private loaderMarks: BehaviorSubject<Map<string, Observable<boolean>>> = new BehaviorSubject<Map<string, Observable<boolean>>>(
-    new Map<string, Observable<boolean>>([]),
-  );
+  private readonly debounceDelay = 50;
 
-  private debounceDelay = 50;
+  public get isLoading(): Signal<boolean> {
+    return this.isLoadingSignal.asReadonly();
+  }
 
   constructor() {
-    this.isLoading$ = this.loaderMarks.asObservable()
-      .pipe(
-        switchMap(
-          (marks: Map<string, Observable<boolean>>) => combineLatest([...marks.values()]),
-        ),
-        debounceTime(this.debounceDelay),
-        distinctUntilChanged(),
-        map(
-          (marks: boolean[]) => marks.includes(true),
-        ),
-        share(),
-      );
+    effect((onCleanup) => {
+      const nextValue: boolean = this.aggregateLoading();
+      const timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {
+        this.isLoadingSignal.set(nextValue);
+      }, this.debounceDelay);
+
+      onCleanup(() => clearTimeout(timeoutId));
+    });
   }
 
   public addLoader(
-    loader: Observable<boolean>,
+    loader: Signal<boolean>,
     name?: string,
   ): void {
-    const loaderMarks: Map<string, Observable<boolean>> = this.loaderMarks.getValue();
+    const loaderMarks: Map<string, Signal<boolean>> = new Map<string, Signal<boolean>>(this.loaderMarks());
 
     if (!name) {
       name = [...loaderMarks.keys()].length.toString();
@@ -44,6 +40,6 @@ export class LoaderStateService {
       loader,
     );
 
-    this.loaderMarks.next(loaderMarks);
+    this.loaderMarks.set(loaderMarks);
   }
 }

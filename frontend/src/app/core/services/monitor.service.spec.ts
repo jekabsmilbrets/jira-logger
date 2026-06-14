@@ -27,7 +27,7 @@ describe('Core Services monitor.service', () => {
 
     service.init();
 
-    expect(spy).toHaveBeenCalledWith(service.isLoading$, expect.stringContaining('MonitorService'));
+    expect(spy).toHaveBeenCalledWith(service.isLoading, expect.stringContaining('MonitorService'));
   });
 
   it('loads monitor and updates streams', async () => {

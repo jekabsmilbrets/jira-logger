@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { rxResource, takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { form, FormField, required, validateAsync } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatOptionModule } from '@angular/material/core';
@@ -7,7 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
-import { catchError, debounceTime, distinctUntilChanged, map, of, startWith, switchMap, take } from 'rxjs';
+import { catchError, map, of, switchMap, take } from 'rxjs';
 
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
@@ -83,30 +83,28 @@ export class TasksMenuComponent {
   protected readonly tags = this.tagsService.tags;
 
   constructor() {
-    toObservable(this.createTaskForm.name().value)
-      .pipe(
-        startWith(this.createTaskFormModel().name),
-        debounceTime(300),
-        distinctUntilChanged(),
-        switchMap((value: string) => {
-          const filter: TaskListFilter = {};
+    effect((onCleanup) => {
+      const value: string = this.createTaskForm.name().value();
+      const timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {
+        const filter: TaskListFilter = {};
 
-          if (value) {
-            filter.name = value;
-          }
+        if (value) {
+          filter.name = value;
+        }
 
-          return this.tasksService.filteredList(
-            filter,
-            true,
+        this.tasksService.filteredList(
+          filter,
+          true,
+        )
+          .pipe(
+            take(1),
+            catchError(() => of(null)),
           )
-            .pipe(
-              take(1),
-              catchError(() => of(null)),
-            );
-        }),
-        takeUntilDestroyed(),
-      )
-      .subscribe();
+          .subscribe();
+      }, 300);
+
+      onCleanup(() => clearTimeout(timeoutId));
+    });
   }
 
   protected onOpenSettingsDialog(): void {

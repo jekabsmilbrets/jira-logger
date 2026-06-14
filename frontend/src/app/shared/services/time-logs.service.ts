@@ -1,11 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, Signal, signal } from '@angular/core';
 
-import { BehaviorSubject, catchError, map, Observable, of, Subject, switchMap, tap, throwError } from 'rxjs';
+import { catchError, finalize, map, Observable, of, Subject, switchMap, tap, throwError } from 'rxjs';
 
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { waitForTurn } from '@core/utils/wait-for.utility';
+import { RequestGate, waitForTurn } from '@core/utils/wait-for.utility';
 
 import { adaptTimeLog, adaptTimeLogs } from '@shared/adapters/time-log.adapter';
 import { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
@@ -23,27 +23,30 @@ import { toUnixMs } from '@shared/utils/to-unix-ms.util';
 export class TimeLogsService implements LoadableService, MakeRequestService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
-  public isLoading$: Observable<boolean>;
   public taskStarted$: Observable<Task>;
   public taskFinished$: Observable<Task>;
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
+  private readonly isLoadingSignal = signal<boolean>(false);
+  private readonly requestGate = new RequestGate();
 
   private basePath: string = 'task';
   private baseTimeLogPath: string = 'time-log';
 
-  private isLoadingSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   private taskStartedSubject: Subject<Task> = new Subject<Task>();
   private taskFinishedSubject: Subject<Task> = new Subject<Task>();
 
+  public get isLoading(): Signal<boolean> {
+    return this.isLoadingSignal.asReadonly();
+  }
+
   constructor() {
-    this.isLoading$ = this.isLoadingSubject.asObservable();
     this.taskStarted$ = this.taskStartedSubject.asObservable();
     this.taskFinished$ = this.taskFinishedSubject.asObservable();
   }
 
   public init(): void {
-    this.loaderStateService.addLoader(this.isLoading$, this.constructor.name);
+    this.loaderStateService.addLoader(this.isLoading, this.constructor.name);
   }
 
   public list(
@@ -166,17 +169,18 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
     );
 
     return waitForTurn(
-      this.isLoading$,
-      this.isLoadingSubject,
+      this.requestGate,
+      this.isLoadingSignal,
     )
       .pipe(
-        switchMap(() => request$),
-        catchError((error: HttpErrorResponse) => {
-          this.isLoadingSubject.next(false);
-
-          return throwError(() => error);
-        }),
-        tap(() => this.isLoadingSubject.next(false)),
+        switchMap((release: VoidFunction) => request$
+          .pipe(
+            catchError((error: HttpErrorResponse) => {
+              release();
+              return throwError(() => error);
+            }),
+            finalize(release),
+          )),
       );
   }
 }

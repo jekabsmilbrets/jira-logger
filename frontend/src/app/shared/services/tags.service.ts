@@ -1,11 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, Signal, signal } from '@angular/core';
-import { toObservable } from '@angular/core/rxjs-interop';
 
-import { catchError, filter, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, finalize, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
+import { RequestGate, waitForTurn } from '@core/utils/wait-for.utility';
 
 import { adaptTag, adaptTags } from '@shared/adapters/api-tag.adapter';
 import { ApiTag } from '@shared/interfaces/api/api-tag.interface';
@@ -22,14 +22,13 @@ import { ApiRequestBody } from '@shared/types/api-request-body.type';
 export class TagsService implements LoadableService, MakeRequestService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
-  public readonly isLoading$: Observable<boolean>;
-
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
   private readonly errorDialogService: ErrorDialogService = inject(ErrorDialogService);
 
   private readonly tagsSignal = signal<Tag[]>([]);
   private readonly isLoadingSignal = signal<boolean>(false);
   private readonly preloadErrorSignal = signal<boolean>(false);
+  private readonly requestGate = new RequestGate();
 
   private basePath: string = 'tag';
 
@@ -45,12 +44,8 @@ export class TagsService implements LoadableService, MakeRequestService {
     return this.preloadErrorSignal.asReadonly();
   }
 
-  constructor() {
-    this.isLoading$ = toObservable(this.isLoading);
-  }
-
   public init(): void {
-    this.loaderStateService.addLoader(this.isLoading$, this.constructor.name);
+    this.loaderStateService.addLoader(this.isLoading, this.constructor.name);
   }
 
   public list(): Observable<Tag[]> {
@@ -157,18 +152,21 @@ export class TagsService implements LoadableService, MakeRequestService {
   ): Observable<T> {
     const request$: Observable<T> = this.apiRequestService.request<T>(url, method, body);
 
-    return this.waitForTurn()
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => request$),
-        catchError((error: HttpErrorResponse) => {
-          if (reportError) {
-            return this.processError(error);
-          }
+        switchMap((release: VoidFunction) => request$
+          .pipe(
+            catchError((error: HttpErrorResponse) => {
+              release();
 
-          this.isLoadingSignal.set(false);
-          return throwError(() => error);
-        }),
-        tap(() => this.isLoadingSignal.set(false)),
+              if (reportError) {
+                return this.processError(error);
+              }
+
+              return throwError(() => error);
+            }),
+            finalize(release),
+          )),
       );
   }
 
@@ -203,17 +201,4 @@ export class TagsService implements LoadableService, MakeRequestService {
       );
   }
 
-  private waitForTurn(): Observable<boolean> {
-    if (!this.isLoadingSignal()) {
-      this.isLoadingSignal.set(true);
-      return of(true);
-    }
-
-    return this.isLoading$
-      .pipe(
-        filter((isLoading: boolean) => !isLoading),
-        take(1),
-        tap(() => this.isLoadingSignal.set(true)),
-      );
-  }
 }

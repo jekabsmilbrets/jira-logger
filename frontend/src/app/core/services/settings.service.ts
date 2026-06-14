@@ -1,8 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, Signal, signal } from '@angular/core';
-import { toObservable } from '@angular/core/rxjs-interop';
 
-import { catchError, filter, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, finalize, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 import { environment } from '@environments/environment';
 
@@ -11,6 +10,7 @@ import { ApiSetting } from '@core/interfaces/api/api-setting.interface';
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { Setting } from '@core/models/setting.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
+import { RequestGate, waitForTurn } from '@core/utils/wait-for.utility';
 
 import { LoadableService } from '@shared/interfaces/loadable-service.interface';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
@@ -22,13 +22,12 @@ import { ApiRequestBody } from '@shared/types/api-request-body.type';
 export class SettingsService implements LoadableService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
-  public readonly isLoading$: Observable<boolean>;
-
   private readonly httpClient: HttpClient = inject(HttpClient);
   private readonly errorDialogService: ErrorDialogService = inject(ErrorDialogService);
 
   private readonly isLoadingSignal = signal<boolean>(false);
   private readonly settingsSignal = signal<Setting[]>([]);
+  private readonly requestGate = new RequestGate();
 
   private basePath = 'setting';
 
@@ -40,13 +39,9 @@ export class SettingsService implements LoadableService {
     return this.settingsSignal.asReadonly();
   }
 
-  constructor() {
-    this.isLoading$ = toObservable(this.isLoading);
-  }
-
   public init(): void {
     this.loaderStateService.addLoader(
-      this.isLoading$,
+      this.isLoading,
       this.constructor.name,
     );
     this.list()
@@ -57,23 +52,25 @@ export class SettingsService implements LoadableService {
   public list(): Observable<Setting[]> {
     const url: string = `${ environment['apiHost'] }${ environment['apiBase'] }/${ this.basePath }`;
 
-    return this.waitForTurn()
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => this.httpClient.get<JsonApi<ApiSetting[]>>(url)),
-        catchError((error: HttpErrorResponse) => {
-          this.isLoadingSignal.set(false);
+        switchMap((release: VoidFunction) => this.httpClient.get<JsonApi<ApiSetting[]>>(url)
+          .pipe(
+            catchError((error: HttpErrorResponse) => {
+              release();
 
-          if (error.status === 404) {
-            return of({ data: [] });
-          }
+              if (error.status === 404) {
+                return of({ data: [] });
+              }
 
-          return this.processError(error);
-        }),
-        map(
-          (response: JsonApi<ApiSetting[]>) => (response.data && adaptSettings(response.data)) as Setting[],
-        ),
+              return this.processError(error);
+            }),
+            map(
+              (response: JsonApi<ApiSetting[]>) => (response.data && adaptSettings(response.data)) as Setting[],
+            ),
+            finalize(release),
+          )),
         tap((tasks: Setting[]) => this.settingsSignal.set(tasks)),
-        tap(() => this.isLoadingSignal.set(false)),
       );
   }
 
@@ -88,11 +85,16 @@ export class SettingsService implements LoadableService {
       value: String(setting.value),
     };
 
-    return this.waitForTurn()
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => this.httpClient.post<JsonApi<ApiSetting[]>>(url, body)),
-        catchError((error) => this.processError(error)),
-        tap(() => this.isLoadingSignal.set(false)),
+        switchMap((release: VoidFunction) => this.httpClient.post<JsonApi<ApiSetting[]>>(url, body)
+          .pipe(
+            catchError((error) => {
+              release();
+              return this.processError(error);
+            }),
+            finalize(release),
+          )),
         switchMap(() => this.reloadList(skipReload)),
         map((settings: Setting[]) => this.findSetting(settings, setting)),
       );
@@ -110,11 +112,16 @@ export class SettingsService implements LoadableService {
       value: String(setting.value),
     };
 
-    return this.waitForTurn()
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => this.httpClient.patch<JsonApi<ApiSetting[]>>(url, body)),
-        catchError((error) => this.processError(error)),
-        tap(() => this.isLoadingSignal.set(false)),
+        switchMap((release: VoidFunction) => this.httpClient.patch<JsonApi<ApiSetting[]>>(url, body)
+          .pipe(
+            catchError((error) => {
+              release();
+              return this.processError(error);
+            }),
+            finalize(release),
+          )),
         switchMap(() => this.reloadList(skipReload)),
         map((settings: Setting[]) => this.findSetting(settings, setting)),
       );
@@ -125,29 +132,20 @@ export class SettingsService implements LoadableService {
   ): Observable<void> {
     const url: string = `${ environment['apiHost'] }${ environment['apiBase'] }/${ this.basePath }/${ setting.id }`;
 
-    return this.waitForTurn()
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => this.httpClient.delete<void>(url)),
-        catchError((error) => this.processError(error)),
-        tap(() => this.isLoadingSignal.set(false)),
+        switchMap((release: VoidFunction) => this.httpClient.delete<void>(url)
+          .pipe(
+            catchError((error) => {
+              release();
+              return this.processError(error);
+            }),
+            finalize(release),
+          )),
         switchMap(
           () => this.list().pipe(take(1)),
         ),
         map(() => undefined),
-      );
-  }
-
-  private waitForTurn(): Observable<boolean> {
-    if (!this.isLoadingSignal()) {
-      this.isLoadingSignal.set(true);
-      return of(true);
-    }
-
-    return this.isLoading$
-      .pipe(
-        filter((isLoading: boolean) => !isLoading),
-        take(1),
-        tap(() => this.isLoadingSignal.set(true)),
       );
   }
 

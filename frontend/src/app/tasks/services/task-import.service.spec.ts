@@ -125,7 +125,7 @@ describe('Tasks Services task-import.service', () => {
 
     expect(loaderStateServiceMock.addLoader).toHaveBeenCalledTimes(1);
     expect(loaderStateServiceMock.addLoader).toHaveBeenCalledWith(
-      service.isLoading$,
+      service.isLoading,
       '_TaskImportService',
     );
   });

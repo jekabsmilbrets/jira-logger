@@ -1,6 +1,6 @@
-import { effect, inject, Injectable } from '@angular/core';
+import { effect, inject, Injectable, Signal, signal } from '@angular/core';
 
-import { BehaviorSubject, catchError, interval, map, Observable, of, switchMap, take, tap, withLatestFrom } from 'rxjs';
+import { catchError, interval, map, Observable, of, switchMap, take, tap } from 'rxjs';
 
 import { TimezoneService } from '@core/services/timezone.service';
 import { toWallClockDateInTimezone } from '@core/utils/timezone-date.utility';
@@ -13,20 +13,22 @@ import { TimeLogsService } from '@shared/services/time-logs.service';
   providedIn: 'root',
 })
 export class TaskManagerService {
-  public activeTask$: Observable<Task | null>;
-  public timeLoggedToday$: Observable<number>;
-
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
 
-  private activeTaskSubject: BehaviorSubject<Task | null> = new BehaviorSubject<Task | null>(null);
-  private timeLoggedTodaySubject: BehaviorSubject<number> = new BehaviorSubject<number>(0);
+  private readonly activeTaskSignal = signal<Task | null>(null);
+  private readonly timeLoggedTodaySignal = signal<number>(0);
+
+  public get activeTask(): Signal<Task | null> {
+    return this.activeTaskSignal.asReadonly();
+  }
+
+  public get timeLoggedToday(): Signal<number> {
+    return this.timeLoggedTodaySignal.asReadonly();
+  }
 
   constructor() {
-    this.activeTask$ = this.activeTaskSubject.asObservable();
-    this.timeLoggedToday$ = this.timeLoggedTodaySubject.asObservable();
-
     this.calculateTimeLoggedToday().subscribe();
 
     this.listenActiveTaskStart().subscribe();
@@ -52,7 +54,7 @@ export class TaskManagerService {
                 (acc: number, value: number) => acc + value, 0,
               ),
           ),
-          tap((timeLoggedToday: number) => this.timeLoggedTodaySubject.next(timeLoggedToday)),
+          tap((timeLoggedToday: number) => this.timeLoggedTodaySignal.set(timeLoggedToday)),
         );
     };
 
@@ -77,24 +79,24 @@ export class TaskManagerService {
   private listenActiveTaskStart(): Observable<null | void> {
     return this.timeLogsService.taskStarted$
       .pipe(
-        switchMap((currentTask: Task | undefined): Observable<void> => {
+        tap((currentTask: Task | undefined) => {
           if (currentTask) {
-            this.activeTaskSubject.next(currentTask);
+            this.activeTaskSignal.set(currentTask);
           }
-
-          return of(undefined);
         }),
+        map(() => undefined),
         catchError(() => of(null)),
       );
   }
 
-  private listenActiveTaskFinish(): Observable<[Task, Task | null]> {
+  private listenActiveTaskFinish(): Observable<Task> {
     return this.timeLogsService.taskFinished$
       .pipe(
-        withLatestFrom(this.activeTask$),
-        tap(([finishedTask, activeTask]: [Task, Task | null]) => {
+        tap((finishedTask: Task) => {
+          const activeTask: Task | null = this.activeTaskSignal();
+
           if (activeTask && activeTask.id === finishedTask.id) {
-            this.activeTaskSubject.next(null);
+            this.activeTaskSignal.set(null);
           }
         }),
       );
@@ -110,8 +112,6 @@ export class TaskManagerService {
     const activeTask: Task | undefined = this.tasksService.tasks()
       .find((task: Task) => task.isTimeLogRunning);
 
-    if (activeTask) {
-      this.activeTaskSubject.next(activeTask);
-    }
+    this.activeTaskSignal.set(activeTask ?? null);
   }
 }

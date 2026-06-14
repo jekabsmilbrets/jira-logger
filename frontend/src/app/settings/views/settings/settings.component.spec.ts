@@ -178,7 +178,7 @@ describe('Settings Views settings.component', () => {
       .configureTestingModule({
         imports: [SettingsComponent],
         providers: [
-          { provide: LoaderStateService, useValue: { isLoading$: of(false) } },
+          { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly() } },
           { provide: SettingsService, useValue: settingsServiceMock },
           { provide: ReportService, useClass: ReportServiceMock },
           { provide: Window, useValue: windowMock },
@@ -334,7 +334,7 @@ describe('Settings Views settings.component integration', () => {
       .configureTestingModule({
         imports: [SettingsComponent],
         providers: [
-          { provide: LoaderStateService, useValue: { isLoading$: of(false) } },
+          { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly() } },
           { provide: SettingsService, useValue: settingsServiceMock },
           { provide: ReportService, useClass: ReportServiceMock },
           { provide: Window, useValue: windowMock },
@@ -371,7 +371,7 @@ describe('Settings Views settings.component integration', () => {
       .configureTestingModule({
         imports: [SettingsComponent],
         providers: [
-          { provide: LoaderStateService, useValue: { isLoading$: of(false) } },
+          { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly() } },
           { provide: SettingsService, useValue: settingsServiceMock },
           { provide: ReportService, useClass: ReportServiceMock },
           { provide: Window, useValue: windowMock },

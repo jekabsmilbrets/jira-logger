@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 
 import { forkJoin, switchMap, take } from 'rxjs';
 
@@ -36,7 +35,7 @@ export class SettingsComponent {
 
   private readonly settingsService: SettingsService = inject(SettingsService);
   private readonly reportService: ReportService = inject(ReportService);
-  protected readonly isLoading = toSignal(this.loaderStateService.isLoading$, { initialValue: false });
+  protected readonly isLoading = this.loaderStateService.isLoading;
   protected readonly settings = this.settingsService.settings;
   protected readonly jiraApiSettings = computed(() => this.filterSettings(Object.values(JiraApiSettings)));
   protected readonly jiraUserSettings = computed(() => this.filterSettings(Object.values(JiraUserSettings)));

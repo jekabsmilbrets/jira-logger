@@ -45,7 +45,7 @@ describe('Core Services settings.service', () => {
 
     service.init();
 
-    expect(spy).toHaveBeenCalledWith(service.isLoading$, expect.stringContaining('SettingsService'));
+    expect(spy).toHaveBeenCalledWith(service.isLoading, expect.stringContaining('SettingsService'));
     http.expectOne((r) => r.url.includes('/setting')).flush({ data: [] });
   });
 
@@ -78,6 +78,7 @@ describe('Core Services settings.service', () => {
     const post = http.expectOne((r) => r.method === 'POST' && r.url.includes('/setting'));
     expect(post.request.body).toEqual({ name: 'theme', value: 'dark' });
     post.flush({ data: [] });
+    await Promise.resolve();
 
     const list = http.expectOne((r) => r.method === 'GET' && r.url.includes('/setting'));
     list.flush({ data: [{ id: '1', name: 'theme', value: 'dark', createdAt: '2024-01-01T00:00:00.000Z' }] });
@@ -105,6 +106,7 @@ describe('Core Services settings.service', () => {
     const promise = firstValueFrom(service.delete(setting));
 
     http.expectOne((r) => r.method === 'DELETE' && r.url.endsWith('/setting/1')).flush({});
+    await Promise.resolve();
     http.expectOne((r) => r.method === 'GET' && r.url.includes('/setting')).flush({ data: [] });
 
     await expect(promise).resolves.toBeUndefined();
@@ -116,6 +118,7 @@ describe('Core Services settings.service', () => {
     const promise = firstValueFrom(service.create(setting));
 
     http.expectOne((r) => r.method === 'POST').flush({ data: [] });
+    await Promise.resolve();
     http.expectOne((r) => r.method === 'GET').flush({
       data: [{
         id: '2',

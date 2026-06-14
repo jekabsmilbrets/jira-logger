@@ -47,17 +47,14 @@ describe('Shared Services task-manager.service', () => {
 
     const service = TestBed.inject(TaskManagerService);
 
-    const activeStates: (Task | null)[] = [];
-    service.activeTask$.subscribe((v) => activeStates.push(v));
-
     taskStarted$.next(runningTask);
-    expect(activeStates.at(-1)?.id).toBe('1');
+    expect(service.activeTask()?.id).toBe('1');
 
     taskFinished$.next(finishedTask);
-    expect(activeStates.at(-1)?.id).toBe('1');
+    expect(service.activeTask()?.id).toBe('1');
 
     taskFinished$.next(runningTask);
-    expect(activeStates.at(-1)).toBeNull();
+    expect(service.activeTask()).toBeNull();
 
     vi.advanceTimersByTime(10010);
     expect(tasksServiceMock.filteredList).toHaveBeenCalled();
@@ -86,10 +83,8 @@ describe('Shared Services task-manager.service', () => {
     });
 
     const service = TestBed.inject(TaskManagerService);
-    const activeStates: (Task | null)[] = [];
-    service.activeTask$.subscribe((v) => activeStates.push(v));
     taskFinished$.next(runningTask);
-    expect(activeStates.at(-1)).toBeNull();
+    expect(service.activeTask()).toBeNull();
   });
 
   it('sets active task from tasks list when running task exists', async () => {
@@ -119,6 +114,6 @@ describe('Shared Services task-manager.service', () => {
 
     const service = TestBed.inject(TaskManagerService);
     await Promise.resolve();
-    expect((await new Promise<Task | null>((resolve) => service.activeTask$.subscribe(resolve)))?.id).toBe('1');
+    expect(service.activeTask()?.id).toBe('1');
   });
 });

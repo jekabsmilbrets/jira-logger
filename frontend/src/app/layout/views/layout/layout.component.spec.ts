@@ -1,9 +1,7 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
-
-import { BehaviorSubject } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
@@ -38,9 +36,9 @@ class MockSidenavComponent {
 }
 
 describe('Layout Views layout.component', () => {
-  const isLoadingSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  const activeTaskSubject: BehaviorSubject<unknown | null> = new BehaviorSubject<unknown | null>(null);
-  const timeLoggedTodaySubject: BehaviorSubject<number> = new BehaviorSubject<number>(0);
+  const isLoadingState = signal<boolean>(false);
+  const activeTaskState = signal<unknown | null>(null);
+  const timeLoggedTodayState = signal<number>(0);
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -49,14 +47,14 @@ describe('Layout Views layout.component', () => {
         {
           provide: LoaderStateService,
           useValue: {
-            isLoading$: isLoadingSubject.asObservable(),
+            isLoading: isLoadingState.asReadonly(),
           },
         },
         {
           provide: TaskManagerService,
           useValue: {
-            activeTask$: activeTaskSubject.asObservable(),
-            timeLoggedToday$: timeLoggedTodaySubject.asObservable(),
+            activeTask: activeTaskState.asReadonly(),
+            timeLoggedToday: timeLoggedTodayState.asReadonly(),
           },
         },
       ],
@@ -83,10 +81,10 @@ describe('Layout Views layout.component', () => {
     expect(fixture.debugElement.query(By.css('router-outlet'))).toBeTruthy();
   });
 
-  it('passes observable values to the header inputs', () => {
-    isLoadingSubject.next(true);
-    activeTaskSubject.next({ name: 'TASK-1' });
-    timeLoggedTodaySubject.next(321);
+  it('passes signal values to the header inputs', () => {
+    isLoadingState.set(true);
+    activeTaskState.set({ name: 'TASK-1' });
+    timeLoggedTodayState.set(321);
 
     const fixture = TestBed.createComponent(LayoutComponent);
 
@@ -110,12 +108,12 @@ describe('Layout Views layout.component integration', () => {
         imports: [LayoutComponent],
         providers: [
           provideRouter([]),
-          { provide: LoaderStateService, useValue: { isLoading$: new BehaviorSubject<boolean>(false).asObservable() } },
+          { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly() } },
           {
             provide: TaskManagerService,
             useValue: {
-              activeTask$: new BehaviorSubject<unknown | null>(null).asObservable(),
-              timeLoggedToday$: new BehaviorSubject<number>(0).asObservable(),
+              activeTask: signal<unknown | null>(null).asReadonly(),
+              timeLoggedToday: signal<number>(0).asReadonly(),
             },
           },
         ],

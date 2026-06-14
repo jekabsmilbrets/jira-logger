@@ -1,6 +1,7 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
+import { firstValueFrom, of, throwError } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
@@ -12,7 +13,6 @@ import { TimeLogsService } from './time-logs.service';
 
 describe('Shared Services time-logs.service', () => {
   let service: TimeLogsService;
-  const isLoading$ = new BehaviorSubject(false);
   const apiRequestService = {
     buildApiUrl: vi.fn((base: string, suffix = '') => `https://api/${ base }${ suffix }`),
     request: vi.fn(),
@@ -24,7 +24,7 @@ describe('Shared Services time-logs.service', () => {
 
     await TestBed.configureTestingModule({
       providers: [
-        { provide: LoaderStateService, useValue: { isLoading$, addLoader: vi.fn() } },
+        { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly(), addLoader: vi.fn() } },
         { provide: ApiRequestService, useValue: apiRequestService },
       ],
     });

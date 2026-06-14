@@ -1,10 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, Signal, signal } from '@angular/core';
-import { toObservable } from '@angular/core/rxjs-interop';
 
-import { catchError, concat, filter, map, Observable, of, switchMap, take, tap, throwError, toArray } from 'rxjs';
+import { catchError, concat, finalize, map, Observable, of, switchMap, throwError, toArray } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
+import { RequestGate, waitForTurn } from '@core/utils/wait-for.utility';
 
 import { adaptTasks } from '@shared/adapters/task.adapter';
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
@@ -20,19 +20,14 @@ import { TimeLogsService } from '@shared/services/time-logs.service';
 export class TaskImportService implements LoadableService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
-  public readonly isLoading$: Observable<boolean>;
-
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
 
   private readonly isLoadingSignal = signal<boolean>(false);
+  private readonly requestGate = new RequestGate();
 
   public get isLoading(): Signal<boolean> {
     return this.isLoadingSignal.asReadonly();
-  }
-
-  constructor() {
-    this.isLoading$ = toObservable(this.isLoading);
   }
 
   public importData(
@@ -62,34 +57,22 @@ export class TaskImportService implements LoadableService {
       ),
     );
 
-    return this.waitForTurn()
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => concat(...observables)),
-        toArray(),
-        catchError((error: HttpErrorResponse) => {
-          this.isLoadingSignal.set(false);
-          return throwError(() => error);
-        }),
-        map(() => true),
-        tap(() => this.isLoadingSignal.set(false)),
+        switchMap((release: VoidFunction) => concat(...observables)
+          .pipe(
+            toArray(),
+            catchError((error: HttpErrorResponse) => {
+              release();
+              return throwError(() => error);
+            }),
+            map(() => true),
+            finalize(release),
+          )),
       );
   }
 
   public init(): void {
-    this.loaderStateService.addLoader(this.isLoading$, this.constructor.name);
-  }
-
-  private waitForTurn(): Observable<boolean> {
-    if (!this.isLoadingSignal()) {
-      this.isLoadingSignal.set(true);
-      return of(true);
-    }
-
-    return this.isLoading$
-      .pipe(
-        filter((isLoading: boolean) => !isLoading),
-        take(1),
-        tap(() => this.isLoadingSignal.set(true)),
-      );
+    this.loaderStateService.addLoader(this.isLoading, this.constructor.name);
   }
 }

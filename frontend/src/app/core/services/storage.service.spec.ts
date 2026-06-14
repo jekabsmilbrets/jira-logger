@@ -37,7 +37,7 @@ describe('Core Services storage.service', () => {
 
     service.init();
 
-    expect(spy).toHaveBeenCalledWith(service.isLoading$, expect.stringContaining('StorageService'));
+    expect(spy).toHaveBeenCalledWith(service.isLoading, expect.stringContaining('StorageService'));
     expect(createStoreSpy).toHaveBeenCalledWith('task-db', 'task-store');
     expect(createStoreSpy).toHaveBeenCalledWith('settings-db', 'settings-store');
     expect(service.listStores()).toEqual(['task', 'settings']);

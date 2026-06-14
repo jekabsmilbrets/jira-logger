@@ -1,8 +1,9 @@
 import { registerLocaleData } from '@angular/common';
 import localeLv from '@angular/common/locales/lv';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
+import { firstValueFrom, of, throwError } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
@@ -14,7 +15,6 @@ import { TasksService } from './tasks.service';
 
 describe('Shared Services tasks.service', () => {
   let service: TasksService;
-  const isLoading$ = new BehaviorSubject(false);
   const apiRequestService = {
     buildApiUrl: vi.fn((base: string, suffix = '') => `https://api/${ base }${ suffix }`),
     request: vi.fn(),
@@ -31,7 +31,7 @@ describe('Shared Services tasks.service', () => {
     errorDialogService.openDialog.mockReturnValue(of(undefined));
     await TestBed.configureTestingModule({
       providers: [
-        { provide: LoaderStateService, useValue: { isLoading$, addLoader: vi.fn() } },
+        { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly(), addLoader: vi.fn() } },
         { provide: ApiRequestService, useValue: apiRequestService },
         { provide: ErrorDialogService, useValue: errorDialogService },
       ],

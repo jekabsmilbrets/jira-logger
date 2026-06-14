@@ -1,16 +1,24 @@
-import { BehaviorSubject, firstValueFrom } from 'rxjs';
+import { signal } from '@angular/core';
 
-import { waitForTurn } from './wait-for.utility';
+import { firstValueFrom } from 'rxjs';
+
+import { RequestGate, waitForTurn } from './wait-for.utility';
 
 describe('Core Utils wait-for.utility', () => {
-  it('waits until loading is false and marks loading as true', async () => {
-    const isLoadingSubject = new BehaviorSubject(true);
-    const output = waitForTurn(isLoadingSubject.asObservable(), isLoadingSubject);
+  it('queues turns and releases loading when the returned callback runs', async () => {
+    const requestGate = new RequestGate();
+    const isLoading = signal(false);
+    const firstTurn = await firstValueFrom(waitForTurn(requestGate, isLoading));
 
-    const promise = firstValueFrom(output);
-    isLoadingSubject.next(false);
+    expect(isLoading()).toBe(true);
 
-    await expect(promise).resolves.toBe(false);
-    expect(isLoadingSubject.getValue()).toBe(true);
+    const secondTurnPromise = firstValueFrom(waitForTurn(requestGate, isLoading));
+    firstTurn();
+
+    const secondTurn = await secondTurnPromise;
+    expect(isLoading()).toBe(true);
+
+    secondTurn();
+    expect(isLoading()).toBe(false);
   });
 });
