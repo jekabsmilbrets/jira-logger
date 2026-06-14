@@ -1,13 +1,13 @@
 import { formatDate } from '@angular/common';
 import { HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, Injector, Signal, signal } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
 
-import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, filter, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { LocaleService } from '@core/services/locale.service';
-import { waitForTurn } from '@core/utils/wait-for.utility';
 
 import { adaptTasks } from '@shared/adapters/task.adapter';
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
@@ -27,22 +27,30 @@ import { QueryParams } from '@shared/types/query-params.type';
 export class TasksService implements LoadableService, MakeRequestService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
-  public isLoading$: Observable<boolean>;
-  public tasks$: Observable<Task[]>;
+  public readonly isLoading$: Observable<boolean>;
+  public readonly tasks$: Observable<Task[]>;
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
   private readonly errorDialogService: ErrorDialogService = inject(ErrorDialogService);
   private readonly localeService: LocaleService = inject(LocaleService);
+  private readonly injector: Injector = inject(Injector);
 
-  private tasksSubject: BehaviorSubject<Task[]> = new BehaviorSubject<Task[]>([]);
+  private readonly tasksSignal = signal<Task[]>([]);
+  private readonly isLoadingSignal = signal<boolean>(false);
 
   private basePath: string = 'task';
 
-  private isLoadingSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  public get isLoading(): Signal<boolean> {
+    return this.isLoadingSignal.asReadonly();
+  }
+
+  public get tasks(): Signal<Task[]> {
+    return this.tasksSignal.asReadonly();
+  }
 
   constructor() {
-    this.tasks$ = this.tasksSubject.asObservable();
-    this.isLoading$ = this.isLoadingSubject.asObservable();
+    this.tasks$ = toObservable(this.tasks, { injector: this.injector });
+    this.isLoading$ = toObservable(this.isLoading, { injector: this.injector });
   }
 
   public init(): void {
@@ -67,7 +75,7 @@ export class TasksService implements LoadableService, MakeRequestService {
         map(
           (response: JsonApi<ApiTask[]>) => (response.data && adaptTasks(response.data)) as Task[],
         ),
-        tap((tasks: Task[]) => this.tasksSubject.next(tasks)),
+        tap((tasks: Task[]) => this.tasksSignal.set(tasks)),
       );
   }
 
@@ -102,7 +110,7 @@ export class TasksService implements LoadableService, MakeRequestService {
 
         tap((tasks: Task[]) => {
           if (updateTaskList) {
-            this.tasksSubject.next(tasks);
+            this.tasksSignal.set(tasks);
           }
         }),
       );
@@ -184,7 +192,7 @@ export class TasksService implements LoadableService, MakeRequestService {
       'get',
     )
       .pipe(
-        catchError(this.processError),
+        catchError(this.processError.bind(this)),
         map(() => null),
       );
   }
@@ -221,10 +229,7 @@ export class TasksService implements LoadableService, MakeRequestService {
       body,
     );
 
-    return waitForTurn(
-      this.isLoading$,
-      this.isLoadingSubject,
-    )
+    return this.waitForTurn()
       .pipe(
         switchMap(() => request$),
         catchError((error) => {
@@ -232,10 +237,10 @@ export class TasksService implements LoadableService, MakeRequestService {
             return this.processError(error);
           }
 
-          this.isLoadingSubject.next(false);
+          this.isLoadingSignal.set(false);
           return throwError(() => error);
         }),
-        tap(() => this.isLoadingSubject.next(false)),
+        tap(() => this.isLoadingSignal.set(false)),
       );
   }
 
@@ -284,19 +289,14 @@ export class TasksService implements LoadableService, MakeRequestService {
   private processError(
     error: unknown,
   ): Observable<never> {
-    this.isLoadingSubject.next(false);
+    this.isLoadingSignal.set(false);
 
-    return this.tasks$
+    return this.errorDialogService.openDialog({
+      errorTitle: 'Error while doing db action :D',
+      errorMessage: JSON.stringify(error),
+      idbData: this.tasks(),
+    })
       .pipe(
-        take(1),
-        switchMap(
-          (tasks: Task[]) => this.errorDialogService.openDialog({
-              errorTitle: 'Error while doing db action :D',
-              errorMessage: JSON.stringify(error),
-              idbData: tasks,
-            },
-          ),
-        ),
         take(1),
         switchMap(() => throwError(() => error)),
       );
@@ -311,6 +311,20 @@ export class TasksService implements LoadableService, MakeRequestService {
         this.list()
     )
       .pipe(take(1));
+  }
+
+  private waitForTurn(): Observable<boolean> {
+    if (!this.isLoadingSignal()) {
+      this.isLoadingSignal.set(true);
+      return of(true);
+    }
+
+    return this.isLoading$
+      .pipe(
+        filter((isLoading: boolean) => !isLoading),
+        take(1),
+        tap(() => this.isLoadingSignal.set(true)),
+      );
   }
 
   private findTask(

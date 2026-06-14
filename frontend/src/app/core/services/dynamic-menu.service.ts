@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable, Injector, Signal, signal } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
 
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { DynamicMenu } from '@core/models/dynamic-menu';
 
@@ -8,24 +9,29 @@ import { DynamicMenu } from '@core/models/dynamic-menu';
   providedIn: 'root',
 })
 export class DynamicMenuService {
-  public dynamicMenus$: Observable<DynamicMenu[]>;
+  public readonly dynamicMenus$: Observable<DynamicMenu[]>;
 
-  private dynamicMenusSubject: BehaviorSubject<DynamicMenu[]> = new BehaviorSubject<DynamicMenu[]>([]);
+  private readonly injector: Injector = inject(Injector);
+  private readonly dynamicMenusSignal = signal<DynamicMenu[]>([]);
+
+  public get dynamicMenus(): Signal<DynamicMenu[]> {
+    return this.dynamicMenusSignal.asReadonly();
+  }
 
   constructor() {
-    this.dynamicMenus$ = this.dynamicMenusSubject.asObservable();
+    this.dynamicMenus$ = toObservable(this.dynamicMenus, { injector: this.injector });
   }
 
   public addDynamicMenu(
     dynamicMenu: DynamicMenu,
   ): void {
-    const currentDynamicMenus: DynamicMenu[] = this.dynamicMenusSubject.getValue();
+    const currentDynamicMenus: DynamicMenu[] = this.dynamicMenusSignal();
     const dynamicMenuExists: boolean = currentDynamicMenus.findIndex(
       (cDM: DynamicMenu) => dynamicMenu.component === cDM.component,
     ) >= 0;
 
     if (!dynamicMenuExists) {
-      this.dynamicMenusSubject.next([
+      this.dynamicMenusSignal.set([
         ...currentDynamicMenus,
         dynamicMenu,
       ]);

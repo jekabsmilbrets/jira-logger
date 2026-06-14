@@ -1,11 +1,11 @@
 import { Clipboard } from '@angular/cdk/clipboard';
 import { HttpErrorResponse } from '@angular/common/http';
-import { signal } from '@angular/core';
+import { Signal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { By } from '@angular/platform-browser';
 
-import { BehaviorSubject, of, throwError } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
@@ -22,15 +22,26 @@ import { ReportViewComponent } from './report-view.component';
 
 class ReportServiceStub {
   public readonly tasks$ = of([] as Task[]);
-  public readonly reportMode$ = of(ReportModeEnum.date);
-  public readonly dateSubject = new BehaviorSubject<Date | null>(null);
-  public readonly date$ = this.dateSubject.asObservable();
+  private readonly reportModeSignal = signal(ReportModeEnum.date);
+  private readonly dateSignal = signal<Date | null>(null);
   public readonly columns = signal([{
     columnDef: 'sync',
     header: 'Sync',
     cell: () => undefined,
   }] as any[]);
   public readonly reload = vi.fn();
+
+  public get reportMode(): Signal<ReportModeEnum> {
+    return this.reportModeSignal.asReadonly();
+  }
+
+  public get date(): Signal<Date | null> {
+    return this.dateSignal.asReadonly();
+  }
+
+  public setDate(date: Date | null): void {
+    this.dateSignal.set(date);
+  }
 }
 
 describe('ReportViewComponent', () => {
@@ -193,7 +204,7 @@ describe('ReportViewComponent', () => {
   it('syncs non-running task and reloads report on success', () => {
     const task = { name: 'Task C', isTimeLogRunning: false } as Task;
     const date = new Date('2026-05-30T00:00:00.000Z');
-    reportService.dateSubject.next(date);
+    reportService.setDate(date);
 
     (component as any).onSyncClick(task as Searchable);
 
@@ -211,7 +222,7 @@ describe('ReportViewComponent', () => {
   it('stops and restarts running task around sync flow', () => {
     const task = { name: 'Task D', isTimeLogRunning: true } as Task;
     const date = new Date('2026-05-30T00:00:00.000Z');
-    reportService.dateSubject.next(date);
+    reportService.setDate(date);
 
     (component as any).onSyncClick(task as Searchable);
 
@@ -224,7 +235,7 @@ describe('ReportViewComponent', () => {
     timeLogsService.stop.mockReturnValueOnce(throwError(() => new Error('stop failed')));
 
     const task = { name: 'Task E', isTimeLogRunning: true } as Task;
-    reportService.dateSubject.next(new Date('2026-05-30T00:00:00.000Z'));
+    reportService.setDate(new Date('2026-05-30T00:00:00.000Z'));
 
     (component as any).onSyncClick(task as Searchable);
 
@@ -240,7 +251,7 @@ describe('ReportViewComponent', () => {
     );
 
     const task = { name: 'Task F', isTimeLogRunning: false } as Task;
-    reportService.dateSubject.next(new Date('2026-05-30T00:00:00.000Z'));
+    reportService.setDate(new Date('2026-05-30T00:00:00.000Z'));
 
     (component as any).onSyncClick(task as Searchable);
 

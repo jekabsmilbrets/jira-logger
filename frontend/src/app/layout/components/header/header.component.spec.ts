@@ -1,10 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatSidenav } from '@angular/material/sidenav';
 import { By } from '@angular/platform-browser';
 import { provideRouter, Router } from '@angular/router';
 
-import { BehaviorSubject } from 'rxjs';
 import { vi } from 'vitest';
 
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
@@ -19,10 +18,10 @@ class DummyRouteComponent {
 }
 
 describe('Layout Components header.component', () => {
-  const dynamicMenusSubject = new BehaviorSubject<any[]>([]);
+  const dynamicMenusSignal = signal<any[]>([]);
 
   beforeEach(async () => {
-    dynamicMenusSubject.next([]);
+    dynamicMenusSignal.set([]);
 
     await TestBed.configureTestingModule({
       imports: [HeaderComponent],
@@ -36,7 +35,7 @@ describe('Layout Components header.component', () => {
         {
           provide: DynamicMenuService,
           useValue: {
-            dynamicMenus$: dynamicMenusSubject.asObservable(),
+            dynamicMenus: dynamicMenusSignal.asReadonly(),
           },
         },
       ],
@@ -123,7 +122,7 @@ describe('Layout Components header.component', () => {
       }),
     });
 
-    dynamicMenusSubject.next([{
+    dynamicMenusSignal.set([{
       data: { route: '/other', providers: [] },
       component: class Dummy {
       },
@@ -156,7 +155,7 @@ describe('Layout Components header.component', () => {
       }),
     });
 
-    dynamicMenusSubject.next([{ data: { route: '/tasks', providers: [] }, component: DummyDynamicComponent }]);
+    dynamicMenusSignal.set([{ data: { route: '/tasks', providers: [] }, component: DummyDynamicComponent }]);
 
     await router.navigateByUrl('/tasks/list');
     fixture.detectChanges();

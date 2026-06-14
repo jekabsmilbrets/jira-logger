@@ -48,7 +48,7 @@ export class HeaderComponent implements AfterViewInit {
   private readonly _injector: Injector = inject(Injector);
 
   private readonly dynamicMenu: Signal<DynamicMenuDirective> = viewChild.required(DynamicMenuDirective);
-  private readonly dynamicMenus = toSignal(this.dynamicMenuService.dynamicMenus$, { initialValue: [] as DynamicMenu[] });
+  private readonly dynamicMenus = this.dynamicMenuService.dynamicMenus;
   private readonly activeRoute = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),

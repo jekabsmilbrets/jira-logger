@@ -1,20 +1,8 @@
 import { formatDate } from '@angular/common';
-import { inject, Injectable, Signal, signal } from '@angular/core';
+import { computed, inject, Injectable, Injector, Signal, signal } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
 
-import {
-  BehaviorSubject,
-  catchError,
-  combineLatest,
-  debounceTime,
-  distinctUntilChanged,
-  map,
-  Observable,
-  of,
-  switchMap,
-  take,
-  tap,
-  withLatestFrom,
-} from 'rxjs';
+import { catchError, combineLatest, debounceTime, map, Observable, of, Subscription, switchMap, take, tap, withLatestFrom } from 'rxjs';
 
 import { Setting } from '@core/models/setting.model';
 import { LocaleService } from '@core/services/locale.service';
@@ -40,16 +28,15 @@ import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
   providedIn: 'root',
 })
 export class ReportService {
-  public tasks$!: Observable<Task[]>;
-  public reportMode$: Observable<ReportModeEnum>;
-  public tags$: Observable<Tag[]>;
-  public date$: Observable<Date | null>;
-  public startDate$: Observable<Date | null>;
-  public endDate$: Observable<Date | null>;
-  public showWeekends$: Observable<boolean>;
-  public hideUnreportedTasks$: Observable<boolean>;
-  public reload$: Observable<void>;
-
+  public readonly tasks$: Observable<Task[]>;
+  public readonly reportMode$: Observable<ReportModeEnum>;
+  public readonly tags$: Observable<Tag[]>;
+  public readonly date$: Observable<Date | null>;
+  public readonly startDate$: Observable<Date | null>;
+  public readonly endDate$: Observable<Date | null>;
+  public readonly showWeekends$: Observable<boolean>;
+  public readonly hideUnreportedTasks$: Observable<boolean>;
+  public readonly reload$: Observable<void>;
   public readonly columns: Signal<Column[]>;
 
   private readonly storageService: StorageService = inject(StorageService);
@@ -58,31 +45,102 @@ export class ReportService {
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
   private readonly localeService: LocaleService = inject(LocaleService);
+  private readonly injector: Injector = inject(Injector);
 
-  private reportModeSubject: BehaviorSubject<ReportModeEnum> = new BehaviorSubject<ReportModeEnum>(ReportModeEnum.total);
-  private tagsSubject: BehaviorSubject<Tag[]> = new BehaviorSubject<Tag[]>([]);
-  private dateSubject: BehaviorSubject<Date | null> = new BehaviorSubject<Date | null>(null);
-  private startDateSubject: BehaviorSubject<Date | null> = new BehaviorSubject<Date | null>(null);
-  private endDateSubject: BehaviorSubject<Date | null> = new BehaviorSubject<Date | null>(null);
-  private showWeekendsSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  private hideUnreportedTasksSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  private reloadSubject: BehaviorSubject<void> = new BehaviorSubject<void>(undefined);
-  private jiraApiEnabledSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  private readonly columnsSignal = signal<Column[]>([]);
+  private readonly reportModeSignal = signal<ReportModeEnum>(ReportModeEnum.total);
+  private readonly tagsSignal = signal<Tag[]>([]);
+  private readonly dateSignal = signal<Date | null>(null);
+  private readonly startDateSignal = signal<Date | null>(null);
+  private readonly endDateSignal = signal<Date | null>(null);
+  private readonly showWeekendsSignal = signal<boolean>(false);
+  private readonly hideUnreportedTasksSignal = signal<boolean>(false);
+  private readonly reloadVersionSignal = signal<number>(0);
+  private readonly jiraApiEnabledSignal = signal<boolean>(false);
 
   private settingsKey: IDBValidKey = 'report';
   private customStoreName: string = 'settings';
 
+  public get reportMode(): Signal<ReportModeEnum> {
+    return this.reportModeSignal.asReadonly();
+  }
+
+  public set reportMode(
+    mode: ReportModeEnum,
+  ) {
+    this.reportModeSignal.set(mode);
+  }
+
+  public get tags(): Signal<Tag[]> {
+    return this.tagsSignal.asReadonly();
+  }
+
+  public set tags(
+    tags: Tag[],
+  ) {
+    this.tagsSignal.set([...(tags ?? [])]);
+  }
+
+  public get date(): Signal<Date | null> {
+    return this.dateSignal.asReadonly();
+  }
+
+  public set date(
+    date: Date | null,
+  ) {
+    this.dateSignal.set(this.normalizeStartOfDay(date));
+  }
+
+  public get startDate(): Signal<Date | null> {
+    return this.startDateSignal.asReadonly();
+  }
+
+  public set startDate(
+    startDate: Date | null,
+  ) {
+    this.startDateSignal.set(this.normalizeStartOfDay(startDate));
+  }
+
+  public get endDate(): Signal<Date | null> {
+    return this.endDateSignal.asReadonly();
+  }
+
+  public set endDate(
+    endDate: Date | null,
+  ) {
+    this.endDateSignal.set(this.normalizeEndOfDay(endDate));
+  }
+
+  public get showWeekends(): Signal<boolean> {
+    return this.showWeekendsSignal.asReadonly();
+  }
+
+  public set showWeekends(
+    showWeekends: boolean,
+  ) {
+    this.showWeekendsSignal.set(showWeekends);
+  }
+
+  public get hideUnreportedTasks(): Signal<boolean> {
+    return this.hideUnreportedTasksSignal.asReadonly();
+  }
+
+  public set hideUnreportedTasks(
+    hideUnreportedTasks: boolean,
+  ) {
+    this.hideUnreportedTasksSignal.set(hideUnreportedTasks);
+  }
+
   constructor() {
-    this.reportMode$ = this.reportModeSubject.asObservable();
-    this.tags$ = this.tagsSubject.asObservable();
-    this.date$ = this.dateSubject.asObservable();
-    this.startDate$ = this.startDateSubject.asObservable();
-    this.endDate$ = this.endDateSubject.asObservable();
-    this.showWeekends$ = this.showWeekendsSubject.asObservable();
-    this.hideUnreportedTasks$ = this.hideUnreportedTasksSubject.asObservable();
-    this.reload$ = this.reloadSubject.asObservable();
-    this.columns = this.columnsSignal.asReadonly();
+    this.reportMode$ = this.asStateObservable(this.reportModeSignal.asReadonly());
+    this.tags$ = this.asStateObservable(this.tagsSignal.asReadonly());
+    this.date$ = this.asStateObservable(this.dateSignal.asReadonly());
+    this.startDate$ = this.asStateObservable(this.startDateSignal.asReadonly());
+    this.endDate$ = this.asStateObservable(this.endDateSignal.asReadonly());
+    this.showWeekends$ = this.asStateObservable(this.showWeekendsSignal.asReadonly());
+    this.hideUnreportedTasks$ = this.asStateObservable(this.hideUnreportedTasksSignal.asReadonly());
+    this.reload$ = this.asStateObservable(this.reloadVersionSignal.asReadonly())
+      .pipe(map(() => undefined));
+    this.columns = computed(() => this.buildColumns());
 
     this.initSettings();
 
@@ -95,50 +153,8 @@ export class ReportService {
     this.tasks$ = this.getTasks();
   }
 
-  public set date(
-    date: Date | null,
-  ) {
-    this.dateSubject.next(this.normalizeStartOfDay(date));
-  }
-
-  public set startDate(
-    startDate: Date | null,
-  ) {
-    this.startDateSubject.next(this.normalizeStartOfDay(startDate));
-  }
-
-  public set endDate(
-    endDate: Date | null,
-  ) {
-    this.endDateSubject.next(this.normalizeEndOfDay(endDate));
-  }
-
-  public set reportMode(
-    mode: ReportModeEnum,
-  ) {
-    this.reportModeSubject.next(mode);
-  }
-
-  public set tags(
-    tags: Tag[],
-  ) {
-    this.tagsSubject.next([...(tags ?? [])]);
-  }
-
-  public set showWeekends(
-    showWeekends: boolean,
-  ) {
-    this.showWeekendsSubject.next(showWeekends);
-  }
-
-  public set hideUnreportedTasks(
-    hideUnreportedTasks: boolean,
-  ) {
-    this.hideUnreportedTasksSubject.next(hideUnreportedTasks);
-  }
-
   public reload(): void {
-    this.reloadSubject.next();
+    this.reloadVersionSignal.update((value: number) => value + 1);
   }
 
   private getAllChanges(): Observable<[Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean, void, boolean]> {
@@ -151,11 +167,10 @@ export class ReportService {
       this.showWeekends$,
       this.hideUnreportedTasks$,
       this.reload$,
-      this.jiraApiEnabledSubject.asObservable(),
+      this.asStateObservable(this.jiraApiEnabledSignal.asReadonly()),
     ])
       .pipe(
         debounceTime(250),
-        distinctUntilChanged(),
       );
   }
 
@@ -197,6 +212,9 @@ export class ReportService {
     hideUnreportedTasks: boolean,
     jiraApiEnabled: boolean,
   ): Observable<Task[]> {
+    void showWeekends;
+    void jiraApiEnabled;
+
     const filter: TaskListFilter = {
       tags: tags.map((t: Tag) => t.id),
       date,
@@ -209,53 +227,26 @@ export class ReportService {
       delete filter.tags;
     }
 
-    if (
-      reportMode === ReportModeEnum.date &&
-      !date
-    ) {
-      reportMode = ReportModeEnum.total;
+    reportMode = this.getEffectiveReportMode(
+      reportMode,
+      date,
+      startDate,
+      endDate,
+    );
+
+    if (reportMode === ReportModeEnum.total) {
+      delete filter.date;
+      delete filter.endDate;
+      delete filter.startDate;
     }
 
-    if (
-      reportMode === ReportModeEnum.dateRange &&
-      (!startDate || !endDate)
-    ) {
-      reportMode = ReportModeEnum.total;
+    if (reportMode === ReportModeEnum.date) {
+      delete filter.endDate;
+      delete filter.startDate;
     }
 
-    switch (reportMode) {
-      case ReportModeEnum.total:
-        delete filter.date;
-        delete filter.endDate;
-        delete filter.startDate;
-
-        this.columnsSignal.set([...totalModelColumns]);
-        break;
-
-      case ReportModeEnum.date:
-        delete filter.endDate;
-        delete filter.startDate;
-
-        this.columnsSignal.set(this.generateMonthColumns(
-          date as Date,
-          date as Date,
-          showWeekends,
-          reportMode,
-          jiraApiEnabled,
-        ));
-        break;
-
-      case ReportModeEnum.dateRange:
-        delete filter.date;
-
-        this.columnsSignal.set(this.generateMonthColumns(
-          startDate as Date,
-          endDate as Date,
-          showWeekends,
-          reportMode,
-          jiraApiEnabled,
-        ));
-        break;
+    if (reportMode === ReportModeEnum.dateRange) {
+      delete filter.date;
     }
 
     return this.tasksService.filteredList(
@@ -275,20 +266,20 @@ export class ReportService {
         take(1),
         tap(
           ([settings, tags]: [ReportSettingsStorageValue | undefined, Tag[]]) => {
-            this.reportModeSubject.next(settings?.reportMode ?? ReportModeEnum.total);
-            this.tagsSubject.next(tags.filter((t: Tag) => settings?.tags.includes(t.id)) ?? []);
-            this.dateSubject.next(this.cloneDate(settings?.date));
-            this.startDateSubject.next(this.cloneDate(settings?.startDate));
-            this.endDateSubject.next(this.cloneDate(settings?.endDate));
-            this.showWeekendsSubject.next(settings?.showWeekends ?? false);
-            this.hideUnreportedTasksSubject.next(settings?.hideUnreportedTasks ?? false);
+            this.reportModeSignal.set(settings?.reportMode ?? ReportModeEnum.total);
+            this.tagsSignal.set(tags.filter((t: Tag) => settings?.tags.includes(t.id)) ?? []);
+            this.dateSignal.set(this.cloneDate(settings?.date));
+            this.startDateSignal.set(this.cloneDate(settings?.startDate));
+            this.endDateSignal.set(this.cloneDate(settings?.endDate));
+            this.showWeekendsSignal.set(settings?.showWeekends ?? false);
+            this.hideUnreportedTasksSignal.set(settings?.hideUnreportedTasks ?? false);
           },
         ),
       )
       .subscribe();
   }
 
-  private listenToChanges(): Observable<void | (null | false | true | void | Tag[] | Date | ReportModeEnum)[]> {
+  private listenToChanges(): Observable<void | (null | false | true | void | Tag[] | Date | ReportModeEnum | number)[]> {
     return this.getAllChanges()
       .pipe(
         switchMap(
@@ -339,8 +330,65 @@ export class ReportService {
     return this.settingsService.settings$
       .pipe(
         map((settings: Setting[]) => this.isJiraApiEnabled(settings)),
-        tap((jiraApiEnabled: boolean) => this.jiraApiEnabledSubject.next(jiraApiEnabled)),
+        tap((jiraApiEnabled: boolean) => this.jiraApiEnabledSignal.set(jiraApiEnabled)),
       );
+  }
+
+  private buildColumns(): Column[] {
+    const reportMode: ReportModeEnum = this.getEffectiveReportMode(
+      this.reportModeSignal(),
+      this.dateSignal(),
+      this.startDateSignal(),
+      this.endDateSignal(),
+    );
+
+    if (reportMode === ReportModeEnum.total) {
+      return [...totalModelColumns];
+    }
+
+    if (reportMode === ReportModeEnum.date) {
+      const date: Date | null = this.dateSignal();
+
+      return date ?
+        this.generateMonthColumns(
+          date,
+          date,
+          this.showWeekendsSignal(),
+          reportMode,
+          this.jiraApiEnabledSignal(),
+        ) :
+        [...totalModelColumns];
+    }
+
+    const startDate: Date | null = this.startDateSignal();
+    const endDate: Date | null = this.endDateSignal();
+
+    return startDate && endDate ?
+      this.generateMonthColumns(
+        startDate,
+        endDate,
+        this.showWeekendsSignal(),
+        reportMode,
+        this.jiraApiEnabledSignal(),
+      ) :
+      [...totalModelColumns];
+  }
+
+  private getEffectiveReportMode(
+    reportMode: ReportModeEnum,
+    date: Date | null,
+    startDate: Date | null,
+    endDate: Date | null,
+  ): ReportModeEnum {
+    if (reportMode === ReportModeEnum.date && !date) {
+      return ReportModeEnum.total;
+    }
+
+    if (reportMode === ReportModeEnum.dateRange && (!startDate || !endDate)) {
+      return ReportModeEnum.total;
+    }
+
+    return reportMode;
   }
 
   private generateMonthColumns(
@@ -494,5 +542,31 @@ export class ReportService {
     }
 
     return false;
+  }
+
+  private asStateObservable<T>(
+    source: Signal<T>,
+  ): Observable<T> {
+    return new Observable<T>((subscriber) => {
+      let currentValue: T = source();
+
+      subscriber.next(currentValue);
+
+      const subscription: Subscription = toObservable(source, { injector: this.injector })
+        .subscribe({
+          next: (value: T) => {
+            if (Object.is(value, currentValue)) {
+              return;
+            }
+
+            currentValue = value;
+            subscriber.next(value);
+          },
+          error: (error: unknown) => subscriber.error(error),
+          complete: () => subscriber.complete(),
+        });
+
+      return () => subscription.unsubscribe();
+    });
   }
 }

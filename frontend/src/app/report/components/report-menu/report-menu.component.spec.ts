@@ -1,9 +1,10 @@
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
+import { Signal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
 
-import { BehaviorSubject, firstValueFrom } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
 import { ReportDateSelectorComponent } from '@shared/components/report-menu/report-date-selector/report-date-selector.component';
 import { ReportHideUnreportedTasksComponent } from '@shared/components/report-menu/report-hide-unreported-tasks/report-hide-unreported-tasks.component';
@@ -18,29 +19,69 @@ import { ReportService } from '@report/services/report.service';
 import { ReportMenuComponent } from './report-menu.component';
 
 class ReportServiceStub {
-  public readonly reportModeSubject = new BehaviorSubject<ReportModeEnum>(ReportModeEnum.total);
-  public readonly tagsSubject = new BehaviorSubject<Tag[]>([]);
-  public readonly dateSubject = new BehaviorSubject<Date | null>(null);
-  public readonly startDateSubject = new BehaviorSubject<Date | null>(null);
-  public readonly endDateSubject = new BehaviorSubject<Date | null>(null);
-  public readonly showWeekendsSubject = new BehaviorSubject<boolean>(false);
-  public readonly hideUnreportedTasksSubject = new BehaviorSubject<boolean>(false);
+  private readonly reportModeSignal = signal<ReportModeEnum>(ReportModeEnum.total);
+  private readonly tagsSignal = signal<Tag[]>([]);
+  private readonly dateSignal = signal<Date | null>(null);
+  private readonly startDateSignal = signal<Date | null>(null);
+  private readonly endDateSignal = signal<Date | null>(null);
+  private readonly showWeekendsSignal = signal<boolean>(false);
+  private readonly hideUnreportedTasksSignal = signal<boolean>(false);
 
-  public readonly reportMode$ = this.reportModeSubject.asObservable();
-  public readonly tags$ = this.tagsSubject.asObservable();
-  public readonly date$ = this.dateSubject.asObservable();
-  public readonly startDate$ = this.startDateSubject.asObservable();
-  public readonly endDate$ = this.endDateSubject.asObservable();
-  public readonly showWeekends$ = this.showWeekendsSubject.asObservable();
-  public readonly hideUnreportedTasks$ = this.hideUnreportedTasksSubject.asObservable();
+  public get reportMode(): Signal<ReportModeEnum> {
+    return this.reportModeSignal.asReadonly();
+  }
 
-  public reportMode: ReportModeEnum = ReportModeEnum.total;
-  public tags: Tag[] = [];
-  public date: Date | null = null;
-  public startDate: Date | null = null;
-  public endDate: Date | null = null;
-  public showWeekends = false;
-  public hideUnreportedTasks = false;
+  public set reportMode(value: ReportModeEnum) {
+    this.reportModeSignal.set(value);
+  }
+
+  public get tags(): Signal<Tag[]> {
+    return this.tagsSignal.asReadonly();
+  }
+
+  public set tags(value: Tag[]) {
+    this.tagsSignal.set(value);
+  }
+
+  public get date(): Signal<Date | null> {
+    return this.dateSignal.asReadonly();
+  }
+
+  public set date(value: Date | null) {
+    this.dateSignal.set(value);
+  }
+
+  public get startDate(): Signal<Date | null> {
+    return this.startDateSignal.asReadonly();
+  }
+
+  public set startDate(value: Date | null) {
+    this.startDateSignal.set(value);
+  }
+
+  public get endDate(): Signal<Date | null> {
+    return this.endDateSignal.asReadonly();
+  }
+
+  public set endDate(value: Date | null) {
+    this.endDateSignal.set(value);
+  }
+
+  public get showWeekends(): Signal<boolean> {
+    return this.showWeekendsSignal.asReadonly();
+  }
+
+  public set showWeekends(value: boolean) {
+    this.showWeekendsSignal.set(value);
+  }
+
+  public get hideUnreportedTasks(): Signal<boolean> {
+    return this.hideUnreportedTasksSignal.asReadonly();
+  }
+
+  public set hideUnreportedTasks(value: boolean) {
+    this.hideUnreportedTasksSignal.set(value);
+  }
 }
 
 describe('ReportMenuComponent', () => {
@@ -80,8 +121,8 @@ describe('ReportMenuComponent', () => {
     fixture.detectChanges();
   });
 
-  it('creates and exposes mobile breakpoint state', async () => {
-    const result = await firstValueFrom((component as any).isSmallerThanDesktop$);
+  it('creates and exposes mobile breakpoint state', () => {
+    const result = (component as any).isSmallerThanDesktop();
 
     expect(component).toBeTruthy();
     expect(result).toBe(true);
@@ -101,13 +142,13 @@ describe('ReportMenuComponent', () => {
     (component as any).onShowWeekendsChange(true);
     (component as any).onHideUnreportedTasksChange(true);
 
-    expect(reportService.reportMode).toBe(ReportModeEnum.dateRange);
-    expect(reportService.tags).toBe(tags);
-    expect(reportService.date).toBe(date);
-    expect(reportService.startDate).toBe(startDate);
-    expect(reportService.endDate).toBe(endDate);
-    expect(reportService.showWeekends).toBe(true);
-    expect(reportService.hideUnreportedTasks).toBe(true);
+    expect(reportService.reportMode()).toBe(ReportModeEnum.dateRange);
+    expect(reportService.tags()).toBe(tags);
+    expect(reportService.date()).toBe(date);
+    expect(reportService.startDate()).toBe(startDate);
+    expect(reportService.endDate()).toBe(endDate);
+    expect(reportService.showWeekends()).toBe(true);
+    expect(reportService.hideUnreportedTasks()).toBe(true);
   });
 
   it('opens dialog for small screen menu', () => {
@@ -152,40 +193,40 @@ describe('ReportMenuComponent', () => {
 
   it('toggles date selector and weekends controls by report mode in template', () => {
     isSmallScreen$.next({ matches: false, breakpoints: { '(max-width: 1300px)': false } });
-    reportService.reportModeSubject.next(ReportModeEnum.total);
+    reportService.reportMode = ReportModeEnum.total;
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('shared-report-show-weekends'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('shared-report-date-selector'))).toBeFalsy();
 
-    reportService.reportModeSubject.next(ReportModeEnum.date);
+    reportService.reportMode = ReportModeEnum.date;
     fixture.detectChanges();
     expect(fixture.debugElement.query(By.css('shared-report-show-weekends'))).toBeFalsy();
     expect(fixture.debugElement.query(By.css('shared-report-date-selector'))).toBeTruthy();
 
-    reportService.reportModeSubject.next(ReportModeEnum.dateRange);
+    reportService.reportMode = ReportModeEnum.dateRange;
     fixture.detectChanges();
     expect(fixture.debugElement.query(By.css('shared-report-show-weekends'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('shared-report-date-selector'))).toBeTruthy();
   });
 
-  it('shows date picker only for date and dateRange modes', async () => {
-    reportService.reportModeSubject.next(ReportModeEnum.total);
-    let result = await firstValueFrom((component as any).showDatePicker());
+  it('shows date picker only for date and dateRange modes', () => {
+    reportService.reportMode = ReportModeEnum.total;
+    let result = (component as any).showDatePicker();
     expect(result).toBe(false);
 
-    reportService.reportModeSubject.next(ReportModeEnum.date);
-    result = await firstValueFrom((component as any).showDatePicker());
+    reportService.reportMode = ReportModeEnum.date;
+    result = (component as any).showDatePicker();
     expect(result).toBe(true);
 
-    reportService.reportModeSubject.next(ReportModeEnum.dateRange);
-    result = await firstValueFrom((component as any).showDatePicker());
+    reportService.reportMode = ReportModeEnum.dateRange;
+    result = (component as any).showDatePicker();
     expect(result).toBe(true);
   });
 
   it('wires desktop menu child outputs through template listeners', () => {
     isSmallScreen$.next({ matches: false, breakpoints: { '(max-width: 1300px)': false } });
-    reportService.reportModeSubject.next(ReportModeEnum.dateRange);
+    reportService.reportMode = ReportModeEnum.dateRange;
     fixture.detectChanges();
 
     const modeSpy = vi.spyOn(component as any, 'onReportModeChange');

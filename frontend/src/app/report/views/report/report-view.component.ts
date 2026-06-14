@@ -4,7 +4,7 @@ import { ChangeDetectionStrategy, Component, inject, OnInit, Signal } from '@ang
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
-import { catchError, filter, map, Observable, of, switchMap, take } from 'rxjs';
+import { catchError, Observable, of, switchMap } from 'rxjs';
 
 import { DynamicMenu } from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
@@ -40,7 +40,7 @@ export class ReportViewComponent implements OnInit {
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
 
   protected readonly tasks = toSignal(this.reportService.tasks$, { initialValue: [] as Task[] });
-  protected readonly reportMode = toSignal(this.reportService.reportMode$, { initialValue: ReportModeEnum.total });
+  protected readonly reportMode = this.reportService.reportMode;
 
   protected ReportModeEnum = ReportModeEnum;
 
@@ -85,42 +85,35 @@ export class ReportViewComponent implements OnInit {
     row: Searchable,
   ): void {
     const task: Task = row as Task;
+    const date: Date | null = this.reportService.date();
 
-    this.reportService.date$
-      .pipe(
-        filter((date: Date | null) => date instanceof Date),
-        take(1),
-        map((date: Date | null): Date => date as Date),
-        switchMap(
-          (date: Date) => {
-            const syncDateToJiraApi$: Observable<boolean> = this.tasksService.syncDateToJiraApi(
-              task,
-              date,
-            );
+    if (!(date instanceof Date)) {
+      return;
+    }
 
-            if (task.isTimeLogRunning) {
-              return this.timeLogsService.stop(task)
-                .pipe(
-                  catchError(() => of(null)),
-                  switchMap(() => syncDateToJiraApi$),
-                  switchMap(() => this.timeLogsService.start(task)),
-                );
-            }
+    const syncDateToJiraApi$: Observable<boolean> = this.tasksService.syncDateToJiraApi(
+      task,
+      date,
+    );
 
-            return syncDateToJiraApi$;
-          },
-        ),
-        take(1),
-      )
-      .subscribe({
-        next: () => {
-          this.openSnackBar(`Task "${ task.name }" synced successfully!`);
-          this.reportService.reload();
-        },
-        error: (error: HttpErrorResponse) => this.openSnackBar(
-          `Task "${ task.name }" failed synced! ${ error?.error?.errors?.join(', ') }`,
-        ),
-      });
+    const syncRequest$: Observable<unknown> = task.isTimeLogRunning ?
+      this.timeLogsService.stop(task)
+        .pipe(
+          catchError(() => of(null)),
+          switchMap(() => syncDateToJiraApi$),
+          switchMap(() => this.timeLogsService.start(task)),
+        ) :
+      syncDateToJiraApi$;
+
+    syncRequest$.subscribe({
+      next: () => {
+        this.openSnackBar(`Task "${ task.name }" synced successfully!`);
+        this.reportService.reload();
+      },
+      error: (error: HttpErrorResponse) => this.openSnackBar(
+        `Task "${ task.name }" failed synced! ${ error?.error?.errors?.join(', ') }`,
+      ),
+    });
   }
 
   protected onFooterCellClicked(

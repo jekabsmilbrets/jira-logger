@@ -88,7 +88,7 @@ describe('Core Services settings.service', () => {
 
   it('updates and uses skipReload branch', async () => {
     const existing = new Setting({ id: '1', name: 'theme', value: 'dark', createdAt: new Date('2024-01-01T00:00:00.000Z') });
-    (service as any).settingsSubject.next([existing]);
+    (service as any).settingsSignal.set([existing]);
 
     const promise = firstValueFrom(service.update(existing, true));
 

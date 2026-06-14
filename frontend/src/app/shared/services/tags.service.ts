@@ -1,11 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, Injector, Signal, signal } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
 
-import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, filter, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { waitForTurn } from '@core/utils/wait-for.utility';
 
 import { adaptTag, adaptTags } from '@shared/adapters/api-tag.adapter';
 import { ApiTag } from '@shared/interfaces/api/api-tag.interface';
@@ -22,24 +22,36 @@ import { ApiRequestBody } from '@shared/types/api-request-body.type';
 export class TagsService implements LoadableService, MakeRequestService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
-  public isLoading$: Observable<boolean>;
-  public tags$: Observable<Tag[]>;
-  public preloadError$: Observable<boolean>;
+  public readonly isLoading$: Observable<boolean>;
+  public readonly tags$: Observable<Tag[]>;
+  public readonly preloadError$: Observable<boolean>;
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
   private readonly errorDialogService: ErrorDialogService = inject(ErrorDialogService);
+  private readonly injector: Injector = inject(Injector);
 
-  private tagsSubject: BehaviorSubject<Tag[]> = new BehaviorSubject<Tag[]>([]);
+  private readonly tagsSignal = signal<Tag[]>([]);
+  private readonly isLoadingSignal = signal<boolean>(false);
+  private readonly preloadErrorSignal = signal<boolean>(false);
 
   private basePath: string = 'tag';
 
-  private isLoadingSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  private preloadErrorSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  public get isLoading(): Signal<boolean> {
+    return this.isLoadingSignal.asReadonly();
+  }
+
+  public get tags(): Signal<Tag[]> {
+    return this.tagsSignal.asReadonly();
+  }
+
+  public get preloadError(): Signal<boolean> {
+    return this.preloadErrorSignal.asReadonly();
+  }
 
   constructor() {
-    this.tags$ = this.tagsSubject.asObservable();
-    this.isLoading$ = this.isLoadingSubject.asObservable();
-    this.preloadError$ = this.preloadErrorSubject.asObservable();
+    this.tags$ = toObservable(this.tags, { injector: this.injector });
+    this.isLoading$ = toObservable(this.isLoading, { injector: this.injector });
+    this.preloadError$ = toObservable(this.preloadError, { injector: this.injector });
   }
 
   public init(): void {
@@ -63,17 +75,17 @@ export class TagsService implements LoadableService, MakeRequestService {
           return this.processError(error);
         }),
         map((response: JsonApi<ApiTag[]>) => (response.data && adaptTags(response.data)) as Tag[]),
-        tap((tags: Tag[]) => this.tagsSubject.next(tags)),
+        tap((tags: Tag[]) => this.tagsSignal.set(tags)),
       );
   }
 
   public preloadForInit(): Observable<Tag[]> {
     return this.list()
       .pipe(
-        tap(() => this.preloadErrorSubject.next(false)),
+        tap(() => this.preloadErrorSignal.set(false)),
         catchError(() => {
-          this.tagsSubject.next([]);
-          this.preloadErrorSubject.next(true);
+          this.tagsSignal.set([]);
+          this.preloadErrorSignal.set(true);
 
           return of([]);
         }),
@@ -150,10 +162,7 @@ export class TagsService implements LoadableService, MakeRequestService {
   ): Observable<T> {
     const request$: Observable<T> = this.apiRequestService.request<T>(url, method, body);
 
-    return waitForTurn(
-      this.isLoading$,
-      this.isLoadingSubject,
-    )
+    return this.waitForTurn()
       .pipe(
         switchMap(() => request$),
         catchError((error: HttpErrorResponse) => {
@@ -161,10 +170,10 @@ export class TagsService implements LoadableService, MakeRequestService {
             return this.processError(error);
           }
 
-          this.isLoadingSubject.next(false);
+          this.isLoadingSignal.set(false);
           return throwError(() => error);
         }),
-        tap(() => this.isLoadingSubject.next(false)),
+        tap(() => this.isLoadingSignal.set(false)),
       );
   }
 
@@ -186,19 +195,30 @@ export class TagsService implements LoadableService, MakeRequestService {
   private processError(
     error: HttpErrorResponse,
   ): Observable<never> {
-    this.isLoadingSubject.next(false);
+    this.isLoadingSignal.set(false);
 
-    return this.tags$.pipe(
-      take(1),
-      switchMap(
-        (tags: Tag[]) => this.errorDialogService.openDialog({
-          errorTitle: 'Error while doing db action :D',
-          errorMessage: JSON.stringify(error),
-          idbData: tags,
-        }),
-      ),
-      take(1),
-      switchMap(() => throwError(() => error)),
-    );
+    return this.errorDialogService.openDialog({
+      errorTitle: 'Error while doing db action :D',
+      errorMessage: JSON.stringify(error),
+      idbData: this.tags(),
+    })
+      .pipe(
+        take(1),
+        switchMap(() => throwError(() => error)),
+      );
+  }
+
+  private waitForTurn(): Observable<boolean> {
+    if (!this.isLoadingSignal()) {
+      this.isLoadingSignal.set(true);
+      return of(true);
+    }
+
+    return this.isLoading$
+      .pipe(
+        filter((isLoading: boolean) => !isLoading),
+        take(1),
+        tap(() => this.isLoadingSignal.set(true)),
+      );
   }
 }

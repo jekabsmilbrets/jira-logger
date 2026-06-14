@@ -1,11 +1,12 @@
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
-import { AsyncPipe, NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, Signal, TemplateRef, viewChild } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, Signal, TemplateRef, viewChild } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 
-import { map, Observable } from 'rxjs';
+import { map } from 'rxjs';
 
 import { ReportDateSelectorComponent } from '@shared/components/report-menu/report-date-selector/report-date-selector.component';
 import { ReportHideUnreportedTasksComponent } from '@shared/components/report-menu/report-hide-unreported-tasks/report-hide-unreported-tasks.component';
@@ -31,19 +32,19 @@ import { ReportService } from '@report/services/report.service';
     ReportHideUnreportedTasksComponent,
     MatIconModule,
     MatButtonModule,
-    AsyncPipe,
     NgTemplateOutlet,
   ],
 })
 export class ReportMenuComponent {
-  protected reportMode$: Observable<ReportModeEnum>;
-  protected tags$: Observable<Tag[]>;
-  protected date$: Observable<Date | null>;
-  protected startDate$: Observable<Date | null>;
-  protected endDate$: Observable<Date | null>;
-  protected showWeekends$: Observable<boolean>;
-  protected hideUnreportedTasks$: Observable<boolean>;
-  protected isSmallerThanDesktop$: Observable<boolean>;
+  protected readonly reportMode: Signal<ReportModeEnum>;
+  protected readonly tags: Signal<Tag[]>;
+  protected readonly date: Signal<Date | null>;
+  protected readonly startDate: Signal<Date | null>;
+  protected readonly endDate: Signal<Date | null>;
+  protected readonly showWeekends: Signal<boolean>;
+  protected readonly hideUnreportedTasks: Signal<boolean>;
+  protected readonly isSmallerThanDesktop: Signal<boolean>;
+  protected readonly showDatePicker: Signal<boolean>;
 
   protected ReportModeEnum = ReportModeEnum;
 
@@ -56,19 +57,23 @@ export class ReportMenuComponent {
   private readonly dialogTemplate: Signal<TemplateRef<HTMLDivElement>> = viewChild.required<TemplateRef<HTMLDivElement>>('smallScreenDialog');
 
   constructor() {
-    this.reportMode$ = this.reportService.reportMode$;
-    this.tags$ = this.reportService.tags$;
-    this.date$ = this.reportService.date$;
-    this.startDate$ = this.reportService.startDate$;
-    this.endDate$ = this.reportService.endDate$;
-    this.showWeekends$ = this.reportService.showWeekends$;
-    this.hideUnreportedTasks$ = this.reportService.hideUnreportedTasks$;
-    this.isSmallerThanDesktop$ = this.breakpointObserver.observe(this.smallerThanDesktopBreakpoint)
-      .pipe(
-        map(
-          (results: BreakpointState) => results.matches && results.breakpoints[this.smallerThanDesktopBreakpoint],
+    this.reportMode = this.reportService.reportMode;
+    this.tags = this.reportService.tags;
+    this.date = this.reportService.date;
+    this.startDate = this.reportService.startDate;
+    this.endDate = this.reportService.endDate;
+    this.showWeekends = this.reportService.showWeekends;
+    this.hideUnreportedTasks = this.reportService.hideUnreportedTasks;
+    this.isSmallerThanDesktop = toSignal(
+      this.breakpointObserver.observe(this.smallerThanDesktopBreakpoint)
+        .pipe(
+          map(
+            (results: BreakpointState) => results.matches && results.breakpoints[this.smallerThanDesktopBreakpoint],
+          ),
         ),
-      );
+      { initialValue: false },
+    );
+    this.showDatePicker = computed(() => ['dateRange', 'date'].includes(this.reportMode()));
   }
 
   protected onReportModeChange(
@@ -116,14 +121,6 @@ export class ReportMenuComponent {
   protected onSmallScreenMenuToggle(): void {
     this.matDialog.open(
       this.dialogTemplate(),
-    );
-  }
-
-  protected showDatePicker(): Observable<boolean> {
-    return this.reportMode$.pipe(
-      map(
-        (reportMode: ReportModeEnum) => ['dateRange', 'date'].includes(reportMode),
-      ),
     );
   }
 }
