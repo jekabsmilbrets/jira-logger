@@ -10,7 +10,8 @@ import { ApiMonitor } from '@core/interfaces/api/monitor.interface';
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { Monitor } from '@core/models/monitor.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { RequestGate, waitForTurn } from '@core/utils/wait-for.utility';
+import { RequestGate } from '@core/utils/request-gate.utility';
+import { waitForTurn } from '@core/utils/wait-for.utility';
 
 import { LoadableService } from '@shared/interfaces/loadable-service.interface';
 

@@ -1,24 +1,17 @@
-import { signal } from '@angular/core';
-
-import { firstValueFrom } from 'rxjs';
-
-import { RequestGate, waitForTurn } from './wait-for.utility';
+import { RequestGate } from './request-gate.utility';
+import { waitForTurn } from './wait-for.utility';
 
 describe('Core Utils wait-for.utility', () => {
-  it('queues turns and releases loading when the returned callback runs', async () => {
-    const requestGate = new RequestGate();
-    const isLoading = signal(false);
-    const firstTurn = await firstValueFrom(waitForTurn(requestGate, isLoading));
+  it('delegates to the provided RequestGate', () => {
+    const output = {} as ReturnType<RequestGate['waitForTurn']>;
+    const requestGate: Pick<RequestGate, 'waitForTurn'> = {
+      waitForTurn: vi.fn().mockReturnValue(output),
+    };
+    const isLoadingSignal = vi.fn() as never;
 
-    expect(isLoading()).toBe(true);
+    const result = waitForTurn(requestGate as RequestGate, isLoadingSignal);
 
-    const secondTurnPromise = firstValueFrom(waitForTurn(requestGate, isLoading));
-    firstTurn();
-
-    const secondTurn = await secondTurnPromise;
-    expect(isLoading()).toBe(true);
-
-    secondTurn();
-    expect(isLoading()).toBe(false);
+    expect(requestGate.waitForTurn).toHaveBeenCalledWith(isLoadingSignal);
+    expect(result).toBe(output);
   });
 });

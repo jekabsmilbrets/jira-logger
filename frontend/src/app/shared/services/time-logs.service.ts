@@ -5,7 +5,8 @@ import { catchError, finalize, map, Observable, of, Subject, switchMap, tap, thr
 
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { RequestGate, waitForTurn } from '@core/utils/wait-for.utility';
+import { RequestGate } from '@core/utils/request-gate.utility';
+import { waitForTurn } from '@core/utils/wait-for.utility';
 
 import { adaptTimeLog, adaptTimeLogs } from '@shared/adapters/time-log.adapter';
 import { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';

@@ -7,7 +7,8 @@ import { DbFailInterface } from '@core/interfaces/db-fail.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { storageIdbGateway } from '@core/services/storage-idb.gateway';
 import { KeyValueEntry } from '@core/types/key-value-entry.type';
-import { RequestGate, waitForTurn } from '@core/utils/wait-for.utility';
+import { RequestGate } from '@core/utils/request-gate.utility';
+import { waitForTurn } from '@core/utils/wait-for.utility';
 
 import { LoadableService } from '@shared/interfaces/loadable-service.interface';
 

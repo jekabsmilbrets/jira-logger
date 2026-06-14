@@ -4,7 +4,8 @@ import { inject, Injectable, Signal, signal } from '@angular/core';
 import { catchError, concat, finalize, map, Observable, of, switchMap, throwError, toArray } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { RequestGate, waitForTurn } from '@core/utils/wait-for.utility';
+import { RequestGate } from '@core/utils/request-gate.utility';
+import { waitForTurn } from '@core/utils/wait-for.utility';
 
 import { adaptTasks } from '@shared/adapters/task.adapter';
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
