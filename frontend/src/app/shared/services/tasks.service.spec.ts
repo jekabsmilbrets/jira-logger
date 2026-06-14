@@ -1,4 +1,5 @@
 import { registerLocaleData } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import localeLv from '@angular/common/locales/lv';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -95,6 +96,24 @@ describe('Shared Services tasks.service', () => {
 
     await expect(firstValueFrom(service.taskExist('abc'))).resolves.toBeNull();
     await expect(firstValueFrom(service.syncDateToJiraApi(new Task({ id: '1' } as any), new Date('2024-01-01T00:00:00.000Z')))).resolves.toBe(true);
+  });
+
+  it('taskExist does not open error dialog for duplicate-name conflicts', async () => {
+    apiRequestService.request.mockReturnValueOnce(
+      throwError(() => new HttpErrorResponse({ status: 409 })),
+    );
+
+    await expect(firstValueFrom(service.taskExist('duplicate-name'))).rejects.toMatchObject({ status: 409 });
+    expect(errorDialogService.openDialog).not.toHaveBeenCalled();
+  });
+
+  it('taskExist also suppresses dialog for plain 409 error objects', async () => {
+    apiRequestService.request.mockReturnValueOnce(
+      throwError(() => ({ status: 409 })),
+    );
+
+    await expect(firstValueFrom(service.taskExist('duplicate-name'))).rejects.toMatchObject({ status: 409 });
+    expect(errorDialogService.openDialog).not.toHaveBeenCalled();
   });
 
   it('create/update/delete trigger expected request flow', async () => {

@@ -185,7 +185,21 @@ export class TasksService implements LoadableService, MakeRequestService {
       'get',
     )
       .pipe(
-        catchError(this.processError.bind(this)),
+        catchError((error: unknown) => {
+          if (
+            (error instanceof HttpErrorResponse && error.status === 409) ||
+            (
+              typeof error === 'object' &&
+              error !== null &&
+              'status' in error &&
+              error.status === 409
+            )
+          ) {
+            return throwError(() => error);
+          }
+
+          return this.processError(error);
+        }),
         map(() => null),
       );
   }

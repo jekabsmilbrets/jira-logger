@@ -98,6 +98,22 @@ describe('Tasks Components tasks-menu.component', () => {
     expect(tasksServiceMock.filteredList).toHaveBeenCalledTimes(2);
   });
 
+  it('does not submit create when duplicate-name validation fails', async () => {
+    tasksServiceMock.taskExist.mockReturnValueOnce(throwError(() => ({ status: 409 })));
+
+    const fixture = TestBed.createComponent(TasksMenuComponent);
+    const component = fixture.componentInstance as any;
+
+    component.createTaskForm.name().value.set('Existing Task');
+    fixture.detectChanges();
+    await vi.advanceTimersByTimeAsync(301);
+    fixture.detectChanges();
+
+    component.onCreate({ preventDefault: vi.fn() });
+
+    expect(tasksServiceMock.create).not.toHaveBeenCalled();
+  });
+
   it('creates task and resets tags to empty array', async () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
     const component = fixture.componentInstance as any;
