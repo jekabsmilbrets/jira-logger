@@ -23,6 +23,8 @@ export class ReportStateService {
   private readonly endDateSignal: WritableSignal<Date | null> = signal<Date | null>(null);
   private readonly showWeekendsSignal: WritableSignal<boolean> = signal<boolean>(false);
   private readonly hideUnreportedTasksSignal: WritableSignal<boolean> = signal<boolean>(false);
+  private readonly isHydratedSignal: WritableSignal<boolean> = signal<boolean>(false);
+  private readonly pendingPersistedTagIdsSignal: WritableSignal<string[] | null> = signal<string[] | null>(null);
 
   private readonly settingsKey: IDBValidKey = 'report';
   private readonly customStoreName: string = 'settings';
@@ -37,6 +39,7 @@ export class ReportStateService {
 
   public constructor() {
     this.initSettings();
+    this.registerPersistedTagReconciliation();
     this.registerSettingsPersistence();
   }
 
@@ -49,7 +52,12 @@ export class ReportStateService {
   public setTags(
     tags: Tag[],
   ): void {
+    this.pendingPersistedTagIdsSignal.set(null);
     this.tagsSignal.set([...(tags ?? [])]);
+
+    if (!this.isHydratedSignal()) {
+      this.finishHydration();
+    }
   }
 
   public setDate(
@@ -113,6 +121,10 @@ export class ReportStateService {
 
   private registerSettingsPersistence(): void {
     effect((onCleanup) => {
+      if (!this.isHydratedSignal()) {
+        return;
+      }
+
       const state: ReportStateSnapshot = this.getStateSnapshot();
       const timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {
         this.storageService.create(
@@ -139,6 +151,12 @@ export class ReportStateService {
     });
   }
 
+  private registerPersistedTagReconciliation(): void {
+    effect(() => {
+      this.resolvePendingPersistedTags();
+    });
+  }
+
   private initSettings(): void {
     this.storageService.read<ReportSettingsStorageValue | undefined>(
       this.settingsKey,
@@ -147,24 +165,48 @@ export class ReportStateService {
       .pipe(
         take(1),
         tap((settings: ReportSettingsStorageValue | undefined) => {
-          const availableTags: Tag[] | {
-            filter?: (callback: (tag: Tag) => boolean) => Tag[] | undefined
-          } = this.tagsService.tags() as Tag[];
-          const selectedTagIds: string[] = settings?.tags ?? [];
-          const selectedTags: Tag[] = availableTags && typeof availableTags === 'object' && 'filter' in availableTags ?
-            availableTags.filter?.((tag: Tag) => selectedTagIds.includes(tag.id)) ?? [] :
-            [];
-
           this.reportModeSignal.set(settings?.reportMode ?? ReportMode.total);
-          this.tagsSignal.set(selectedTags);
           this.dateSignal.set(this.cloneDate(settings?.date));
           this.startDateSignal.set(this.cloneDate(settings?.startDate));
           this.endDateSignal.set(this.cloneDate(settings?.endDate));
           this.showWeekendsSignal.set(settings?.showWeekends ?? false);
           this.hideUnreportedTasksSignal.set(settings?.hideUnreportedTasks ?? false);
+          this.pendingPersistedTagIdsSignal.set([...(settings?.tags ?? [])]);
+          this.resolvePendingPersistedTags();
         }),
       )
       .subscribe();
+  }
+
+  private finishHydration(): void {
+    this.isHydratedSignal.set(true);
+  }
+
+  private resolvePendingPersistedTags(): void {
+    const pendingPersistedTagIds: string[] | null = this.pendingPersistedTagIdsSignal();
+
+    if (pendingPersistedTagIds === null) {
+      return;
+    }
+
+    if (pendingPersistedTagIds.length === 0) {
+      this.tagsSignal.set([]);
+      this.pendingPersistedTagIdsSignal.set(null);
+      this.finishHydration();
+      return;
+    }
+
+    const availableTags: Tag[] = this.tagsService.tags();
+
+    if (availableTags.length === 0) {
+      return;
+    }
+
+    this.tagsSignal.set(
+      availableTags.filter((tag: Tag) => pendingPersistedTagIds.includes(tag.id)),
+    );
+    this.pendingPersistedTagIdsSignal.set(null);
+    this.finishHydration();
   }
 
   private cloneDate(

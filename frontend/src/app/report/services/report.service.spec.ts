@@ -3,7 +3,7 @@ import localeLv from '@angular/common/locales/lv';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 
 import { Setting } from '@core/models/setting.model';
 import { SettingsService } from '@core/services/settings.service';
@@ -82,6 +82,8 @@ describe('ReportService', () => {
   });
 
   it('initializes persisted settings and maps saved tag ids', () => {
+    TestBed.flushEffects();
+
     const tags = service.tags();
     const mode = service.reportMode();
 
@@ -185,15 +187,131 @@ describe('ReportService', () => {
         { provide: SettingsService, useValue: { settings: signal<Setting[]>([]).asReadonly() } },
         {
           provide: TagsService,
-          useValue: {
-            tags: signal({ filter: () => undefined } as any).asReadonly(),
-          },
+          useValue: { tags: signal<Tag[]>([]).asReadonly() },
         },
       ],
     });
 
     const localService = TestBed.inject(ReportService);
     expect(localService.tags()).toEqual([]);
+  });
+
+  it('does not persist default state before startup hydration finishes', async () => {
+    TestBed.resetTestingModule();
+
+    const hydrationState$ = new Subject<any>();
+    const localStorageService = {
+      read: vi.fn(() => hydrationState$),
+      create: vi.fn(() => of(void 0)),
+    };
+
+    TestBed.configureTestingModule({
+      providers: [
+        ReportService,
+        { provide: TasksService, useValue: { filteredList: vi.fn(() => of([])) } },
+        { provide: StorageService, useValue: localStorageService },
+        { provide: SettingsService, useValue: { settings: signal<Setting[]>([]).asReadonly() } },
+        {
+          provide: TagsService,
+          useValue: {
+            tags: signal<Tag[]>([
+              new Tag({ id: 'tag-1', name: 'Backend' }),
+            ]).asReadonly(),
+          },
+        },
+      ],
+    });
+
+    const localService = TestBed.inject(ReportService);
+
+    vi.advanceTimersByTime(260);
+    await Promise.resolve();
+
+    expect(localStorageService.create).not.toHaveBeenCalled();
+
+    hydrationState$.next({
+      reportMode: ReportMode.date,
+      tags: ['tag-1'],
+      date: new Date('2026-05-30T00:00:00.000Z'),
+      startDate: null,
+      endDate: null,
+      showWeekends: true,
+      hideUnreportedTasks: true,
+    });
+    hydrationState$.complete();
+    TestBed.flushEffects();
+
+    await waitForDebounce();
+
+    expect(localService.reportMode()).toBe(ReportMode.date);
+    expect(localStorageService.create).toHaveBeenCalledWith(
+      'report',
+      expect.objectContaining({
+        reportMode: ReportMode.date,
+        tags: ['tag-1'],
+        showWeekends: true,
+        hideUnreportedTasks: true,
+      }),
+      'settings',
+    );
+  });
+
+  it('restores persisted tags after tags load later', async () => {
+    TestBed.resetTestingModule();
+
+    const delayedTagsState = signal<Tag[]>([]);
+    const localStorageService = {
+      read: vi.fn(() => of({
+        reportMode: ReportMode.total,
+        tags: ['tag-2'],
+        date: null,
+        startDate: null,
+        endDate: null,
+        showWeekends: false,
+        hideUnreportedTasks: false,
+      })),
+      create: vi.fn(() => of(void 0)),
+    };
+
+    TestBed.configureTestingModule({
+      providers: [
+        ReportService,
+        { provide: TasksService, useValue: { filteredList: vi.fn(() => of([])) } },
+        { provide: StorageService, useValue: localStorageService },
+        { provide: SettingsService, useValue: { settings: signal<Setting[]>([]).asReadonly() } },
+        {
+          provide: TagsService,
+          useValue: { tags: delayedTagsState.asReadonly() },
+        },
+      ],
+    });
+
+    const localService = TestBed.inject(ReportService);
+
+    expect(localService.tags()).toEqual([]);
+
+    vi.advanceTimersByTime(260);
+    await Promise.resolve();
+
+    expect(localStorageService.create).not.toHaveBeenCalled();
+
+    delayedTagsState.set([
+      new Tag({ id: 'tag-1', name: 'Backend' }),
+      new Tag({ id: 'tag-2', name: 'Frontend' }),
+    ]);
+    TestBed.flushEffects();
+
+    expect(localService.tags().map((tag: Tag) => tag.id)).toEqual(['tag-2']);
+
+    await waitForDebounce();
+
+    expect(localStorageService.create).toHaveBeenCalledWith(
+      'report',
+      expect.objectContaining({
+        tags: ['tag-2'],
+      }),
+      'settings',
+    );
   });
 
   it('normalizes date, startDate and endDate setters', async () => {
