@@ -1,10 +1,8 @@
-import { Injectable, Signal, signal } from '@angular/core';
+import { Service, Signal, signal } from '@angular/core';
 
 import { DynamicMenu } from '@core/models/dynamic-menu';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class DynamicMenuService {
   private readonly dynamicMenusSignal = signal<DynamicMenu[]>([]);
 

@@ -163,11 +163,11 @@ describe('Shared Components table.component', () => {
     } as any;
 
     areYouSureService.openDialog.mockReturnValueOnce(of(false));
-    component['onRemoveAction'](timeLog);
+    await component['onRemoveAction'](timeLog);
     expect(emitSpy).not.toHaveBeenCalled();
 
     areYouSureService.openDialog.mockReturnValueOnce(of(true));
-    component['onRemoveAction'](timeLog);
+    await component['onRemoveAction'](timeLog);
 
     expect(areYouSureService.openDialog).toHaveBeenCalledTimes(2);
     expect(areYouSureService.openDialog.mock.calls[1][0]).toContain('Time log "');
@@ -185,7 +185,7 @@ describe('Shared Components table.component', () => {
     } as any;
 
     areYouSureService.openDialog.mockReturnValueOnce(undefined);
-    component['onRemoveAction'](timeLog);
+    await component['onRemoveAction'](timeLog);
 
     expect(areYouSureService.openDialog).toHaveBeenCalledTimes(1);
     expect(emitSpy).not.toHaveBeenCalled();
@@ -195,7 +195,7 @@ describe('Shared Components table.component', () => {
     const { component } = await createComponent();
     const emitSpy = vi.spyOn(component['removeAction'], 'emit');
 
-    component['onRemoveAction'](null as any);
+    await component['onRemoveAction'](null as any);
 
     expect(areYouSureService.openDialog).not.toHaveBeenCalled();
     expect(emitSpy).not.toHaveBeenCalled();
@@ -209,10 +209,21 @@ describe('Shared Components table.component', () => {
     } as any;
 
     areYouSureService.openDialog.mockReturnValueOnce(undefined);
-    component['onRemoveAction'](rowWithoutStartTime);
+    await component['onRemoveAction'](rowWithoutStartTime);
 
     expect(areYouSureService.openDialog).toHaveBeenCalledTimes(1);
     expect(areYouSureService.openDialog.mock.calls[0][0]).toContain('null-null');
+  });
+
+  it('reuses the cached confirmation service promise', async () => {
+    const { component } = await createComponent();
+
+    const first = component['loadAreYouSureService']();
+    const second = component['loadAreYouSureService']();
+
+    const [firstService, secondService] = await Promise.all([first, second]);
+    expect(firstService).toBe(secondService);
+    expect(firstService).toBe(areYouSureService);
   });
 
   it('emits sync action with provided row cast as task', async () => {
@@ -228,6 +239,7 @@ describe('Shared Components table.component', () => {
 
   it('renders switch-pipe cell branches and sync/remove/select columns in template', async () => {
     const { fixture, component } = await createComponent();
+    const removeSpy = vi.spyOn(component as any, 'onRemoveAction');
     const syncEmitSpy = vi.spyOn(component['syncAction'], 'emit');
     const row = {
       id: '1',
@@ -286,6 +298,7 @@ describe('Shared Components table.component', () => {
 
     fixture.debugElement.query(By.css('button[aria-label="Remove row"]')).nativeElement.click();
     fixture.detectChanges();
+    await removeSpy.mock.results[0]?.value;
     expect(areYouSureService.openDialog).toHaveBeenCalled();
   });
 

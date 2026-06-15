@@ -157,12 +157,15 @@ describe('Tasks Components tasks-menu.component', () => {
     expect(createdTask.name).toBe('From DOM');
   });
 
-  it('opens settings dialog when settings toggle button is clicked', () => {
+  it('opens settings dialog when settings toggle button is clicked', async () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
+    const component = fixture.componentInstance as any;
+    const openSpy = vi.spyOn(component, 'onOpenSettingsDialog');
     fixture.detectChanges();
 
     const settingsButton = fixture.debugElement.query(By.css('tasks-settings-toggle button[aria-label="Open Tasks Settings"]'));
     settingsButton.nativeElement.click();
+    await openSpy.mock.results[0]?.value;
 
     expect(tasksSettingsServiceMock.openDialog).toHaveBeenCalledTimes(1);
   });
@@ -196,24 +199,36 @@ describe('Tasks Components tasks-menu.component', () => {
     expect(overlayText).toContain('Backend');
   });
 
-  it('does not import when settings dialog returns undefined', () => {
+  it('reuses the cached tasks-settings service promise', async () => {
+    const fixture = TestBed.createComponent(TasksMenuComponent);
+    const component = fixture.componentInstance as any;
+
+    const first = component['loadTasksSettingsService']();
+    const second = component['loadTasksSettingsService']();
+
+    const [firstService, secondService] = await Promise.all([first, second]);
+    expect(firstService).toBe(secondService);
+    expect(firstService).toBe(tasksSettingsServiceMock);
+  });
+
+  it('does not import when settings dialog returns undefined', async () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
     const component = fixture.componentInstance as unknown as {
-      onOpenSettingsDialog: () => void;
+      onOpenSettingsDialog: () => Promise<void>;
     };
 
     tasksSettingsServiceMock.openDialog.mockReturnValue(of(undefined));
 
-    component.onOpenSettingsDialog();
+    await component.onOpenSettingsDialog();
 
     expect(taskImportServiceMock.importData).not.toHaveBeenCalled();
     expect(tasksServiceMock.list).not.toHaveBeenCalled();
   });
 
-  it('imports tasks and refreshes list when settings dialog returns data', () => {
+  it('imports tasks and refreshes list when settings dialog returns data', async () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
     const component = fixture.componentInstance as unknown as {
-      onOpenSettingsDialog: () => void;
+      onOpenSettingsDialog: () => Promise<void>;
     };
 
     const task = new Task({ id: '1', name: 'Existing', tags: [], timeLogs: [] });
@@ -222,7 +237,7 @@ describe('Tasks Components tasks-menu.component', () => {
     tasksServiceMock.tasks = signal([task]).asReadonly();
     tasksSettingsServiceMock.openDialog.mockReturnValue(of(result));
 
-    component.onOpenSettingsDialog();
+    await component.onOpenSettingsDialog();
 
     expect(taskImportServiceMock.importData).toHaveBeenCalledWith(result);
     expect(tasksServiceMock.list).toHaveBeenCalledTimes(1);

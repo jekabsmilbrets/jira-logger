@@ -125,7 +125,7 @@ describe('Tasks Components time-log-list-modal.component', () => {
       responseData: updated,
     }));
 
-    component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
+    await component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
 
     expect(component['timeLogs']()).toEqual([updated]);
   });
@@ -139,7 +139,7 @@ describe('Tasks Components time-log-list-modal.component', () => {
       responseType: 'delete',
     }));
 
-    component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
+    await component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
 
     expect(component['timeLogs']()).toEqual([]);
   });
@@ -153,7 +153,7 @@ describe('Tasks Components time-log-list-modal.component', () => {
       responseType: 'cancel',
     }));
 
-    component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
+    await component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
     expect(component['timeLogs']()).toEqual([current]);
   });
 
@@ -163,14 +163,14 @@ describe('Tasks Components time-log-list-modal.component', () => {
     setComponentTimeLogs(component, task, [current]);
 
     timeLogEditService.openTimeLogDialog.mockReturnValueOnce(of(undefined) as any);
-    component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
+    await component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
     expect(component['timeLogs']()).toEqual([current]);
 
     timeLogEditService.openTimeLogDialog.mockReturnValueOnce(of({
       responseType: 'update',
       responseData: undefined,
     }));
-    component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
+    await component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
     expect(component['timeLogs']()).toEqual([current]);
   });
 
@@ -238,7 +238,7 @@ describe('Tasks Components time-log-list-modal.component', () => {
       responseData: created,
     }));
 
-    component['onAddTimeLogClick']();
+    await component['onAddTimeLogClick']();
 
     expect(component['timeLogs']()).toContain(created);
   });
@@ -248,16 +248,27 @@ describe('Tasks Components time-log-list-modal.component', () => {
     const initial = [...component['timeLogs']()];
 
     timeLogEditService.openTimeLogDialog.mockReturnValueOnce(of({ responseType: 'cancel' }));
-    component['onAddTimeLogClick']();
+    await component['onAddTimeLogClick']();
     expect(component['timeLogs']()).toEqual(initial);
 
     timeLogEditService.openTimeLogDialog.mockReturnValueOnce(of(undefined) as any);
-    component['onAddTimeLogClick']();
+    await component['onAddTimeLogClick']();
     expect(component['timeLogs']()).toEqual(initial);
 
     timeLogEditService.openTimeLogDialog.mockReturnValueOnce(of({ responseType: 'update', responseData: undefined }));
-    component['onAddTimeLogClick']();
+    await component['onAddTimeLogClick']();
     expect(component['timeLogs']()).toEqual(initial);
+  });
+
+  it('reuses the cached time-log-edit service promise', async () => {
+    const { component, timeLogEditService } = await setup();
+
+    const first = component['loadTimeLogEditService']();
+    const second = component['loadTimeLogEditService']();
+
+    const [firstService, secondService] = await Promise.all([first, second]);
+    expect(firstService).toBe(secondService);
+    expect(firstService).toBe(timeLogEditService);
   });
 
   it('does not remove when time log id is not found', async () => {
@@ -306,6 +317,7 @@ describe('Tasks Components time-log-list-modal.component', () => {
     buttons.find((btn) => btn.nativeElement.getAttribute('aria-label') === 'close dialog')?.nativeElement.click();
     buttons.find((btn) => btn.nativeElement.textContent.includes('Add Time Log'))?.nativeElement.click();
     buttons.find((btn) => btn.nativeElement.textContent.includes('Save changes'))?.nativeElement.click();
+    await addSpy.mock.results[0]?.value;
 
     expect(cancelSpy).toHaveBeenCalledTimes(1);
     expect(addSpy).toHaveBeenCalledTimes(1);
@@ -323,6 +335,7 @@ describe('Tasks Components time-log-list-modal.component', () => {
     const timeLog = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
     table.cellClicked.emit([timeLog, { columnDef: 'startTime', header: 'Start' }]);
     table.removeAction.emit(timeLog);
+    await cellSpy.mock.results[0]?.value;
 
     expect(cellSpy).toHaveBeenCalledTimes(1);
     expect(removeSpy).toHaveBeenCalledTimes(1);

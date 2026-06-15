@@ -1,13 +1,11 @@
-import { effect, inject, Injectable } from '@angular/core';
+import { effect, inject, Service } from '@angular/core';
 import { DateAdapter } from '@angular/material/core';
 
 import { environment } from '@environments/environment';
 
 import { LocaleService } from './locale.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class MaterialLocaleBridgeService {
   private readonly dateAdapter: DateAdapter<Date> = inject(DateAdapter<Date>);
   private readonly localeService: LocaleService = inject(LocaleService);

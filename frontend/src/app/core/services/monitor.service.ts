@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable, Signal, signal } from '@angular/core';
+import { inject, Service, Signal, signal } from '@angular/core';
 
 import { catchError, finalize, map, Observable, switchMap, tap, throwError } from 'rxjs';
 
@@ -15,9 +15,7 @@ import { waitForTurn } from '@core/utils/wait-for.utility';
 
 import { LoadableService } from '@shared/interfaces/loadable-service.interface';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class MonitorService implements LoadableService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 

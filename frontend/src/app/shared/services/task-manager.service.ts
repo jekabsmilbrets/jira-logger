@@ -1,4 +1,4 @@
-import { effect, inject, Injectable, Signal, signal } from '@angular/core';
+import { effect, inject, Service, Signal, signal } from '@angular/core';
 
 import { catchError, interval, map, Observable, of, switchMap, take, tap } from 'rxjs';
 
@@ -9,9 +9,7 @@ import { Task } from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class TaskManagerService {
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);

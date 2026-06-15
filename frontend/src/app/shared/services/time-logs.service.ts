@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { inject, Injectable, Signal, signal } from '@angular/core';
+import { inject, Service, Signal, signal } from '@angular/core';
 
 import { catchError, finalize, map, Observable, of, Subject, switchMap, tap, throwError } from 'rxjs';
 
@@ -18,9 +18,7 @@ import { ApiRequestService } from '@shared/services/api-request.service';
 import { ApiRequestBody } from '@shared/types/api-request-body.type';
 import { toUnixMs } from '@shared/utils/to-unix-ms.util';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class TimeLogsService implements LoadableService, MakeRequestService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 

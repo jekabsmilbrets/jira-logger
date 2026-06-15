@@ -1,8 +1,8 @@
 import { formatDate } from '@angular/common';
 import { HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { inject, Injectable, Signal, signal } from '@angular/core';
+import { inject, injectAsync, Service, Signal, signal } from '@angular/core';
 
-import { catchError, finalize, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, finalize, from, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
@@ -18,18 +18,17 @@ import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
-import { ErrorDialogService } from '@shared/services/error-dialog.service';
 import { ApiRequestBody } from '@shared/types/api-request-body.type';
 import { QueryParams } from '@shared/types/query-params.type';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class TasksService implements LoadableService, MakeRequestService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
-  private readonly errorDialogService: ErrorDialogService = inject(ErrorDialogService);
+  private readonly loadErrorDialogService = injectAsync(
+    () => import('@shared/services/error-dialog.service').then((m) => m.ErrorDialogService),
+  );
   private readonly localeService: LocaleService = inject(LocaleService);
 
   private readonly tasksSignal = signal<Task[]>([]);
@@ -301,12 +300,13 @@ export class TasksService implements LoadableService, MakeRequestService {
   ): Observable<never> {
     this.isLoadingSignal.set(false);
 
-    return this.errorDialogService.openDialog({
-      errorTitle: 'Error while doing db action :D',
-      errorMessage: JSON.stringify(error),
-      idbData: this.tasks(),
-    })
+    return from(this.loadErrorDialogService())
       .pipe(
+        switchMap((errorDialogService) => errorDialogService.openDialog({
+          errorTitle: 'Error while doing db action :D',
+          errorMessage: JSON.stringify(error),
+          idbData: this.tasks(),
+        })),
         take(1),
         switchMap(() => throwError(() => error)),
       );

@@ -1,4 +1,4 @@
-import { effect, inject, Injectable } from '@angular/core';
+import { effect, inject, Service } from '@angular/core';
 
 import { environment } from '@environments/environment';
 
@@ -7,9 +7,7 @@ import { SettingsService } from '@core/services/settings.service';
 
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class TimezoneService {
   private readonly settingsService: SettingsService | null = inject(SettingsService, { optional: true });
 

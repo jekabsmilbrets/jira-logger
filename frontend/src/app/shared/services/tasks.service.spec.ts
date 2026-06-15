@@ -151,4 +151,13 @@ describe('Shared Services tasks.service', () => {
     await expect(firstValueFrom(service.create(task))).rejects.toThrow('create-fail');
     expect(errorDialogService.openDialog).toHaveBeenCalledTimes(1);
   });
+
+  it('reuses the cached error-dialog service promise', async () => {
+    const first = (service as any)['loadErrorDialogService']();
+    const second = (service as any)['loadErrorDialogService']();
+
+    const [firstService, secondService] = await Promise.all([first, second]);
+    expect(firstService).toBe(secondService);
+    expect(firstService).toBe(errorDialogService);
+  });
 });

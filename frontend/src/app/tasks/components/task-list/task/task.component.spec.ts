@@ -142,11 +142,11 @@ describe('Tasks Components task.component', () => {
     const { component, baseTask, areYouSureService } = await setup();
     const removeSpy = vi.spyOn(component['remove'], 'emit');
 
-    component['onRemove']();
+    await component['onRemove']();
     expect(removeSpy).toHaveBeenCalledWith(baseTask);
 
     areYouSureService.openDialog.mockReturnValueOnce(of(false));
-    component['onRemove']();
+    await component['onRemove']();
     expect(removeSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -174,7 +174,7 @@ describe('Tasks Components task.component', () => {
 
     const savedSpy = vi.spyOn(component['timeLogsSaved'], 'emit');
 
-    component['onOpenTimeLogsModal']();
+    await component['onOpenTimeLogsModal']();
 
     expect(savedSpy).toHaveBeenCalledOnce();
   });
@@ -184,12 +184,28 @@ describe('Tasks Components task.component', () => {
     const savedSpy = vi.spyOn(component['timeLogsSaved'], 'emit');
 
     timeLogEditService.openTimeLogsListDialog.mockReturnValueOnce(of(undefined));
-    component['onOpenTimeLogsModal']();
+    await component['onOpenTimeLogsModal']();
 
     timeLogEditService.openTimeLogsListDialog.mockReturnValueOnce(of({ saved: false }) as any);
-    component['onOpenTimeLogsModal']();
+    await component['onOpenTimeLogsModal']();
 
     expect(savedSpy).not.toHaveBeenCalled();
+  });
+
+  it('reuses cached lazy service promises for confirmation and time-log dialogs', async () => {
+    const { component, areYouSureService, timeLogEditService } = await setup();
+
+    const firstConfirm = component['loadAreYouSureService']();
+    const secondConfirm = component['loadAreYouSureService']();
+    const [confirmServiceA, confirmServiceB] = await Promise.all([firstConfirm, secondConfirm]);
+    expect(confirmServiceA).toBe(confirmServiceB);
+    expect(confirmServiceA).toBe(areYouSureService);
+
+    const firstEdit = component['loadTimeLogEditService']();
+    const secondEdit = component['loadTimeLogEditService']();
+    const [editServiceA, editServiceB] = await Promise.all([firstEdit, secondEdit]);
+    expect(editServiceA).toBe(editServiceB);
+    expect(editServiceA).toBe(timeLogEditService);
   });
 
   it('renders non-edit mode controls and switches to edit mode controls', async () => {
@@ -246,6 +262,10 @@ describe('Tasks Components task.component', () => {
     fixture.debugElement.query(By.css('button[aria-label="Remove"]')).nativeElement.click();
     fixture.debugElement.query(By.css('button[aria-label="Edit"]')).nativeElement.click();
     fixture.detectChanges();
+    await Promise.all([
+      modalSpy.mock.results[0]?.value,
+      removeSpy.mock.results[0]?.value,
+    ]);
 
     expect(toggleSpy).toHaveBeenCalledTimes(1);
     expect(modalSpy).toHaveBeenCalledTimes(1);

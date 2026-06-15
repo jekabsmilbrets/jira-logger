@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { inject, Injectable, Signal, signal } from '@angular/core';
+import { inject, Service, Signal, signal } from '@angular/core';
 
 import { catchError, concat, finalize, map, Observable, of, switchMap, throwError, toArray } from 'rxjs';
 
@@ -15,9 +15,7 @@ import { TimeLog } from '@shared/models/time-log.model';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class TaskImportService implements LoadableService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 

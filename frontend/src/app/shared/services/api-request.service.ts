@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 
 import { map, Observable } from 'rxjs';
 
@@ -9,9 +9,7 @@ import { JsonApi } from '@core/interfaces/json-api.interface';
 
 import { ApiRequestBody } from '@shared/types/api-request-body.type';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class ApiRequestService {
   private readonly httpClient: HttpClient = inject(HttpClient);
 

@@ -1,5 +1,5 @@
 import { formatDate } from '@angular/common';
-import { computed, effect, inject, Injectable, Signal, signal } from '@angular/core';
+import { computed, effect, inject, Service, Signal, signal } from '@angular/core';
 
 import { catchError, Observable, of, take, tap } from 'rxjs';
 
@@ -24,9 +24,7 @@ import { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.in
 
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class ReportService {
   public readonly columns: Signal<Column[]>;
 

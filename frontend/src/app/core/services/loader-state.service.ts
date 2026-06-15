@@ -1,8 +1,6 @@
-import { computed, effect, Injectable, Signal, signal } from '@angular/core';
+import { computed, effect, Service, Signal, signal } from '@angular/core';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class LoaderStateService {
   private readonly loaderMarks = signal<Map<string, Signal<boolean>>>(new Map<string, Signal<boolean>>());
   private readonly aggregateLoading = computed(() => [...this.loaderMarks().values()].some((loader: Signal<boolean>) => loader()));

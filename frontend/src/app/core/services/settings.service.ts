@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { inject, Injectable, Signal, signal } from '@angular/core';
+import { inject, injectAsync, Service, Signal, signal } from '@angular/core';
 
-import { catchError, finalize, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, finalize, from, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 import { environment } from '@environments/environment';
 
@@ -14,17 +14,16 @@ import { RequestGate } from '@core/utils/request-gate.utility';
 import { waitForTurn } from '@core/utils/wait-for.utility';
 
 import { LoadableService } from '@shared/interfaces/loadable-service.interface';
-import { ErrorDialogService } from '@shared/services/error-dialog.service';
 import { ApiRequestBody } from '@shared/types/api-request-body.type';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class SettingsService implements LoadableService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   private readonly httpClient: HttpClient = inject(HttpClient);
-  private readonly errorDialogService: ErrorDialogService = inject(ErrorDialogService);
+  private readonly loadErrorDialogService = injectAsync(
+    () => import('@shared/services/error-dialog.service').then((m) => m.ErrorDialogService),
+  );
 
   private readonly isLoadingSignal = signal<boolean>(false);
   private readonly settingsSignal = signal<Setting[]>([]);
@@ -181,14 +180,15 @@ export class SettingsService implements LoadableService {
   ): Observable<never> {
     this.isLoadingSignal.set(false);
 
-    return this.errorDialogService.openDialog(
-      {
-        errorTitle: 'Error while doing db action :D',
-        errorMessage: JSON.stringify(error),
-        idbData: this.settings(),
-      },
-    )
+    return from(this.loadErrorDialogService())
       .pipe(
+        switchMap((errorDialogService) => errorDialogService.openDialog(
+          {
+            errorTitle: 'Error while doing db action :D',
+            errorMessage: JSON.stringify(error),
+            idbData: this.settings(),
+          },
+        )),
         take(1),
         switchMap(() => throwError(() => error)),
       );

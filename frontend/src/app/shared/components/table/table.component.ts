@@ -16,6 +16,7 @@ import {
   computed,
   effect,
   inject,
+  injectAsync,
   input,
   InputSignal,
   output,
@@ -42,7 +43,7 @@ import { Searchable } from '@shared/interfaces/searchable.interface';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
-import { AreYouSureService } from '@shared/services/are-you-sure.service';
+import type { AreYouSureService } from '@shared/services/are-you-sure.service';
 import { getNestedObject } from '@shared/utils/get-nested-object.util';
 
 @Component({
@@ -116,7 +117,9 @@ export class TableComponent implements AfterViewInit {
 
   protected dataSource: MatTableDataSource<Searchable> = new MatTableDataSource<Searchable>([]);
 
-  private readonly areYouSureService: AreYouSureService = inject(AreYouSureService);
+  private readonly loadAreYouSureService = injectAsync(
+    () => import('@shared/services/are-you-sure.service').then((m) => m.AreYouSureService),
+  );
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
   private readonly localeService: LocaleService = inject(LocaleService);
 
@@ -200,9 +203,9 @@ export class TableComponent implements AfterViewInit {
     }
   }
 
-  protected onRemoveAction(
+  protected async onRemoveAction(
     row: Searchable,
-  ): void {
+  ): Promise<void> {
     const timeLog: TimeLog | undefined = row as TimeLog;
 
     if (!timeLog) {
@@ -219,7 +222,8 @@ export class TableComponent implements AfterViewInit {
       formatDateInTimezone(timeLogEndTime, 'HH:mm:ss', this.localeService.locale, this.timezoneService.timezone) :
       null;
 
-    const confirmation$: ReturnType<AreYouSureService['openDialog']> | undefined = this.areYouSureService.openDialog(
+    const areYouSureService: AreYouSureService = await this.loadAreYouSureService();
+    const confirmation$: ReturnType<AreYouSureService['openDialog']> | undefined = areYouSureService.openDialog(
       `Time log "${ timeLogDate } ${ timeLogStart }-${ timeLogEnd }"`,
     );
 

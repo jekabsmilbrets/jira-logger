@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 
 import { Observable } from 'rxjs';
@@ -11,9 +11,7 @@ import { TimeLogModalComponent } from '@tasks/components/task-list/task/time-log
 import { TimeLogModalResponseInterface } from '@tasks/interfaces/time-log-modal-response.interface';
 import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class TimeLogEditService {
   private readonly matDialog: MatDialog = inject(MatDialog);
 

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, InputSignal, output, OutputEmitterRef, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, injectAsync, input, InputSignal, output, OutputEmitterRef, signal } from '@angular/core';
 import { form, FormField, required, validate } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -14,14 +14,14 @@ import { take } from 'rxjs';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
-import { AreYouSureService } from '@shared/services/are-you-sure.service';
+import type { AreYouSureService } from '@shared/services/are-you-sure.service';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 
 import { TaskUpdateActionEnum } from '@tasks/enums/task-update-action.enum';
 import { TaskFormValue } from '@tasks/interfaces/task-form-value.interface';
 import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
-import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
+import type { TimeLogEditService } from '@tasks/services/time-log-edit.service';
 import { buildTaskUpdatePayload } from '@tasks/utils/task-payload-builder.util';
 
 @Component({
@@ -78,9 +78,13 @@ export class TaskComponent {
   });
   protected readonly editMode = signal(false);
 
-  private readonly areYouSureService: AreYouSureService = inject(AreYouSureService);
+  private readonly loadAreYouSureService = injectAsync(
+    () => import('@shared/services/are-you-sure.service').then((m) => m.AreYouSureService),
+  );
   private readonly tagsService: TagsService = inject(TagsService);
-  private readonly timeLogEditService: TimeLogEditService = inject(TimeLogEditService);
+  private readonly loadTimeLogEditService = injectAsync(
+    () => import('@tasks/services/time-log-edit.service').then((m) => m.TimeLogEditService),
+  );
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly tasks = this.tasksService.tasks;
   protected readonly tags = this.tagsService.tags;
@@ -125,8 +129,10 @@ export class TaskComponent {
     this.editMode.set(false);
   }
 
-  protected onRemove(): void {
-    this.areYouSureService.openDialog(`Task "${ this.task().name }"`)
+  protected async onRemove(): Promise<void> {
+    const areYouSureService: AreYouSureService = await this.loadAreYouSureService();
+
+    areYouSureService.openDialog(`Task "${ this.task().name }"`)
       .pipe(take(1))
       .subscribe((response: boolean | undefined) => {
         if (response === true) {
@@ -155,8 +161,10 @@ export class TaskComponent {
     ]);
   }
 
-  protected onOpenTimeLogsModal(): void {
-    this.timeLogEditService.openTimeLogsListDialog(this.task())
+  protected async onOpenTimeLogsModal(): Promise<void> {
+    const timeLogEditService: TimeLogEditService = await this.loadTimeLogEditService();
+
+    timeLogEditService.openTimeLogsListDialog(this.task())
       .pipe(take(1))
       .subscribe((response: TimeLogsModalResponseInterface | undefined) => {
         if (response?.saved) {

@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, signal, WritableSignal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, injectAsync, signal, WritableSignal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -21,7 +21,7 @@ import { createTimeLogListColumns } from '@tasks/constants/time-log-list-columns
 import { TimeLogListDialogDataInterface } from '@tasks/interfaces/time-log-list-dialog-data.interface';
 import { TimeLogModalResponseInterface } from '@tasks/interfaces/time-log-modal-response.interface';
 import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
-import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
+import type { TimeLogEditService } from '@tasks/services/time-log-edit.service';
 
 interface SaveOperation {
   request$: Observable<TimeLog | void>;
@@ -47,7 +47,9 @@ export class TimeLogListModalComponent {
   protected data: TimeLogListDialogDataInterface = inject<TimeLogListDialogDataInterface>(MAT_DIALOG_DATA);
 
   protected columns: Column[];
-  private readonly timeLogEditService: TimeLogEditService = inject(TimeLogEditService);
+  private readonly loadTimeLogEditService = injectAsync(
+    () => import('@tasks/services/time-log-edit.service').then((m) => m.TimeLogEditService),
+  );
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
   private readonly localeService: LocaleService = inject(LocaleService);
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
@@ -114,10 +116,12 @@ export class TimeLogListModalComponent {
       });
   }
 
-  protected onCellClick(
+  protected async onCellClick(
     [timeLog]: [Searchable, Column],
-  ): void {
-    this.timeLogEditService
+  ): Promise<void> {
+    const timeLogEditService: TimeLogEditService = await this.loadTimeLogEditService();
+
+    timeLogEditService
       .openTimeLogDialog(timeLog as TimeLog)
       .pipe(take(1))
       .subscribe((response: TimeLogModalResponseInterface | undefined) => {
@@ -224,13 +228,14 @@ export class TimeLogListModalComponent {
     }
   }
 
-  protected onAddTimeLogClick(): void {
+  protected async onAddTimeLogClick(): Promise<void> {
+    const timeLogEditService: TimeLogEditService = await this.loadTimeLogEditService();
     const timeLog: TimeLog = new TimeLog({
       startTime: new Date(),
       endTime: new Date(),
     });
 
-    this.timeLogEditService.openTimeLogDialog(timeLog)
+    timeLogEditService.openTimeLogDialog(timeLog)
       .pipe(take(1))
       .subscribe((response: TimeLogModalResponseInterface | undefined) => {
         if (response) {

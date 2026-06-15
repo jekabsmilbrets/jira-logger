@@ -1,5 +1,5 @@
 import { registerLocaleData } from '@angular/common';
-import { effect, inject, Injectable, Signal, signal } from '@angular/core';
+import { effect, inject, Service, Signal, signal } from '@angular/core';
 
 import { environment } from '@environments/environment';
 
@@ -9,9 +9,7 @@ import { SettingsService } from '@core/services/settings.service';
 
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class LocaleService {
   private readonly settingsService: SettingsService | null = inject(SettingsService, { optional: true });
 

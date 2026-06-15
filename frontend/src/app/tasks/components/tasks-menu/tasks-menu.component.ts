@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, injectAsync, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { form, FormField, required, validateAsync } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
@@ -19,7 +19,7 @@ import { TasksService } from '@shared/services/tasks.service';
 import { TasksSettingsToggleComponent } from '@tasks/components/tasks-menu/tasks-settings-toggler/tasks-settings-toggle.component';
 import { CreateTaskFormValue } from '@tasks/interfaces/create-task-form-value.interface';
 import { TaskImportService } from '@tasks/services/task-import.service';
-import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
+import type { TasksSettingsService } from '@tasks/services/tasks-settings.service';
 
 @Component({
   selector: 'tasks-menu',
@@ -76,7 +76,9 @@ export class TasksMenuComponent {
   });
 
   private readonly tasksService: TasksService = inject(TasksService);
-  private readonly tasksSettingsService: TasksSettingsService = inject(TasksSettingsService);
+  private readonly loadTasksSettingsService = injectAsync(
+    () => import('@tasks/services/tasks-settings.service').then((m) => m.TasksSettingsService),
+  );
   private readonly taskImportService: TaskImportService = inject(TaskImportService);
   private readonly tagsService: TagsService = inject(TagsService);
   protected readonly isLoading = this.tasksService.isLoading;
@@ -107,8 +109,10 @@ export class TasksMenuComponent {
     });
   }
 
-  protected onOpenSettingsDialog(): void {
-    this.tasksSettingsService.openDialog(this.tasksService.tasks())
+  protected async onOpenSettingsDialog(): Promise<void> {
+    const tasksSettingsService: TasksSettingsService = await this.loadTasksSettingsService();
+
+    tasksSettingsService.openDialog(this.tasksService.tasks())
       .pipe(
         take(1),
         switchMap((result: ApiTask[] | undefined) => result ?

@@ -15,7 +15,6 @@ import { TaskListComponent } from '@tasks/components/task-list/task-list.compone
 import { TaskViewHeaderComponent } from '@tasks/components/task-view-header/task-view-header.component';
 import { TasksMenuComponent } from '@tasks/components/tasks-menu/tasks-menu.component';
 import { TaskUpdateActionEnum } from '@tasks/enums/task-update-action.enum';
-import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
 
 @Component({
   selector: 'tasks-view',
@@ -32,7 +31,6 @@ import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
 export class TasksViewComponent implements OnInit {
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
-  private readonly tasksSettingsService: TasksSettingsService = inject(TasksSettingsService);
   private readonly dynamicMenuService: DynamicMenuService = inject(DynamicMenuService);
   protected readonly isLoading = this.tasksService.isLoading;
   protected readonly tasks: Signal<Task[]> = computed(() => [...this.tasksService.tasks()].sort(this.taskSort));
@@ -122,10 +120,6 @@ export class TasksViewComponent implements OnInit {
             {
               provide: TasksService,
               useValue: this.tasksService,
-            },
-            {
-              provide: TasksSettingsService,
-              useValue: this.tasksSettingsService,
             },
           ],
         },
