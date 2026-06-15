@@ -28,21 +28,12 @@ export class TagsService implements LoadableService, MakeRequestService {
   private readonly tagsSignal = signal<Tag[]>([]);
   private readonly isLoadingSignal = signal<boolean>(false);
   private readonly preloadErrorSignal = signal<boolean>(false);
+  public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
+  public readonly tags: Signal<Tag[]> = this.tagsSignal.asReadonly();
+  public readonly preloadError: Signal<boolean> = this.preloadErrorSignal.asReadonly();
   private readonly requestGate = new RequestGate();
 
   private basePath: string = 'tag';
-
-  public get isLoading(): Signal<boolean> {
-    return this.isLoadingSignal.asReadonly();
-  }
-
-  public get tags(): Signal<Tag[]> {
-    return this.tagsSignal.asReadonly();
-  }
-
-  public get preloadError(): Signal<boolean> {
-    return this.preloadErrorSignal.asReadonly();
-  }
 
   public init(): void {
     this.loaderStateService.addLoader(this.isLoading, this.constructor.name);

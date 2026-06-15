@@ -5,10 +5,7 @@ import { DynamicMenu } from '@core/models/dynamic-menu';
 @Service()
 export class DynamicMenuService {
   private readonly dynamicMenusSignal = signal<DynamicMenu[]>([]);
-
-  public get dynamicMenus(): Signal<DynamicMenu[]> {
-    return this.dynamicMenusSignal.asReadonly();
-  }
+  public readonly dynamicMenus: Signal<DynamicMenu[]> = this.dynamicMenusSignal.asReadonly();
 
   public addDynamicMenu(
     dynamicMenu: DynamicMenu,

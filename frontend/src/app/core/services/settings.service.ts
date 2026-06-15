@@ -27,17 +27,11 @@ export class SettingsService implements LoadableService {
 
   private readonly isLoadingSignal = signal<boolean>(false);
   private readonly settingsSignal = signal<Setting[]>([]);
+  public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
+  public readonly settings: Signal<Setting[]> = this.settingsSignal.asReadonly();
   private readonly requestGate = new RequestGate();
 
   private basePath = 'setting';
-
-  public get isLoading(): Signal<boolean> {
-    return this.isLoadingSignal.asReadonly();
-  }
-
-  public get settings(): Signal<Setting[]> {
-    return this.settingsSignal.asReadonly();
-  }
 
   public init(): void {
     this.loaderStateService.addLoader(

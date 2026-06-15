@@ -24,21 +24,12 @@ export class MonitorService implements LoadableService {
   private readonly monitorSignal = signal<Monitor | undefined>(undefined);
   private readonly hasIssuesSignal = signal<boolean>(false);
   private readonly isLoadingSignal = signal<boolean>(false);
+  public readonly monitor: Signal<Monitor | undefined> = this.monitorSignal.asReadonly();
+  public readonly hasIssues: Signal<boolean> = this.hasIssuesSignal.asReadonly();
+  public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
   private readonly requestGate = new RequestGate();
 
   private basePath: string = 'monitor';
-
-  public get monitor(): Signal<Monitor | undefined> {
-    return this.monitorSignal.asReadonly();
-  }
-
-  public get hasIssues(): Signal<boolean> {
-    return this.hasIssuesSignal.asReadonly();
-  }
-
-  public get isLoading(): Signal<boolean> {
-    return this.isLoadingSignal.asReadonly();
-  }
 
   public init(): void {
     this.loaderStateService.addLoader(

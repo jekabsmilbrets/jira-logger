@@ -23,11 +23,8 @@ export class TaskImportService implements LoadableService {
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
 
   private readonly isLoadingSignal = signal<boolean>(false);
+  public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
   private readonly requestGate = new RequestGate();
-
-  public get isLoading(): Signal<boolean> {
-    return this.isLoadingSignal.asReadonly();
-  }
 
   public importData(
     data: ApiTask[],

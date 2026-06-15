@@ -20,15 +20,9 @@ export class StorageService implements LoadableService {
 
   private readonly isLoadingSignal = signal<boolean>(false);
   private readonly isDbFailedSignal = signal<DbFailInterface | undefined>(undefined);
+  public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
+  public readonly isDbFailed: Signal<DbFailInterface | undefined> = this.isDbFailedSignal.asReadonly();
   private readonly requestGate = new RequestGate();
-
-  public get isLoading(): Signal<boolean> {
-    return this.isLoadingSignal.asReadonly();
-  }
-
-  public get isDbFailed(): Signal<DbFailInterface | undefined> {
-    return this.isDbFailedSignal.asReadonly();
-  }
 
   private static createStore(
     name: string,

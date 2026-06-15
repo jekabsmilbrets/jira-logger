@@ -27,6 +27,7 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
   private readonly isLoadingSignal = signal<boolean>(false);
+  public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
   private readonly requestGate = new RequestGate();
 
   private basePath: string = 'task';
@@ -34,10 +35,6 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
 
   private taskStartedSubject: Subject<Task> = new Subject<Task>();
   private taskFinishedSubject: Subject<Task> = new Subject<Task>();
-
-  public get isLoading(): Signal<boolean> {
-    return this.isLoadingSignal.asReadonly();
-  }
 
   constructor() {
     this.taskStarted$ = this.taskStartedSubject.asObservable();

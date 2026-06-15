@@ -17,14 +17,8 @@ export class TaskManagerService {
 
   private readonly activeTaskSignal = signal<Task | null>(null);
   private readonly timeLoggedTodaySignal = signal<number>(0);
-
-  public get activeTask(): Signal<Task | null> {
-    return this.activeTaskSignal.asReadonly();
-  }
-
-  public get timeLoggedToday(): Signal<number> {
-    return this.timeLoggedTodaySignal.asReadonly();
-  }
+  public readonly activeTask: Signal<Task | null> = this.activeTaskSignal.asReadonly();
+  public readonly timeLoggedToday: Signal<number> = this.timeLoggedTodaySignal.asReadonly();
 
   constructor() {
     this.calculateTimeLoggedToday().subscribe();

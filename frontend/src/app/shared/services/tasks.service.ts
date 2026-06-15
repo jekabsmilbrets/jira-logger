@@ -33,17 +33,11 @@ export class TasksService implements LoadableService, MakeRequestService {
 
   private readonly tasksSignal = signal<Task[]>([]);
   private readonly isLoadingSignal = signal<boolean>(false);
+  public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
+  public readonly tasks: Signal<Task[]> = this.tasksSignal.asReadonly();
   private readonly requestGate = new RequestGate();
 
   private basePath: string = 'task';
-
-  public get isLoading(): Signal<boolean> {
-    return this.isLoadingSignal.asReadonly();
-  }
-
-  public get tasks(): Signal<Task[]> {
-    return this.tasksSignal.asReadonly();
-  }
 
   public init(): void {
     this.loaderStateService.addLoader(this.isLoading, this.constructor.name);
