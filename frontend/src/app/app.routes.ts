@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { ReportResolver } from '@report/resolvers/report.resolver';
+import { reportResolver } from '@report/resolvers/report.resolver';
 
 export const routes: Routes = [
   {
@@ -40,7 +40,7 @@ export const routes: Routes = [
             loadComponent: () => import('@report/views/report/report-view.component')
               .then(m => m.ReportViewComponent),
             resolve: {
-              settingsFromPath: ReportResolver,
+              settingsFromPath: reportResolver,
             },
           },
           {
@@ -48,7 +48,7 @@ export const routes: Routes = [
             loadComponent: () => import('@report/views/report/report-view.component')
               .then(m => m.ReportViewComponent),
             resolve: {
-              settingsFromPath: ReportResolver,
+              settingsFromPath: reportResolver,
             },
           },
           {
@@ -56,7 +56,7 @@ export const routes: Routes = [
             loadComponent: () => import('@report/views/report/report-view.component')
               .then(m => m.ReportViewComponent),
             resolve: {
-              settingsFromPath: ReportResolver,
+              settingsFromPath: reportResolver,
             },
           },
           {
