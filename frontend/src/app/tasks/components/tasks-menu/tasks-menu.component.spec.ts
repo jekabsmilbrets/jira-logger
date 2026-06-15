@@ -81,6 +81,21 @@ describe('Tasks Components tasks-menu.component', () => {
     expect(tasksServiceMock.filteredList).toHaveBeenLastCalledWith({ name: 'Build docs' }, true);
   });
 
+  it('clears the name filter when the field becomes empty', async () => {
+    const fixture = TestBed.createComponent(TasksMenuComponent);
+    const component = fixture.componentInstance as any;
+
+    component.createTaskForm.name().value.set('Build docs');
+    fixture.detectChanges();
+    await vi.advanceTimersByTimeAsync(301);
+
+    component.createTaskForm.name().value.set('   ');
+    fixture.detectChanges();
+    await vi.advanceTimersByTimeAsync(301);
+
+    expect(tasksServiceMock.filteredList).toHaveBeenLastCalledWith({}, true);
+  });
+
   it('handles filteredList errors through catchError branch', () => {
     tasksServiceMock.filteredList.mockReturnValueOnce(of([]));
     tasksServiceMock.filteredList.mockReturnValueOnce(throwError(() => new Error('failed filter')));

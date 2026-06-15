@@ -91,14 +91,35 @@ describe('ReportService', () => {
   });
 
   it('applies fallback settings when persisted settings are missing', async () => {
-    storageService.read.mockReturnValueOnce(of(undefined));
+    TestBed.resetTestingModule();
 
-    (service as any).initSettings();
+    const localTasksService = {
+      filteredList: vi.fn(() => of([])),
+    };
+    const localStorageService = {
+      read: vi.fn(() => of(undefined)),
+      create: vi.fn(() => of(void 0)),
+    };
 
-    expect(service.reportMode()).toBe(ReportModeEnum.total);
-    expect(service.tags()).toEqual([]);
-    expect(service.showWeekends()).toBe(false);
-    expect(service.hideUnreportedTasks()).toBe(false);
+    TestBed.configureTestingModule({
+      providers: [
+        ReportService,
+        { provide: TasksService, useValue: localTasksService },
+        { provide: StorageService, useValue: localStorageService },
+        { provide: SettingsService, useValue: { settings: signal<Setting[]>([]).asReadonly() } },
+        {
+          provide: TagsService,
+          useValue: { tags: signal<Tag[]>([]).asReadonly() },
+        },
+      ],
+    });
+
+    const localService = TestBed.inject(ReportService);
+
+    expect(localService.reportMode()).toBe(ReportModeEnum.total);
+    expect(localService.tags()).toEqual([]);
+    expect(localService.showWeekends()).toBe(false);
+    expect(localService.hideUnreportedTasks()).toBe(false);
   });
 
   it('handles persisted settings without tags list', async () => {

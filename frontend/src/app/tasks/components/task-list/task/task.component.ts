@@ -1,4 +1,15 @@
-import { ChangeDetectionStrategy, Component, effect, inject, injectAsync, input, InputSignal, output, OutputEmitterRef, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  injectAsync,
+  input,
+  InputSignal,
+  output,
+  OutputEmitterRef,
+  signal,
+} from '@angular/core';
 import { form, FormField, required, validate } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';

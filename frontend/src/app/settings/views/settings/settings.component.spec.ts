@@ -13,6 +13,7 @@ import { Tag } from '@shared/models/tag.model';
 
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
+import { ReportServiceStub } from '@report/testing/report-service.stub';
 
 import { JiraApiConfiguratorComponent } from '@settings/components/jira-api-configurator/jira-api-configurator.component';
 import { ReportConfiguratorComponent } from '@settings/components/report-configurator/report-configurator.component';
@@ -77,82 +78,10 @@ const reportSetters = {
   hideUnreportedTasks: vi.fn<(value: boolean) => void>(),
 };
 
-class ReportServiceMock {
-  private readonly reportModeSignal = signal(ReportModeEnum.dateRange);
-  private readonly tagsSignal = signal([{ id: 'tag-1', name: 'Tag 1' } as Tag]);
-  private readonly dateSignal = signal<Date | null>(new Date('2026-01-01T00:00:00.000Z'));
-  private readonly startDateSignal = signal<Date | null>(new Date('2026-01-02T00:00:00.000Z'));
-  private readonly endDateSignal = signal<Date | null>(new Date('2026-01-03T00:00:00.000Z'));
-  private readonly showWeekendsSignal = signal(true);
-  private readonly hideUnreportedTasksSignal = signal(false);
-
-  public get reportMode(): Signal<ReportModeEnum> {
-    return this.reportModeSignal.asReadonly();
-  }
-
-  public get tags(): Signal<Tag[]> {
-    return this.tagsSignal.asReadonly();
-  }
-
-  public get date(): Signal<Date | null> {
-    return this.dateSignal.asReadonly();
-  }
-
-  public get startDate(): Signal<Date | null> {
-    return this.startDateSignal.asReadonly();
-  }
-
-  public get endDate(): Signal<Date | null> {
-    return this.endDateSignal.asReadonly();
-  }
-
-  public get showWeekends(): Signal<boolean> {
-    return this.showWeekendsSignal.asReadonly();
-  }
-
-  public get hideUnreportedTasks(): Signal<boolean> {
-    return this.hideUnreportedTasksSignal.asReadonly();
-  }
-
-  public setHideUnreportedTasks(value: boolean): void {
-    reportSetters.hideUnreportedTasks(value);
-    this.hideUnreportedTasksSignal.set(value);
-  }
-
-  public setReportMode(value: ReportModeEnum): void {
-    reportSetters.reportMode(value);
-    this.reportModeSignal.set(value);
-  }
-
-  public setTags(value: Tag[]): void {
-    reportSetters.tags(value);
-    this.tagsSignal.set(value);
-  }
-
-  public setDate(value: Date | null): void {
-    reportSetters.date(value);
-    this.dateSignal.set(value);
-  }
-
-  public setStartDate(value: Date | null): void {
-    reportSetters.startDate(value);
-    this.startDateSignal.set(value);
-  }
-
-  public setEndDate(value: Date | null): void {
-    reportSetters.endDate(value);
-    this.endDateSignal.set(value);
-  }
-
-  public setShowWeekends(value: boolean): void {
-    reportSetters.showWeekends(value);
-    this.showWeekendsSignal.set(value);
-  }
-}
-
 describe('Settings Views settings.component', () => {
   let fixture: ComponentFixture<SettingsComponent>;
   let component: SettingsComponent;
+  let reportService: ReportServiceStub;
   let settingsServiceMock: {
     settings: Signal<Setting[]>;
     update: ReturnType<typeof vi.fn>;
@@ -174,6 +103,22 @@ describe('Settings Views settings.component', () => {
       update: vi.fn((setting: Setting) => of(setting)),
       list: vi.fn(() => of([])),
     };
+    reportService = new ReportServiceStub({
+      reportMode: ReportModeEnum.dateRange,
+      tags: [{ id: 'tag-1', name: 'Tag 1' } as Tag],
+      date: new Date('2026-01-01T00:00:00.000Z'),
+      startDate: new Date('2026-01-02T00:00:00.000Z'),
+      endDate: new Date('2026-01-03T00:00:00.000Z'),
+      showWeekends: true,
+      hideUnreportedTasks: false,
+      onSetReportMode: reportSetters.reportMode,
+      onSetTags: reportSetters.tags,
+      onSetDate: reportSetters.date,
+      onSetStartDate: reportSetters.startDate,
+      onSetEndDate: reportSetters.endDate,
+      onSetShowWeekends: reportSetters.showWeekends,
+      onSetHideUnreportedTasks: reportSetters.hideUnreportedTasks,
+    });
     windowMock = {
       location: {
         ...window.location,
@@ -187,7 +132,7 @@ describe('Settings Views settings.component', () => {
         providers: [
           { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly() } },
           { provide: SettingsService, useValue: settingsServiceMock },
-          { provide: ReportService, useClass: ReportServiceMock },
+          { provide: ReportService, useValue: reportService },
           { provide: Window, useValue: windowMock },
         ],
       })
@@ -336,6 +281,7 @@ describe('Settings Views settings.component integration', () => {
         reload: vi.fn(),
       },
     } as unknown as Window;
+    const reportService = new ReportServiceStub();
 
     await TestBed.resetTestingModule()
       .configureTestingModule({
@@ -343,7 +289,7 @@ describe('Settings Views settings.component integration', () => {
         providers: [
           { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly() } },
           { provide: SettingsService, useValue: settingsServiceMock },
-          { provide: ReportService, useClass: ReportServiceMock },
+          { provide: ReportService, useValue: reportService },
           { provide: Window, useValue: windowMock },
         ],
       })
@@ -373,6 +319,7 @@ describe('Settings Views settings.component integration', () => {
         reload: vi.fn(),
       },
     } as unknown as Window;
+    const reportService = new ReportServiceStub();
 
     await TestBed.resetTestingModule()
       .configureTestingModule({
@@ -380,7 +327,7 @@ describe('Settings Views settings.component integration', () => {
         providers: [
           { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly() } },
           { provide: SettingsService, useValue: settingsServiceMock },
-          { provide: ReportService, useClass: ReportServiceMock },
+          { provide: ReportService, useValue: reportService },
           { provide: Window, useValue: windowMock },
         ],
       })

@@ -1,5 +1,4 @@
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
-import { Signal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
@@ -15,54 +14,9 @@ import { Tag } from '@shared/models/tag.model';
 
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
+import { ReportServiceStub } from '@report/testing/report-service.stub';
 
 import { ReportMenuComponent } from './report-menu.component';
-
-class ReportServiceStub {
-  private readonly reportModeSignal = signal<ReportModeEnum>(ReportModeEnum.total);
-  private readonly tagsSignal = signal<Tag[]>([]);
-  private readonly dateSignal = signal<Date | null>(null);
-  private readonly startDateSignal = signal<Date | null>(null);
-  private readonly endDateSignal = signal<Date | null>(null);
-  private readonly showWeekendsSignal = signal<boolean>(false);
-  private readonly hideUnreportedTasksSignal = signal<boolean>(false);
-
-  public readonly reportMode: Signal<ReportModeEnum> = this.reportModeSignal.asReadonly();
-  public readonly tags: Signal<Tag[]> = this.tagsSignal.asReadonly();
-  public readonly date: Signal<Date | null> = this.dateSignal.asReadonly();
-  public readonly startDate: Signal<Date | null> = this.startDateSignal.asReadonly();
-  public readonly endDate: Signal<Date | null> = this.endDateSignal.asReadonly();
-  public readonly showWeekends: Signal<boolean> = this.showWeekendsSignal.asReadonly();
-  public readonly hideUnreportedTasks: Signal<boolean> = this.hideUnreportedTasksSignal.asReadonly();
-
-  public setReportMode(value: ReportModeEnum): void {
-    this.reportModeSignal.set(value);
-  }
-
-  public setTags(value: Tag[]): void {
-    this.tagsSignal.set(value);
-  }
-
-  public setDate(value: Date | null): void {
-    this.dateSignal.set(value);
-  }
-
-  public setStartDate(value: Date | null): void {
-    this.startDateSignal.set(value);
-  }
-
-  public setEndDate(value: Date | null): void {
-    this.endDateSignal.set(value);
-  }
-
-  public setShowWeekends(value: boolean): void {
-    this.showWeekendsSignal.set(value);
-  }
-
-  public setHideUnreportedTasks(value: boolean): void {
-    this.hideUnreportedTasksSignal.set(value);
-  }
-}
 
 describe('ReportMenuComponent', () => {
   let fixture: ComponentFixture<ReportMenuComponent>;
@@ -78,6 +32,7 @@ describe('ReportMenuComponent', () => {
     matDialog = {
       open: vi.fn(),
     };
+    reportService = new ReportServiceStub();
 
     await TestBed.configureTestingModule({
       imports: [ReportMenuComponent],
@@ -89,14 +44,13 @@ describe('ReportMenuComponent', () => {
           },
         },
         { provide: MatDialog, useValue: matDialog },
-        { provide: ReportService, useClass: ReportServiceStub },
+        { provide: ReportService, useValue: reportService },
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ReportMenuComponent);
     component = fixture.componentInstance;
     (component as any).ReportModeEnum = ReportModeEnum;
-    reportService = TestBed.inject(ReportService) as unknown as ReportServiceStub;
 
     fixture.detectChanges();
   });

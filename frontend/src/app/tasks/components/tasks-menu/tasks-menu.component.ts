@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, injectAsync, signal } from '@angular/core';
-import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { form, FormField, required, validateAsync } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatOptionModule } from '@angular/material/core';
@@ -7,10 +7,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
-import { catchError, debounceTime, map, of, switchMap, take } from 'rxjs';
+import { catchError, map, of, switchMap, take } from 'rxjs';
 
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
-import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TagsService } from '@shared/services/tags.service';
@@ -19,6 +18,7 @@ import { TasksService } from '@shared/services/tasks.service';
 import { TasksSettingsToggleComponent } from '@tasks/components/tasks-menu/tasks-settings-toggler/tasks-settings-toggle.component';
 import { CreateTaskFormValue } from '@tasks/interfaces/create-task-form-value.interface';
 import { TaskImportService } from '@tasks/services/task-import.service';
+import { TasksMenuFilterService } from '@tasks/services/tasks-menu-filter.service';
 import type { TasksSettingsService } from '@tasks/services/tasks-settings.service';
 
 @Component({
@@ -27,6 +27,7 @@ import type { TasksSettingsService } from '@tasks/services/tasks-settings.servic
   styleUrls: ['./tasks-menu.component.scss'],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [TasksMenuFilterService],
   imports: [
     MatFormFieldModule,
     MatSelectModule,
@@ -81,35 +82,14 @@ export class TasksMenuComponent {
   );
   private readonly taskImportService: TaskImportService = inject(TaskImportService);
   private readonly tagsService: TagsService = inject(TagsService);
+  private readonly tasksMenuFilterService: TasksMenuFilterService = inject(TasksMenuFilterService);
   protected readonly isLoading = this.tasksService.isLoading;
   protected readonly tags = this.tagsService.tags;
   private readonly taskFilterName = computed(() => this.createTaskForm.name().value().trim());
-  private readonly debouncedTaskFilterName = toSignal(
-    toObservable(this.taskFilterName).pipe(debounceTime(300)),
-    { initialValue: this.taskFilterName() },
-  );
-  private readonly taskFilterRefresh = rxResource({
-    params: this.debouncedTaskFilterName,
-    stream: ({ params }) => {
-      const filter: TaskListFilter = {};
-
-      if (params) {
-        filter.name = params;
-      }
-
-      return this.tasksService.filteredList(
-        filter,
-        true,
-      )
-        .pipe(
-          take(1),
-          catchError(() => of(null)),
-        );
-    },
-  });
+  private readonly taskFilterRefresh = this.tasksMenuFilterService.createTaskRefresh(this.taskFilterName);
 
   constructor() {
-    this.taskFilterRefresh.value();
+    this.taskFilterRefresh();
   }
 
   protected async onOpenSettingsDialog(): Promise<void> {

@@ -1,6 +1,5 @@
 import { Clipboard } from '@angular/cdk/clipboard';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Signal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { By } from '@angular/platform-browser';
@@ -10,6 +9,7 @@ import { of, throwError } from 'rxjs';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
 import { TableComponent } from '@shared/components/table/table.component';
+import { Column } from '@shared/interfaces/column.interface';
 import { Searchable } from '@shared/interfaces/searchable.interface';
 import { Task } from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
@@ -17,32 +17,9 @@ import { TimeLogsService } from '@shared/services/time-logs.service';
 
 import { ReportModeEnum } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
+import { ReportServiceStub } from '@report/testing/report-service.stub';
 
 import { ReportViewComponent } from './report-view.component';
-
-class ReportServiceStub {
-  public readonly tasks = signal([] as Task[]);
-  private readonly reportModeSignal = signal(ReportModeEnum.date);
-  private readonly dateSignal = signal<Date | null>(null);
-  public readonly columns = signal([{
-    columnDef: 'sync',
-    header: 'Sync',
-    cell: () => undefined,
-  }] as any[]);
-  public readonly reload = vi.fn();
-
-  public get reportMode(): Signal<ReportModeEnum> {
-    return this.reportModeSignal.asReadonly();
-  }
-
-  public get date(): Signal<Date | null> {
-    return this.dateSignal.asReadonly();
-  }
-
-  public setDate(date: Date | null): void {
-    this.dateSignal.set(date);
-  }
-}
 
 describe('ReportViewComponent', () => {
   let fixture: ComponentFixture<ReportViewComponent>;
@@ -64,11 +41,20 @@ describe('ReportViewComponent', () => {
       stop: vi.fn().mockReturnValue(of(undefined)),
       start: vi.fn().mockReturnValue(of(true)),
     };
+    reportService = new ReportServiceStub({
+      reportMode: ReportModeEnum.date,
+      columns: [{
+        columnDef: 'sync',
+        header: 'Sync',
+        cell: () => undefined,
+      } as Column],
+      reload: vi.fn(),
+    });
 
     await TestBed.configureTestingModule({
       imports: [ReportViewComponent],
       providers: [
-        { provide: ReportService, useClass: ReportServiceStub },
+        { provide: ReportService, useValue: reportService },
         { provide: DynamicMenuService, useValue: dynamicMenuService },
         { provide: TasksService, useValue: tasksService },
         { provide: TimeLogsService, useValue: timeLogsService },
@@ -80,7 +66,6 @@ describe('ReportViewComponent', () => {
     fixture = TestBed.createComponent(ReportViewComponent);
     component = fixture.componentInstance;
     (component as any).ReportModeEnum = ReportModeEnum;
-    reportService = TestBed.inject(ReportService) as unknown as ReportServiceStub;
   });
 
   it('creates dynamic menu on init', () => {
