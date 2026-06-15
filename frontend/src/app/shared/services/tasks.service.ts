@@ -1,32 +1,34 @@
 import { formatDate } from '@angular/common';
 import { HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { inject, injectAsync, Service, Signal, signal, WritableSignal } from '@angular/core';
+import { inject, injectAsync, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { catchError, finalize, from, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, finalize, from, map, type Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
-import { JsonApi } from '@core/interfaces/json-api.interface';
+import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { LocaleService } from '@core/services/locale.service';
 import { RequestGate } from '@core/utilities/request-gate.utility';
 import { waitForTurn } from '@core/utilities/wait-for.utility';
 
 import { adaptTasks } from '@shared/adapters/task.adapter';
-import { ApiTask } from '@shared/interfaces/api/api-task.interface';
-import { LoadableService } from '@shared/interfaces/loadable-service.interface';
-import { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
-import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
+import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
+import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import type { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
+import type { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
-import { ApiRequestBody } from '@shared/types/api-request-body.type';
-import { QueryParams } from '@shared/types/query-params.type';
+import type { ErrorDialogService } from '@shared/services/error-dialog.service';
+import type { ApiRequestBody } from '@shared/types/api-request-body.type';
+import type { AsyncLoader } from '@shared/types/async-loader.type';
+import type { QueryParams } from '@shared/types/query-params.type';
 
 @Service()
 export class TasksService implements LoadableService, MakeRequestService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
-  private readonly loadErrorDialogService = injectAsync(
+  private readonly loadErrorDialogService: AsyncLoader<ErrorDialogService> = injectAsync(
     () => import('@shared/services/error-dialog.service').then((m) => m.ErrorDialogService),
   );
   private readonly localeService: LocaleService = inject(LocaleService);

@@ -12,7 +12,7 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
-import { form, FormField, required, validate } from '@angular/forms/signals';
+import { type FieldTree, form, FormField, required, validate } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -30,10 +30,11 @@ import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import type { AreYouSureService } from '@shared/services/are-you-sure.service';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
+import type { AsyncLoader } from '@shared/types/async-loader.type';
 
 import { TaskUpdateAction } from '@tasks/enums/task-update-action.enum';
-import { TaskFormValue } from '@tasks/interfaces/task-form-value.interface';
-import { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
+import type { TaskFormValue } from '@tasks/interfaces/task-form-value.interface';
+import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
 import type { TimeLogEditService } from '@tasks/services/time-log-edit.service';
 import { buildTaskUpdatePayload } from '@tasks/utility/task-payload-builder.utility';
 
@@ -74,18 +75,18 @@ export class TaskComponent {
   });
   protected readonly editMode: WritableSignal<boolean> = signal(false);
 
-  private readonly loadAreYouSureService = injectAsync(
+  private readonly loadAreYouSureService: AsyncLoader<AreYouSureService> = injectAsync(
     () => import('@shared/services/are-you-sure.service').then((m) => m.AreYouSureService),
   );
 
   private readonly tagsService: TagsService = inject(TagsService);
-  private readonly loadTimeLogEditService = injectAsync(
+  private readonly loadTimeLogEditService: AsyncLoader<TimeLogEditService> = injectAsync(
     () => import('@tasks/services/time-log-edit.service').then((m) => m.TimeLogEditService),
   );
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly tasks: Signal<Task[]> = this.tasksService.tasks;
 
-  protected readonly taskForm = form(this.taskFormModel, (path) => {
+  protected readonly taskForm: FieldTree<TaskFormValue> = form(this.taskFormModel, (path) => {
     required(path.name, { message: 'Task name is required.' });
     validate(path.name, ({ value }) => {
       const name: string = value().trim();

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 
-import { AreYouSureDialogData } from '@shared/interfaces/are-you-sure-dialog-data.interface';
+import type { AreYouSureDialogData } from '@shared/interfaces/are-you-sure-dialog-data.interface';
 
 @Component({
   selector: 'shared-are-you-sure-dialog',

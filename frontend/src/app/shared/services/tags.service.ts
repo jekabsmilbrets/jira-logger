@@ -1,27 +1,29 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { inject, injectAsync, Service, Signal, signal, WritableSignal } from '@angular/core';
+import { inject, injectAsync, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { catchError, finalize, from, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, finalize, from, map, type Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
-import { JsonApi } from '@core/interfaces/json-api.interface';
+import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { RequestGate } from '@core/utilities/request-gate.utility';
 import { waitForTurn } from '@core/utilities/wait-for.utility';
 
 import { adaptTag, adaptTags } from '@shared/adapters/api-tag.adapter';
-import { ApiTag } from '@shared/interfaces/api/api-tag.interface';
-import { LoadableService } from '@shared/interfaces/loadable-service.interface';
-import { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
+import type { ApiTag } from '@shared/interfaces/api/api-tag.interface';
+import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import type { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
 import { Tag } from '@shared/models/tag.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
-import { ApiRequestBody } from '@shared/types/api-request-body.type';
+import type { ErrorDialogService } from '@shared/services/error-dialog.service';
+import type { ApiRequestBody } from '@shared/types/api-request-body.type';
+import type { AsyncLoader } from '@shared/types/async-loader.type';
 
 @Service()
 export class TagsService implements LoadableService, MakeRequestService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
-  private readonly loadErrorDialogService = injectAsync(
+  private readonly loadErrorDialogService: AsyncLoader<ErrorDialogService> = injectAsync(
     () => import('@shared/services/error-dialog.service').then((m) => m.ErrorDialogService),
   );
 
@@ -32,7 +34,7 @@ export class TagsService implements LoadableService, MakeRequestService {
   public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
   public readonly tags: Signal<Tag[]> = this.tagsSignal.asReadonly();
   public readonly preloadError: Signal<boolean> = this.preloadErrorSignal.asReadonly();
-  private readonly requestGate = new RequestGate();
+  private readonly requestGate: RequestGate = new RequestGate();
 
   private basePath: string = 'tag';
 

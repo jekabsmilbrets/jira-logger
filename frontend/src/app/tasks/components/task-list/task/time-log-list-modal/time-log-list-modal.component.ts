@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, injectAsync, signal, WritableSignal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, injectAsync, type Signal, signal, type WritableSignal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,16 +12,17 @@ import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
 
 import { TableComponent } from '@shared/components/table/table.component';
-import { Column } from '@shared/interfaces/column.interface';
-import { Searchable } from '@shared/interfaces/searchable.interface';
+import type { Column } from '@shared/interfaces/column.interface';
+import type { Searchable } from '@shared/interfaces/searchable.interface';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TimeLogsService } from '@shared/services/time-logs.service';
+import type { AsyncLoader } from '@shared/types/async-loader.type';
 
 import { createTimeLogListColumns } from '@tasks/constants/time-log-list-columns.constant';
 import type { SaveOperation } from '@tasks/interfaces/save-operation.interface';
-import { TimeLogListDialogData } from '@tasks/interfaces/time-log-list-dialog-data.interface';
-import { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
-import { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
+import type { TimeLogListDialogData } from '@tasks/interfaces/time-log-list-dialog-data.interface';
+import type { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
+import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
 import type { TimeLogEditService } from '@tasks/services/time-log-edit.service';
 
 @Component({
@@ -44,7 +45,7 @@ export class TimeLogListModalComponent {
 
   protected columns: Column[];
 
-  private readonly loadTimeLogEditService = injectAsync(
+  private readonly loadTimeLogEditService: AsyncLoader<TimeLogEditService> = injectAsync(
     () => import('@tasks/services/time-log-edit.service').then((m) => m.TimeLogEditService),
   );
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
@@ -54,7 +55,7 @@ export class TimeLogListModalComponent {
   private readonly dialogRef: MatDialogRef<TimeLogListModalComponent, undefined | TimeLogsModalResponse> = inject<MatDialogRef<TimeLogListModalComponent, TimeLogsModalResponse | undefined>>(MatDialogRef);
   private readonly timeLogsState: WritableSignal<TimeLog[]> = signal([...this.data.task.timeLogs]);
 
-  protected readonly timeLogs = computed(() => this.timeLogsState());
+  protected readonly timeLogs: Signal<TimeLog[]> = computed(() => this.timeLogsState());
 
   private readonly createdTimeLogs: WritableSignal<TimeLog[]> = signal([]);
   private readonly updatedTimeLogs: WritableSignal<TimeLog[]> = signal([]);

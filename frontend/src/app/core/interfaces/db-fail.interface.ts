@@ -1,4 +1,4 @@
-import { KeyValueEntry } from '@core/types/key-value-entry.type';
+import type { KeyValueEntry } from '@core/types/key-value-entry.type';
 
 export interface DbFail {
   customStoreName?: string;

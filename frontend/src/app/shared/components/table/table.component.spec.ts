@@ -6,7 +6,7 @@ import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Column } from '../../interfaces/column.interface';
+import type { Column } from '../../interfaces/column.interface';
 import { AreYouSureService } from '../../services/are-you-sure.service';
 import { TableComponent } from './table.component';
 

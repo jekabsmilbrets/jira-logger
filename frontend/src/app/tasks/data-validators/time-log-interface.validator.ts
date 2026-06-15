@@ -1,6 +1,6 @@
-import { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
+import type { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
 
-import { TimeLogInterfaceData, TimeLogsInterfaceData } from '@tasks/interfaces/imported-task-data.interface';
+import type { TimeLogInterfaceData, TimeLogsInterfaceData } from '@tasks/interfaces/imported-task-data.interface';
 
 export const validateTimeLogInterfaceData: (timeLogInterfaceData: TimeLogInterfaceData) => ApiTimeLog = (
   timeLogInterfaceData: TimeLogInterfaceData,

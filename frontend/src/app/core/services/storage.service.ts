@@ -1,16 +1,16 @@
-import { inject, Service, Signal, signal, WritableSignal } from '@angular/core';
+import { inject, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
 import { UseStore } from 'idb-keyval';
 import { catchError, finalize, from, map, Observable, of, switchMap, take, throwError } from 'rxjs';
 
-import { DbFail } from '@core/interfaces/db-fail.interface';
+import type { DbFail } from '@core/interfaces/db-fail.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { storageIdbGateway } from '@core/services/storage-idb.gateway';
-import { KeyValueEntry } from '@core/types/key-value-entry.type';
+import type { KeyValueEntry } from '@core/types/key-value-entry.type';
 import { RequestGate } from '@core/utilities/request-gate.utility';
 import { waitForTurn } from '@core/utilities/wait-for.utility';
 
-import { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
 
 @Service()
 export class StorageService implements LoadableService {

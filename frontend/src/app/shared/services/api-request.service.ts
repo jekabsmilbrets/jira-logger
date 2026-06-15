@@ -1,13 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 
-import { map, Observable } from 'rxjs';
+import { map, type Observable } from 'rxjs';
 
 import { environment } from '@environments/environment';
 
-import { JsonApi } from '@core/interfaces/json-api.interface';
+import type { JsonApi } from '@core/interfaces/json-api.interface';
 
-import { ApiRequestBody } from '@shared/types/api-request-body.type';
+import type { ApiRequestBody } from '@shared/types/api-request-body.type';
 
 @Service()
 export class ApiRequestService {

@@ -1,10 +1,24 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, InputSignal, output, OutputEmitterRef, signal } from '@angular/core';
-import { disabled, form } from '@angular/forms/signals';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  input,
+  type InputSignal,
+  output,
+  type OutputEmitterRef,
+  type Signal,
+  signal,
+  type WritableSignal,
+} from '@angular/core';
+import { disabled, type FieldTree, form } from '@angular/forms/signals';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 
 import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
+
+import type { ReportTagFormValue } from '@report/interfaces/report-tag-form-value.interface';
 
 @Component({
   selector: 'shared-report-tag-filter',
@@ -22,17 +36,17 @@ export class ReportTagFilterComponent {
   public readonly disabled: InputSignal<boolean | null | undefined> = input<boolean | null>();
   public readonly tags: InputSignal<Tag[] | null | undefined> = input<Tag[] | null>();
 
-  protected readonly reportTagFormModel = signal<{ tags: Tag[] | null }>({
+  protected readonly reportTagFormModel: WritableSignal<ReportTagFormValue> = signal<ReportTagFormValue>({
     tags: null,
   });
-  protected readonly reportTagForm = form(this.reportTagFormModel, (path) => {
+  protected readonly reportTagForm: FieldTree<ReportTagFormValue> = form(this.reportTagFormModel, (path) => {
     disabled(path, () => !!this.disabled());
   });
 
   protected readonly tagChange: OutputEmitterRef<Tag[]> = output<Tag[]>();
 
   private readonly tagsService: TagsService = inject(TagsService);
-  protected readonly availableTags = this.tagsService.tags;
+  protected readonly availableTags: Signal<Tag[]> = this.tagsService.tags;
 
   constructor() {
     effect(() => {

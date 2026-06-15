@@ -1,4 +1,4 @@
-import { ApiJiraWorkLog } from '@shared/interfaces/api/jira-work-log.interface';
+import type { ApiJiraWorkLog } from '@shared/interfaces/api/jira-work-log.interface';
 import { JiraWorkLog } from '@shared/models/jira-work-log.model';
 
 export const adaptJiraWorkLog: (apiJiraWorkLog: ApiJiraWorkLog) => JiraWorkLog = (apiJiraWorkLog: ApiJiraWorkLog): JiraWorkLog =>

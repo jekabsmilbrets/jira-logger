@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 
-import { ErrorDialogData } from '@shared/interfaces/error-dialog-data.interface';
+import type { ErrorDialogData } from '@shared/interfaces/error-dialog-data.interface';
 
 @Component({
   selector: 'shared-error-dialog',

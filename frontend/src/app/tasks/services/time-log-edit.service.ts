@@ -1,5 +1,5 @@
 import { inject, Service } from '@angular/core';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, type MatDialogRef } from '@angular/material/dialog';
 
 import { Observable } from 'rxjs';
 
@@ -8,8 +8,8 @@ import { TimeLog } from '@shared/models/time-log.model';
 
 import { TimeLogListModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-list-modal.component';
 import { TimeLogModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-modal/time-log-modal.component';
-import { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
-import { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
+import type { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
+import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
 
 @Service()
 export class TimeLogEditService {

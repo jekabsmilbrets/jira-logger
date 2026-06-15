@@ -1,4 +1,4 @@
-import { TimezoneDateParts } from '@core/interfaces/timezone-date-parts.interface';
+import type { TimezoneDateParts } from '@core/interfaces/timezone-date-parts.interface';
 
 const createFormatter: (
   timezone: string,

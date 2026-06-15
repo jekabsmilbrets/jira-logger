@@ -1,21 +1,21 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { inject, Service, Signal, signal, WritableSignal } from '@angular/core';
+import { inject, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { catchError, finalize, map, Observable, of, Subject, switchMap, tap, throwError } from 'rxjs';
+import { catchError, finalize, map, type Observable, of, Subject, switchMap, tap, throwError } from 'rxjs';
 
-import { JsonApi } from '@core/interfaces/json-api.interface';
+import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { RequestGate } from '@core/utilities/request-gate.utility';
 import { waitForTurn } from '@core/utilities/wait-for.utility';
 
 import { adaptTimeLog, adaptTimeLogs } from '@shared/adapters/time-log.adapter';
-import { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
-import { LoadableService } from '@shared/interfaces/loadable-service.interface';
-import { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
+import type { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
+import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import type { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
-import { ApiRequestBody } from '@shared/types/api-request-body.type';
+import type { ApiRequestBody } from '@shared/types/api-request-body.type';
 import { toUnixMs } from '@shared/utilities/to-unix-ms.utility';
 
 @Service()

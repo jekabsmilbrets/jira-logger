@@ -1,16 +1,16 @@
 import { Clipboard } from '@angular/cdk/clipboard';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, OnInit, Signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, type OnInit, type Signal } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
-import { catchError, Observable, of, switchMap } from 'rxjs';
+import { catchError, type Observable, of, switchMap } from 'rxjs';
 
 import { DynamicMenu } from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
 import { TableComponent } from '@shared/components/table/table.component';
-import { Column } from '@shared/interfaces/column.interface';
-import { Searchable } from '@shared/interfaces/searchable.interface';
+import type { Column } from '@shared/interfaces/column.interface';
+import type { Searchable } from '@shared/interfaces/searchable.interface';
 import { Task } from '@shared/models/task.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import { TasksService } from '@shared/services/tasks.service';
@@ -41,7 +41,7 @@ export class ReportViewComponent implements OnInit {
   protected readonly tasks: Signal<Task[]> = this.reportService.tasks;
   protected readonly reportMode: Signal<ReportMode> = this.reportService.reportMode;
 
-  protected ReportMode = ReportMode;
+  protected readonly ReportMode: typeof ReportMode = ReportMode;
 
   protected get columns(): Signal<Column[]> {
     return this.reportService.columns;

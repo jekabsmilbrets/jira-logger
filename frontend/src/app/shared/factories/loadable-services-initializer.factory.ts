@@ -1,4 +1,4 @@
-import { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
 
 export const loadableServicesInitializerFactory: (...services: LoadableService[]) => () => Promise<void> =
   (

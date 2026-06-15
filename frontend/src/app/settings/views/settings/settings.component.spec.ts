@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, input, output, Signal, signal } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ChangeDetectionStrategy, Component, input, output, type Signal, signal } from '@angular/core';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { of } from 'rxjs';
@@ -20,7 +20,7 @@ import { ReportConfiguratorComponent } from '@settings/components/report-configu
 import { UserSettingsConfiguratorComponent } from '@settings/components/user-settings-configurator/user-settings-configurator.component';
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
-import { ReportSettings } from '@settings/interfaces/report-settings.interface';
+import type { ReportSettings } from '@settings/interfaces/report-settings.interface';
 import { SettingsComponent } from '@settings/views/settings/settings.component';
 
 @Component({

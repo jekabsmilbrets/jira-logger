@@ -59,8 +59,9 @@ export default tseslint.config(
       '@typescript-eslint/no-inferrable-types': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/typedef': [
-        'warn',
+        'error',
         {
+          memberVariableDeclaration: true,
           variableDeclaration: true,
         },
       ],

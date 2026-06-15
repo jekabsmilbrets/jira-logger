@@ -9,7 +9,7 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
-import { disabled, form, FormField, required } from '@angular/forms/signals';
+import { disabled, type FieldTree, form, FormField, required } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -20,7 +20,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { Setting } from '@core/models/setting.model';
 
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
-import { JiraApiFormValue } from '@settings/interfaces/jira-api-form-value.interface';
+import type { JiraApiFormValue } from '@settings/interfaces/jira-api-form-value.interface';
 
 @Component({
   selector: 'settings-jira-api-configurator',
@@ -50,7 +50,7 @@ export class JiraApiConfiguratorComponent {
   });
   protected readonly hidePersonalAccessToken: WritableSignal<boolean> = signal(true);
   protected readonly hasStoredPersonalAccessToken: WritableSignal<boolean> = signal(false);
-  protected readonly jiraApiForm = form(this.jiraApiFormModel, (path) => {
+  protected readonly jiraApiForm: FieldTree<JiraApiFormValue> = form(this.jiraApiFormModel, (path) => {
     required(path.host, { message: 'Host is required.' });
     required(path.personalAccessToken, {
       message: 'Token is required.',
@@ -135,7 +135,7 @@ export class JiraApiConfiguratorComponent {
     this.hidePersonalAccessToken.set(true);
   }
 
-  protected readonly isTokenRequired = () => this.jiraApiForm.personalAccessToken().getError('required') !== undefined;
+  protected readonly isTokenRequired: () => boolean = () => this.jiraApiForm.personalAccessToken().getError('required') !== undefined;
 
   private getSetting(
     name: JiraApiSettings,

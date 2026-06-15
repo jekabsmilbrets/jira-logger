@@ -1,17 +1,17 @@
-import { computed, inject, Service, Signal, signal, WritableSignal } from '@angular/core';
+import { computed, inject, type ResourceRef, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 
-import { catchError, debounceTime, Observable, of } from 'rxjs';
+import { catchError, debounceTime, type Observable, of } from 'rxjs';
 
 import { Setting } from '@core/models/setting.model';
 import { SettingsService } from '@core/services/settings.service';
 
-import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
+import type { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 import { Task } from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
 
 import { ReportMode } from '@report/enums/report-mode.enum';
-import { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
+import type { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
 import { ReportStateService } from '@report/services/report-state.service';
 
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
@@ -21,21 +21,27 @@ export class ReportTaskQueryService {
   private readonly settingsService: SettingsService = inject(SettingsService);
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly reportStateService: ReportStateService = inject(ReportStateService);
-
   private readonly reloadVersionSignal: WritableSignal<number> = signal<number>(0);
 
   public readonly jiraApiEnabled: Signal<boolean> = computed(() => this.isJiraApiEnabled(this.settingsService.settings()));
-
-  private readonly taskRequest = computed(() => ({
+  private readonly taskRequest: Signal<{
+    state: ReportStateSnapshot;
+    jiraApiEnabled: boolean;
+    reloadVersion: number;
+  }> = computed(() => ({
     state: this.reportStateService.getStateSnapshot(),
     jiraApiEnabled: this.jiraApiEnabled(),
     reloadVersion: this.reloadVersionSignal(),
   }));
-  private readonly debouncedTaskRequest = toSignal(
+  private readonly debouncedTaskRequest: Signal<{
+    state: ReportStateSnapshot;
+    jiraApiEnabled: boolean;
+    reloadVersion: number;
+  }> = toSignal(
     toObservable(this.taskRequest).pipe(debounceTime(250)),
     { initialValue: this.taskRequest() },
   );
-  private readonly tasksResource = rxResource({
+  private readonly tasksResource: ResourceRef<Task[] | undefined> = rxResource({
     params: this.debouncedTaskRequest,
     stream: ({ params }) => this.filterTasks(
       params.state,

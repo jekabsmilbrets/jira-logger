@@ -1,4 +1,4 @@
-import { effect, inject, Service, Signal, signal } from '@angular/core';
+import { effect, inject, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
 import { catchError, of, take, tap } from 'rxjs';
 
@@ -8,21 +8,21 @@ import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
 
 import { ReportMode } from '@report/enums/report-mode.enum';
-import { ReportSettingsStorageValue } from '@report/interfaces/report-settings-storage-value.interface';
-import { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
+import type { ReportSettingsStorageValue } from '@report/interfaces/report-settings-storage-value.interface';
+import type { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
 
 @Service()
 export class ReportStateService {
   private readonly storageService: StorageService = inject(StorageService);
   private readonly tagsService: TagsService = inject(TagsService);
 
-  private readonly reportModeSignal = signal<ReportMode>(ReportMode.total);
-  private readonly tagsSignal = signal<Tag[]>([]);
-  private readonly dateSignal = signal<Date | null>(null);
-  private readonly startDateSignal = signal<Date | null>(null);
-  private readonly endDateSignal = signal<Date | null>(null);
-  private readonly showWeekendsSignal = signal<boolean>(false);
-  private readonly hideUnreportedTasksSignal = signal<boolean>(false);
+  private readonly reportModeSignal: WritableSignal<ReportMode> = signal<ReportMode>(ReportMode.total);
+  private readonly tagsSignal: WritableSignal<Tag[]> = signal<Tag[]>([]);
+  private readonly dateSignal: WritableSignal<Date | null> = signal<Date | null>(null);
+  private readonly startDateSignal: WritableSignal<Date | null> = signal<Date | null>(null);
+  private readonly endDateSignal: WritableSignal<Date | null> = signal<Date | null>(null);
+  private readonly showWeekendsSignal: WritableSignal<boolean> = signal<boolean>(false);
+  private readonly hideUnreportedTasksSignal: WritableSignal<boolean> = signal<boolean>(false);
 
   private readonly settingsKey: IDBValidKey = 'report';
   private readonly customStoreName: string = 'settings';

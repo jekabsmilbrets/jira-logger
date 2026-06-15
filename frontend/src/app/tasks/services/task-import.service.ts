@@ -1,15 +1,15 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { inject, Service, Signal, signal, WritableSignal } from '@angular/core';
+import { inject, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { catchError, concat, finalize, map, Observable, of, switchMap, throwError, toArray } from 'rxjs';
+import { catchError, concat, finalize, map, type Observable, of, switchMap, throwError, toArray } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { RequestGate } from '@core/utilities/request-gate.utility';
 import { waitForTurn } from '@core/utilities/wait-for.utility';
 
 import { adaptTasks } from '@shared/adapters/task.adapter';
-import { ApiTask } from '@shared/interfaces/api/api-task.interface';
-import { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
+import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TasksService } from '@shared/services/tasks.service';

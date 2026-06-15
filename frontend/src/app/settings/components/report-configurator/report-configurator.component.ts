@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, InputSignal, output, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, type InputSignal, output, type OutputEmitterRef } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 
 import { ReportDateSelectorComponent } from '@shared/components/report-menu/report-date-selector/report-date-selector.component';
@@ -10,7 +10,7 @@ import { Tag } from '@shared/models/tag.model';
 
 import { ReportMode } from '@report/enums/report-mode.enum';
 
-import { ReportSettings } from '@settings/interfaces/report-settings.interface';
+import type { ReportSettings } from '@settings/interfaces/report-settings.interface';
 
 @Component({
   selector: 'settings-report-configurator',

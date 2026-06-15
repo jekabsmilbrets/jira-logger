@@ -1,4 +1,4 @@
-import { ReportMode } from '@report/enums/report-mode.enum';
+import type { ReportMode } from '@report/enums/report-mode.enum';
 
 export interface ReportSettingsStorageValue {
   reportMode: ReportMode;

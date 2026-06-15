@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, ParamMap, Router } from '@angular/router';
+import { type ActivatedRouteSnapshot, ParamMap, Router } from '@angular/router';
 
-import { Observable, of } from 'rxjs';
+import { type Observable, of } from 'rxjs';
 
 import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';

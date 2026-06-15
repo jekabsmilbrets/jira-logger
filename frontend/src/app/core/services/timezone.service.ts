@@ -1,4 +1,4 @@
-import { computed, inject, Service, Signal } from '@angular/core';
+import { computed, inject, Service, type Signal } from '@angular/core';
 
 import { environment } from '@environments/environment';
 

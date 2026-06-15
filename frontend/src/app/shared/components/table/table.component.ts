@@ -38,12 +38,13 @@ import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
 import { formatDateInTimezone } from '@core/utilities/format-date-in-timezone.utility';
 
-import { Column } from '@shared/interfaces/column.interface';
-import { Searchable } from '@shared/interfaces/searchable.interface';
+import type { Column } from '@shared/interfaces/column.interface';
+import type { Searchable } from '@shared/interfaces/searchable.interface';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import type { AreYouSureService } from '@shared/services/are-you-sure.service';
+import type { AsyncLoader } from '@shared/types/async-loader.type';
 import { getNestedObject } from '@shared/utilities/get-nested-object.utility';
 
 @Component({
@@ -96,7 +97,7 @@ export class TableComponent implements AfterViewInit {
   protected readonly sort: Signal<MatSort> = viewChild.required(MatSort);
 
   protected readonly paginator: Signal<MatPaginator> = viewChild.required(MatPaginator);
-  protected readonly displayedColumns = computed(() => {
+  protected readonly displayedColumns: Signal<string[]> = computed(() => {
     const columns: string[] = this.columns()
       .filter(({ hidden }: Column) => !hidden)
       .filter(({ excludeFromLoop }: Column) => !excludeFromLoop)
@@ -117,7 +118,7 @@ export class TableComponent implements AfterViewInit {
 
   protected dataSource: MatTableDataSource<Searchable> = new MatTableDataSource<Searchable>([]);
 
-  private readonly loadAreYouSureService = injectAsync(
+  private readonly loadAreYouSureService: AsyncLoader<AreYouSureService> = injectAsync(
     () => import('@shared/services/are-you-sure.service').then((m) => m.AreYouSureService),
   );
   private readonly timezoneService: TimezoneService = inject(TimezoneService);

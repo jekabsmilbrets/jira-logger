@@ -1,6 +1,6 @@
 import { environment } from '@environments/environment';
 
-import { RuntimeConfig } from '@core/interfaces/runtime-config.interface';
+import type { RuntimeConfig } from '@core/interfaces/runtime-config.interface';
 
 export async function runtimeConfigInitializer(): Promise<void> {
   const runtimeConfigPath: string = new URL(

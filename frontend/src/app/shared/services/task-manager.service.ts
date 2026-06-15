@@ -1,4 +1,4 @@
-import { computed, inject, Service, Signal, signal, WritableSignal } from '@angular/core';
+import { computed, inject, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
 import { catchError, interval, map, Observable, of, switchMap, take, tap } from 'rxjs';
 

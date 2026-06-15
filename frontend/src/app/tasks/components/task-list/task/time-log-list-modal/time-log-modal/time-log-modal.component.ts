@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal, WritableSignal } from '@angular/core';
-import { form, FormField, required, validate } from '@angular/forms/signals';
+import { ChangeDetectionStrategy, Component, inject, signal, type WritableSignal } from '@angular/core';
+import { type FieldTree, form, FormField, required, validate } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -15,10 +15,10 @@ import { fromWallClockDateInTimezone, toWallClockDateInTimezone } from '@core/ut
 
 import { TimeLog } from '@shared/models/time-log.model';
 
-import { TimeLogDialogData } from '@tasks/interfaces/time-log-dialog-data.interface';
-import { TimeLogFormData } from '@tasks/interfaces/time-log-form-data.interface';
-import { TimeLogFormValue } from '@tasks/interfaces/time-log-form-value.interface';
-import { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
+import type { TimeLogDialogData } from '@tasks/interfaces/time-log-dialog-data.interface';
+import type { TimeLogFormData } from '@tasks/interfaces/time-log-form-data.interface';
+import type { TimeLogFormValue } from '@tasks/interfaces/time-log-form-value.interface';
+import type { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
 import { buildTimeLogPayload } from '@tasks/utility/task-payload-builder.utility';
 
 @Component({
@@ -46,7 +46,7 @@ export class TimeLogModalComponent {
     endTime: null,
     description: '',
   });
-  protected readonly timeLogForm = form(this.timeLogFormModel, (path) => {
+  protected readonly timeLogForm: FieldTree<TimeLogFormValue> = form(this.timeLogFormModel, (path) => {
     required(path.startTime, { message: 'Start time is required.' });
     validate(path.endTime, ({ value, valueOf }) => {
       const startTime: Date | null = valueOf(path.startTime);

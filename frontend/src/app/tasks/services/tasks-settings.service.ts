@@ -1,9 +1,9 @@
 import { inject, Service } from '@angular/core';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, type MatDialogRef } from '@angular/material/dialog';
 
 import { Observable } from 'rxjs';
 
-import { ApiTask } from '@shared/interfaces/api/api-task.interface';
+import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { Task } from '@shared/models/task.model';
 
 import { TasksSettingsDialogComponent } from '@tasks/components/tasks-menu/settings-dialog/tasks-settings-dialog.component';

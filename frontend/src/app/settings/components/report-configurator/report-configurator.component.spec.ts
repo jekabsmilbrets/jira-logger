@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { vi } from 'vitest';
@@ -12,7 +12,7 @@ import { Tag } from '@shared/models/tag.model';
 
 import { ReportMode } from '@report/enums/report-mode.enum';
 
-import { ReportSettings } from '@settings/interfaces/report-settings.interface';
+import type { ReportSettings } from '@settings/interfaces/report-settings.interface';
 
 import { ReportConfiguratorComponent } from './report-configurator.component';
 

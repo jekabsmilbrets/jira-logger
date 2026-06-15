@@ -1,8 +1,8 @@
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 
-import { TaskFormPayload } from '@tasks/interfaces/task-form-payload.interface';
-import { TimeLogFormData } from '@tasks/interfaces/time-log-form-data.interface';
+import type { TaskFormPayload } from '@tasks/interfaces/task-form-payload.interface';
+import type { TimeLogFormData } from '@tasks/interfaces/time-log-form-data.interface';
 
 export const buildTaskUpdatePayload: (sourceTask: Task, formData: TaskFormPayload) => Task = (
   sourceTask: Task,

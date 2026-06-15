@@ -1,10 +1,10 @@
 import { formatDate } from '@angular/common';
-import { computed, inject, Service, Signal } from '@angular/core';
+import { computed, inject, Service, type Signal } from '@angular/core';
 
 import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
 
-import { Column } from '@shared/interfaces/column.interface';
+import type { Column } from '@shared/interfaces/column.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 

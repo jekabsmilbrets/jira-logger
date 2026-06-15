@@ -1,8 +1,8 @@
-import { Signal, signal } from '@angular/core';
+import { type Signal, signal, type WritableSignal } from '@angular/core';
 
 import { vi } from 'vitest';
 
-import { Column } from '@shared/interfaces/column.interface';
+import type { Column } from '@shared/interfaces/column.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 
@@ -21,15 +21,15 @@ export class ReportServiceStub {
   public readonly columns: Signal<Column[]>;
   public readonly reload: ReturnType<typeof vi.fn>;
 
-  private readonly reportModeSignal;
-  private readonly tagsSignal;
-  private readonly dateSignal;
-  private readonly startDateSignal;
-  private readonly endDateSignal;
-  private readonly showWeekendsSignal;
-  private readonly hideUnreportedTasksSignal;
-  private readonly tasksSignal;
-  private readonly columnsSignal;
+  private readonly reportModeSignal: WritableSignal<ReportMode>;
+  private readonly tagsSignal: WritableSignal<Tag[]>;
+  private readonly dateSignal: WritableSignal<Date | null>;
+  private readonly startDateSignal: WritableSignal<Date | null>;
+  private readonly endDateSignal: WritableSignal<Date | null>;
+  private readonly showWeekendsSignal: WritableSignal<boolean>;
+  private readonly hideUnreportedTasksSignal: WritableSignal<boolean>;
+  private readonly tasksSignal: WritableSignal<Task[]>;
+  private readonly columnsSignal: WritableSignal<Column[]>;
 
   public constructor(private readonly options: ReportServiceStubOptions = {}) {
     this.reportModeSignal = signal<ReportMode>(options.reportMode ?? ReportMode.total);

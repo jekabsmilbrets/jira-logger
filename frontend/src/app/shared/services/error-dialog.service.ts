@@ -1,10 +1,10 @@
 import { inject, Service } from '@angular/core';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, type MatDialogRef } from '@angular/material/dialog';
 
 import { Observable } from 'rxjs';
 
 import { ErrorDialogComponent } from '@shared/components/error-dialog/error-dialog.component';
-import { ErrorDialogData } from '@shared/interfaces/error-dialog-data.interface';
+import type { ErrorDialogData } from '@shared/interfaces/error-dialog-data.interface';
 
 @Service()
 export class ErrorDialogService {

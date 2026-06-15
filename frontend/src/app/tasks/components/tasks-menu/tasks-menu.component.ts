@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject, injectAsync, Signal, signal, WritableSignal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, injectAsync, type Signal, signal, type WritableSignal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { form, FormField, required, validateAsync } from '@angular/forms/signals';
+import { type FieldTree, form, FormField, required, validateAsync } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatOptionModule } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -9,14 +9,15 @@ import { MatSelectModule } from '@angular/material/select';
 
 import { catchError, map, of, switchMap, take } from 'rxjs';
 
-import { ApiTask } from '@shared/interfaces/api/api-task.interface';
+import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
+import type { AsyncLoader } from '@shared/types/async-loader.type';
 
 import { TasksSettingsToggleComponent } from '@tasks/components/tasks-menu/tasks-settings-toggler/tasks-settings-toggle.component';
-import { CreateTaskFormValue } from '@tasks/interfaces/create-task-form-value.interface';
+import type { CreateTaskFormValue } from '@tasks/interfaces/create-task-form-value.interface';
 import { TaskImportService } from '@tasks/services/task-import.service';
 import { TasksMenuFilterService } from '@tasks/services/tasks-menu-filter.service';
 import type { TasksSettingsService } from '@tasks/services/tasks-settings.service';
@@ -47,7 +48,7 @@ export class TasksMenuComponent {
 
   private readonly tasksService: TasksService = inject(TasksService);
 
-  protected readonly createTaskForm = form(this.createTaskFormModel, (path) => {
+  protected readonly createTaskForm: FieldTree<CreateTaskFormValue> = form(this.createTaskFormModel, (path) => {
     required(path.name, { message: 'Task name is required.' });
     validateAsync(path.name, {
       params: ({ value }) => {
@@ -79,7 +80,7 @@ export class TasksMenuComponent {
     });
   });
 
-  private readonly loadTasksSettingsService = injectAsync(
+  private readonly loadTasksSettingsService: AsyncLoader<TasksSettingsService> = injectAsync(
     () => import('@tasks/services/tasks-settings.service').then((m) => m.TasksSettingsService),
   );
   private readonly taskImportService: TaskImportService = inject(TaskImportService);
@@ -89,8 +90,8 @@ export class TasksMenuComponent {
   protected readonly isLoading: Signal<boolean> = this.tasksService.isLoading;
   protected readonly tags: Signal<Tag[]> = this.tagsService.tags;
 
-  private readonly taskFilterName = computed(() => this.createTaskForm.name().value().trim());
-  private readonly taskFilterRefresh = this.tasksMenuFilterService.createTaskRefresh(this.taskFilterName);
+  private readonly taskFilterName: Signal<string> = computed(() => this.createTaskForm.name().value().trim());
+  private readonly taskFilterRefresh: Signal<Task[] | null> = this.tasksMenuFilterService.createTaskRefresh(this.taskFilterName);
 
   constructor() {
     this.taskFilterRefresh();

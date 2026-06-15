@@ -1,11 +1,27 @@
-import { ChangeDetectionStrategy, Component, effect, input, InputSignal, output, OutputEmitterRef, signal } from '@angular/core';
-import { disabled, form, FormField } from '@angular/forms/signals';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  input,
+  type InputSignal,
+  output,
+  type OutputEmitterRef,
+  signal,
+  type WritableSignal,
+} from '@angular/core';
+import { disabled, type FieldTree, form, FormField } from '@angular/forms/signals';
 import { MatNativeDateModule } from '@angular/material/core';
-import { DateRange, ExtractDateTypeFromSelection, MatDatepickerInputEvent, MatDatepickerModule } from '@angular/material/datepicker';
+import {
+  DateRange,
+  type ExtractDateTypeFromSelection,
+  type MatDatepickerInputEvent,
+  MatDatepickerModule,
+} from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 
-import { ReportMode } from '@report/enums/report-mode.enum';
+import type { ReportMode } from '@report/enums/report-mode.enum';
+import type { ReportDateFormValue } from '@report/interfaces/report-date-form-value.interface';
 
 @Component({
   selector: 'shared-report-date-selector',
@@ -29,12 +45,12 @@ export class ReportDateSelectorComponent {
   public readonly startDate: InputSignal<Date | null | undefined> = input<Date | null>();
   public readonly endDate: InputSignal<Date | null | undefined> = input<Date | null>();
 
-  protected readonly reportDateFormModel = signal({
+  protected readonly reportDateFormModel: WritableSignal<ReportDateFormValue> = signal({
     date: null as Date | null,
     startDate: null as Date | null,
     endDate: null as Date | null,
   });
-  protected readonly reportDateForm = form(this.reportDateFormModel, (path) => {
+  protected readonly reportDateForm: FieldTree<ReportDateFormValue> = form(this.reportDateFormModel, (path) => {
     disabled(path, () => !!this.disabled());
   });
 

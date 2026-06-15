@@ -10,18 +10,18 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
-import { disabled, form } from '@angular/forms/signals';
+import { disabled, type FieldTree, form } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 
-import { LocaleOption } from '@core/interfaces/locale-option.interface';
+import type { LocaleOption } from '@core/interfaces/locale-option.interface';
 import { Setting } from '@core/models/setting.model';
 import { LocaleService } from '@core/services/locale.service';
 
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
-import { UserSettingsFormValue } from '@settings/interfaces/user-settings-form-value.interface';
+import type { UserSettingsFormValue } from '@settings/interfaces/user-settings-form-value.interface';
 
 @Component({
   selector: 'settings-timezone-configurator',
@@ -47,7 +47,7 @@ export class UserSettingsConfiguratorComponent {
     locale: 'lv-LV',
     timezone: '',
   });
-  protected readonly userSettingsForm = form(this.userSettingsFormModel, (path) => {
+  protected readonly userSettingsForm: FieldTree<UserSettingsFormValue> = form(this.userSettingsFormModel, (path) => {
     disabled(path, () => !!this.disabled());
   });
   protected timezones: string[] = this.getSupportedTimezones();

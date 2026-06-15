@@ -1,10 +1,21 @@
-import { ChangeDetectionStrategy, Component, effect, input, InputSignal, output, OutputEmitterRef, signal } from '@angular/core';
-import { disabled, form } from '@angular/forms/signals';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  input,
+  type InputSignal,
+  output,
+  type OutputEmitterRef,
+  signal,
+  type WritableSignal,
+} from '@angular/core';
+import { disabled, type FieldTree, form } from '@angular/forms/signals';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 
 import { reportModes } from '@report/constants/report-modes.constant';
 import { ReportMode } from '@report/enums/report-mode.enum';
+import type { ReportModeFormValue } from '@report/interfaces/report-mode-form-value.interface';
 
 @Component({
   selector: 'shared-report-mode-switcher',
@@ -26,10 +37,10 @@ export class ReportModeSwitcherComponent {
     value: ReportMode;
     viewValue: string;
   }[] = reportModes;
-  protected readonly reportModeFormModel = signal<{ reportMode: ReportMode | null }>({
+  protected readonly reportModeFormModel: WritableSignal<ReportModeFormValue> = signal<ReportModeFormValue>({
     reportMode: ReportMode.total,
   });
-  protected readonly reportModeForm = form(this.reportModeFormModel, (path) => {
+  protected readonly reportModeForm: FieldTree<ReportModeFormValue> = form(this.reportModeFormModel, (path) => {
     disabled(path, () => !!this.disabled());
   });
 

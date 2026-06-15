@@ -1,6 +1,6 @@
-import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
+import { BreakpointObserver, type BreakpointState } from '@angular/cdk/layout';
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, Signal, TemplateRef, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, type Signal, type TemplateRef, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -46,7 +46,7 @@ export class ReportMenuComponent {
   protected readonly isSmallerThanDesktop: Signal<boolean>;
   protected readonly showDatePicker: Signal<boolean>;
 
-  protected ReportMode = ReportMode;
+  protected readonly ReportMode: typeof ReportMode = ReportMode;
 
   private readonly matDialog: MatDialog = inject(MatDialog);
   private readonly reportService: ReportService = inject(ReportService);

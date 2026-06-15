@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, output, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, output, type OutputEmitterRef } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListItem, MatNavList } from '@angular/material/list';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
-import { SideNav } from '@layout/interfaces/side-nav.interface';
+import type { SideNav } from '@layout/interfaces/side-nav.interface';
 
 @Component({
   selector: 'layout-sidenav',

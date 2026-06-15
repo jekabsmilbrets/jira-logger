@@ -1,4 +1,4 @@
-import { effect, inject, Service } from '@angular/core';
+import { effect, EffectRef, inject, Service } from '@angular/core';
 import { DateAdapter } from '@angular/material/core';
 
 import { environment } from '@environments/environment';
@@ -12,7 +12,7 @@ export class MaterialLocaleBridgeService {
 
   private activeLocale: string = environment['appLocale'] as string;
 
-  private readonly syncLocaleEffect = effect(() => {
+  private readonly syncLocaleEffect: EffectRef = effect(() => {
     const locale: string = this.localeService.localeSignal();
 
     if (locale === this.activeLocale) {

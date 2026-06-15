@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, output, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, output, type OutputEmitterRef } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 

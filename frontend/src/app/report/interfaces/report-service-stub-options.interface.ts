@@ -1,10 +1,10 @@
 import { vi } from 'vitest';
 
-import { Column } from '@shared/interfaces/column.interface';
+import type { Column } from '@shared/interfaces/column.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 
-import { ReportMode } from '@report/enums/report-mode.enum';
+import type { ReportMode } from '@report/enums/report-mode.enum';
 
 export interface ReportServiceStubOptions {
   reportMode?: ReportMode;

@@ -1,10 +1,10 @@
-import { Service, Signal, signal } from '@angular/core';
+import { Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
 import { DynamicMenu } from '@core/models/dynamic-menu';
 
 @Service()
 export class DynamicMenuService {
-  private readonly dynamicMenusSignal = signal<DynamicMenu[]>([]);
+  private readonly dynamicMenusSignal: WritableSignal<DynamicMenu[]> = signal<DynamicMenu[]>([]);
 
   public readonly dynamicMenus: Signal<DynamicMenu[]> = this.dynamicMenusSignal.asReadonly();
 

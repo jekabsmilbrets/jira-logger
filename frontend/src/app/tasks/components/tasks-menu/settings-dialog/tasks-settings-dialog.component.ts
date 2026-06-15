@@ -1,7 +1,7 @@
 import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
 import { JsonPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal, WritableSignal } from '@angular/core';
-import { form, FormField, required } from '@angular/forms/signals';
+import { ChangeDetectionStrategy, Component, inject, signal, type WritableSignal } from '@angular/core';
+import { type FieldTree, form, FormField, required } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -9,14 +9,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
-import { ApiTask } from '@shared/interfaces/api/api-task.interface';
+import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
 
 import { validateTasksInterfaceData } from '@tasks/data-validators/task-interface.validator';
-import { TaskSettingsFormData } from '@tasks/interfaces/task-settings-form-data.interface';
-import { TasksSettingsDialogData } from '@tasks/interfaces/tasks-settings-dialog-data.interface';
-import { TasksSettingsFormValue } from '@tasks/interfaces/tasks-settings-form-value.interface';
+import type { TaskSettingsFormData } from '@tasks/interfaces/task-settings-form-data.interface';
+import type { TasksSettingsDialogData } from '@tasks/interfaces/tasks-settings-dialog-data.interface';
+import type { TasksSettingsFormValue } from '@tasks/interfaces/tasks-settings-form-value.interface';
 
 @Component({
   selector: 'tasks-settings-dialog',
@@ -42,7 +42,7 @@ export class TasksSettingsDialogComponent {
   protected readonly tasksSettingsFormModel: WritableSignal<TasksSettingsFormValue> = signal<TasksSettingsFormValue>({
     json: '',
   });
-  protected readonly tasksSettingsForm = form(this.tasksSettingsFormModel, (path) => {
+  protected readonly tasksSettingsForm: FieldTree<TasksSettingsFormValue> = form(this.tasksSettingsFormModel, (path) => {
     required(path.json, { message: 'JSON is required.' });
   });
 

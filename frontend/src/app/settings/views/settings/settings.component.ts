@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, Signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, type Signal } from '@angular/core';
 
 import { forkJoin, switchMap, take } from 'rxjs';
 
@@ -8,7 +8,7 @@ import { SettingsService } from '@core/services/settings.service';
 
 import { Tag } from '@shared/models/tag.model';
 
-import { ReportMode } from '@report/enums/report-mode.enum';
+import type { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 
 import { JiraApiConfiguratorComponent } from '@settings/components/jira-api-configurator/jira-api-configurator.component';
@@ -16,7 +16,7 @@ import { ReportConfiguratorComponent } from '@settings/components/report-configu
 import { UserSettingsConfiguratorComponent } from '@settings/components/user-settings-configurator/user-settings-configurator.component';
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
-import { ReportSettings } from '@settings/interfaces/report-settings.interface';
+import type { ReportSettings } from '@settings/interfaces/report-settings.interface';
 
 @Component({
   selector: 'settings-view',

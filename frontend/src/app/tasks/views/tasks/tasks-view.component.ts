@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, Signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, type OnInit, type Signal } from '@angular/core';
 
-import { map, Observable, of, switchMap, take } from 'rxjs';
+import { map, type Observable, of, switchMap, take } from 'rxjs';
 
 import { DynamicMenu } from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';

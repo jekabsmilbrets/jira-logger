@@ -1,6 +1,6 @@
 import { formatDateInTimezone } from '@core/utilities/format-date-in-timezone.utility';
 
-import { Column } from '@shared/interfaces/column.interface';
+import type { Column } from '@shared/interfaces/column.interface';
 import { TimeLog } from '@shared/models/time-log.model';
 import { columnValue } from '@shared/utilities/column-value.utility';
 

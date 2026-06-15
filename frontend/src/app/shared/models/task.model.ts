@@ -1,4 +1,4 @@
-import { TimezoneDateParts } from '@core/interfaces/timezone-date-parts.interface';
+import type { TimezoneDateParts } from '@core/interfaces/timezone-date-parts.interface';
 import { Base } from '@core/models/base.model';
 import { getDateParts } from '@core/utilities/get-date-parts.utility';
 import {
@@ -7,7 +7,7 @@ import {
   isSameCalendarDateInTimezone,
 } from '@core/utilities/timezone-date.utility';
 
-import { Searchable } from '@shared/interfaces/searchable.interface';
+import type { Searchable } from '@shared/interfaces/searchable.interface';
 import { JiraWorkLog } from '@shared/models/jira-work-log.model';
 import { Tag } from '@shared/models/tag.model';
 import { TimeLog } from '@shared/models/time-log.model';
@@ -20,7 +20,7 @@ export class Task extends Base implements Searchable {
   private _timeLogs: TimeLog[] = [];
   private _jiraWorkLogs: JiraWorkLog[] = [];
 
-  private _timeLogged = 0;
+  private _timeLogged: number = 0;
 
   private _tags: Tag[] = [];
 

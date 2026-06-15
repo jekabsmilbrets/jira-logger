@@ -1,9 +1,9 @@
-import { computed, inject, Injector, ResourceRef, runInInjectionContext, Service, Signal } from '@angular/core';
+import { computed, inject, Injector, type ResourceRef, runInInjectionContext, Service, type Signal } from '@angular/core';
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 import { catchError, debounceTime, of, take } from 'rxjs';
 
-import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
+import type { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 import { Task } from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
 

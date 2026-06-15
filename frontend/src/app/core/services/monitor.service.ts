@@ -1,19 +1,19 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Service, Signal, signal, WritableSignal } from '@angular/core';
+import { inject, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { catchError, finalize, map, Observable, switchMap, tap, throwError } from 'rxjs';
+import { catchError, finalize, map, type Observable, switchMap, tap, throwError } from 'rxjs';
 
 import { environment } from '@environments/environment';
 
 import { adaptMonitor } from '@core/adapters/monitor.adapter';
-import { ApiMonitor } from '@core/interfaces/api/monitor.interface';
-import { JsonApi } from '@core/interfaces/json-api.interface';
+import type { ApiMonitor } from '@core/interfaces/api/monitor.interface';
+import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { Monitor } from '@core/models/monitor.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { RequestGate } from '@core/utilities/request-gate.utility';
 import { waitForTurn } from '@core/utilities/wait-for.utility';
 
-import { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
 
 @Service()
 export class MonitorService implements LoadableService {

@@ -1,27 +1,29 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { inject, injectAsync, Service, Signal, signal, WritableSignal } from '@angular/core';
+import { HttpClient, type HttpErrorResponse } from '@angular/common/http';
+import { inject, injectAsync, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { catchError, finalize, from, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, finalize, from, map, type Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 import { environment } from '@environments/environment';
 
 import { adaptSettings } from '@core/adapters/api-setting.adapter';
-import { ApiSetting } from '@core/interfaces/api/api-setting.interface';
-import { JsonApi } from '@core/interfaces/json-api.interface';
+import type { ApiSetting } from '@core/interfaces/api/api-setting.interface';
+import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { Setting } from '@core/models/setting.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { RequestGate } from '@core/utilities/request-gate.utility';
 import { waitForTurn } from '@core/utilities/wait-for.utility';
 
-import { LoadableService } from '@shared/interfaces/loadable-service.interface';
-import { ApiRequestBody } from '@shared/types/api-request-body.type';
+import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import type { ErrorDialogService } from '@shared/services/error-dialog.service';
+import type { ApiRequestBody } from '@shared/types/api-request-body.type';
+import type { AsyncLoader } from '@shared/types/async-loader.type';
 
 @Service()
 export class SettingsService implements LoadableService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   private readonly httpClient: HttpClient = inject(HttpClient);
-  private readonly loadErrorDialogService = injectAsync(
+  private readonly loadErrorDialogService: AsyncLoader<ErrorDialogService> = injectAsync(
     () => import('@shared/services/error-dialog.service').then((m) => m.ErrorDialogService),
   );
 
@@ -31,9 +33,9 @@ export class SettingsService implements LoadableService {
   public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
   public readonly settings: Signal<Setting[]> = this.settingsSignal.asReadonly();
 
-  private readonly requestGate = new RequestGate();
+  private readonly requestGate: RequestGate = new RequestGate();
 
-  private basePath = 'setting';
+  private basePath: string = 'setting';
 
   public init(): void {
     this.loaderStateService.addLoader(

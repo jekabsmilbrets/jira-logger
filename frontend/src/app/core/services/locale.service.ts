@@ -1,9 +1,9 @@
 import { registerLocaleData } from '@angular/common';
-import { computed, effect, inject, Service, Signal } from '@angular/core';
+import { computed, effect, inject, Service, type Signal } from '@angular/core';
 
 import { environment } from '@environments/environment';
 
-import { LocaleOption } from '@core/interfaces/locale-option.interface';
+import type { LocaleOption } from '@core/interfaces/locale-option.interface';
 import { Setting } from '@core/models/setting.model';
 import { SettingsService } from '@core/services/settings.service';
 
