@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, effect, inject, injectAsync, signal } from '@angular/core';
-import { rxResource } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, computed, inject, injectAsync, signal } from '@angular/core';
+import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { form, FormField, required, validateAsync } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatOptionModule } from '@angular/material/core';
@@ -7,7 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
-import { catchError, map, of, switchMap, take } from 'rxjs';
+import { catchError, debounceTime, map, of, switchMap, take } from 'rxjs';
 
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
@@ -83,30 +83,33 @@ export class TasksMenuComponent {
   private readonly tagsService: TagsService = inject(TagsService);
   protected readonly isLoading = this.tasksService.isLoading;
   protected readonly tags = this.tagsService.tags;
+  private readonly taskFilterName = computed(() => this.createTaskForm.name().value().trim());
+  private readonly debouncedTaskFilterName = toSignal(
+    toObservable(this.taskFilterName).pipe(debounceTime(300)),
+    { initialValue: this.taskFilterName() },
+  );
+  private readonly taskFilterRefresh = rxResource({
+    params: this.debouncedTaskFilterName,
+    stream: ({ params }) => {
+      const filter: TaskListFilter = {};
+
+      if (params) {
+        filter.name = params;
+      }
+
+      return this.tasksService.filteredList(
+        filter,
+        true,
+      )
+        .pipe(
+          take(1),
+          catchError(() => of(null)),
+        );
+    },
+  });
 
   constructor() {
-    effect((onCleanup) => {
-      const value: string = this.createTaskForm.name().value();
-      const timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {
-        const filter: TaskListFilter = {};
-
-        if (value) {
-          filter.name = value;
-        }
-
-        this.tasksService.filteredList(
-          filter,
-          true,
-        )
-          .pipe(
-            take(1),
-            catchError(() => of(null)),
-          )
-          .subscribe();
-      }, 300);
-
-      onCleanup(() => clearTimeout(timeoutId));
-    });
+    this.taskFilterRefresh.value();
   }
 
   protected async onOpenSettingsDialog(): Promise<void> {

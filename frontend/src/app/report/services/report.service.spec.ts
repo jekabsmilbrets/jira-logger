@@ -183,9 +183,9 @@ describe('ReportService', () => {
     const startDateTimestamp = startDate.getTime();
     const endDateTimestamp = endDate.getTime();
 
-    service.date = date;
-    service.startDate = startDate;
-    service.endDate = endDate;
+    service.setDate(date);
+    service.setStartDate(startDate);
+    service.setEndDate(endDate);
 
     expect(service.date()?.getHours()).toBe(0);
     expect(service.startDate()?.getHours()).toBe(0);
@@ -198,8 +198,8 @@ describe('ReportService', () => {
   });
 
   it('falls back to total mode when report mode is date without a date value', async () => {
-    service.tags = [];
-    service.reportMode = ReportModeEnum.date;
+    service.setTags([]);
+    service.setReportMode(ReportModeEnum.date);
 
     await waitForDebounce();
     service.tasks();
@@ -217,9 +217,9 @@ describe('ReportService', () => {
     settingsState.set([
       new Setting({ id: 'jira-enabled', name: JiraApiSettings.enabled, value: 'true' }),
     ]);
-    service.tags = [{ id: 'tag-2', name: 'Frontend' } as Tag];
-    service.reportMode = ReportModeEnum.date;
-    service.date = new Date('2026-05-30T10:00:00.000Z');
+    service.setTags([{ id: 'tag-2', name: 'Frontend' } as Tag]);
+    service.setReportMode(ReportModeEnum.date);
+    service.setDate(new Date('2026-05-30T10:00:00.000Z'));
 
     await waitForDebounce();
     service.tasks();
@@ -240,8 +240,8 @@ describe('ReportService', () => {
     settingsState.set([
       new Setting({ id: 'jira-enabled', name: JiraApiSettings.enabled, value: 'false' }),
     ]);
-    service.reportMode = ReportModeEnum.date;
-    service.date = new Date('2026-05-30T10:00:00.000Z');
+    service.setReportMode(ReportModeEnum.date);
+    service.setDate(new Date('2026-05-30T10:00:00.000Z'));
 
     await waitForDebounce();
     service.tasks();
@@ -251,9 +251,9 @@ describe('ReportService', () => {
   });
 
   it('falls back to total mode when dateRange is missing boundaries', async () => {
-    service.reportMode = ReportModeEnum.dateRange;
-    service.startDate = new Date('2026-05-01T00:00:00.000Z');
-    service.endDate = null;
+    service.setReportMode(ReportModeEnum.dateRange);
+    service.setStartDate(new Date('2026-05-01T00:00:00.000Z'));
+    service.setEndDate(null);
 
     await waitForDebounce();
     service.tasks();
@@ -267,11 +267,11 @@ describe('ReportService', () => {
   });
 
   it('builds range columns and total logged column for valid dateRange', async () => {
-    service.date = new Date('2026-05-30T10:00:00.000Z');
-    service.reportMode = ReportModeEnum.dateRange;
-    service.showWeekends = true;
-    service.startDate = new Date('2026-05-01T00:00:00.000Z');
-    service.endDate = new Date('2026-05-03T00:00:00.000Z');
+    service.setDate(new Date('2026-05-30T10:00:00.000Z'));
+    service.setReportMode(ReportModeEnum.dateRange);
+    service.setShowWeekends(true);
+    service.setStartDate(new Date('2026-05-01T00:00:00.000Z'));
+    service.setEndDate(new Date('2026-05-03T00:00:00.000Z'));
 
     await waitForDebounce();
     service.tasks();
@@ -295,10 +295,10 @@ describe('ReportService', () => {
   });
 
   it('persists settings changes through StorageService.create', async () => {
-    service.tags = [{ id: 'tag-1', name: 'Backend' } as Tag];
-    service.hideUnreportedTasks = true;
-    service.showWeekends = true;
-    service.reportMode = ReportModeEnum.total;
+    service.setTags([{ id: 'tag-1', name: 'Backend' } as Tag]);
+    service.setHideUnreportedTasks(true);
+    service.setShowWeekends(true);
+    service.setReportMode(ReportModeEnum.total);
 
     await waitForDebounce();
 
@@ -324,7 +324,7 @@ describe('ReportService', () => {
 
   it('exercises listenToChanges catchError fallback path', async () => {
     storageService.create.mockReturnValueOnce(throwError(() => new Error('persist-fail')));
-    service.tags = [{ id: 'tag-2', name: 'Frontend' } as Tag];
+    service.setTags([{ id: 'tag-2', name: 'Frontend' } as Tag]);
 
     await waitForDebounce();
 

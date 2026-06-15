@@ -10,6 +10,14 @@ import { ReportService } from '@report/services/report.service';
 class ReportServiceStub {
   public reportMode: ReportModeEnum = ReportModeEnum.total;
   public date: Date | null = null;
+
+  public setReportMode(mode: ReportModeEnum): void {
+    this.reportMode = mode;
+  }
+
+  public setDate(date: Date | null): void {
+    this.date = date;
+  }
 }
 
 describe('ReportResolver', () => {
@@ -57,7 +65,7 @@ describe('ReportResolver', () => {
   });
 
   it('falls back to total mode for an invalid reportMode param', async () => {
-    reportService.reportMode = ReportModeEnum.dateRange;
+    reportService.setReportMode(ReportModeEnum.dateRange);
 
     const result = await firstValueFrom(
       resolver.resolve(createRoute({ reportMode: 'invalid-mode' }) as never),

@@ -27,59 +27,39 @@ class ReportServiceStub {
   private readonly showWeekendsSignal = signal<boolean>(false);
   private readonly hideUnreportedTasksSignal = signal<boolean>(false);
 
-  public get reportMode(): Signal<ReportModeEnum> {
-    return this.reportModeSignal.asReadonly();
-  }
+  public readonly reportMode: Signal<ReportModeEnum> = this.reportModeSignal.asReadonly();
+  public readonly tags: Signal<Tag[]> = this.tagsSignal.asReadonly();
+  public readonly date: Signal<Date | null> = this.dateSignal.asReadonly();
+  public readonly startDate: Signal<Date | null> = this.startDateSignal.asReadonly();
+  public readonly endDate: Signal<Date | null> = this.endDateSignal.asReadonly();
+  public readonly showWeekends: Signal<boolean> = this.showWeekendsSignal.asReadonly();
+  public readonly hideUnreportedTasks: Signal<boolean> = this.hideUnreportedTasksSignal.asReadonly();
 
-  public set reportMode(value: ReportModeEnum) {
+  public setReportMode(value: ReportModeEnum): void {
     this.reportModeSignal.set(value);
   }
 
-  public get tags(): Signal<Tag[]> {
-    return this.tagsSignal.asReadonly();
-  }
-
-  public set tags(value: Tag[]) {
+  public setTags(value: Tag[]): void {
     this.tagsSignal.set(value);
   }
 
-  public get date(): Signal<Date | null> {
-    return this.dateSignal.asReadonly();
-  }
-
-  public set date(value: Date | null) {
+  public setDate(value: Date | null): void {
     this.dateSignal.set(value);
   }
 
-  public get startDate(): Signal<Date | null> {
-    return this.startDateSignal.asReadonly();
-  }
-
-  public set startDate(value: Date | null) {
+  public setStartDate(value: Date | null): void {
     this.startDateSignal.set(value);
   }
 
-  public get endDate(): Signal<Date | null> {
-    return this.endDateSignal.asReadonly();
-  }
-
-  public set endDate(value: Date | null) {
+  public setEndDate(value: Date | null): void {
     this.endDateSignal.set(value);
   }
 
-  public get showWeekends(): Signal<boolean> {
-    return this.showWeekendsSignal.asReadonly();
-  }
-
-  public set showWeekends(value: boolean) {
+  public setShowWeekends(value: boolean): void {
     this.showWeekendsSignal.set(value);
   }
 
-  public get hideUnreportedTasks(): Signal<boolean> {
-    return this.hideUnreportedTasksSignal.asReadonly();
-  }
-
-  public set hideUnreportedTasks(value: boolean) {
+  public setHideUnreportedTasks(value: boolean): void {
     this.hideUnreportedTasksSignal.set(value);
   }
 }
@@ -193,40 +173,40 @@ describe('ReportMenuComponent', () => {
 
   it('toggles date selector and weekends controls by report mode in template', () => {
     isSmallScreen$.next({ matches: false, breakpoints: { '(max-width: 1300px)': false } });
-    reportService.reportMode = ReportModeEnum.total;
+    reportService.setReportMode(ReportModeEnum.total);
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('shared-report-show-weekends'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('shared-report-date-selector'))).toBeFalsy();
 
-    reportService.reportMode = ReportModeEnum.date;
+    reportService.setReportMode(ReportModeEnum.date);
     fixture.detectChanges();
     expect(fixture.debugElement.query(By.css('shared-report-show-weekends'))).toBeFalsy();
     expect(fixture.debugElement.query(By.css('shared-report-date-selector'))).toBeTruthy();
 
-    reportService.reportMode = ReportModeEnum.dateRange;
+    reportService.setReportMode(ReportModeEnum.dateRange);
     fixture.detectChanges();
     expect(fixture.debugElement.query(By.css('shared-report-show-weekends'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('shared-report-date-selector'))).toBeTruthy();
   });
 
   it('shows date picker only for date and dateRange modes', () => {
-    reportService.reportMode = ReportModeEnum.total;
+    reportService.setReportMode(ReportModeEnum.total);
     let result = (component as any).showDatePicker();
     expect(result).toBe(false);
 
-    reportService.reportMode = ReportModeEnum.date;
+    reportService.setReportMode(ReportModeEnum.date);
     result = (component as any).showDatePicker();
     expect(result).toBe(true);
 
-    reportService.reportMode = ReportModeEnum.dateRange;
+    reportService.setReportMode(ReportModeEnum.dateRange);
     result = (component as any).showDatePicker();
     expect(result).toBe(true);
   });
 
   it('wires desktop menu child outputs through template listeners', () => {
     isSmallScreen$.next({ matches: false, breakpoints: { '(max-width: 1300px)': false } });
-    reportService.reportMode = ReportModeEnum.dateRange;
+    reportService.setReportMode(ReportModeEnum.dateRange);
     fixture.detectChanges();
 
     const modeSpy = vi.spyOn(component as any, 'onReportModeChange');

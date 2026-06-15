@@ -1,5 +1,5 @@
 import { registerLocaleData } from '@angular/common';
-import { effect, inject, Service, Signal, signal } from '@angular/core';
+import { computed, effect, inject, Service, Signal } from '@angular/core';
 
 import { environment } from '@environments/environment';
 
@@ -31,19 +31,15 @@ export class LocaleService {
   private readonly loadedLocales: Set<string> = new Set<string>(['en-US']);
   private readonly loadingLocales: Map<string, Promise<void>> = new Map<string, Promise<void>>();
 
-  private readonly _locale = signal<string>(environment['appLocale'] as string);
-  public readonly localeSignal: Signal<string> = this._locale.asReadonly();
+  public readonly localeSignal: Signal<string> = computed(() => this.resolveLocale(this.settingsService?.settings()));
 
   public get locale(): string {
-    return this._locale();
+    return this.localeSignal();
   }
 
   constructor() {
-    this.setLocale(environment['appLocale'] as string);
-    this.applyLocaleFromSettings(this.settingsService?.settings());
-
     effect(() => {
-      this.applyLocaleFromSettings(this.settingsService?.settings());
+      void this.ensureLocaleDataLoaded(this.localeSignal());
     });
   }
 
@@ -51,24 +47,16 @@ export class LocaleService {
     return this.supportedLocales.includes(locale.trim());
   }
 
-  private setLocale(locale: string): void {
-    const normalizedLocale: string = locale.trim();
-
-    this._locale.set(normalizedLocale);
-    void this.ensureLocaleDataLoaded(normalizedLocale);
-  }
-
-  private applyLocaleFromSettings(settings: Setting[] | undefined): void {
+  private resolveLocale(settings: Setting[] | undefined): string {
     const locale: string | undefined = settings?.find(
       (setting: Setting) => setting.name === JiraUserSettings.locale,
     )?.value as string | undefined;
 
     if (typeof locale === 'string' && this.isSupportedLocale(locale)) {
-      this.setLocale(locale);
-      return;
+      return locale.trim();
     }
 
-    this.setLocale(environment['appLocale'] as string);
+    return environment['appLocale'] as string;
   }
 
   private async ensureLocaleDataLoaded(locale: string): Promise<void> {

@@ -80,9 +80,9 @@ const reportSetters = {
 class ReportServiceMock {
   private readonly reportModeSignal = signal(ReportModeEnum.dateRange);
   private readonly tagsSignal = signal([{ id: 'tag-1', name: 'Tag 1' } as Tag]);
-  private readonly dateSignal = signal(new Date('2026-01-01T00:00:00.000Z'));
-  private readonly startDateSignal = signal(new Date('2026-01-02T00:00:00.000Z'));
-  private readonly endDateSignal = signal(new Date('2026-01-03T00:00:00.000Z'));
+  private readonly dateSignal = signal<Date | null>(new Date('2026-01-01T00:00:00.000Z'));
+  private readonly startDateSignal = signal<Date | null>(new Date('2026-01-02T00:00:00.000Z'));
+  private readonly endDateSignal = signal<Date | null>(new Date('2026-01-03T00:00:00.000Z'));
   private readonly showWeekendsSignal = signal(true);
   private readonly hideUnreportedTasksSignal = signal(false);
 
@@ -90,56 +90,63 @@ class ReportServiceMock {
     return this.reportModeSignal.asReadonly();
   }
 
-  public set reportMode(value: ReportModeEnum) {
-    reportSetters.reportMode(value);
-  }
-
   public get tags(): Signal<Tag[]> {
     return this.tagsSignal.asReadonly();
-  }
-
-  public set tags(value: Tag[]) {
-    reportSetters.tags(value);
   }
 
   public get date(): Signal<Date | null> {
     return this.dateSignal.asReadonly();
   }
 
-  public set date(value: Date | null) {
-    reportSetters.date(value);
-  }
-
   public get startDate(): Signal<Date | null> {
     return this.startDateSignal.asReadonly();
-  }
-
-  public set startDate(value: Date | null) {
-    reportSetters.startDate(value);
   }
 
   public get endDate(): Signal<Date | null> {
     return this.endDateSignal.asReadonly();
   }
 
-  public set endDate(value: Date | null) {
-    reportSetters.endDate(value);
-  }
-
   public get showWeekends(): Signal<boolean> {
     return this.showWeekendsSignal.asReadonly();
-  }
-
-  public set showWeekends(value: boolean) {
-    reportSetters.showWeekends(value);
   }
 
   public get hideUnreportedTasks(): Signal<boolean> {
     return this.hideUnreportedTasksSignal.asReadonly();
   }
 
-  public set hideUnreportedTasks(value: boolean) {
+  public setHideUnreportedTasks(value: boolean): void {
     reportSetters.hideUnreportedTasks(value);
+    this.hideUnreportedTasksSignal.set(value);
+  }
+
+  public setReportMode(value: ReportModeEnum): void {
+    reportSetters.reportMode(value);
+    this.reportModeSignal.set(value);
+  }
+
+  public setTags(value: Tag[]): void {
+    reportSetters.tags(value);
+    this.tagsSignal.set(value);
+  }
+
+  public setDate(value: Date | null): void {
+    reportSetters.date(value);
+    this.dateSignal.set(value);
+  }
+
+  public setStartDate(value: Date | null): void {
+    reportSetters.startDate(value);
+    this.startDateSignal.set(value);
+  }
+
+  public setEndDate(value: Date | null): void {
+    reportSetters.endDate(value);
+    this.endDateSignal.set(value);
+  }
+
+  public setShowWeekends(value: boolean): void {
+    reportSetters.showWeekends(value);
+    this.showWeekendsSignal.set(value);
   }
 }
 

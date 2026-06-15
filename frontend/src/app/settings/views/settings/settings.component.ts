@@ -52,43 +52,43 @@ export class SettingsComponent {
   protected onReportModeChange(
     value: ReportModeEnum,
   ): void {
-    this.reportService.reportMode = value;
+    this.reportService.setReportMode(value);
   }
 
   protected onTagChange(
     value: Tag[],
   ): void {
-    this.reportService.tags = value;
+    this.reportService.setTags(value);
   }
 
   protected onDateChange(
     date: Date | null,
   ): void {
-    this.reportService.date = date;
+    this.reportService.setDate(date);
   }
 
   protected onStartDateChange(
     date: Date | null,
   ): void {
-    this.reportService.startDate = date;
+    this.reportService.setStartDate(date);
   }
 
   protected onEndDateChange(
     date: Date | null,
   ): void {
-    this.reportService.endDate = date;
+    this.reportService.setEndDate(date);
   }
 
   protected onShowWeekendsChange(
     showWeekends: boolean,
   ): void {
-    this.reportService.showWeekends = showWeekends;
+    this.reportService.setShowWeekends(showWeekends);
   }
 
   protected onHideUnreportedTasksChange(
     hideUnreportedTasks: boolean,
   ): void {
-    this.reportService.hideUnreportedTasks = hideUnreportedTasks;
+    this.reportService.setHideUnreportedTasks(hideUnreportedTasks);
   }
 
   protected onSettingsChange(

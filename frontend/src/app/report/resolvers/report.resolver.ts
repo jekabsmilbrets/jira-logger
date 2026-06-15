@@ -22,9 +22,9 @@ export class ReportResolver {
       const reportMode: ReportModeEnum = paramMap.get('reportMode') as ReportModeEnum;
 
       if (reportMode in ReportModeEnum) {
-        this.reportService.reportMode = reportMode;
+        this.reportService.setReportMode(reportMode);
       } else {
-        this.reportService.reportMode = ReportModeEnum.total;
+        this.reportService.setReportMode(ReportModeEnum.total);
       }
     }
 
@@ -33,7 +33,7 @@ export class ReportResolver {
 
       if (isFinite(+date)) {
         this.router.navigate(['report'])
-          .then(() => this.reportService.date = date);
+          .then(() => this.reportService.setDate(date));
 
         return of(false);
       }

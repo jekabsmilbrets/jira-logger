@@ -71,83 +71,17 @@ export class ReportService {
       ),
   });
   private readonly tasksState = computed(() => this.tasksResource.value() ?? []);
+  public readonly reportMode: Signal<ReportModeEnum> = this.reportModeSignal.asReadonly();
+  public readonly tags: Signal<Tag[]> = this.tagsSignal.asReadonly();
+  public readonly date: Signal<Date | null> = this.dateSignal.asReadonly();
+  public readonly startDate: Signal<Date | null> = this.startDateSignal.asReadonly();
+  public readonly endDate: Signal<Date | null> = this.endDateSignal.asReadonly();
+  public readonly showWeekends: Signal<boolean> = this.showWeekendsSignal.asReadonly();
+  public readonly hideUnreportedTasks: Signal<boolean> = this.hideUnreportedTasksSignal.asReadonly();
+  public readonly tasks: Signal<Task[]> = this.tasksState;
 
   private settingsKey: IDBValidKey = 'report';
   private customStoreName: string = 'settings';
-
-  public get reportMode(): Signal<ReportModeEnum> {
-    return this.reportModeSignal.asReadonly();
-  }
-
-  public set reportMode(
-    mode: ReportModeEnum,
-  ) {
-    this.reportModeSignal.set(mode);
-  }
-
-  public get tags(): Signal<Tag[]> {
-    return this.tagsSignal.asReadonly();
-  }
-
-  public set tags(
-    tags: Tag[],
-  ) {
-    this.tagsSignal.set([...(tags ?? [])]);
-  }
-
-  public get date(): Signal<Date | null> {
-    return this.dateSignal.asReadonly();
-  }
-
-  public set date(
-    date: Date | null,
-  ) {
-    this.dateSignal.set(this.normalizeStartOfDay(date));
-  }
-
-  public get startDate(): Signal<Date | null> {
-    return this.startDateSignal.asReadonly();
-  }
-
-  public set startDate(
-    startDate: Date | null,
-  ) {
-    this.startDateSignal.set(this.normalizeStartOfDay(startDate));
-  }
-
-  public get endDate(): Signal<Date | null> {
-    return this.endDateSignal.asReadonly();
-  }
-
-  public set endDate(
-    endDate: Date | null,
-  ) {
-    this.endDateSignal.set(this.normalizeEndOfDay(endDate));
-  }
-
-  public get showWeekends(): Signal<boolean> {
-    return this.showWeekendsSignal.asReadonly();
-  }
-
-  public set showWeekends(
-    showWeekends: boolean,
-  ) {
-    this.showWeekendsSignal.set(showWeekends);
-  }
-
-  public get hideUnreportedTasks(): Signal<boolean> {
-    return this.hideUnreportedTasksSignal.asReadonly();
-  }
-
-  public set hideUnreportedTasks(
-    hideUnreportedTasks: boolean,
-  ) {
-    this.hideUnreportedTasksSignal.set(hideUnreportedTasks);
-  }
-
-  public get tasks(): Signal<Task[]> {
-    return this.tasksState;
-  }
 
   constructor() {
     this.columns = computed(() => this.buildColumns());
@@ -158,6 +92,48 @@ export class ReportService {
 
   public reload(): void {
     this.reloadVersionSignal.update((value: number) => value + 1);
+  }
+
+  public setReportMode(
+    mode: ReportModeEnum,
+  ): void {
+    this.reportModeSignal.set(mode);
+  }
+
+  public setTags(
+    tags: Tag[],
+  ): void {
+    this.tagsSignal.set([...(tags ?? [])]);
+  }
+
+  public setDate(
+    date: Date | null,
+  ): void {
+    this.dateSignal.set(this.normalizeStartOfDay(date));
+  }
+
+  public setStartDate(
+    startDate: Date | null,
+  ): void {
+    this.startDateSignal.set(this.normalizeStartOfDay(startDate));
+  }
+
+  public setEndDate(
+    endDate: Date | null,
+  ): void {
+    this.endDateSignal.set(this.normalizeEndOfDay(endDate));
+  }
+
+  public setShowWeekends(
+    showWeekends: boolean,
+  ): void {
+    this.showWeekendsSignal.set(showWeekends);
+  }
+
+  public setHideUnreportedTasks(
+    hideUnreportedTasks: boolean,
+  ): void {
+    this.hideUnreportedTasksSignal.set(hideUnreportedTasks);
   }
 
   private filterTasks(
