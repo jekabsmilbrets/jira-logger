@@ -1,3 +1,3 @@
-export interface DynamicMenuInterface {
+export interface DynamicMenu {
   data: Record<string, unknown>;
 }

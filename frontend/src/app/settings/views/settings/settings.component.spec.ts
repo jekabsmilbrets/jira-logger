@@ -11,7 +11,7 @@ import { SettingsService } from '@core/services/settings.service';
 
 import { Tag } from '@shared/models/tag.model';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 import { ReportServiceStub } from '@report/testing/report-service.stub';
 
@@ -33,7 +33,7 @@ class ReportConfiguratorStubComponent {
   public readonly disabled = input(false);
   public readonly reportSettings = input.required<ReportSettings>();
 
-  public readonly reportModeChange = output<ReportModeEnum>();
+  public readonly reportModeChange = output<ReportMode>();
   public readonly tagChange = output<Tag[]>();
   public readonly dateChange = output<Date | null>();
   public readonly startDateChange = output<Date | null>();
@@ -69,7 +69,7 @@ class UserSettingsConfiguratorStubComponent {
 }
 
 const reportSetters = {
-  reportMode: vi.fn<(value: ReportModeEnum) => void>(),
+  reportMode: vi.fn<(value: ReportMode) => void>(),
   tags: vi.fn<(value: Tag[]) => void>(),
   date: vi.fn<(value: Date | null) => void>(),
   startDate: vi.fn<(value: Date | null) => void>(),
@@ -104,7 +104,7 @@ describe('Settings Views settings.component', () => {
       list: vi.fn(() => of([])),
     };
     reportService = new ReportServiceStub({
-      reportMode: ReportModeEnum.dateRange,
+      reportMode: ReportMode.dateRange,
       tags: [{ id: 'tag-1', name: 'Tag 1' } as Tag],
       date: new Date('2026-01-01T00:00:00.000Z'),
       startDate: new Date('2026-01-02T00:00:00.000Z'),
@@ -167,7 +167,7 @@ describe('Settings Views settings.component', () => {
     const timezoneCfg = fixture.debugElement.query(By.directive(UserSettingsConfiguratorStubComponent)).componentInstance as UserSettingsConfiguratorStubComponent;
 
     expect(reportCfg.disabled()).toBe(false);
-    expect(reportCfg.reportSettings().reportMode).toBe(ReportModeEnum.dateRange);
+    expect(reportCfg.reportSettings().reportMode).toBe(ReportMode.dateRange);
     expect(jiraCfg.disabled()).toBe(false);
     expect(jiraCfg.settings().length).toBe(2);
     expect(timezoneCfg.disabled()).toBe(false);
@@ -182,7 +182,7 @@ describe('Settings Views settings.component', () => {
     const timezoneChangedSettings = [new Setting({ id: 'z', name: JiraUserSettings.userTimeZone, value: 'UTC' })];
     const date = new Date('2026-02-10T00:00:00.000Z');
 
-    reportCfg.reportModeChange.emit(ReportModeEnum.date);
+    reportCfg.reportModeChange.emit(ReportMode.date);
     reportCfg.tagChange.emit([{ id: 't1', name: 'Tag 1' } as Tag]);
     reportCfg.dateChange.emit(date);
     reportCfg.startDateChange.emit(date);
@@ -192,7 +192,7 @@ describe('Settings Views settings.component', () => {
     jiraCfg.settingsChange.emit(changedSettings);
     timezoneCfg.settingsChange.emit(timezoneChangedSettings);
 
-    expect(reportSetters.reportMode).toHaveBeenCalledWith(ReportModeEnum.date);
+    expect(reportSetters.reportMode).toHaveBeenCalledWith(ReportMode.date);
     expect(reportSetters.tags).toHaveBeenCalled();
     expect(reportSetters.date).toHaveBeenCalledWith(date);
     expect(reportSetters.startDate).toHaveBeenCalledWith(date);
@@ -213,7 +213,7 @@ describe('Settings Views settings.component', () => {
   it('maps report service signals into reportSettings', async () => {
     const reportSettings = (component as any).reportSettings() as ReportSettings;
 
-    expect(reportSettings.reportMode).toBe(ReportModeEnum.dateRange);
+    expect(reportSettings.reportMode).toBe(ReportMode.dateRange);
     expect(reportSettings.tags).toHaveLength(1);
     expect(reportSettings.showWeekends).toBe(true);
     expect(reportSettings.hideUnreportedTasks).toBe(false);
@@ -223,7 +223,7 @@ describe('Settings Views settings.component', () => {
     const tagList: Tag[] = [{ id: 't-1', name: 'Tag' } as Tag];
     const date = new Date('2026-02-01T00:00:00.000Z');
 
-    (component as any).onReportModeChange(ReportModeEnum.date);
+    (component as any).onReportModeChange(ReportMode.date);
     (component as any).onTagChange(tagList);
     (component as any).onDateChange(date);
     (component as any).onStartDateChange(date);
@@ -231,7 +231,7 @@ describe('Settings Views settings.component', () => {
     (component as any).onShowWeekendsChange(true);
     (component as any).onHideUnreportedTasksChange(true);
 
-    expect(reportSetters.reportMode).toHaveBeenCalledWith(ReportModeEnum.date);
+    expect(reportSetters.reportMode).toHaveBeenCalledWith(ReportMode.date);
     expect(reportSetters.tags).toHaveBeenCalledWith(tagList);
     expect(reportSetters.date).toHaveBeenCalledWith(date);
     expect(reportSetters.startDate).toHaveBeenCalledWith(date);
@@ -349,7 +349,7 @@ describe('Settings Views settings.component integration', () => {
     const hideSpy = vi.spyOn(component, 'onHideUnreportedTasksChange');
     const settingsSpy = vi.spyOn(component, 'onSettingsChange');
 
-    reportCfg.reportModeChange.emit(ReportModeEnum.date);
+    reportCfg.reportModeChange.emit(ReportMode.date);
     reportCfg.tagChange.emit([{ id: 'x', name: 'X' } as Tag]);
     reportCfg.dateChange.emit(date);
     reportCfg.startDateChange.emit(date);

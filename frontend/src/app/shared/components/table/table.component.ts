@@ -36,7 +36,7 @@ import { take } from 'rxjs';
 
 import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
-import { formatDateInTimezone } from '@core/utils/format-date-in-timezone.utility';
+import { formatDateInTimezone } from '@core/utilities/format-date-in-timezone.utility';
 
 import { Column } from '@shared/interfaces/column.interface';
 import { Searchable } from '@shared/interfaces/searchable.interface';
@@ -44,7 +44,7 @@ import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import type { AreYouSureService } from '@shared/services/are-you-sure.service';
-import { getNestedObject } from '@shared/utils/get-nested-object.util';
+import { getNestedObject } from '@shared/utilities/get-nested-object.utility';
 
 @Component({
   selector: 'shared-shared-table',

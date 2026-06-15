@@ -15,7 +15,7 @@ import { Task } from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 import { ReportServiceStub } from '@report/testing/report-service.stub';
 
@@ -42,7 +42,7 @@ describe('ReportViewComponent', () => {
       start: vi.fn().mockReturnValue(of(true)),
     };
     reportService = new ReportServiceStub({
-      reportMode: ReportModeEnum.date,
+      reportMode: ReportMode.date,
       columns: [{
         columnDef: 'sync',
         header: 'Sync',
@@ -65,7 +65,7 @@ describe('ReportViewComponent', () => {
 
     fixture = TestBed.createComponent(ReportViewComponent);
     component = fixture.componentInstance;
-    (component as any).ReportModeEnum = ReportModeEnum;
+    (component as any).ReportMode = ReportMode;
   });
 
   it('creates dynamic menu on init', () => {

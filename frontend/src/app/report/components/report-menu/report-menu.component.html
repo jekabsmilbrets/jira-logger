@@ -16,7 +16,7 @@
     <shared-report-hide-unreported-tasks (hideUnreportedTasksChange)="onHideUnreportedTasksChange($event)"
                                          [hideUnreportedTasks]="hideUnreportedTasks()"/>
 
-    @if (reportMode() !== ReportModeEnum.date) {
+    @if (reportMode() !== ReportMode.date) {
         <shared-report-show-weekends (showWeekendsChange)="onShowWeekendsChange($event)"
                                      [showWeekends]="showWeekends()"/>
     }

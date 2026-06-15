@@ -1,4 +1,4 @@
-import { fromWallClockDateInTimezone } from '@core/utils/timezone-date.utility';
+import { fromWallClockDateInTimezone } from '@core/utilities/timezone-date.utility';
 
 import { JiraWorkLog } from './jira-work-log.model';
 import { Tag } from './tag.model';

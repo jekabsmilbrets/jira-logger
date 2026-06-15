@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { inject, injectAsync, Service, Signal, signal } from '@angular/core';
+import { inject, injectAsync, Service, Signal, signal, WritableSignal } from '@angular/core';
 
 import { catchError, finalize, from, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
@@ -10,8 +10,8 @@ import { ApiSetting } from '@core/interfaces/api/api-setting.interface';
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { Setting } from '@core/models/setting.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { RequestGate } from '@core/utils/request-gate.utility';
-import { waitForTurn } from '@core/utils/wait-for.utility';
+import { RequestGate } from '@core/utilities/request-gate.utility';
+import { waitForTurn } from '@core/utilities/wait-for.utility';
 
 import { LoadableService } from '@shared/interfaces/loadable-service.interface';
 import { ApiRequestBody } from '@shared/types/api-request-body.type';
@@ -25,10 +25,12 @@ export class SettingsService implements LoadableService {
     () => import('@shared/services/error-dialog.service').then((m) => m.ErrorDialogService),
   );
 
-  private readonly isLoadingSignal = signal<boolean>(false);
-  private readonly settingsSignal = signal<Setting[]>([]);
+  private readonly isLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
+  private readonly settingsSignal: WritableSignal<Setting[]> = signal<Setting[]>([]);
+
   public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
   public readonly settings: Signal<Setting[]> = this.settingsSignal.asReadonly();
+
   private readonly requestGate = new RequestGate();
 
   private basePath = 'setting';

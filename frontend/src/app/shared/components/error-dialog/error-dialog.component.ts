@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 
-import { ErrorDialogDataInterface } from '@shared/interfaces/error-dialog-data.interface';
+import { ErrorDialogData } from '@shared/interfaces/error-dialog-data.interface';
 
 @Component({
   selector: 'shared-error-dialog',
@@ -20,7 +20,7 @@ import { ErrorDialogDataInterface } from '@shared/interfaces/error-dialog-data.i
   ],
 })
 export class ErrorDialogComponent {
-  protected data: ErrorDialogDataInterface = inject<ErrorDialogDataInterface>(MAT_DIALOG_DATA);
+  protected data: ErrorDialogData = inject<ErrorDialogData>(MAT_DIALOG_DATA);
 
   private dialogRef: MatDialogRef<ErrorDialogComponent, undefined> = inject<MatDialogRef<ErrorDialogComponent, undefined>>(MatDialogRef);
 

@@ -3,7 +3,7 @@ import { By } from '@angular/platform-browser';
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 
 import { ReportDateSelectorComponent } from './report-date-selector.component';
 
@@ -17,7 +17,7 @@ describe('Shared Components report-date-selector.component', () => {
     }).compileComponents();
 
     const fixture = TestBed.createComponent(ReportDateSelectorComponent);
-    fixture.componentRef.setInput('reportMode', ReportModeEnum.date);
+    fixture.componentRef.setInput('reportMode', ReportMode.date);
     fixture.detectChanges();
     return { fixture, component: fixture.componentInstance };
   };
@@ -114,7 +114,7 @@ describe('Shared Components report-date-selector.component', () => {
     }).compileComponents();
 
     const fixture = TestBed.createComponent(ReportDateSelectorComponent);
-    fixture.componentRef.setInput('reportMode', ReportModeEnum.dateRange);
+    fixture.componentRef.setInput('reportMode', ReportMode.dateRange);
     fixture.componentRef.setInput('showLabel', true);
     fixture.detectChanges();
 
@@ -124,7 +124,7 @@ describe('Shared Components report-date-selector.component', () => {
     expect(fixture.debugElement.query(By.css('mat-label'))?.nativeElement.textContent).toContain('Enter a date range');
     expect(fixture.debugElement.query(By.css('input[placeholder="Date"]'))).toBeFalsy();
 
-    fixture.componentRef.setInput('reportMode', ReportModeEnum.date);
+    fixture.componentRef.setInput('reportMode', ReportMode.date);
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('mat-date-range-input'))).toBeFalsy();
@@ -144,12 +144,12 @@ describe('Shared Components report-date-selector.component', () => {
     const dateSpy = vi.spyOn(component, 'onDateChange');
     const date = new Date('2026-05-30T00:00:00.000Z');
 
-    fixture.componentRef.setInput('reportMode', ReportModeEnum.dateRange);
+    fixture.componentRef.setInput('reportMode', ReportMode.dateRange);
     fixture.detectChanges();
     fixture.debugElement.query(By.css('input[matStartDate]')).triggerEventHandler('dateChange', { value: date });
     fixture.debugElement.query(By.css('input[matEndDate]')).triggerEventHandler('dateChange', { value: date });
 
-    fixture.componentRef.setInput('reportMode', ReportModeEnum.date);
+    fixture.componentRef.setInput('reportMode', ReportMode.date);
     fixture.detectChanges();
     fixture.debugElement.query(By.css('input[placeholder="Date"]')).triggerEventHandler('dateChange', { value: date });
 

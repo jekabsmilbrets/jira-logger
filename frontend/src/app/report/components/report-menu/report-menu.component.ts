@@ -15,7 +15,7 @@ import { ReportShowWeekendsComponent } from '@shared/components/report-menu/repo
 import { ReportTagFilterComponent } from '@shared/components/report-menu/report-tag-filter/report-tag-filter.component';
 import { Tag } from '@shared/models/tag.model';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 
 @Component({
@@ -36,7 +36,7 @@ import { ReportService } from '@report/services/report.service';
   ],
 })
 export class ReportMenuComponent {
-  protected readonly reportMode: Signal<ReportModeEnum>;
+  protected readonly reportMode: Signal<ReportMode>;
   protected readonly tags: Signal<Tag[]>;
   protected readonly date: Signal<Date | null>;
   protected readonly startDate: Signal<Date | null>;
@@ -46,7 +46,7 @@ export class ReportMenuComponent {
   protected readonly isSmallerThanDesktop: Signal<boolean>;
   protected readonly showDatePicker: Signal<boolean>;
 
-  protected ReportModeEnum = ReportModeEnum;
+  protected ReportMode = ReportMode;
 
   private readonly matDialog: MatDialog = inject(MatDialog);
   private readonly reportService: ReportService = inject(ReportService);
@@ -77,7 +77,7 @@ export class ReportMenuComponent {
   }
 
   protected onReportModeChange(
-    value: ReportModeEnum,
+    value: ReportMode,
   ): void {
     this.reportService.setReportMode(value);
   }

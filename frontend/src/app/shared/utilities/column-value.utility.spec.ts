@@ -1,4 +1,4 @@
-import { columnValue } from './column-value.util';
+import { columnValue } from './column-value.utility';
 
 describe('Shared Utils column-value.util', () => {
   it('reads nested value by dot path', () => {

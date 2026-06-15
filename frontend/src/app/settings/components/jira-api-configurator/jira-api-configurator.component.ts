@@ -48,8 +48,8 @@ export class JiraApiConfiguratorComponent {
     host: '',
     personalAccessToken: '',
   });
-  protected readonly hidePersonalAccessToken = signal(true);
-  protected readonly hasStoredPersonalAccessToken = signal(false);
+  protected readonly hidePersonalAccessToken: WritableSignal<boolean> = signal(true);
+  protected readonly hasStoredPersonalAccessToken: WritableSignal<boolean> = signal(false);
   protected readonly jiraApiForm = form(this.jiraApiFormModel, (path) => {
     required(path.host, { message: 'Host is required.' });
     required(path.personalAccessToken, {

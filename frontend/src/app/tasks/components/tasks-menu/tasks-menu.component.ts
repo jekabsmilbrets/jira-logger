@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, injectAsync, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, injectAsync, Signal, signal, WritableSignal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { form, FormField, required, validateAsync } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
@@ -39,11 +39,14 @@ import type { TasksSettingsService } from '@tasks/services/tasks-settings.servic
   ],
 })
 export class TasksMenuComponent {
-  protected readonly createTaskFormModel = signal<CreateTaskFormValue>({
+  protected readonly createTaskFormModel: WritableSignal<CreateTaskFormValue> = signal<CreateTaskFormValue>({
     name: '',
     description: '',
     tags: [],
   });
+
+  private readonly tasksService: TasksService = inject(TasksService);
+
   protected readonly createTaskForm = form(this.createTaskFormModel, (path) => {
     required(path.name, { message: 'Task name is required.' });
     validateAsync(path.name, {
@@ -76,15 +79,16 @@ export class TasksMenuComponent {
     });
   });
 
-  private readonly tasksService: TasksService = inject(TasksService);
   private readonly loadTasksSettingsService = injectAsync(
     () => import('@tasks/services/tasks-settings.service').then((m) => m.TasksSettingsService),
   );
   private readonly taskImportService: TaskImportService = inject(TaskImportService);
   private readonly tagsService: TagsService = inject(TagsService);
   private readonly tasksMenuFilterService: TasksMenuFilterService = inject(TasksMenuFilterService);
-  protected readonly isLoading = this.tasksService.isLoading;
-  protected readonly tags = this.tagsService.tags;
+
+  protected readonly isLoading: Signal<boolean> = this.tasksService.isLoading;
+  protected readonly tags: Signal<Tag[]> = this.tagsService.tags;
+
   private readonly taskFilterName = computed(() => this.createTaskForm.name().value().trim());
   private readonly taskFilterRefresh = this.tasksMenuFilterService.createTaskRefresh(this.taskFilterName);
 

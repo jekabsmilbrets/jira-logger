@@ -1,6 +1,6 @@
 import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
 import { JsonPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, WritableSignal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -15,7 +15,7 @@ import { TagsService } from '@shared/services/tags.service';
 
 import { validateTasksInterfaceData } from '@tasks/data-validators/task-interface.validator';
 import { TaskSettingsFormData } from '@tasks/interfaces/task-settings-form-data.interface';
-import { TasksSettingsDialogDataInterface } from '@tasks/interfaces/tasks-settings-dialog-data.interface';
+import { TasksSettingsDialogData } from '@tasks/interfaces/tasks-settings-dialog-data.interface';
 import { TasksSettingsFormValue } from '@tasks/interfaces/tasks-settings-form-value.interface';
 
 @Component({
@@ -38,8 +38,8 @@ import { TasksSettingsFormValue } from '@tasks/interfaces/tasks-settings-form-va
   ],
 })
 export class TasksSettingsDialogComponent {
-  protected data: TasksSettingsDialogDataInterface = inject<TasksSettingsDialogDataInterface>(MAT_DIALOG_DATA);
-  protected readonly tasksSettingsFormModel = signal<TasksSettingsFormValue>({
+  protected readonly data: TasksSettingsDialogData = inject<TasksSettingsDialogData>(MAT_DIALOG_DATA);
+  protected readonly tasksSettingsFormModel: WritableSignal<TasksSettingsFormValue> = signal<TasksSettingsFormValue>({
     json: '',
   });
   protected readonly tasksSettingsForm = form(this.tasksSettingsFormModel, (path) => {
@@ -48,7 +48,7 @@ export class TasksSettingsDialogComponent {
 
   protected showCurrent: boolean = false;
 
-  private dialogRef: MatDialogRef<TasksSettingsDialogComponent, undefined | ApiTask[]> = inject<MatDialogRef<TasksSettingsDialogComponent, ApiTask[] | undefined>>(MatDialogRef);
+  private readonly dialogRef: MatDialogRef<TasksSettingsDialogComponent, undefined | ApiTask[]> = inject<MatDialogRef<TasksSettingsDialogComponent, ApiTask[] | undefined>>(MatDialogRef);
 
   private readonly tagsService: TagsService = inject(TagsService);
 

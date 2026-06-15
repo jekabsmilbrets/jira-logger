@@ -6,30 +6,11 @@ import { Column } from '@shared/interfaces/column.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
-
-export interface ReportServiceStubOptions {
-  reportMode?: ReportModeEnum;
-  tags?: Tag[];
-  date?: Date | null;
-  startDate?: Date | null;
-  endDate?: Date | null;
-  showWeekends?: boolean;
-  hideUnreportedTasks?: boolean;
-  tasks?: Task[];
-  columns?: Column[];
-  reload?: ReturnType<typeof vi.fn>;
-  onSetReportMode?: (value: ReportModeEnum) => void;
-  onSetTags?: (value: Tag[]) => void;
-  onSetDate?: (value: Date | null) => void;
-  onSetStartDate?: (value: Date | null) => void;
-  onSetEndDate?: (value: Date | null) => void;
-  onSetShowWeekends?: (value: boolean) => void;
-  onSetHideUnreportedTasks?: (value: boolean) => void;
-}
+import { ReportMode } from '@report/enums/report-mode.enum';
+import type { ReportServiceStubOptions } from '@report/interfaces/report-service-stub-options.interface';
 
 export class ReportServiceStub {
-  public readonly reportMode: Signal<ReportModeEnum>;
+  public readonly reportMode: Signal<ReportMode>;
   public readonly tags: Signal<Tag[]>;
   public readonly date: Signal<Date | null>;
   public readonly startDate: Signal<Date | null>;
@@ -51,7 +32,7 @@ export class ReportServiceStub {
   private readonly columnsSignal;
 
   public constructor(private readonly options: ReportServiceStubOptions = {}) {
-    this.reportModeSignal = signal<ReportModeEnum>(options.reportMode ?? ReportModeEnum.total);
+    this.reportModeSignal = signal<ReportMode>(options.reportMode ?? ReportMode.total);
     this.tagsSignal = signal<Tag[]>(options.tags ?? []);
     this.dateSignal = signal<Date | null>(options.date ?? null);
     this.startDateSignal = signal<Date | null>(options.startDate ?? null);
@@ -73,7 +54,7 @@ export class ReportServiceStub {
     this.reload = options.reload ?? vi.fn();
   }
 
-  public setReportMode(value: ReportModeEnum): void {
+  public setReportMode(value: ReportMode): void {
     this.options.onSetReportMode?.(value);
     this.reportModeSignal.set(value);
   }

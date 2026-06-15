@@ -1,14 +1,14 @@
 import { formatDate } from '@angular/common';
 import { HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { inject, injectAsync, Service, Signal, signal } from '@angular/core';
+import { inject, injectAsync, Service, Signal, signal, WritableSignal } from '@angular/core';
 
 import { catchError, finalize, from, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { LocaleService } from '@core/services/locale.service';
-import { RequestGate } from '@core/utils/request-gate.utility';
-import { waitForTurn } from '@core/utils/wait-for.utility';
+import { RequestGate } from '@core/utilities/request-gate.utility';
+import { waitForTurn } from '@core/utilities/wait-for.utility';
 
 import { adaptTasks } from '@shared/adapters/task.adapter';
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
@@ -31,11 +31,13 @@ export class TasksService implements LoadableService, MakeRequestService {
   );
   private readonly localeService: LocaleService = inject(LocaleService);
 
-  private readonly tasksSignal = signal<Task[]>([]);
-  private readonly isLoadingSignal = signal<boolean>(false);
+  private readonly tasksSignal: WritableSignal<Task[]> = signal<Task[]>([]);
+  private readonly isLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
+
   public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
   public readonly tasks: Signal<Task[]> = this.tasksSignal.asReadonly();
-  private readonly requestGate = new RequestGate();
+
+  private readonly requestGate: RequestGate = new RequestGate();
 
   private basePath: string = 'task';
 

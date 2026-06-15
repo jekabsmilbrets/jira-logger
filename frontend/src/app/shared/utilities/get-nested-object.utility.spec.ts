@@ -1,4 +1,4 @@
-import { getNestedObject } from './get-nested-object.util';
+import { getNestedObject } from './get-nested-object.utility';
 
 describe('Shared Utils get-nested-object.util', () => {
   it('reads nested value', () => {

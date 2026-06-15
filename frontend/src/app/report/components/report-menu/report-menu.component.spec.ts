@@ -12,7 +12,7 @@ import { ReportShowWeekendsComponent } from '@shared/components/report-menu/repo
 import { ReportTagFilterComponent } from '@shared/components/report-menu/report-tag-filter/report-tag-filter.component';
 import { Tag } from '@shared/models/tag.model';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 import { ReportServiceStub } from '@report/testing/report-service.stub';
 
@@ -50,7 +50,7 @@ describe('ReportMenuComponent', () => {
 
     fixture = TestBed.createComponent(ReportMenuComponent);
     component = fixture.componentInstance;
-    (component as any).ReportModeEnum = ReportModeEnum;
+    (component as any).ReportMode = ReportMode;
 
     fixture.detectChanges();
   });
@@ -68,7 +68,7 @@ describe('ReportMenuComponent', () => {
     const endDate = new Date('2026-05-31T00:00:00.000Z');
     const tags = [{ id: 'tag-1', name: 'Backend' } as Tag];
 
-    (component as any).onReportModeChange(ReportModeEnum.dateRange);
+    (component as any).onReportModeChange(ReportMode.dateRange);
     (component as any).onTagChange(tags);
     (component as any).onDateChange(date);
     (component as any).onStartDateChange(startDate);
@@ -76,7 +76,7 @@ describe('ReportMenuComponent', () => {
     (component as any).onShowWeekendsChange(true);
     (component as any).onHideUnreportedTasksChange(true);
 
-    expect(reportService.reportMode()).toBe(ReportModeEnum.dateRange);
+    expect(reportService.reportMode()).toBe(ReportMode.dateRange);
     expect(reportService.tags()).toBe(tags);
     expect(reportService.date()).toBe(date);
     expect(reportService.startDate()).toBe(startDate);
@@ -127,40 +127,40 @@ describe('ReportMenuComponent', () => {
 
   it('toggles date selector and weekends controls by report mode in template', () => {
     isSmallScreen$.next({ matches: false, breakpoints: { '(max-width: 1300px)': false } });
-    reportService.setReportMode(ReportModeEnum.total);
+    reportService.setReportMode(ReportMode.total);
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('shared-report-show-weekends'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('shared-report-date-selector'))).toBeFalsy();
 
-    reportService.setReportMode(ReportModeEnum.date);
+    reportService.setReportMode(ReportMode.date);
     fixture.detectChanges();
     expect(fixture.debugElement.query(By.css('shared-report-show-weekends'))).toBeFalsy();
     expect(fixture.debugElement.query(By.css('shared-report-date-selector'))).toBeTruthy();
 
-    reportService.setReportMode(ReportModeEnum.dateRange);
+    reportService.setReportMode(ReportMode.dateRange);
     fixture.detectChanges();
     expect(fixture.debugElement.query(By.css('shared-report-show-weekends'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('shared-report-date-selector'))).toBeTruthy();
   });
 
   it('shows date picker only for date and dateRange modes', () => {
-    reportService.setReportMode(ReportModeEnum.total);
+    reportService.setReportMode(ReportMode.total);
     let result = (component as any).showDatePicker();
     expect(result).toBe(false);
 
-    reportService.setReportMode(ReportModeEnum.date);
+    reportService.setReportMode(ReportMode.date);
     result = (component as any).showDatePicker();
     expect(result).toBe(true);
 
-    reportService.setReportMode(ReportModeEnum.dateRange);
+    reportService.setReportMode(ReportMode.dateRange);
     result = (component as any).showDatePicker();
     expect(result).toBe(true);
   });
 
   it('wires desktop menu child outputs through template listeners', () => {
     isSmallScreen$.next({ matches: false, breakpoints: { '(max-width: 1300px)': false } });
-    reportService.setReportMode(ReportModeEnum.dateRange);
+    reportService.setReportMode(ReportMode.dateRange);
     fixture.detectChanges();
 
     const modeSpy = vi.spyOn(component as any, 'onReportModeChange');
@@ -184,7 +184,7 @@ describe('ReportMenuComponent', () => {
     dateSelector.startDateChange.emit(date);
     dateSelector.endDateChange.emit(date);
     tagFilter.tagChange.emit([{ id: 't-1', name: 'Backend' } as Tag]);
-    modeSwitcher.reportModeChange.emit(ReportModeEnum.date);
+    modeSwitcher.reportModeChange.emit(ReportMode.date);
 
     expect(hideSpy).toHaveBeenCalled();
     expect(weekendsSpy).toHaveBeenCalled();

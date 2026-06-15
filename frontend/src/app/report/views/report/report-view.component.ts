@@ -17,7 +17,7 @@ import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
 import { ReportMenuComponent } from '@report/components/report-menu/report-menu.component';
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 
 @Component({
@@ -38,10 +38,10 @@ export class ReportViewComponent implements OnInit {
   private readonly clipboard: Clipboard = inject(Clipboard);
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
 
-  protected readonly tasks = this.reportService.tasks;
-  protected readonly reportMode = this.reportService.reportMode;
+  protected readonly tasks: Signal<Task[]> = this.reportService.tasks;
+  protected readonly reportMode: Signal<ReportMode> = this.reportService.reportMode;
 
-  protected ReportModeEnum = ReportModeEnum;
+  protected ReportMode = ReportMode;
 
   protected get columns(): Signal<Column[]> {
     return this.reportService.columns;

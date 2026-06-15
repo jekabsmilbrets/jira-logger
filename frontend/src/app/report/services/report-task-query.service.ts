@@ -1,4 +1,4 @@
-import { computed, inject, Service, Signal, signal } from '@angular/core';
+import { computed, inject, Service, Signal, signal, WritableSignal } from '@angular/core';
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 import { catchError, debounceTime, Observable, of } from 'rxjs';
@@ -10,7 +10,7 @@ import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 import { Task } from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
 import { ReportStateService } from '@report/services/report-state.service';
 
@@ -22,8 +22,10 @@ export class ReportTaskQueryService {
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly reportStateService: ReportStateService = inject(ReportStateService);
 
-  private readonly reloadVersionSignal = signal<number>(0);
+  private readonly reloadVersionSignal: WritableSignal<number> = signal<number>(0);
+
   public readonly jiraApiEnabled: Signal<boolean> = computed(() => this.isJiraApiEnabled(this.settingsService.settings()));
+
   private readonly taskRequest = computed(() => ({
     state: this.reportStateService.getStateSnapshot(),
     jiraApiEnabled: this.jiraApiEnabled(),
@@ -68,25 +70,25 @@ export class ReportTaskQueryService {
       delete filter.tags;
     }
 
-    const reportMode: ReportModeEnum = this.reportStateService.getEffectiveReportMode(
+    const reportMode: ReportMode = this.reportStateService.getEffectiveReportMode(
       state.reportMode,
       state.date,
       state.startDate,
       state.endDate,
     );
 
-    if (reportMode === ReportModeEnum.total) {
+    if (reportMode === ReportMode.total) {
       delete filter.date;
       delete filter.endDate;
       delete filter.startDate;
     }
 
-    if (reportMode === ReportModeEnum.date) {
+    if (reportMode === ReportMode.date) {
       delete filter.endDate;
       delete filter.startDate;
     }
 
-    if (reportMode === ReportModeEnum.dateRange) {
+    if (reportMode === ReportMode.dateRange) {
       delete filter.date;
     }
 

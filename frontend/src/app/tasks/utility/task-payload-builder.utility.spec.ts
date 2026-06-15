@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildTaskUpdatePayload, buildTimeLogPayload } from './task-payload-builder.util';
+import { buildTaskUpdatePayload, buildTimeLogPayload } from './task-payload-builder.utility';
 
 describe('Tasks Utils task-payload-builder.util', () => {
   const sourceTags = [

@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Service, Signal, signal } from '@angular/core';
+import { inject, Service, Signal, signal, WritableSignal } from '@angular/core';
 
 import { catchError, finalize, map, Observable, switchMap, tap, throwError } from 'rxjs';
 
@@ -10,8 +10,8 @@ import { ApiMonitor } from '@core/interfaces/api/monitor.interface';
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { Monitor } from '@core/models/monitor.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { RequestGate } from '@core/utils/request-gate.utility';
-import { waitForTurn } from '@core/utils/wait-for.utility';
+import { RequestGate } from '@core/utilities/request-gate.utility';
+import { waitForTurn } from '@core/utilities/wait-for.utility';
 
 import { LoadableService } from '@shared/interfaces/loadable-service.interface';
 
@@ -21,13 +21,15 @@ export class MonitorService implements LoadableService {
 
   private readonly httpClient: HttpClient = inject(HttpClient);
 
-  private readonly monitorSignal = signal<Monitor | undefined>(undefined);
-  private readonly hasIssuesSignal = signal<boolean>(false);
-  private readonly isLoadingSignal = signal<boolean>(false);
+  private readonly monitorSignal: WritableSignal<Monitor | undefined> = signal<Monitor | undefined>(undefined);
+  private readonly hasIssuesSignal: WritableSignal<boolean> = signal<boolean>(false);
+  private readonly isLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
+
   public readonly monitor: Signal<Monitor | undefined> = this.monitorSignal.asReadonly();
   public readonly hasIssues: Signal<boolean> = this.hasIssuesSignal.asReadonly();
   public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
-  private readonly requestGate = new RequestGate();
+
+  private readonly requestGate: RequestGate = new RequestGate();
 
   private basePath: string = 'monitor';
 

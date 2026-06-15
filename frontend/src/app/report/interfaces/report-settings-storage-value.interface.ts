@@ -1,7 +1,7 @@
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 
 export interface ReportSettingsStorageValue {
-  reportMode: ReportModeEnum;
+  reportMode: ReportMode;
   tags: string[];
   date: Date | null;
   startDate: Date | null;

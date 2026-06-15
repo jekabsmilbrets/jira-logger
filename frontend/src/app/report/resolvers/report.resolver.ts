@@ -3,7 +3,7 @@ import { ActivatedRouteSnapshot, ParamMap, Router } from '@angular/router';
 
 import { Observable, of } from 'rxjs';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 
 @Injectable({
@@ -19,12 +19,12 @@ export class ReportResolver {
     const paramMap: ParamMap = route.paramMap;
 
     if (paramMap.has('reportMode')) {
-      const reportMode: ReportModeEnum = paramMap.get('reportMode') as ReportModeEnum;
+      const reportMode: ReportMode = paramMap.get('reportMode') as ReportMode;
 
-      if (reportMode in ReportModeEnum) {
+      if (reportMode in ReportMode) {
         this.reportService.setReportMode(reportMode);
       } else {
-        this.reportService.setReportMode(ReportModeEnum.total);
+        this.reportService.setReportMode(ReportMode.total);
       }
     }
 

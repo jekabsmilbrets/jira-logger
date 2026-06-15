@@ -15,7 +15,7 @@ import { TimeLog } from '@shared/models/time-log.model';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
@@ -43,7 +43,7 @@ describe('ReportService', () => {
     storageService = {
       read: vi.fn().mockReturnValue(
         of({
-          reportMode: ReportModeEnum.total,
+          reportMode: ReportMode.total,
           tags: ['tag-1'],
           date: null,
           startDate: null,
@@ -86,7 +86,7 @@ describe('ReportService', () => {
     const mode = service.reportMode();
 
     expect(storageService.read).toHaveBeenCalledWith('report', 'settings');
-    expect(mode).toBe(ReportModeEnum.total);
+    expect(mode).toBe(ReportMode.total);
     expect(tags.map((tag: Tag) => tag.id)).toEqual(['tag-1']);
   });
 
@@ -116,7 +116,7 @@ describe('ReportService', () => {
 
     const localService = TestBed.inject(ReportService);
 
-    expect(localService.reportMode()).toBe(ReportModeEnum.total);
+    expect(localService.reportMode()).toBe(ReportMode.total);
     expect(localService.tags()).toEqual([]);
     expect(localService.showWeekends()).toBe(false);
     expect(localService.hideUnreportedTasks()).toBe(false);
@@ -133,7 +133,7 @@ describe('ReportService', () => {
     };
     const localStorageService = {
       read: vi.fn(() => of({
-        reportMode: ReportModeEnum.total,
+        reportMode: ReportMode.total,
         date: null,
         startDate: null,
         endDate: null,
@@ -166,7 +166,7 @@ describe('ReportService', () => {
     };
     const localStorageService = {
       read: vi.fn(() => of({
-        reportMode: ReportModeEnum.total,
+        reportMode: ReportMode.total,
         tags: ['tag-1'],
         date: null,
         startDate: null,
@@ -220,7 +220,7 @@ describe('ReportService', () => {
 
   it('falls back to total mode when report mode is date without a date value', async () => {
     service.setTags([]);
-    service.setReportMode(ReportModeEnum.date);
+    service.setReportMode(ReportMode.date);
 
     await waitForDebounce();
     service.tasks();
@@ -239,7 +239,7 @@ describe('ReportService', () => {
       new Setting({ id: 'jira-enabled', name: JiraApiSettings.enabled, value: 'true' }),
     ]);
     service.setTags([{ id: 'tag-2', name: 'Frontend' } as Tag]);
-    service.setReportMode(ReportModeEnum.date);
+    service.setReportMode(ReportMode.date);
     service.setDate(new Date('2026-05-30T10:00:00.000Z'));
 
     await waitForDebounce();
@@ -261,7 +261,7 @@ describe('ReportService', () => {
     settingsState.set([
       new Setting({ id: 'jira-enabled', name: JiraApiSettings.enabled, value: 'false' }),
     ]);
-    service.setReportMode(ReportModeEnum.date);
+    service.setReportMode(ReportMode.date);
     service.setDate(new Date('2026-05-30T10:00:00.000Z'));
 
     await waitForDebounce();
@@ -272,7 +272,7 @@ describe('ReportService', () => {
   });
 
   it('falls back to total mode when dateRange is missing boundaries', async () => {
-    service.setReportMode(ReportModeEnum.dateRange);
+    service.setReportMode(ReportMode.dateRange);
     service.setStartDate(new Date('2026-05-01T00:00:00.000Z'));
     service.setEndDate(null);
 
@@ -289,7 +289,7 @@ describe('ReportService', () => {
 
   it('builds range columns and total logged column for valid dateRange', async () => {
     service.setDate(new Date('2026-05-30T10:00:00.000Z'));
-    service.setReportMode(ReportModeEnum.dateRange);
+    service.setReportMode(ReportMode.dateRange);
     service.setShowWeekends(true);
     service.setStartDate(new Date('2026-05-01T00:00:00.000Z'));
     service.setEndDate(new Date('2026-05-03T00:00:00.000Z'));
@@ -319,14 +319,14 @@ describe('ReportService', () => {
     service.setTags([{ id: 'tag-1', name: 'Backend' } as Tag]);
     service.setHideUnreportedTasks(true);
     service.setShowWeekends(true);
-    service.setReportMode(ReportModeEnum.total);
+    service.setReportMode(ReportMode.total);
 
     await waitForDebounce();
 
     expect(storageService.create).toHaveBeenCalledWith(
       'report',
       expect.objectContaining({
-        reportMode: ReportModeEnum.total,
+        reportMode: ReportMode.total,
         tags: ['tag-1'],
         showWeekends: true,
         hideUnreportedTasks: true,
@@ -355,12 +355,12 @@ describe('ReportService', () => {
   it('generates weekend-hidden range columns and sync columns for date mode', () => {
     const start = new Date('2026-05-01T00:00:00.000Z');
     const end = new Date('2026-05-04T00:00:00.000Z');
-    const rangeCols = (service as any).generateMonthColumns(start, end, false, ReportModeEnum.dateRange, false) as {
+    const rangeCols = (service as any).generateMonthColumns(start, end, false, ReportMode.dateRange, false) as {
       columnDef: string;
       hidden?: boolean
     }[];
-    const syncCols = (service as any).generateMonthColumns(start, start, true, ReportModeEnum.date, true) as { columnDef: string }[];
-    const noSyncCols = (service as any).generateMonthColumns(start, start, true, ReportModeEnum.date, false) as { columnDef: string }[];
+    const syncCols = (service as any).generateMonthColumns(start, start, true, ReportMode.date, true) as { columnDef: string }[];
+    const noSyncCols = (service as any).generateMonthColumns(start, start, true, ReportMode.date, false) as { columnDef: string }[];
 
     expect(rangeCols.some((c) => c.columnDef === 'timeLogged')).toBe(true);
     expect(rangeCols.some((c) => c.hidden === true)).toBe(true);
@@ -372,7 +372,7 @@ describe('ReportService', () => {
   it('executes generated column callbacks (cell/footer/taskSynced)', () => {
     const start = new Date('2026-05-01T00:00:00.000Z');
     const end = new Date('2026-05-02T00:00:00.000Z');
-    const cols = (service as any).generateMonthColumns(start, end, true, ReportModeEnum.date, true) as any[];
+    const cols = (service as any).generateMonthColumns(start, end, true, ReportMode.date, true) as any[];
     const syncedDay = new Date(start.getTime());
     syncedDay.setHours(0, 0, 0, 0);
     const task = new Task({
@@ -403,7 +403,7 @@ describe('ReportService', () => {
   it('executes timeLogged column callbacks for non-date report modes', () => {
     const start = new Date('2026-05-01T00:00:00.000Z');
     const end = new Date('2026-05-02T00:00:00.000Z');
-    const cols = (service as any).generateMonthColumns(start, end, true, ReportModeEnum.total, false) as any[];
+    const cols = (service as any).generateMonthColumns(start, end, true, ReportMode.total, false) as any[];
 
     const task = new Task({
       id: '2',

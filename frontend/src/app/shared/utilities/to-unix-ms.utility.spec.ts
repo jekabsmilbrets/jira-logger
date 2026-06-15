@@ -1,4 +1,4 @@
-import { toUnixMs } from './to-unix-ms.util';
+import { toUnixMs } from './to-unix-ms.utility';
 
 describe('Shared Utils to-unix-ms.util', () => {
   it('returns unix time in milliseconds as number by default', () => {

@@ -7,7 +7,7 @@ import { StorageService } from '@core/services/storage.service';
 import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportSettingsStorageValue } from '@report/interfaces/report-settings-storage-value.interface';
 import { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
 
@@ -16,7 +16,7 @@ export class ReportStateService {
   private readonly storageService: StorageService = inject(StorageService);
   private readonly tagsService: TagsService = inject(TagsService);
 
-  private readonly reportModeSignal = signal<ReportModeEnum>(ReportModeEnum.total);
+  private readonly reportModeSignal = signal<ReportMode>(ReportMode.total);
   private readonly tagsSignal = signal<Tag[]>([]);
   private readonly dateSignal = signal<Date | null>(null);
   private readonly startDateSignal = signal<Date | null>(null);
@@ -27,7 +27,7 @@ export class ReportStateService {
   private readonly settingsKey: IDBValidKey = 'report';
   private readonly customStoreName: string = 'settings';
 
-  public readonly reportMode: Signal<ReportModeEnum> = this.reportModeSignal.asReadonly();
+  public readonly reportMode: Signal<ReportMode> = this.reportModeSignal.asReadonly();
   public readonly tags: Signal<Tag[]> = this.tagsSignal.asReadonly();
   public readonly date: Signal<Date | null> = this.dateSignal.asReadonly();
   public readonly startDate: Signal<Date | null> = this.startDateSignal.asReadonly();
@@ -41,7 +41,7 @@ export class ReportStateService {
   }
 
   public setReportMode(
-    mode: ReportModeEnum,
+    mode: ReportMode,
   ): void {
     this.reportModeSignal.set(mode);
   }
@@ -95,17 +95,17 @@ export class ReportStateService {
   }
 
   public getEffectiveReportMode(
-    reportMode: ReportModeEnum,
+    reportMode: ReportMode,
     date: Date | null,
     startDate: Date | null,
     endDate: Date | null,
-  ): ReportModeEnum {
-    if (reportMode === ReportModeEnum.date && !date) {
-      return ReportModeEnum.total;
+  ): ReportMode {
+    if (reportMode === ReportMode.date && !date) {
+      return ReportMode.total;
     }
 
-    if (reportMode === ReportModeEnum.dateRange && (!startDate || !endDate)) {
-      return ReportModeEnum.total;
+    if (reportMode === ReportMode.dateRange && (!startDate || !endDate)) {
+      return ReportMode.total;
     }
 
     return reportMode;
@@ -155,7 +155,7 @@ export class ReportStateService {
             availableTags.filter?.((tag: Tag) => selectedTagIds.includes(tag.id)) ?? [] :
             [];
 
-          this.reportModeSignal.set(settings?.reportMode ?? ReportModeEnum.total);
+          this.reportModeSignal.set(settings?.reportMode ?? ReportMode.total);
           this.tagsSignal.set(selectedTags);
           this.dateSignal.set(this.cloneDate(settings?.date));
           this.startDateSignal.set(this.cloneDate(settings?.startDate));

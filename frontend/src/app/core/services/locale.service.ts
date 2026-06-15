@@ -20,6 +20,7 @@ export class LocaleService {
     { label: 'German (de-DE)', value: 'de-DE' },
     { label: 'French (fr-FR)', value: 'fr-FR' },
   ];
+
   private readonly supportedLocales: string[] = this.localeOptions.map((option: LocaleOption) => option.value);
   private readonly localeLoaders: Record<string, () => Promise<{ default: unknown }>> = {
     'lv-LV': () => import('@angular/common/locales/lv'),

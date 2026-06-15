@@ -1,11 +1,11 @@
+import { TimezoneDateParts } from '@core/interfaces/timezone-date-parts.interface';
 import { Base } from '@core/models/base.model';
-import { getDateParts } from '@core/utils/get-date-parts.utility';
+import { getDateParts } from '@core/utilities/get-date-parts.utility';
 import {
   fromWallClockDateInTimezone,
   getDateTimePartsInTimezone,
   isSameCalendarDateInTimezone,
-  TimezoneDateParts,
-} from '@core/utils/timezone-date.utility';
+} from '@core/utilities/timezone-date.utility';
 
 import { Searchable } from '@shared/interfaces/searchable.interface';
 import { JiraWorkLog } from '@shared/models/jira-work-log.model';

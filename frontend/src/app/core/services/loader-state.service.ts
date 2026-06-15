@@ -8,6 +8,7 @@ export class LoaderStateService {
   private readonly loaderMarks = signal<Map<string, Signal<boolean>>>(new Map<string, Signal<boolean>>());
   private readonly aggregateLoading = computed(() => [...this.loaderMarks().values()].some((loader: Signal<boolean>) => loader()));
   private readonly debounceDelay = 50;
+
   public readonly isLoading: Signal<boolean> = toSignal(
     toObservable(this.aggregateLoading).pipe(debounceTime(this.debounceDelay)),
     { initialValue: false },

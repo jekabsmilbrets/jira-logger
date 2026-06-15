@@ -10,7 +10,7 @@ import { Task } from '@shared/models/task.model';
 
 import { columns as monthModelColumns } from '@report/constants/report-date-range-columns.constant';
 import { columns as totalModelColumns } from '@report/constants/report-total-columns.constant';
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportStateService } from '@report/services/report-state.service';
 import { ReportTaskQueryService } from '@report/services/report-task-query.service';
 
@@ -22,7 +22,7 @@ export class ReportService {
   private readonly localeService: LocaleService = inject(LocaleService);
 
   public readonly columns: Signal<Column[]> = computed(() => this.buildColumns());
-  public readonly reportMode: Signal<ReportModeEnum> = this.reportStateService.reportMode;
+  public readonly reportMode: Signal<ReportMode> = this.reportStateService.reportMode;
   public readonly tags: Signal<Tag[]> = this.reportStateService.tags;
   public readonly date: Signal<Date | null> = this.reportStateService.date;
   public readonly startDate: Signal<Date | null> = this.reportStateService.startDate;
@@ -36,7 +36,7 @@ export class ReportService {
   }
 
   public setReportMode(
-    mode: ReportModeEnum,
+    mode: ReportMode,
   ): void {
     this.reportStateService.setReportMode(mode);
   }
@@ -78,18 +78,18 @@ export class ReportService {
   }
 
   private buildColumns(): Column[] {
-    const reportMode: ReportModeEnum = this.reportStateService.getEffectiveReportMode(
+    const reportMode: ReportMode = this.reportStateService.getEffectiveReportMode(
       this.reportMode(),
       this.date(),
       this.startDate(),
       this.endDate(),
     );
 
-    if (reportMode === ReportModeEnum.total) {
+    if (reportMode === ReportMode.total) {
       return [...totalModelColumns];
     }
 
-    if (reportMode === ReportModeEnum.date) {
+    if (reportMode === ReportMode.date) {
       const date: Date | null = this.date();
 
       return date ?
@@ -121,7 +121,7 @@ export class ReportService {
     startDate: Date,
     endDate: Date,
     showWeekends: boolean,
-    reportMode: ReportModeEnum,
+    reportMode: ReportMode,
     jiraApiEnabled: boolean,
   ): Column[] {
     const modifiedMonthModelColumns: Column[] = [...monthModelColumns];
@@ -148,7 +148,7 @@ export class ReportService {
           this.timezoneService.timezone,
         ),
         sortable: false,
-        hidden: reportMode !== ReportModeEnum.date ? shouldShowWeekends : false,
+        hidden: reportMode !== ReportMode.date ? shouldShowWeekends : false,
         pipe: 'readableTime',
         isClickable: true,
         cellClickType: 'readableTime',
@@ -164,7 +164,7 @@ export class ReportService {
       currentDate.setDate(curDate + 1);
     }
 
-    if (reportMode !== ReportModeEnum.date) {
+    if (reportMode !== ReportMode.date) {
       modifiedMonthModelColumns.push({
         columnDef: 'timeLogged',
         header: 'Total Time Logged',
@@ -184,7 +184,7 @@ export class ReportService {
       });
     }
 
-    if (reportMode === ReportModeEnum.date && jiraApiEnabled) {
+    if (reportMode === ReportMode.date && jiraApiEnabled) {
       const taskSynced: (task: Task) => boolean = (
         task: Task,
       ) => task.calcTimeLogged() > 0 && task.calcTimeLogged() === task.calcTimeSynced(startDate, this.timezoneService.timezone);

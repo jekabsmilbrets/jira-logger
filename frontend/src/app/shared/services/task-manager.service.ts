@@ -1,9 +1,9 @@
-import { computed, inject, Service, Signal, signal } from '@angular/core';
+import { computed, inject, Service, Signal, signal, WritableSignal } from '@angular/core';
 
 import { catchError, interval, map, Observable, of, switchMap, take, tap } from 'rxjs';
 
 import { TimezoneService } from '@core/services/timezone.service';
-import { toWallClockDateInTimezone } from '@core/utils/timezone-date.utility';
+import { toWallClockDateInTimezone } from '@core/utilities/timezone-date.utility';
 
 import { Task } from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
@@ -13,7 +13,8 @@ export class TaskManagerService {
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
 
-  private readonly timeLoggedTodaySignal = signal<number>(0);
+  private readonly timeLoggedTodaySignal: WritableSignal<number> = signal<number>(0);
+
   public readonly activeTask: Signal<Task | null> = computed(() => this.tasksService.tasks()
     .find((task: Task) => task.isTimeLogRunning) ?? null);
   public readonly timeLoggedToday: Signal<number> = this.timeLoggedTodaySignal.asReadonly();

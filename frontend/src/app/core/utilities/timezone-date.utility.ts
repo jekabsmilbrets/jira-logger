@@ -1,11 +1,4 @@
-export interface TimezoneDateParts {
-  year: number;
-  month: number;
-  day: number;
-  hour: number;
-  minute: number;
-  second: number;
-}
+import { TimezoneDateParts } from '@core/interfaces/timezone-date-parts.interface';
 
 const createFormatter: (
   timezone: string,

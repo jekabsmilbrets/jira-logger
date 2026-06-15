@@ -22,7 +22,7 @@ import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 
 import { DynamicMenuDirective } from '@core/directives/dynamic-menu.directive';
-import { DynamicMenuInterface } from '@core/interfaces/dynamic-menu.interface';
+import type { DynamicMenu as DynamicMenuData } from '@core/interfaces/dynamic-menu.interface';
 import { DynamicMenu } from '@core/models/dynamic-menu';
 import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
@@ -48,8 +48,8 @@ export class HeaderComponent implements AfterViewInit {
   private readonly _injector: Injector = inject(Injector);
 
   private readonly dynamicMenu: Signal<DynamicMenuDirective> = viewChild.required(DynamicMenuDirective);
-  private readonly dynamicMenus = this.dynamicMenuService.dynamicMenus;
-  private readonly activeRoute = toSignal(
+  private readonly dynamicMenus: Signal<DynamicMenu[]> = this.dynamicMenuService.dynamicMenus;
+  private readonly activeRoute: Signal<string> = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
       map((event: NavigationEnd) => event.urlAfterRedirects),
@@ -77,7 +77,7 @@ export class HeaderComponent implements AfterViewInit {
       viewContainerRef.clear();
 
       if (dynamicMenu) {
-        viewContainerRef.createComponent<DynamicMenuInterface>(
+        viewContainerRef.createComponent<DynamicMenuData>(
           dynamicMenu.component as never,
           {
             injector: Injector.create({

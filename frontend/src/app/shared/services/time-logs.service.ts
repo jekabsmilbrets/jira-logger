@@ -1,12 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { inject, Service, Signal, signal } from '@angular/core';
+import { inject, Service, Signal, signal, WritableSignal } from '@angular/core';
 
 import { catchError, finalize, map, Observable, of, Subject, switchMap, tap, throwError } from 'rxjs';
 
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { RequestGate } from '@core/utils/request-gate.utility';
-import { waitForTurn } from '@core/utils/wait-for.utility';
+import { RequestGate } from '@core/utilities/request-gate.utility';
+import { waitForTurn } from '@core/utilities/wait-for.utility';
 
 import { adaptTimeLog, adaptTimeLogs } from '@shared/adapters/time-log.adapter';
 import { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
@@ -16,7 +16,7 @@ import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import { ApiRequestBody } from '@shared/types/api-request-body.type';
-import { toUnixMs } from '@shared/utils/to-unix-ms.util';
+import { toUnixMs } from '@shared/utilities/to-unix-ms.utility';
 
 @Service()
 export class TimeLogsService implements LoadableService, MakeRequestService {
@@ -26,9 +26,9 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
   public taskFinished$: Observable<Task>;
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
-  private readonly isLoadingSignal = signal<boolean>(false);
+  private readonly isLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
   public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
-  private readonly requestGate = new RequestGate();
+  private readonly requestGate: RequestGate = new RequestGate();
 
   private basePath: string = 'task';
   private baseTimeLogPath: string = 'time-log';

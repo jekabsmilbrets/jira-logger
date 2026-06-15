@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, Signal } from '@angular/core';
 
 import { forkJoin, switchMap, take } from 'rxjs';
 
@@ -8,7 +8,7 @@ import { SettingsService } from '@core/services/settings.service';
 
 import { Tag } from '@shared/models/tag.model';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 
 import { JiraApiConfiguratorComponent } from '@settings/components/jira-api-configurator/jira-api-configurator.component';
@@ -35,11 +35,12 @@ export class SettingsComponent {
 
   private readonly settingsService: SettingsService = inject(SettingsService);
   private readonly reportService: ReportService = inject(ReportService);
-  protected readonly isLoading = this.loaderStateService.isLoading;
-  protected readonly settings = this.settingsService.settings;
-  protected readonly jiraApiSettings = computed(() => this.filterSettings(Object.values(JiraApiSettings)));
-  protected readonly jiraUserSettings = computed(() => this.filterSettings(Object.values(JiraUserSettings)));
-  protected readonly reportSettings = computed<ReportSettings>(() => ({
+
+  protected readonly isLoading: Signal<boolean> = this.loaderStateService.isLoading;
+  protected readonly settings: Signal<Setting[]> = this.settingsService.settings;
+  protected readonly jiraApiSettings: Signal<Setting[]> = computed(() => this.filterSettings(Object.values(JiraApiSettings)));
+  protected readonly jiraUserSettings: Signal<Setting[]> = computed(() => this.filterSettings(Object.values(JiraUserSettings)));
+  protected readonly reportSettings: Signal<ReportSettings> = computed<ReportSettings>(() => ({
     reportMode: this.reportService.reportMode(),
     tags: this.reportService.tags(),
     date: this.reportService.date(),
@@ -50,7 +51,7 @@ export class SettingsComponent {
   }));
 
   protected onReportModeChange(
-    value: ReportModeEnum,
+    value: ReportMode,
   ): void {
     this.reportService.setReportMode(value);
   }

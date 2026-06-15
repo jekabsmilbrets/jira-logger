@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, WritableSignal } from '@angular/core';
 import { form, FormField, required, validate } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatNativeDateModule } from '@angular/material/core';
@@ -11,15 +11,15 @@ import { MatTimepickerModule } from '@angular/material/timepicker';
 
 import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
-import { fromWallClockDateInTimezone, toWallClockDateInTimezone } from '@core/utils/timezone-date.utility';
+import { fromWallClockDateInTimezone, toWallClockDateInTimezone } from '@core/utilities/timezone-date.utility';
 
 import { TimeLog } from '@shared/models/time-log.model';
 
-import { TimeLogDialogDataInterface } from '@tasks/interfaces/time-log-dialog-data.interface';
+import { TimeLogDialogData } from '@tasks/interfaces/time-log-dialog-data.interface';
 import { TimeLogFormData } from '@tasks/interfaces/time-log-form-data.interface';
 import { TimeLogFormValue } from '@tasks/interfaces/time-log-form-value.interface';
-import { TimeLogModalResponseInterface } from '@tasks/interfaces/time-log-modal-response.interface';
-import { buildTimeLogPayload } from '@tasks/utils/task-payload-builder.util';
+import { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
+import { buildTimeLogPayload } from '@tasks/utility/task-payload-builder.utility';
 
 @Component({
   selector: 'tasks-time-log-modal',
@@ -40,8 +40,8 @@ import { buildTimeLogPayload } from '@tasks/utils/task-payload-builder.util';
   ],
 })
 export class TimeLogModalComponent {
-  protected data: TimeLogDialogDataInterface = inject<TimeLogDialogDataInterface>(MAT_DIALOG_DATA);
-  protected readonly timeLogFormModel = signal<TimeLogFormValue>({
+  protected readonly data: TimeLogDialogData = inject<TimeLogDialogData>(MAT_DIALOG_DATA);
+  protected readonly timeLogFormModel: WritableSignal<TimeLogFormValue> = signal<TimeLogFormValue>({
     startTime: null,
     endTime: null,
     description: '',
@@ -65,7 +65,7 @@ export class TimeLogModalComponent {
     });
   });
 
-  private dialogRef: MatDialogRef<TimeLogModalComponent, undefined | TimeLogModalResponseInterface> = inject<MatDialogRef<TimeLogModalComponent, TimeLogModalResponseInterface | undefined>>(MatDialogRef);
+  private readonly dialogRef: MatDialogRef<TimeLogModalComponent, undefined | TimeLogModalResponse> = inject<MatDialogRef<TimeLogModalComponent, TimeLogModalResponse | undefined>>(MatDialogRef);
   private readonly localeService: LocaleService = inject(LocaleService);
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
 

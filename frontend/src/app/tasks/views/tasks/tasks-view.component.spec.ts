@@ -12,7 +12,7 @@ import { TimeLog } from '@shared/models/time-log.model';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
-import { TaskUpdateActionEnum } from '@tasks/enums/task-update-action.enum';
+import { TaskUpdateAction } from '@tasks/enums/task-update-action.enum';
 import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
 
 import { TasksViewComponent } from './tasks-view.component';
@@ -125,7 +125,7 @@ describe('Tasks Views tasks-view.component', () => {
 
     const taskEl = fixture.debugElement.query(By.css('tasks-task'));
     const taskCmp = taskEl.componentInstance as any;
-    taskCmp.action.emit([task, TaskUpdateActionEnum.startWorkLog]);
+    taskCmp.action.emit([task, TaskUpdateAction.startWorkLog]);
     taskCmp.remove.emit(task);
     taskCmp.timeLogsSaved.emit();
     taskCmp.update.emit(task);
@@ -141,7 +141,7 @@ describe('Tasks Views tasks-view.component', () => {
     const { component, timeLogsService, tasksService } = await setup();
     const task = buildTask();
 
-    component['onAction']([task, 'unknown-action' as TaskUpdateActionEnum]);
+    component['onAction']([task, 'unknown-action' as TaskUpdateAction]);
 
     expect(timeLogsService.start).not.toHaveBeenCalled();
     expect(timeLogsService.stop).not.toHaveBeenCalled();
@@ -152,7 +152,7 @@ describe('Tasks Views tasks-view.component', () => {
     const { component, timeLogsService, tasksService } = await setup();
     const task = buildTask();
 
-    component['onAction']([task, TaskUpdateActionEnum.startWorkLog]);
+    component['onAction']([task, TaskUpdateAction.startWorkLog]);
 
     expect(timeLogsService.start).toHaveBeenCalledWith(task);
     expect(tasksService.list).toHaveBeenCalledOnce();
@@ -162,7 +162,7 @@ describe('Tasks Views tasks-view.component', () => {
     const { component, timeLogsService, tasksService } = await setup();
     const task = buildTask([buildTimeLog('2026-03-02T10:00:00.000Z')]);
 
-    component['onAction']([task, TaskUpdateActionEnum.stopWorkLog]);
+    component['onAction']([task, TaskUpdateAction.stopWorkLog]);
 
     expect(timeLogsService.stop).toHaveBeenCalledWith(task);
     expect(tasksService.list).toHaveBeenCalledOnce();
@@ -172,7 +172,7 @@ describe('Tasks Views tasks-view.component', () => {
     const { component, timeLogsService, tasksService } = await setup();
     const task = buildTask([buildTimeLog('2026-03-02T10:00:00.000Z', '2026-03-02T11:00:00.000Z')]);
 
-    component['onAction']([task, TaskUpdateActionEnum.stopWorkLog]);
+    component['onAction']([task, TaskUpdateAction.stopWorkLog]);
 
     expect(timeLogsService.stop).not.toHaveBeenCalled();
     expect(tasksService.list).toHaveBeenCalledOnce();

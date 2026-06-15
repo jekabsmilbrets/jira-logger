@@ -14,7 +14,7 @@ import { TaskComponent } from '@tasks/components/task-list/task/task.component';
 import { TaskListComponent } from '@tasks/components/task-list/task-list.component';
 import { TaskViewHeaderComponent } from '@tasks/components/task-view-header/task-view-header.component';
 import { TasksMenuComponent } from '@tasks/components/tasks-menu/tasks-menu.component';
-import { TaskUpdateActionEnum } from '@tasks/enums/task-update-action.enum';
+import { TaskUpdateAction } from '@tasks/enums/task-update-action.enum';
 
 @Component({
   selector: 'tasks-view',
@@ -32,7 +32,8 @@ export class TasksViewComponent implements OnInit {
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
   private readonly dynamicMenuService: DynamicMenuService = inject(DynamicMenuService);
-  protected readonly isLoading = this.tasksService.isLoading;
+
+  protected readonly isLoading: Signal<boolean> = this.tasksService.isLoading;
   protected readonly tasks: Signal<Task[]> = computed(() => [...this.tasksService.tasks()].sort(this.taskSort));
 
   public ngOnInit(): void {
@@ -40,16 +41,16 @@ export class TasksViewComponent implements OnInit {
   }
 
   protected onAction(
-    [task, action]: [Task, TaskUpdateActionEnum],
+    [task, action]: [Task, TaskUpdateAction],
   ): void {
     let action$: Observable<boolean> = of(false);
 
     switch (action) {
-      case TaskUpdateActionEnum.startWorkLog:
+      case TaskUpdateAction.startWorkLog:
         action$ = this.startTimeLog(task);
         break;
 
-      case TaskUpdateActionEnum.stopWorkLog:
+      case TaskUpdateAction.stopWorkLog:
         if (task.isTimeLogRunning && task.lastTimeLog instanceof TimeLog) {
           action$ = this.stopTimeLog(task);
         }

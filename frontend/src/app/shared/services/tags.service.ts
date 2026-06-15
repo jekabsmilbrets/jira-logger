@@ -1,12 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { inject, injectAsync, Service, Signal, signal } from '@angular/core';
+import { inject, injectAsync, Service, Signal, signal, WritableSignal } from '@angular/core';
 
 import { catchError, finalize, from, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 import { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { RequestGate } from '@core/utils/request-gate.utility';
-import { waitForTurn } from '@core/utils/wait-for.utility';
+import { RequestGate } from '@core/utilities/request-gate.utility';
+import { waitForTurn } from '@core/utilities/wait-for.utility';
 
 import { adaptTag, adaptTags } from '@shared/adapters/api-tag.adapter';
 import { ApiTag } from '@shared/interfaces/api/api-tag.interface';
@@ -25,9 +25,10 @@ export class TagsService implements LoadableService, MakeRequestService {
     () => import('@shared/services/error-dialog.service').then((m) => m.ErrorDialogService),
   );
 
-  private readonly tagsSignal = signal<Tag[]>([]);
-  private readonly isLoadingSignal = signal<boolean>(false);
-  private readonly preloadErrorSignal = signal<boolean>(false);
+  private readonly tagsSignal: WritableSignal<Tag[]> = signal<Tag[]>([]);
+  private readonly isLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
+  private readonly preloadErrorSignal: WritableSignal<boolean> = signal<boolean>(false);
+
   public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
   public readonly tags: Signal<Tag[]> = this.tagsSignal.asReadonly();
   public readonly preloadError: Signal<boolean> = this.preloadErrorSignal.asReadonly();

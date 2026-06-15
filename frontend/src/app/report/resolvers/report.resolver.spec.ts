@@ -3,7 +3,7 @@ import { convertToParamMap, Router } from '@angular/router';
 
 import { firstValueFrom } from 'rxjs';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportResolver } from '@report/resolvers/report.resolver';
 import { ReportService } from '@report/services/report.service';
 import { ReportServiceStub } from '@report/testing/report-service.stub';
@@ -45,22 +45,22 @@ describe('ReportResolver', () => {
 
   it('sets report mode from a valid reportMode param', async () => {
     const result = await firstValueFrom(
-      resolver.resolve(createRoute({ reportMode: ReportModeEnum.date }) as never),
+      resolver.resolve(createRoute({ reportMode: ReportMode.date }) as never),
     );
 
     expect(result).toBe(true);
-    expect(reportService.reportMode()).toBe(ReportModeEnum.date);
+    expect(reportService.reportMode()).toBe(ReportMode.date);
   });
 
   it('falls back to total mode for an invalid reportMode param', async () => {
-    reportService.setReportMode(ReportModeEnum.dateRange);
+    reportService.setReportMode(ReportMode.dateRange);
 
     const result = await firstValueFrom(
       resolver.resolve(createRoute({ reportMode: 'invalid-mode' }) as never),
     );
 
     expect(result).toBe(true);
-    expect(reportService.reportMode()).toBe(ReportModeEnum.total);
+    expect(reportService.reportMode()).toBe(ReportMode.total);
   });
 
   it('navigates to /report and returns false for a valid date param', async () => {

@@ -8,8 +8,8 @@ import { TimeLog } from '@shared/models/time-log.model';
 
 import { TimeLogListModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-list-modal.component';
 import { TimeLogModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-modal/time-log-modal.component';
-import { TimeLogModalResponseInterface } from '@tasks/interfaces/time-log-modal-response.interface';
-import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
+import { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
+import { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
 
 @Service()
 export class TimeLogEditService {
@@ -17,8 +17,8 @@ export class TimeLogEditService {
 
   public openTimeLogsListDialog(
     task: Task,
-  ): Observable<TimeLogsModalResponseInterface | undefined> {
-    const timeLogsListDialogRef: MatDialogRef<TimeLogListModalComponent, TimeLogsModalResponseInterface> = this.matDialog.open(
+  ): Observable<TimeLogsModalResponse | undefined> {
+    const timeLogsListDialogRef: MatDialogRef<TimeLogListModalComponent, TimeLogsModalResponse> = this.matDialog.open(
       TimeLogListModalComponent,
       {
         data: {
@@ -32,8 +32,8 @@ export class TimeLogEditService {
 
   public openTimeLogDialog(
     timeLog: TimeLog,
-  ): Observable<TimeLogModalResponseInterface | undefined> {
-    const timeLogDialogRef: MatDialogRef<TimeLogModalComponent, TimeLogModalResponseInterface> = this.matDialog.open(
+  ): Observable<TimeLogModalResponse | undefined> {
+    const timeLogDialogRef: MatDialogRef<TimeLogModalComponent, TimeLogModalResponse> = this.matDialog.open(
       TimeLogModalComponent,
       {
         data: {

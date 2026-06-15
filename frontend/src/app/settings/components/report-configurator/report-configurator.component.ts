@@ -8,7 +8,7 @@ import { ReportShowWeekendsComponent } from '@shared/components/report-menu/repo
 import { ReportTagFilterComponent } from '@shared/components/report-menu/report-tag-filter/report-tag-filter.component';
 import { Tag } from '@shared/models/tag.model';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 
 import { ReportSettings } from '@settings/interfaces/report-settings.interface';
 
@@ -30,7 +30,7 @@ import { ReportSettings } from '@settings/interfaces/report-settings.interface';
 export class ReportConfiguratorComponent {
   public readonly disabled: InputSignal<boolean> = input<boolean>(false);
   public readonly reportSettings: InputSignal<ReportSettings> = input<ReportSettings>({
-    reportMode: ReportModeEnum.total,
+    reportMode: ReportMode.total,
     tags: [],
     date: null,
     startDate: null,
@@ -39,7 +39,7 @@ export class ReportConfiguratorComponent {
     hideUnreportedTasks: false,
   });
 
-  protected readonly reportModeChange: OutputEmitterRef<ReportModeEnum> = output<ReportModeEnum>();
+  protected readonly reportModeChange: OutputEmitterRef<ReportMode> = output<ReportMode>();
   protected readonly tagChange: OutputEmitterRef<Tag[]> = output<Tag[]>();
   protected readonly dateChange: OutputEmitterRef<null | Date> = output<Date | null>();
   protected readonly startDateChange: OutputEmitterRef<null | Date> = output<Date | null>();
@@ -48,7 +48,7 @@ export class ReportConfiguratorComponent {
   protected readonly hideUnreportedTasksChange: OutputEmitterRef<boolean> = output<boolean>();
 
   protected onReportModeChange(
-    value: ReportModeEnum,
+    value: ReportMode,
   ): void {
     this.reportModeChange.emit(value);
   }
@@ -90,7 +90,7 @@ export class ReportConfiguratorComponent {
   }
 
   protected showDatePicker(): boolean {
-    const reportMode: undefined | ReportModeEnum = this.reportSettings()?.reportMode;
+    const reportMode: undefined | ReportMode = this.reportSettings()?.reportMode;
 
     if (reportMode) {
       return [

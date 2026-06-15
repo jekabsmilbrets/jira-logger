@@ -10,7 +10,7 @@ import { ReportShowWeekendsComponent } from '@shared/components/report-menu/repo
 import { ReportTagFilterComponent } from '@shared/components/report-menu/report-tag-filter/report-tag-filter.component';
 import { Tag } from '@shared/models/tag.model';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 
 import { ReportSettings } from '@settings/interfaces/report-settings.interface';
 
@@ -21,7 +21,7 @@ describe('Settings Components report-configurator.component', () => {
   let component: ReportConfiguratorComponent;
 
   const reportSettings: ReportSettings = {
-    reportMode: ReportModeEnum.date,
+    reportMode: ReportMode.date,
     tags: [{ id: 'tag-1', name: 'Core' } as Tag],
     date: new Date('2026-03-10T00:00:00.000Z'),
     startDate: new Date('2026-03-01T00:00:00.000Z'),
@@ -52,7 +52,7 @@ describe('Settings Components report-configurator.component', () => {
   });
 
   it('hides date selector for total report mode', () => {
-    fixture.componentRef.setInput('reportSettings', { ...reportSettings, reportMode: ReportModeEnum.total });
+    fixture.componentRef.setInput('reportSettings', { ...reportSettings, reportMode: ReportMode.total });
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('shared-report-date-selector'))).toBeNull();
@@ -61,9 +61,9 @@ describe('Settings Components report-configurator.component', () => {
   it('emits reportModeChange from onReportModeChange handler', () => {
     const emitSpy = vi.spyOn((component as any).reportModeChange, 'emit');
 
-    (component as any).onReportModeChange(ReportModeEnum.dateRange);
+    (component as any).onReportModeChange(ReportMode.dateRange);
 
-    expect(emitSpy).toHaveBeenCalledWith(ReportModeEnum.dateRange);
+    expect(emitSpy).toHaveBeenCalledWith(ReportMode.dateRange);
   });
 
   it('emits tag/date/date-range/toggle outputs through dedicated handlers', () => {
@@ -93,7 +93,7 @@ describe('Settings Components report-configurator.component', () => {
   });
 
   it('showDatePicker returns false when mode is missing', () => {
-    fixture.componentRef.setInput('reportSettings', { ...reportSettings, reportMode: undefined as unknown as ReportModeEnum });
+    fixture.componentRef.setInput('reportSettings', { ...reportSettings, reportMode: undefined as unknown as ReportMode });
     fixture.detectChanges();
 
     expect((component as any).showDatePicker()).toBe(false);
@@ -115,7 +115,7 @@ describe('Settings Components report-configurator.component', () => {
     const weekendsToggle = fixture.debugElement.query(By.directive(ReportShowWeekendsComponent)).componentInstance as any;
     const date = new Date('2026-04-12T00:00:00.000Z');
 
-    modeSwitcher.reportModeChange.emit(ReportModeEnum.dateRange);
+    modeSwitcher.reportModeChange.emit(ReportMode.dateRange);
     dateSelector.dateChange.emit(date);
     dateSelector.startDateChange.emit(date);
     dateSelector.endDateChange.emit(date);

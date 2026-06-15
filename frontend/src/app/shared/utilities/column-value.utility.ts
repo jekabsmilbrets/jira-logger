@@ -1,6 +1,5 @@
-import { getNestedObject } from '@shared/utils/get-nested-object.util';
-
-type JoinCallback = (value: unknown, index: number, array: unknown[]) => unknown;
+import type { JoinCallback } from '@shared/types/join-callback.type';
+import { getNestedObject } from '@shared/utilities/get-nested-object.utility';
 
 export const columnValue: (element: object, column: string, join?: boolean, joinCallback?: JoinCallback) => unknown = (
   element: object,

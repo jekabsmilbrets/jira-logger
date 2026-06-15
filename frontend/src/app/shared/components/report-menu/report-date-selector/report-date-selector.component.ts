@@ -5,7 +5,7 @@ import { DateRange, ExtractDateTypeFromSelection, MatDatepickerInputEvent, MatDa
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 
 @Component({
   selector: 'shared-report-date-selector',
@@ -22,12 +22,13 @@ import { ReportModeEnum } from '@report/enums/report-mode.enum';
   ],
 })
 export class ReportDateSelectorComponent {
-  public readonly reportMode: InputSignal<ReportModeEnum> = input.required<ReportModeEnum>();
+  public readonly reportMode: InputSignal<ReportMode> = input.required<ReportMode>();
   public readonly showLabel: InputSignal<boolean> = input<boolean>(false);
   public readonly disabled: InputSignal<boolean | null | undefined> = input<boolean | null>();
   public readonly date: InputSignal<Date | null | undefined> = input<Date | null>();
   public readonly startDate: InputSignal<Date | null | undefined> = input<Date | null>();
   public readonly endDate: InputSignal<Date | null | undefined> = input<Date | null>();
+
   protected readonly reportDateFormModel = signal({
     date: null as Date | null,
     startDate: null as Date | null,

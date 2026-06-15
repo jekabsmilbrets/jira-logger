@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 
-import { concatMap, from, Observable, switchMap, take, tap, toArray } from 'rxjs';
+import { concatMap, from, switchMap, take, tap, toArray } from 'rxjs';
 
 import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
@@ -18,15 +18,11 @@ import { TimeLog } from '@shared/models/time-log.model';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
 import { createTimeLogListColumns } from '@tasks/constants/time-log-list-columns.constant';
-import { TimeLogListDialogDataInterface } from '@tasks/interfaces/time-log-list-dialog-data.interface';
-import { TimeLogModalResponseInterface } from '@tasks/interfaces/time-log-modal-response.interface';
-import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
+import type { SaveOperation } from '@tasks/interfaces/save-operation.interface';
+import { TimeLogListDialogData } from '@tasks/interfaces/time-log-list-dialog-data.interface';
+import { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
+import { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
 import type { TimeLogEditService } from '@tasks/services/time-log-edit.service';
-
-interface SaveOperation {
-  request$: Observable<TimeLog | void>;
-  onSuccess: (result: TimeLog | void) => void;
-}
 
 @Component({
   selector: 'tasks-time-log-list-modal',
@@ -44,9 +40,10 @@ interface SaveOperation {
   ],
 })
 export class TimeLogListModalComponent {
-  protected data: TimeLogListDialogDataInterface = inject<TimeLogListDialogDataInterface>(MAT_DIALOG_DATA);
+  protected readonly data: TimeLogListDialogData = inject<TimeLogListDialogData>(MAT_DIALOG_DATA);
 
   protected columns: Column[];
+
   private readonly loadTimeLogEditService = injectAsync(
     () => import('@tasks/services/time-log-edit.service').then((m) => m.TimeLogEditService),
   );
@@ -54,9 +51,11 @@ export class TimeLogListModalComponent {
   private readonly localeService: LocaleService = inject(LocaleService);
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
-  private dialogRef: MatDialogRef<TimeLogListModalComponent, undefined | TimeLogsModalResponseInterface> = inject<MatDialogRef<TimeLogListModalComponent, TimeLogsModalResponseInterface | undefined>>(MatDialogRef);
+  private readonly dialogRef: MatDialogRef<TimeLogListModalComponent, undefined | TimeLogsModalResponse> = inject<MatDialogRef<TimeLogListModalComponent, TimeLogsModalResponse | undefined>>(MatDialogRef);
   private readonly timeLogsState: WritableSignal<TimeLog[]> = signal([...this.data.task.timeLogs]);
+
   protected readonly timeLogs = computed(() => this.timeLogsState());
+
   private readonly createdTimeLogs: WritableSignal<TimeLog[]> = signal([]);
   private readonly updatedTimeLogs: WritableSignal<TimeLog[]> = signal([]);
   private readonly deletedTimeLogs: WritableSignal<TimeLog[]> = signal([]);
@@ -124,7 +123,7 @@ export class TimeLogListModalComponent {
     timeLogEditService
       .openTimeLogDialog(timeLog as TimeLog)
       .pipe(take(1))
-      .subscribe((response: TimeLogModalResponseInterface | undefined) => {
+      .subscribe((response: TimeLogModalResponse | undefined) => {
         if (response) {
           switch (response.responseType) {
             case 'cancel':
@@ -237,7 +236,7 @@ export class TimeLogListModalComponent {
 
     timeLogEditService.openTimeLogDialog(timeLog)
       .pipe(take(1))
-      .subscribe((response: TimeLogModalResponseInterface | undefined) => {
+      .subscribe((response: TimeLogModalResponse | undefined) => {
         if (response) {
           switch (response.responseType) {
             case 'cancel':

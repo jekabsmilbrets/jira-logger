@@ -4,7 +4,7 @@ import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
 
 import { ErrorDialogComponent } from '@shared/components/error-dialog/error-dialog.component';
-import { ErrorDialogDataInterface } from '@shared/interfaces/error-dialog-data.interface';
+import { ErrorDialogData } from '@shared/interfaces/error-dialog-data.interface';
 
 @Service()
 export class ErrorDialogService {
@@ -13,7 +13,7 @@ export class ErrorDialogService {
   private dialogRef!: MatDialogRef<ErrorDialogComponent, undefined>;
 
   public openDialog(
-    errorData: ErrorDialogDataInterface,
+    errorData: ErrorDialogData,
   ): Observable<undefined> {
     this.dialogRef = this.matDialog.open(
       ErrorDialogComponent,

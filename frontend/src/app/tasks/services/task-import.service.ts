@@ -1,11 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { inject, Service, Signal, signal } from '@angular/core';
+import { inject, Service, Signal, signal, WritableSignal } from '@angular/core';
 
 import { catchError, concat, finalize, map, Observable, of, switchMap, throwError, toArray } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { RequestGate } from '@core/utils/request-gate.utility';
-import { waitForTurn } from '@core/utils/wait-for.utility';
+import { RequestGate } from '@core/utilities/request-gate.utility';
+import { waitForTurn } from '@core/utilities/wait-for.utility';
 
 import { adaptTasks } from '@shared/adapters/task.adapter';
 import { ApiTask } from '@shared/interfaces/api/api-task.interface';
@@ -22,9 +22,11 @@ export class TaskImportService implements LoadableService {
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
 
-  private readonly isLoadingSignal = signal<boolean>(false);
+  private readonly isLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
+
   public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
-  private readonly requestGate = new RequestGate();
+
+  private readonly requestGate: RequestGate = new RequestGate();
 
   public importData(
     data: ApiTask[],
