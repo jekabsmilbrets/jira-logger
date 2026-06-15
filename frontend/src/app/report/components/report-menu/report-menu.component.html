@@ -1,4 +1,4 @@
-@if (isSmallerThanDesktop() === false) {
+@if (!isSmallerThanDesktop()) {
     <ng-template [ngTemplateOutlet]="menuItems"/>
 } @else {
     <ng-template [ngTemplateOutlet]="smallScreen"/>

@@ -82,7 +82,7 @@ describe('ReportService', () => {
   });
 
   it('initializes persisted settings and maps saved tag ids', () => {
-    TestBed.flushEffects();
+    TestBed.tick();
 
     const tags = service.tags();
     const mode = service.reportMode();
@@ -239,7 +239,7 @@ describe('ReportService', () => {
       hideUnreportedTasks: true,
     });
     hydrationState$.complete();
-    TestBed.flushEffects();
+    TestBed.tick();
 
     await waitForDebounce();
 
@@ -299,7 +299,7 @@ describe('ReportService', () => {
       new Tag({ id: 'tag-1', name: 'Backend' }),
       new Tag({ id: 'tag-2', name: 'Frontend' }),
     ]);
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(localService.tags().map((tag: Tag) => tag.id)).toEqual(['tag-2']);
 

@@ -60,7 +60,7 @@ describe('MaterialLocaleBridgeService', () => {
 
     TestBed.inject(MaterialLocaleBridgeService);
     localeState.set('en-US');
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(setLocale).toHaveBeenCalledTimes(2);
     expect(setLocale).toHaveBeenNthCalledWith(2, 'en-US');
@@ -90,7 +90,7 @@ describe('MaterialLocaleBridgeService', () => {
 
     TestBed.inject(MaterialLocaleBridgeService);
     localeState.set(environment['appLocale'] as string);
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(setLocale).toHaveBeenCalledTimes(1);
   });

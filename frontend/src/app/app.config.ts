@@ -1,5 +1,5 @@
 import { APP_BASE_HREF } from '@angular/common';
-import { provideHttpClient, withFetch } from '@angular/common/http';
+import { provideHttpClient } from '@angular/common/http';
 import { ApplicationConfig, inject, isDevMode, LOCALE_ID, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { provideRouter } from '@angular/router';
@@ -32,7 +32,7 @@ export const appConfig: ApplicationConfig = {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
     }),
-    provideHttpClient(withFetch()),
+    provideHttpClient(),
     provideAppInitializer(() => runtimeConfigInitializer()),
     provideAppInitializer(() => {
       const initializerFn: () => Promise<void> = loadableServicesInitializerFactory(
