@@ -1,7 +1,8 @@
 import { formatDate } from '@angular/common';
 import { computed, effect, inject, Service, Signal, signal } from '@angular/core';
+import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 
-import { catchError, Observable, of, take, tap } from 'rxjs';
+import { catchError, debounceTime, Observable, of, take, tap } from 'rxjs';
 
 import { Setting } from '@core/models/setting.model';
 import { LocaleService } from '@core/services/locale.service';
@@ -43,8 +44,33 @@ export class ReportService {
   private readonly showWeekendsSignal = signal<boolean>(false);
   private readonly hideUnreportedTasksSignal = signal<boolean>(false);
   private readonly reloadVersionSignal = signal<number>(0);
-  private readonly tasksSignal = signal<Task[]>([]);
   private readonly jiraApiEnabled = computed(() => this.isJiraApiEnabled(this.settingsService.settings()));
+  private readonly taskRequest = computed(() => ({
+    state: this.getStateSnapshot(),
+    jiraApiEnabled: this.jiraApiEnabled(),
+    reloadVersion: this.reloadVersionSignal(),
+  }));
+  private readonly debouncedTaskRequest = toSignal(
+    toObservable(this.taskRequest).pipe(debounceTime(250)),
+    { initialValue: this.taskRequest() },
+  );
+  private readonly tasksResource = rxResource({
+    params: this.debouncedTaskRequest,
+    stream: ({ params }) => this.filterTasks(
+      params.state.reportMode,
+      params.state.tags,
+      params.state.date,
+      params.state.startDate,
+      params.state.endDate,
+      params.state.showWeekends,
+      params.state.hideUnreportedTasks,
+      params.jiraApiEnabled,
+    )
+      .pipe(
+        catchError(() => of([])),
+      ),
+  });
+  private readonly tasksState = computed(() => this.tasksResource.value() ?? []);
 
   private settingsKey: IDBValidKey = 'report';
   private customStoreName: string = 'settings';
@@ -120,7 +146,7 @@ export class ReportService {
   }
 
   public get tasks(): Signal<Task[]> {
-    return this.tasksSignal.asReadonly();
+    return this.tasksState;
   }
 
   constructor() {
@@ -128,7 +154,6 @@ export class ReportService {
 
     this.initSettings();
     this.registerSettingsPersistence();
-    this.registerTaskRefresh();
   }
 
   public reload(): void {
@@ -210,32 +235,6 @@ export class ReportService {
             catchError(() => of(undefined)),
           )
           .subscribe();
-      }, 250);
-
-      onCleanup(() => clearTimeout(timeoutId));
-    });
-  }
-
-  private registerTaskRefresh(): void {
-    effect((onCleanup) => {
-      const state: ReportStateSnapshot = this.getStateSnapshot();
-      const jiraApiEnabled: boolean = this.jiraApiEnabled();
-
-      void this.reloadVersionSignal();
-
-      const timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {
-        this.filterTasks(
-          state.reportMode,
-          state.tags,
-          state.date,
-          state.startDate,
-          state.endDate,
-          state.showWeekends,
-          state.hideUnreportedTasks,
-          jiraApiEnabled,
-        )
-          .pipe(take(1))
-          .subscribe((tasks: Task[]) => this.tasksSignal.set(tasks));
       }, 250);
 
       onCleanup(() => clearTimeout(timeoutId));
