@@ -1,55 +1,48 @@
-import { Component, inject, Injector, input, InputSignal, OnDestroy, Signal, viewChild, ViewContainerRef } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  Injector,
+  input,
+  InputSignal,
+  Signal,
+  viewChild,
+  ViewContainerRef,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSidenav } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { NavigationEnd, Router, RouterLink } from '@angular/router';
-
-import { delay, filter, Observable, Subscription, switchMap, take, tap } from 'rxjs';
+import { RouterLink } from '@angular/router';
 
 import { DynamicMenuDirective } from '@core/directives/dynamic-menu.directive';
-import { DynamicMenuInterface } from '@core/interfaces/dynamic-menu.interface';
-import { DynamicMenu } from '@core/models/dynamic-menu';
-import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
 import { Task } from '@shared/models/task.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
+
+import type { HeaderMenuRouteData } from '@layout/interfaces/header-menu-route-data.interface';
 
 @Component({
   selector: 'layout-header',
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MatToolbarModule, MatButtonModule, RouterLink, MatIconModule, ReadableTimePipe, DynamicMenuDirective, MatProgressBarModule],
 })
-export class HeaderComponent implements OnDestroy {
+export class HeaderComponent implements AfterViewInit {
+  public readonly activeMenu: InputSignal<HeaderMenuRouteData | null> = input<HeaderMenuRouteData | null>(null);
   public readonly sidenav: InputSignal<MatSidenav> = input.required<MatSidenav>();
   public readonly activeTask: InputSignal<null | Task> = input.required<Task | null>();
   public readonly isLoading: InputSignal<boolean> = input(false);
   public readonly timeLoggedToday: InputSignal<number> = input(0);
 
-  private readonly dynamicMenuService: DynamicMenuService = inject(DynamicMenuService);
-  private readonly router: Router = inject(Router);
-  private readonly _injector: Injector = inject(Injector);
+  private readonly injector: Injector = inject(Injector);
 
   private readonly dynamicMenu: Signal<DynamicMenuDirective> = viewChild.required(DynamicMenuDirective);
-
-  private routerEventsSubscription: Subscription;
-
-  constructor() {
-    this.routerEventsSubscription = this.router.events
-      .pipe(
-        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-        delay(100), // hax :D :D without it loadingDynamicMenu causes loading empty dynamic menus
-        switchMap((navigationEndEvent: NavigationEnd) => this.loadDynamicMenu(navigationEndEvent)),
-      )
-      .subscribe();
-  }
-
-  public ngOnDestroy(): void {
-    this.routerEventsSubscription.unsubscribe();
-  }
 
   protected reportDateLink(): string {
     const date: Date = new Date();
@@ -60,34 +53,16 @@ export class HeaderComponent implements OnDestroy {
     return `/report/date/${ currentDate }`;
   }
 
-  private loadDynamicMenu(
-    navigationEndEvent: NavigationEnd,
-  ): Observable<DynamicMenu[]> {
-    return this.dynamicMenuService.dynamicMenus$
-      .pipe(
-        take(1),
-        tap((dynamicMenus: DynamicMenu[]) => {
-          const dynamicMenu: DynamicMenu | undefined = dynamicMenus.find(
-            (dM: DynamicMenu) => navigationEndEvent.urlAfterRedirects.includes(dM.data.route),
-          );
+  public ngAfterViewInit(): void {
+    effect(() => {
+      const viewContainerRef: ViewContainerRef = this.dynamicMenu().viewContainerRef;
+      const activeMenu: HeaderMenuRouteData | null = this.activeMenu();
 
-          if (dynamicMenu) {
-            const viewContainerRef: ViewContainerRef = this.dynamicMenu().viewContainerRef;
-            viewContainerRef.clear();
+      viewContainerRef.clear();
 
-            viewContainerRef.createComponent<DynamicMenuInterface>(
-              dynamicMenu.component as never,
-              {
-                injector: Injector.create({
-                  providers: dynamicMenu.data?.providers ?? [],
-                  parent: this._injector,
-                }),
-              },
-            );
-          } else {
-            this.dynamicMenu().viewContainerRef.clear();
-          }
-        }),
-      );
+      if (activeMenu) {
+        viewContainerRef.createComponent(activeMenu.menuComponent);
+      }
+    }, { injector: this.injector });
   }
 }

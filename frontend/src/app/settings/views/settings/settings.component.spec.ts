@@ -1,9 +1,9 @@
-import { AsyncPipe } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ChangeDetectionStrategy, Component, input, output, type Signal, signal } from '@angular/core';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { By } from '@angular/platform-browser';
 
-import { firstValueFrom, Observable, of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
 import { Setting } from '@core/models/setting.model';
@@ -12,61 +12,66 @@ import { SettingsService } from '@core/services/settings.service';
 
 import { Tag } from '@shared/models/tag.model';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
+import { ReportServiceStub } from '@report/testing/report-service.stub';
 
 import { JiraApiConfiguratorComponent } from '@settings/components/jira-api-configurator/jira-api-configurator.component';
 import { ReportConfiguratorComponent } from '@settings/components/report-configurator/report-configurator.component';
 import { UserSettingsConfiguratorComponent } from '@settings/components/user-settings-configurator/user-settings-configurator.component';
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
-import { ReportSettings } from '@settings/interfaces/report-settings.interface';
+import type { ReportSettings } from '@settings/interfaces/report-settings.interface';
+import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
 import { SettingsComponent } from '@settings/views/settings/settings.component';
 
 @Component({
   selector: 'settings-report-configurator',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
 class ReportConfiguratorStubComponent {
-  @Input() public disabled = false;
-  @Input() public reportSettings!: ReportSettings;
+  public readonly disabled = input(false);
+  public readonly reportSettings = input.required<ReportSettings>();
 
-  @Output() public readonly reportModeChange = new EventEmitter<ReportModeEnum>();
-  @Output() public readonly tagChange = new EventEmitter<Tag[]>();
-  @Output() public readonly dateChange = new EventEmitter<Date | null>();
-  @Output() public readonly startDateChange = new EventEmitter<Date | null>();
-  @Output() public readonly endDateChange = new EventEmitter<Date | null>();
-  @Output() public readonly showWeekendsChange = new EventEmitter<boolean>();
-  @Output() public readonly hideUnreportedTasksChange = new EventEmitter<boolean>();
+  public readonly reportModeChange = output<ReportMode>();
+  public readonly tagChange = output<Tag[]>();
+  public readonly dateChange = output<Date | null>();
+  public readonly startDateChange = output<Date | null>();
+  public readonly endDateChange = output<Date | null>();
+  public readonly showWeekendsChange = output<boolean>();
+  public readonly hideUnreportedTasksChange = output<boolean>();
 }
 
 @Component({
   selector: 'settings-jira-api-configurator',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
 class JiraApiConfiguratorStubComponent {
-  @Input() public disabled = false;
-  @Input() public settings: Setting[] = [];
+  public readonly disabled = input(false);
+  public readonly settings = input<Setting[]>([]);
 
-  @Output() public readonly settingsChange = new EventEmitter<Setting[]>();
+  public readonly settingsChange = output<SettingsSaveEvent>();
 }
 
 @Component({
   selector: 'settings-timezone-configurator',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
 class UserSettingsConfiguratorStubComponent {
-  @Input() public disabled = false;
-  @Input() public settings: Setting[] = [];
+  public readonly disabled = input(false);
+  public readonly settings = input<Setting[]>([]);
 
-  @Output() public readonly settingsChange = new EventEmitter<Setting[]>();
+  public readonly settingsChange = output<SettingsSaveEvent>();
 }
 
 const reportSetters = {
-  reportMode: vi.fn<(value: ReportModeEnum) => void>(),
+  reportMode: vi.fn<(value: ReportMode) => void>(),
   tags: vi.fn<(value: Tag[]) => void>(),
   date: vi.fn<(value: Date | null) => void>(),
   startDate: vi.fn<(value: Date | null) => void>(),
@@ -75,51 +80,17 @@ const reportSetters = {
   hideUnreportedTasks: vi.fn<(value: boolean) => void>(),
 };
 
-class ReportServiceMock {
-  public readonly reportMode$ = of(ReportModeEnum.dateRange);
-  public readonly tags$ = of([{ id: 'tag-1', name: 'Tag 1' } as Tag]);
-  public readonly date$ = of(new Date('2026-01-01T00:00:00.000Z'));
-  public readonly startDate$ = of(new Date('2026-01-02T00:00:00.000Z'));
-  public readonly endDate$ = of(new Date('2026-01-03T00:00:00.000Z'));
-  public readonly showWeekends$ = of(true);
-  public readonly hideUnreportedTasks$ = of(false);
-
-  public set reportMode(value: ReportModeEnum) {
-    reportSetters.reportMode(value);
-  }
-
-  public set tags(value: Tag[]) {
-    reportSetters.tags(value);
-  }
-
-  public set date(value: Date | null) {
-    reportSetters.date(value);
-  }
-
-  public set startDate(value: Date | null) {
-    reportSetters.startDate(value);
-  }
-
-  public set endDate(value: Date | null) {
-    reportSetters.endDate(value);
-  }
-
-  public set showWeekends(value: boolean) {
-    reportSetters.showWeekends(value);
-  }
-
-  public set hideUnreportedTasks(value: boolean) {
-    reportSetters.hideUnreportedTasks(value);
-  }
-}
-
 describe('Settings Views settings.component', () => {
   let fixture: ComponentFixture<SettingsComponent>;
   let component: SettingsComponent;
+  let reportService: ReportServiceStub;
   let settingsServiceMock: {
-    settings$: Observable<Setting[]>;
-    update: (setting: Setting, reload: boolean) => Observable<Setting>;
-    list: () => Observable<Setting[]>;
+    settings: Signal<Setting[]>;
+    update: ReturnType<typeof vi.fn>;
+    list: ReturnType<typeof vi.fn>;
+  };
+  let matSnackBarMock: {
+    open: ReturnType<typeof vi.fn>;
   };
   let windowMock: Window;
 
@@ -127,16 +98,35 @@ describe('Settings Views settings.component', () => {
     Object.values(reportSetters).forEach((setter) => setter.mockReset());
 
     settingsServiceMock = {
-      settings$: of([
+      settings: signal([
         new Setting({ id: '1', name: JiraApiSettings.enabled, value: 'true' }),
         new Setting({ id: '2', name: JiraApiSettings.host, value: 'https://jira.local' }),
         new Setting({ id: '4', name: JiraUserSettings.userTimeZone, value: 'Europe/Riga' }),
         new Setting({ id: '5', name: JiraUserSettings.locale, value: 'lv-LV' }),
         new Setting({ id: '3', name: 'non-jira-setting', value: 'value' }),
-      ]),
+      ]).asReadonly(),
       update: vi.fn((setting: Setting) => of(setting)),
       list: vi.fn(() => of([])),
     };
+    matSnackBarMock = {
+      open: vi.fn(),
+    };
+    reportService = new ReportServiceStub({
+      reportMode: ReportMode.dateRange,
+      tags: [{ id: 'tag-1', name: 'Tag 1' } as Tag],
+      date: new Date('2026-01-01T00:00:00.000Z'),
+      startDate: new Date('2026-01-02T00:00:00.000Z'),
+      endDate: new Date('2026-01-03T00:00:00.000Z'),
+      showWeekends: true,
+      hideUnreportedTasks: false,
+      onSetReportMode: reportSetters.reportMode,
+      onSetTags: reportSetters.tags,
+      onSetDate: reportSetters.date,
+      onSetStartDate: reportSetters.startDate,
+      onSetEndDate: reportSetters.endDate,
+      onSetShowWeekends: reportSetters.showWeekends,
+      onSetHideUnreportedTasks: reportSetters.hideUnreportedTasks,
+    });
     windowMock = {
       location: {
         ...window.location,
@@ -148,9 +138,10 @@ describe('Settings Views settings.component', () => {
       .configureTestingModule({
         imports: [SettingsComponent],
         providers: [
-          { provide: LoaderStateService, useValue: { isLoading$: of(false) } },
+          { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly() } },
+          { provide: MatSnackBar, useValue: matSnackBarMock },
           { provide: SettingsService, useValue: settingsServiceMock },
-          { provide: ReportService, useClass: ReportServiceMock },
+          { provide: ReportService, useValue: reportService },
           { provide: Window, useValue: windowMock },
         ],
       })
@@ -159,7 +150,6 @@ describe('Settings Views settings.component', () => {
         {
           set: {
             imports: [
-              AsyncPipe,
               ReportConfiguratorStubComponent,
               JiraApiConfiguratorStubComponent,
               UserSettingsConfiguratorStubComponent,
@@ -180,28 +170,34 @@ describe('Settings Views settings.component', () => {
     expect(fixture.debugElement.query(By.css('settings-timezone-configurator'))).toBeTruthy();
   });
 
-  it('binds configurator inputs from async state', async () => {
+  it('binds configurator inputs from signal state', async () => {
     const reportCfg = fixture.debugElement.query(By.directive(ReportConfiguratorStubComponent)).componentInstance as ReportConfiguratorStubComponent;
     const jiraCfg = fixture.debugElement.query(By.directive(JiraApiConfiguratorStubComponent)).componentInstance as JiraApiConfiguratorStubComponent;
     const timezoneCfg = fixture.debugElement.query(By.directive(UserSettingsConfiguratorStubComponent)).componentInstance as UserSettingsConfiguratorStubComponent;
 
-    expect(reportCfg.disabled).toBe(false);
-    expect(reportCfg.reportSettings.reportMode).toBe(ReportModeEnum.dateRange);
-    expect(jiraCfg.disabled).toBe(false);
-    expect(jiraCfg.settings.length).toBe(2);
-    expect(timezoneCfg.disabled).toBe(false);
-    expect(timezoneCfg.settings.length).toBe(2);
+    expect(reportCfg.disabled()).toBe(false);
+    expect(reportCfg.reportSettings().reportMode).toBe(ReportMode.dateRange);
+    expect(jiraCfg.disabled()).toBe(false);
+    expect(jiraCfg.settings().length).toBe(2);
+    expect(timezoneCfg.disabled()).toBe(false);
+    expect(timezoneCfg.settings().length).toBe(2);
   });
 
   it('forwards child output events through template bindings', () => {
     const reportCfg = fixture.debugElement.query(By.directive(ReportConfiguratorStubComponent)).componentInstance as ReportConfiguratorStubComponent;
     const jiraCfg = fixture.debugElement.query(By.directive(JiraApiConfiguratorStubComponent)).componentInstance as JiraApiConfiguratorStubComponent;
     const timezoneCfg = fixture.debugElement.query(By.directive(UserSettingsConfiguratorStubComponent)).componentInstance as UserSettingsConfiguratorStubComponent;
-    const changedSettings = [new Setting({ id: 'x', name: JiraApiSettings.host, value: 'https://x' })];
-    const timezoneChangedSettings = [new Setting({ id: 'z', name: JiraUserSettings.userTimeZone, value: 'UTC' })];
+    const changedSettings: SettingsSaveEvent = {
+      changedSettings: [new Setting({ id: 'x', name: JiraApiSettings.host, value: 'https://x' })],
+      successMessage: 'Successfully saved JIRA API settings!',
+    };
+    const timezoneChangedSettings: SettingsSaveEvent = {
+      changedSettings: [new Setting({ id: 'z', name: JiraUserSettings.userTimeZone, value: 'UTC' })],
+      successMessage: 'Successfully saved user preferences!',
+    };
     const date = new Date('2026-02-10T00:00:00.000Z');
 
-    reportCfg.reportModeChange.emit(ReportModeEnum.date);
+    reportCfg.reportModeChange.emit(ReportMode.date);
     reportCfg.tagChange.emit([{ id: 't1', name: 'Tag 1' } as Tag]);
     reportCfg.dateChange.emit(date);
     reportCfg.startDateChange.emit(date);
@@ -211,28 +207,30 @@ describe('Settings Views settings.component', () => {
     jiraCfg.settingsChange.emit(changedSettings);
     timezoneCfg.settingsChange.emit(timezoneChangedSettings);
 
-    expect(reportSetters.reportMode).toHaveBeenCalledWith(ReportModeEnum.date);
+    expect(reportSetters.reportMode).toHaveBeenCalledWith(ReportMode.date);
     expect(reportSetters.tags).toHaveBeenCalled();
     expect(reportSetters.date).toHaveBeenCalledWith(date);
     expect(reportSetters.startDate).toHaveBeenCalledWith(date);
     expect(reportSetters.endDate).toHaveBeenCalledWith(date);
     expect(reportSetters.showWeekends).toHaveBeenCalledWith(true);
     expect(reportSetters.hideUnreportedTasks).toHaveBeenCalledWith(true);
-    expect(settingsServiceMock.update).toHaveBeenCalledWith(changedSettings[0], true);
-    expect(settingsServiceMock.update).toHaveBeenCalledWith(timezoneChangedSettings[0], true);
+    expect(settingsServiceMock.update).toHaveBeenCalledWith(changedSettings.changedSettings[0], true);
+    expect(settingsServiceMock.update).toHaveBeenCalledWith(timezoneChangedSettings.changedSettings[0], true);
+    expect(matSnackBarMock.open).toHaveBeenCalledWith('Successfully saved JIRA API settings!', undefined, { duration: 5000 });
+    expect(matSnackBarMock.open).toHaveBeenCalledWith('Successfully saved user preferences!', undefined, { duration: 5000 });
   });
 
-  it('filters jira settings from full settings stream', async () => {
-    const jiraSettings = await firstValueFrom((component as any).jiraApiSettings$ as Observable<Setting[]>);
+  it('filters jira settings from full settings state', async () => {
+    const jiraSettings = (component as any).jiraApiSettings() as Setting[];
 
     expect(jiraSettings).toHaveLength(2);
     expect(jiraSettings.every((setting) => Object.values(JiraApiSettings).includes(setting.name as JiraApiSettings))).toBe(true);
   });
 
-  it('maps report service streams into reportSettings$', async () => {
-    const reportSettings = await firstValueFrom((component as any).reportSettings$ as Observable<ReportSettings>);
+  it('maps report service signals into reportSettings', async () => {
+    const reportSettings = (component as any).reportSettings() as ReportSettings;
 
-    expect(reportSettings.reportMode).toBe(ReportModeEnum.dateRange);
+    expect(reportSettings.reportMode).toBe(ReportMode.dateRange);
     expect(reportSettings.tags).toHaveLength(1);
     expect(reportSettings.showWeekends).toBe(true);
     expect(reportSettings.hideUnreportedTasks).toBe(false);
@@ -242,7 +240,7 @@ describe('Settings Views settings.component', () => {
     const tagList: Tag[] = [{ id: 't-1', name: 'Tag' } as Tag];
     const date = new Date('2026-02-01T00:00:00.000Z');
 
-    (component as any).onReportModeChange(ReportModeEnum.date);
+    (component as any).onReportModeChange(ReportMode.date);
     (component as any).onTagChange(tagList);
     (component as any).onDateChange(date);
     (component as any).onStartDateChange(date);
@@ -250,7 +248,7 @@ describe('Settings Views settings.component', () => {
     (component as any).onShowWeekendsChange(true);
     (component as any).onHideUnreportedTasksChange(true);
 
-    expect(reportSetters.reportMode).toHaveBeenCalledWith(ReportModeEnum.date);
+    expect(reportSetters.reportMode).toHaveBeenCalledWith(ReportMode.date);
     expect(reportSetters.tags).toHaveBeenCalledWith(tagList);
     expect(reportSetters.date).toHaveBeenCalledWith(date);
     expect(reportSetters.startDate).toHaveBeenCalledWith(date);
@@ -260,26 +258,35 @@ describe('Settings Views settings.component', () => {
   });
 
   it('updates each changed setting when settingsChange is received', () => {
-    const changedSettings = [
-      new Setting({ id: '11', name: JiraApiSettings.enabled, value: 'false' }),
-      new Setting({ id: '12', name: JiraApiSettings.host, value: 'https://new.example' }),
-    ];
+    const saveEvent: SettingsSaveEvent = {
+      changedSettings: [
+        new Setting({ id: '11', name: JiraApiSettings.enabled, value: 'false' }),
+        new Setting({ id: '12', name: JiraApiSettings.host, value: 'https://new.example' }),
+      ],
+      successMessage: 'Successfully saved JIRA API settings!',
+    };
 
-    (component as any).onSettingsChange(changedSettings);
+    (component as any).onSettingsChange(saveEvent);
 
     expect(settingsServiceMock.update).toHaveBeenCalledTimes(2);
-    expect(settingsServiceMock.update).toHaveBeenNthCalledWith(1, changedSettings[0], true);
-    expect(settingsServiceMock.update).toHaveBeenNthCalledWith(2, changedSettings[1], true);
+    expect(settingsServiceMock.update).toHaveBeenNthCalledWith(1, saveEvent.changedSettings[0], true);
+    expect(settingsServiceMock.update).toHaveBeenNthCalledWith(2, saveEvent.changedSettings[1], true);
+    expect(matSnackBarMock.open).toHaveBeenCalledWith('Successfully saved JIRA API settings!', undefined, { duration: 5000 });
   });
 
-  it('does not reload page after locale setting update when reload is disabled', () => {
-    const changedSettings = [
-      new Setting({ id: '99', name: JiraUserSettings.locale, value: 'en-US' }),
-    ];
+  it('does not open a success snackbar when the save pipeline fails', () => {
+    settingsServiceMock.update.mockReturnValueOnce(throwError(() => new Error('save failed')));
+    const saveEvent: SettingsSaveEvent = {
+      changedSettings: [
+        new Setting({ id: '99', name: JiraUserSettings.locale, value: 'en-US' }),
+      ],
+      successMessage: 'Successfully saved user preferences!',
+    };
 
-    (component as any).onSettingsChange(changedSettings);
+    (component as any).onSettingsChange(saveEvent);
 
     expect(settingsServiceMock.update).toHaveBeenCalledTimes(1);
+    expect(matSnackBarMock.open).not.toHaveBeenCalled();
     expect(windowMock.location.reload).not.toHaveBeenCalled();
   });
 });
@@ -287,10 +294,10 @@ describe('Settings Views settings.component', () => {
 describe('Settings Views settings.component integration', () => {
   it('renders real settings template with configurators', async () => {
     const settingsServiceMock = {
-      settings$: of([
+      settings: signal([
         new Setting({ id: '1', name: JiraApiSettings.enabled, value: 'true' }),
         new Setting({ id: '2', name: JiraApiSettings.host, value: 'https://jira.local' }),
-      ]),
+      ]).asReadonly(),
       update: vi.fn((setting: Setting) => of(setting)),
       list: vi.fn(() => of([])),
     };
@@ -300,14 +307,16 @@ describe('Settings Views settings.component integration', () => {
         reload: vi.fn(),
       },
     } as unknown as Window;
+    const reportService = new ReportServiceStub();
 
     await TestBed.resetTestingModule()
       .configureTestingModule({
         imports: [SettingsComponent],
         providers: [
-          { provide: LoaderStateService, useValue: { isLoading$: of(false) } },
+          { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly() } },
+          { provide: MatSnackBar, useValue: { open: vi.fn() } },
           { provide: SettingsService, useValue: settingsServiceMock },
-          { provide: ReportService, useClass: ReportServiceMock },
+          { provide: ReportService, useValue: reportService },
           { provide: Window, useValue: windowMock },
         ],
       })
@@ -324,10 +333,10 @@ describe('Settings Views settings.component integration', () => {
 
   it('wires real child outputs through template listeners', async () => {
     const settingsServiceMock = {
-      settings$: of([
+      settings: signal([
         new Setting({ id: '1', name: JiraApiSettings.enabled, value: 'true' }),
         new Setting({ id: '2', name: JiraApiSettings.host, value: 'https://jira.local' }),
-      ]),
+      ]).asReadonly(),
       update: vi.fn((setting: Setting) => of(setting)),
       list: vi.fn(() => of([])),
     };
@@ -337,14 +346,16 @@ describe('Settings Views settings.component integration', () => {
         reload: vi.fn(),
       },
     } as unknown as Window;
+    const reportService = new ReportServiceStub();
 
     await TestBed.resetTestingModule()
       .configureTestingModule({
         imports: [SettingsComponent],
         providers: [
-          { provide: LoaderStateService, useValue: { isLoading$: of(false) } },
+          { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly() } },
+          { provide: MatSnackBar, useValue: { open: vi.fn() } },
           { provide: SettingsService, useValue: settingsServiceMock },
-          { provide: ReportService, useClass: ReportServiceMock },
+          { provide: ReportService, useValue: reportService },
           { provide: Window, useValue: windowMock },
         ],
       })
@@ -366,15 +377,21 @@ describe('Settings Views settings.component integration', () => {
     const hideSpy = vi.spyOn(component, 'onHideUnreportedTasksChange');
     const settingsSpy = vi.spyOn(component, 'onSettingsChange');
 
-    reportCfg.reportModeChange.emit(ReportModeEnum.date);
+    reportCfg.reportModeChange.emit(ReportMode.date);
     reportCfg.tagChange.emit([{ id: 'x', name: 'X' } as Tag]);
     reportCfg.dateChange.emit(date);
     reportCfg.startDateChange.emit(date);
     reportCfg.endDateChange.emit(date);
     reportCfg.showWeekendsChange.emit(true);
     reportCfg.hideUnreportedTasksChange.emit(true);
-    jiraCfg.settingsChange.emit([new Setting({ id: '2', name: JiraApiSettings.host, value: 'https://changed' })]);
-    timezoneCfg.settingsChange.emit([new Setting({ id: '3', name: JiraUserSettings.userTimeZone, value: 'UTC' })]);
+    jiraCfg.settingsChange.emit({
+      changedSettings: [new Setting({ id: '2', name: JiraApiSettings.host, value: 'https://changed' })],
+      successMessage: 'Successfully saved JIRA API settings!',
+    });
+    timezoneCfg.settingsChange.emit({
+      changedSettings: [new Setting({ id: '3', name: JiraUserSettings.userTimeZone, value: 'UTC' })],
+      successMessage: 'Successfully saved user preferences!',
+    });
 
     expect(modeSpy).toHaveBeenCalled();
     expect(tagSpy).toHaveBeenCalled();

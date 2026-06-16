@@ -1,19 +1,15 @@
 import { registerLocaleData } from '@angular/common';
-import { inject, Injectable, Signal, signal } from '@angular/core';
-
-import { map } from 'rxjs';
+import { computed, effect, inject, Service, type Signal } from '@angular/core';
 
 import { environment } from '@environments/environment';
 
-import { LocaleOption } from '@core/interfaces/locale-option.interface';
+import type { LocaleOption } from '@core/interfaces/locale-option.interface';
 import { Setting } from '@core/models/setting.model';
 import { SettingsService } from '@core/services/settings.service';
 
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class LocaleService {
   private readonly settingsService: SettingsService | null = inject(SettingsService, { optional: true });
 
@@ -24,6 +20,7 @@ export class LocaleService {
     { label: 'German (de-DE)', value: 'de-DE' },
     { label: 'French (fr-FR)', value: 'fr-FR' },
   ];
+
   private readonly supportedLocales: string[] = this.localeOptions.map((option: LocaleOption) => option.value);
   private readonly localeLoaders: Record<string, () => Promise<{ default: unknown }>> = {
     'lv-LV': () => import('@angular/common/locales/lv'),
@@ -35,42 +32,32 @@ export class LocaleService {
   private readonly loadedLocales: Set<string> = new Set<string>(['en-US']);
   private readonly loadingLocales: Map<string, Promise<void>> = new Map<string, Promise<void>>();
 
-  private readonly _locale = signal<string>(environment['appLocale'] as string);
-  public readonly localeSignal: Signal<string> = this._locale.asReadonly();
+  public readonly localeSignal: Signal<string> = computed(() => this.resolveLocale(this.settingsService?.settings()));
 
   public get locale(): string {
-    return this._locale();
+    return this.localeSignal();
   }
 
   constructor() {
-    this.setLocale(environment['appLocale'] as string);
-
-    this.settingsService?.settings$
-      .pipe(
-        map((settings: Setting[]) =>
-          settings.find(
-            (setting: Setting) => setting.name === JiraUserSettings.locale,
-          )?.value,
-        ),
-      )
-      .subscribe((locale: string | undefined) => {
-        if (typeof locale === 'string' && this.isSupportedLocale(locale)) {
-          this.setLocale(locale);
-        } else {
-          this.setLocale(environment['appLocale'] as string);
-        }
-      });
+    effect(() => {
+      void this.ensureLocaleDataLoaded(this.localeSignal());
+    });
   }
 
   private isSupportedLocale(locale: string): boolean {
     return this.supportedLocales.includes(locale.trim());
   }
 
-  private setLocale(locale: string): void {
-    const normalizedLocale: string = locale.trim();
+  private resolveLocale(settings: Setting[] | undefined): string {
+    const locale: string | undefined = settings?.find(
+      (setting: Setting) => setting.name === JiraUserSettings.locale,
+    )?.value as string | undefined;
 
-    this._locale.set(normalizedLocale);
-    void this.ensureLocaleDataLoaded(normalizedLocale);
+    if (typeof locale === 'string' && this.isSupportedLocale(locale)) {
+      return locale.trim();
+    }
+
+    return environment['appLocale'] as string;
   }
 
   private async ensureLocaleDataLoaded(locale: string): Promise<void> {

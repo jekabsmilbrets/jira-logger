@@ -1,4 +1,4 @@
-import { Component, output, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, output, type OutputEmitterRef } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
   templateUrl: './tasks-settings-toggle.component.html',
   styleUrls: ['./tasks-settings-toggle.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatButtonModule,
     MatIconModule,

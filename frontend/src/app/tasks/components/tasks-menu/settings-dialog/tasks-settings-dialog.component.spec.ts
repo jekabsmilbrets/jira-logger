@@ -1,8 +1,8 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
 
-import { of } from 'rxjs';
 import { vi } from 'vitest';
 
 import { Tag } from '@shared/models/tag.model';
@@ -16,7 +16,7 @@ describe('Tasks Components tasks-settings-dialog.component', () => {
   };
 
   const tagsServiceMock = {
-    tags$: of<Tag[]>([]),
+    tags: signal<Tag[]>([]).asReadonly(),
   };
 
   beforeEach(async () => {
@@ -57,10 +57,10 @@ describe('Tasks Components tasks-settings-dialog.component', () => {
     const fixture = TestBed.createComponent(TasksSettingsDialogComponent);
     const component = fixture.componentInstance as unknown as {
       onImport: () => void;
-      formGroup: { setValue: (value: { json: string | null }) => void };
+      tasksSettingsFormModel: { set: (value: { json: string }) => void };
     };
 
-    component.formGroup.setValue({ json: null });
+    component.tasksSettingsFormModel.set({ json: '' });
     component.onImport();
 
     expect(dialogRefMock.close).not.toHaveBeenCalled();
@@ -70,13 +70,13 @@ describe('Tasks Components tasks-settings-dialog.component', () => {
     const fixture = TestBed.createComponent(TasksSettingsDialogComponent);
     const component = fixture.componentInstance as unknown as {
       onImport: () => void;
-      formGroup: { setValue: (value: { json: string | null }) => void };
+      tasksSettingsFormModel: { set: (value: { json: string }) => void };
     };
     const tag = new Tag({ id: '1', name: 'Frontend' });
 
-    tagsServiceMock.tags$ = of([tag]);
+    tagsServiceMock.tags = signal([tag]).asReadonly();
 
-    component.formGroup.setValue({
+    component.tasksSettingsFormModel.set({
       json: JSON.stringify([
         {
           _name: 'Imported task',
@@ -104,11 +104,11 @@ describe('Tasks Components tasks-settings-dialog.component', () => {
     const fixture = TestBed.createComponent(TasksSettingsDialogComponent);
     const component = fixture.componentInstance as unknown as {
       onImport: () => void;
-      formGroup: { setValue: (value: { json: string | null }) => void };
+      tasksSettingsFormModel: { set: (value: { json: string }) => void };
     };
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    component.formGroup.setValue({
+    component.tasksSettingsFormModel.set({
       json: '{invalid json}',
     });
 

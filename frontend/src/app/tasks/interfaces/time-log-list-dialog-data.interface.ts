@@ -1,6 +1,6 @@
 import { Task } from '@shared/models/task.model';
-import { DialogData } from '@shared/types/dialog-data.type';
+import type { DialogData } from '@shared/types/dialog-data.type';
 
-export interface TimeLogListDialogDataInterface extends DialogData {
+export interface TimeLogListDialogData extends DialogData {
   task: Task;
 }

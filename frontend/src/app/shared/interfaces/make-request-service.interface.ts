@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 
-import { ApiRequestBody } from '@shared/types/api-request-body.type';
+import type { ApiRequestBody } from '@shared/types/api-request-body.type';
 
 export interface MakeRequestService {
   makeRequest<T>(

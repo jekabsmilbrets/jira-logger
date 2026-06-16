@@ -105,19 +105,19 @@
             }
         </ng-container>
 
-        <mat-header-row *cdkHeaderRowDef="displayedColumns; sticky: stickyHeader()"/>
+        <mat-header-row *cdkHeaderRowDef="displayedColumns(); sticky: stickyHeader()"/>
 
         @if (enableFooter()) {
-            <mat-header-row *cdkFooterRowDef="displayedColumns; sticky: stickyFooter()"/>
+            <mat-header-row *cdkFooterRowDef="displayedColumns(); sticky: stickyFooter()"/>
         }
 
         @if (!isSelectable()) {
-            <mat-row *cdkRowDef="let row; columns: displayedColumns"/>
+            <mat-row *cdkRowDef="let row; columns: displayedColumns()"/>
         }
 
         @if (isSelectable()) {
             <mat-row (click)="selection.toggle(row)"
-                     *matRowDef="let row; columns: displayedColumns"
+                     *matRowDef="let row; columns: displayedColumns()"
                      [class.selected]="selection.isSelected(row)"/>
         }
     </mat-table>

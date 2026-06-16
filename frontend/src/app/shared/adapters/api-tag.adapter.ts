@@ -1,4 +1,4 @@
-import { ApiTag } from '@shared/interfaces/api/api-tag.interface';
+import type { ApiTag } from '@shared/interfaces/api/api-tag.interface';
 import { Tag } from '@shared/models/tag.model';
 
 export const adaptTag: (apiTag: ApiTag) => Tag = (apiTag: ApiTag): Tag =>

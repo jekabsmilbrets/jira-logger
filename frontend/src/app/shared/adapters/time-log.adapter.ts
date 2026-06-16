@@ -1,4 +1,4 @@
-import { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
+import type { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
 import { TimeLog } from '@shared/models/time-log.model';
 
 export const adaptTimeLog: (dbTimeLog: ApiTimeLog) => TimeLog = (dbTimeLog: ApiTimeLog): TimeLog =>

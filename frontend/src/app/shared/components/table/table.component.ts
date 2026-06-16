@@ -9,7 +9,21 @@ import {
   CdkRowDef,
 } from '@angular/cdk/table';
 import { formatDate } from '@angular/common';
-import { AfterViewInit, Component, inject, Input, input, InputSignal, output, OutputEmitterRef, Signal, viewChild } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  injectAsync,
+  input,
+  InputSignal,
+  output,
+  OutputEmitterRef,
+  Signal,
+  viewChild,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
@@ -22,21 +36,23 @@ import { take } from 'rxjs';
 
 import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
-import { formatDateInTimezone } from '@core/utils/format-date-in-timezone.utility';
+import { formatDateInTimezone } from '@core/utilities/format-date-in-timezone.utility';
 
-import { Column } from '@shared/interfaces/column.interface';
-import { Searchable } from '@shared/interfaces/searchable.interface';
+import type { Column } from '@shared/interfaces/column.interface';
+import type { Searchable } from '@shared/interfaces/searchable.interface';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
-import { AreYouSureService } from '@shared/services/are-you-sure.service';
-import { getNestedObject } from '@shared/utils/get-nested-object.util';
+import type { AreYouSureService } from '@shared/services/are-you-sure.service';
+import type { AsyncLoader } from '@shared/types/async-loader.type';
+import { getNestedObject } from '@shared/utilities/get-nested-object.utility';
 
 @Component({
   selector: 'shared-shared-table',
   templateUrl: './table.component.html',
   styleUrls: ['./table.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatTableModule,
     MatSortModule,
@@ -65,6 +81,7 @@ export class TableComponent implements AfterViewInit {
   public readonly sortField: InputSignal<string> = input('id');
   public readonly sortDirection: InputSignal<'' | 'asc' | 'desc'> = input<SortDirection>('asc');
   public readonly columns: InputSignal<Column[]> = input<Column[]>([]);
+  public readonly data: InputSignal<Searchable[] | null | undefined> = input<Searchable[] | null>();
 
   protected readonly cellClicked: OutputEmitterRef<[Searchable, Column]> = output<[
     Searchable,
@@ -80,28 +97,7 @@ export class TableComponent implements AfterViewInit {
   protected readonly sort: Signal<MatSort> = viewChild.required(MatSort);
 
   protected readonly paginator: Signal<MatPaginator> = viewChild.required(MatPaginator);
-
-  protected selection: SelectionModel<Searchable> = new SelectionModel<Searchable>(true, []);
-
-  protected dataSource: MatTableDataSource<Searchable> = new MatTableDataSource<Searchable>([]);
-
-  private readonly areYouSureService: AreYouSureService = inject(AreYouSureService);
-  private readonly timezoneService: TimezoneService = inject(TimezoneService);
-  private readonly localeService: LocaleService = inject(LocaleService);
-
-  private _data: Searchable[] = [];
-
-  // TODO: Skipped for migration because:
-  //  Accessor inputs cannot be migrated as they are too complex.
-  @Input()
-  public set data(
-    data: Searchable[] | null,
-  ) {
-    this._data = data ?? [];
-    this.dataSource.data = this._data;
-  }
-
-  protected get displayedColumns(): string[] {
+  protected readonly displayedColumns: Signal<string[]> = computed(() => {
     const columns: string[] = this.columns()
       .filter(({ hidden }: Column) => !hidden)
       .filter(({ excludeFromLoop }: Column) => !excludeFromLoop)
@@ -111,16 +107,31 @@ export class TableComponent implements AfterViewInit {
       columns.push('remove');
     }
 
-    // TODO: Enable when bug in table is resolved
-    // if (this.enableSyncAction()) {
-    //   columns.push('sync');
-    // }
-
     if (this.isSelectable()) {
       columns.unshift('select');
     }
 
     return columns;
+  });
+
+  protected selection: SelectionModel<Searchable> = new SelectionModel<Searchable>(true, []);
+
+  protected dataSource: MatTableDataSource<Searchable> = new MatTableDataSource<Searchable>([]);
+
+  private readonly loadAreYouSureService: AsyncLoader<AreYouSureService> = injectAsync(
+    () => import('@shared/services/are-you-sure.service').then((m) => m.AreYouSureService),
+  );
+  private readonly timezoneService: TimezoneService = inject(TimezoneService);
+  private readonly localeService: LocaleService = inject(LocaleService);
+
+  private _data: Searchable[] = [];
+
+  constructor() {
+    effect(() => {
+      this._data = [...(this.data() ?? [])];
+      this.selection.clear();
+      this.dataSource.data = this._data;
+    });
   }
 
   public ngAfterViewInit(): void {
@@ -193,9 +204,9 @@ export class TableComponent implements AfterViewInit {
     }
   }
 
-  protected onRemoveAction(
+  protected async onRemoveAction(
     row: Searchable,
-  ): void {
+  ): Promise<void> {
     const timeLog: TimeLog | undefined = row as TimeLog;
 
     if (!timeLog) {
@@ -212,7 +223,8 @@ export class TableComponent implements AfterViewInit {
       formatDateInTimezone(timeLogEndTime, 'HH:mm:ss', this.localeService.locale, this.timezoneService.timezone) :
       null;
 
-    const confirmation$: ReturnType<AreYouSureService['openDialog']> | undefined = this.areYouSureService.openDialog(
+    const areYouSureService: AreYouSureService = await this.loadAreYouSureService();
+    const confirmation$: ReturnType<AreYouSureService['openDialog']> | undefined = areYouSureService.openDialog(
       `Time log "${ timeLogDate } ${ timeLogStart }-${ timeLogEnd }"`,
     );
 

@@ -206,4 +206,42 @@ class TaskControllerTest extends TestCase
 
         self::assertSame(404, $response->getStatusCode());
     }
+
+    public function testTaskExistsReturnsConflictWhenNameAlreadyExists(): void
+    {
+        $serializer = $this->createMock(SerializerInterface::class);
+        $taskRepository = $this->getMockBuilder(TaskRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findOneBy'])
+            ->getMock();
+        $taskRepository
+            ->expects(self::once())
+            ->method('findOneBy')
+            ->with(['name' => 'existing task'])
+            ->willReturn(new \App\Entity\Task\Task());
+        $taskService = $this->taskServiceWith($taskRepository);
+
+        $response = $this->controllerWith($taskService, $serializer)->taskExists(' existing task ');
+
+        self::assertSame(409, $response->getStatusCode());
+    }
+
+    public function testTaskExistsReturnsNoContentWhenNameDoesNotExist(): void
+    {
+        $serializer = $this->createMock(SerializerInterface::class);
+        $taskRepository = $this->getMockBuilder(TaskRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findOneBy'])
+            ->getMock();
+        $taskRepository
+            ->expects(self::once())
+            ->method('findOneBy')
+            ->with(['name' => 'missing task'])
+            ->willReturn(null);
+        $taskService = $this->taskServiceWith($taskRepository);
+
+        $response = $this->controllerWith($taskService, $serializer)->taskExists('missing task');
+
+        self::assertSame(204, $response->getStatusCode());
+    }
 }

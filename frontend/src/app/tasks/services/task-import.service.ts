@@ -1,35 +1,32 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { inject, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { BehaviorSubject, catchError, concat, map, Observable, of, switchMap, tap, throwError, toArray } from 'rxjs';
+import { catchError, concat, finalize, map, type Observable, of, switchMap, throwError, toArray } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { waitForTurn } from '@core/utils/wait-for.utility';
+import { RequestGate } from '@core/utilities/request-gate.utility';
+import { waitForTurn } from '@core/utilities/wait-for.utility';
 
 import { adaptTasks } from '@shared/adapters/task.adapter';
-import { ApiTask } from '@shared/interfaces/api/api-task.interface';
-import { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
+import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class TaskImportService implements LoadableService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
-
-  public isLoading$: Observable<boolean>;
 
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
 
-  private isLoadingSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  private readonly isLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
 
-  constructor() {
-    this.isLoading$ = this.isLoadingSubject.asObservable();
-  }
+  public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
+
+  private readonly requestGate: RequestGate = new RequestGate();
 
   public importData(
     data: ApiTask[],
@@ -58,23 +55,22 @@ export class TaskImportService implements LoadableService {
       ),
     );
 
-    return waitForTurn(
-      this.isLoading$,
-      this.isLoadingSubject,
-    )
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => concat(...observables)),
-        toArray(),
-        catchError((error: HttpErrorResponse) => {
-          this.isLoadingSubject.next(false);
-          return throwError(() => error);
-        }),
-        map(() => true),
-        tap(() => this.isLoadingSubject.next(false)),
+        switchMap((release: VoidFunction) => concat(...observables)
+          .pipe(
+            toArray(),
+            catchError((error: HttpErrorResponse) => {
+              release();
+              return throwError(() => error);
+            }),
+            map(() => true),
+            finalize(release),
+          )),
       );
   }
 
   public init(): void {
-    this.loaderStateService.addLoader(this.isLoading$, this.constructor.name);
+    this.loaderStateService.addLoader(this.isLoading, this.constructor.name);
   }
 }

@@ -1,11 +1,12 @@
-import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
-import { AsyncPipe, NgTemplateOutlet } from '@angular/common';
-import { Component, inject, Signal, TemplateRef, viewChild } from '@angular/core';
+import { BreakpointObserver, type BreakpointState } from '@angular/cdk/layout';
+import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, type Signal, type TemplateRef, viewChild } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 
-import { map, Observable } from 'rxjs';
+import { map } from 'rxjs';
 
 import { ReportDateSelectorComponent } from '@shared/components/report-menu/report-date-selector/report-date-selector.component';
 import { ReportHideUnreportedTasksComponent } from '@shared/components/report-menu/report-hide-unreported-tasks/report-hide-unreported-tasks.component';
@@ -14,7 +15,7 @@ import { ReportShowWeekendsComponent } from '@shared/components/report-menu/repo
 import { ReportTagFilterComponent } from '@shared/components/report-menu/report-tag-filter/report-tag-filter.component';
 import { Tag } from '@shared/models/tag.model';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 
 @Component({
@@ -22,6 +23,7 @@ import { ReportService } from '@report/services/report.service';
   templateUrl: './report-menu.component.html',
   styleUrls: ['./report-menu.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReportTagFilterComponent,
     ReportModeSwitcherComponent,
@@ -30,21 +32,21 @@ import { ReportService } from '@report/services/report.service';
     ReportHideUnreportedTasksComponent,
     MatIconModule,
     MatButtonModule,
-    AsyncPipe,
     NgTemplateOutlet,
   ],
 })
 export class ReportMenuComponent {
-  protected reportMode$: Observable<ReportModeEnum>;
-  protected tags$: Observable<Tag[]>;
-  protected date$: Observable<Date | null>;
-  protected startDate$: Observable<Date | null>;
-  protected endDate$: Observable<Date | null>;
-  protected showWeekends$: Observable<boolean>;
-  protected hideUnreportedTasks$: Observable<boolean>;
-  protected isSmallerThanDesktop$: Observable<boolean>;
+  protected readonly reportMode: Signal<ReportMode>;
+  protected readonly tags: Signal<Tag[]>;
+  protected readonly date: Signal<Date | null>;
+  protected readonly startDate: Signal<Date | null>;
+  protected readonly endDate: Signal<Date | null>;
+  protected readonly showWeekends: Signal<boolean>;
+  protected readonly hideUnreportedTasks: Signal<boolean>;
+  protected readonly isSmallerThanDesktop: Signal<boolean>;
+  protected readonly showDatePicker: Signal<boolean>;
 
-  protected ReportModeEnum = ReportModeEnum;
+  protected readonly ReportMode: typeof ReportMode = ReportMode;
 
   private readonly matDialog: MatDialog = inject(MatDialog);
   private readonly reportService: ReportService = inject(ReportService);
@@ -55,74 +57,70 @@ export class ReportMenuComponent {
   private readonly dialogTemplate: Signal<TemplateRef<HTMLDivElement>> = viewChild.required<TemplateRef<HTMLDivElement>>('smallScreenDialog');
 
   constructor() {
-    this.reportMode$ = this.reportService.reportMode$;
-    this.tags$ = this.reportService.tags$;
-    this.date$ = this.reportService.date$;
-    this.startDate$ = this.reportService.startDate$;
-    this.endDate$ = this.reportService.endDate$;
-    this.showWeekends$ = this.reportService.showWeekends$;
-    this.hideUnreportedTasks$ = this.reportService.hideUnreportedTasks$;
-    this.isSmallerThanDesktop$ = this.breakpointObserver.observe(this.smallerThanDesktopBreakpoint)
-      .pipe(
-        map(
-          (results: BreakpointState) => results.matches && results.breakpoints[this.smallerThanDesktopBreakpoint],
+    this.reportMode = this.reportService.reportMode;
+    this.tags = this.reportService.tags;
+    this.date = this.reportService.date;
+    this.startDate = this.reportService.startDate;
+    this.endDate = this.reportService.endDate;
+    this.showWeekends = this.reportService.showWeekends;
+    this.hideUnreportedTasks = this.reportService.hideUnreportedTasks;
+    this.isSmallerThanDesktop = toSignal(
+      this.breakpointObserver.observe(this.smallerThanDesktopBreakpoint)
+        .pipe(
+          map(
+            (results: BreakpointState) => results.matches && results.breakpoints[this.smallerThanDesktopBreakpoint],
+          ),
         ),
-      );
+      { initialValue: false },
+    );
+    this.showDatePicker = computed(() => ['dateRange', 'date'].includes(this.reportMode()));
   }
 
   protected onReportModeChange(
-    value: ReportModeEnum,
+    value: ReportMode,
   ): void {
-    this.reportService.reportMode = value;
+    this.reportService.setReportMode(value);
   }
 
   protected onTagChange(
     value: Tag[],
   ): void {
-    this.reportService.tags = value;
+    this.reportService.setTags(value);
   }
 
   protected onDateChange(
     date: Date | null,
   ): void {
-    this.reportService.date = date;
+    this.reportService.setDate(date);
   }
 
   protected onStartDateChange(
     date: Date | null,
   ): void {
-    this.reportService.startDate = date;
+    this.reportService.setStartDate(date);
   }
 
   protected onEndDateChange(
     date: Date | null,
   ): void {
-    this.reportService.endDate = date;
+    this.reportService.setEndDate(date);
   }
 
   protected onShowWeekendsChange(
     showWeekends: boolean,
   ): void {
-    this.reportService.showWeekends = showWeekends;
+    this.reportService.setShowWeekends(showWeekends);
   }
 
   protected onHideUnreportedTasksChange(
     hideUnreportedTasks: boolean,
   ): void {
-    this.reportService.hideUnreportedTasks = hideUnreportedTasks;
+    this.reportService.setHideUnreportedTasks(hideUnreportedTasks);
   }
 
   protected onSmallScreenMenuToggle(): void {
     this.matDialog.open(
       this.dialogTemplate(),
-    );
-  }
-
-  protected showDatePicker(): Observable<boolean> {
-    return this.reportMode$.pipe(
-      map(
-        (reportMode: ReportModeEnum) => ['dateRange', 'date'].includes(reportMode),
-      ),
     );
   }
 }

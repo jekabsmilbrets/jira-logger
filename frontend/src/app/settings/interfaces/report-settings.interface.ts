@@ -1,9 +1,9 @@
 import { Tag } from '@shared/models/tag.model';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import type { ReportMode } from '@report/enums/report-mode.enum';
 
 export interface ReportSettings {
-  reportMode: ReportModeEnum;
+  reportMode: ReportMode;
   tags: Tag[];
   date: Date | null;
   startDate: Date | null;

@@ -1,5 +1,5 @@
-import { inject, Injectable } from '@angular/core';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { inject, Service } from '@angular/core';
+import { MatDialog, type MatDialogRef } from '@angular/material/dialog';
 
 import { Observable } from 'rxjs';
 
@@ -8,23 +8,21 @@ import { TimeLog } from '@shared/models/time-log.model';
 
 import { TimeLogListModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-list-modal.component';
 import { TimeLogModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-modal/time-log-modal.component';
-import { TimeLogModalResponseInterface } from '@tasks/interfaces/time-log-modal-response.interface';
-import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
+import type { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
+import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class TimeLogEditService {
   private readonly matDialog: MatDialog = inject(MatDialog);
 
   public openTimeLogsListDialog(
     task: Task,
-  ): Observable<TimeLogsModalResponseInterface | undefined> {
-    const timeLogsListDialogRef: MatDialogRef<TimeLogListModalComponent, TimeLogsModalResponseInterface> = this.matDialog.open(
+  ): Observable<TimeLogsModalResponse | undefined> {
+    const timeLogsListDialogRef: MatDialogRef<TimeLogListModalComponent, TimeLogsModalResponse> = this.matDialog.open(
       TimeLogListModalComponent,
       {
         data: {
-          task,
+          task: this.cloneTask(task),
         },
       },
     );
@@ -34,8 +32,8 @@ export class TimeLogEditService {
 
   public openTimeLogDialog(
     timeLog: TimeLog,
-  ): Observable<TimeLogModalResponseInterface | undefined> {
-    const timeLogDialogRef: MatDialogRef<TimeLogModalComponent, TimeLogModalResponseInterface> = this.matDialog.open(
+  ): Observable<TimeLogModalResponse | undefined> {
+    const timeLogDialogRef: MatDialogRef<TimeLogModalComponent, TimeLogModalResponse> = this.matDialog.open(
       TimeLogModalComponent,
       {
         data: {
@@ -45,5 +43,20 @@ export class TimeLogEditService {
     );
 
     return timeLogDialogRef.afterClosed();
+  }
+
+  private cloneTask(
+    task: Task,
+  ): Task {
+    return new Task({
+      id: task.id,
+      name: task.name,
+      description: task.description,
+      lastTimeLog: task.lastTimeLog,
+      timeLogs: task.timeLogs,
+      jiraWorkLogs: task.jiraWorkLogs,
+      timeLogged: task.timeLogged,
+      tags: task.tags,
+    });
   }
 }

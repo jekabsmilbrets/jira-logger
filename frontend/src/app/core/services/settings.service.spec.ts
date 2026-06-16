@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
@@ -24,7 +24,7 @@ describe('Core Services settings.service', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: ErrorDialogService, useValue: errorDialogService },
       ],
@@ -45,7 +45,7 @@ describe('Core Services settings.service', () => {
 
     service.init();
 
-    expect(spy).toHaveBeenCalledWith(service.isLoading$, expect.stringContaining('SettingsService'));
+    expect(spy).toHaveBeenCalledWith(service.isLoading, expect.stringContaining('SettingsService'));
     http.expectOne((r) => r.url.includes('/setting')).flush({ data: [] });
   });
 
@@ -58,7 +58,7 @@ describe('Core Services settings.service', () => {
     const result = await promise;
     expect(result).toHaveLength(1);
     expect(result[0].name).toBe('theme');
-    expect((await firstValueFrom(service.settings$))).toHaveLength(1);
+    expect(service.settings()).toHaveLength(1);
   });
 
   it('returns empty list on 404', async () => {
@@ -78,6 +78,7 @@ describe('Core Services settings.service', () => {
     const post = http.expectOne((r) => r.method === 'POST' && r.url.includes('/setting'));
     expect(post.request.body).toEqual({ name: 'theme', value: 'dark' });
     post.flush({ data: [] });
+    await Promise.resolve();
 
     const list = http.expectOne((r) => r.method === 'GET' && r.url.includes('/setting'));
     list.flush({ data: [{ id: '1', name: 'theme', value: 'dark', createdAt: '2024-01-01T00:00:00.000Z' }] });
@@ -88,7 +89,7 @@ describe('Core Services settings.service', () => {
 
   it('updates and uses skipReload branch', async () => {
     const existing = new Setting({ id: '1', name: 'theme', value: 'dark', createdAt: new Date('2024-01-01T00:00:00.000Z') });
-    (service as any).settingsSubject.next([existing]);
+    (service as any).settingsSignal.set([existing]);
 
     const promise = firstValueFrom(service.update(existing, true));
 
@@ -105,6 +106,7 @@ describe('Core Services settings.service', () => {
     const promise = firstValueFrom(service.delete(setting));
 
     http.expectOne((r) => r.method === 'DELETE' && r.url.endsWith('/setting/1')).flush({});
+    await Promise.resolve();
     http.expectOne((r) => r.method === 'GET' && r.url.includes('/setting')).flush({ data: [] });
 
     await expect(promise).resolves.toBeUndefined();
@@ -116,6 +118,7 @@ describe('Core Services settings.service', () => {
     const promise = firstValueFrom(service.create(setting));
 
     http.expectOne((r) => r.method === 'POST').flush({ data: [] });
+    await Promise.resolve();
     http.expectOne((r) => r.method === 'GET').flush({
       data: [{
         id: '2',

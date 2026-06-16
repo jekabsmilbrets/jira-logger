@@ -23,11 +23,11 @@
         <pre>{{ data.currentTasks | json }}</pre>
     }
 
-    <form [formGroup]="formGroup">
+    <form>
         <mat-form-field>
             <mat-label>JSON</mat-label>
 
-            <textarea formControlName="json"
+            <textarea [formField]="tasksSettingsForm.json"
                       matInput
                       placeholder="[{task data...}]">
             </textarea>

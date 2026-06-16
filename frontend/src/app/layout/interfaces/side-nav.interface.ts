@@ -1,4 +1,4 @@
-export interface SideNavInterface {
+export interface SideNav {
   route: string;
   icon: string;
   name: string;

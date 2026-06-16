@@ -1,48 +1,45 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { HttpClient, type HttpErrorResponse } from '@angular/common/http';
+import { inject, injectAsync, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { BehaviorSubject, catchError, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, finalize, from, map, type Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 import { environment } from '@environments/environment';
 
 import { adaptSettings } from '@core/adapters/api-setting.adapter';
-import { ApiSetting } from '@core/interfaces/api/api-setting.interface';
-import { JsonApi } from '@core/interfaces/json-api.interface';
+import type { ApiSetting } from '@core/interfaces/api/api-setting.interface';
+import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { Setting } from '@core/models/setting.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { waitForTurn } from '@core/utils/wait-for.utility';
+import { RequestGate } from '@core/utilities/request-gate.utility';
+import { waitForTurn } from '@core/utilities/wait-for.utility';
 
-import { LoadableService } from '@shared/interfaces/loadable-service.interface';
-import { ErrorDialogService } from '@shared/services/error-dialog.service';
-import { ApiRequestBody } from '@shared/types/api-request-body.type';
+import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import type { ErrorDialogService } from '@shared/services/error-dialog.service';
+import type { ApiRequestBody } from '@shared/types/api-request-body.type';
+import type { AsyncLoader } from '@shared/types/async-loader.type';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class SettingsService implements LoadableService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
-  public isLoading$: Observable<boolean>;
-
-  public settings$: Observable<Setting[]>;
-
   private readonly httpClient: HttpClient = inject(HttpClient);
-  private readonly errorDialogService: ErrorDialogService = inject(ErrorDialogService);
+  private readonly loadErrorDialogService: AsyncLoader<ErrorDialogService> = injectAsync(
+    () => import('@shared/services/error-dialog.service').then((m) => m.ErrorDialogService),
+  );
 
-  private isLoadingSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  private readonly isLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
+  private readonly settingsSignal: WritableSignal<Setting[]> = signal<Setting[]>([]);
 
-  private settingsSubject: BehaviorSubject<Setting[]> = new BehaviorSubject<Setting[]>([]);
+  public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
+  public readonly settings: Signal<Setting[]> = this.settingsSignal.asReadonly();
 
-  private basePath = 'setting';
+  private readonly requestGate: RequestGate = new RequestGate();
 
-  constructor() {
-    this.isLoading$ = this.isLoadingSubject.asObservable();
-    this.settings$ = this.settingsSubject.asObservable();
-  }
+  private basePath: string = 'setting';
 
   public init(): void {
     this.loaderStateService.addLoader(
-      this.isLoading$,
+      this.isLoading,
       this.constructor.name,
     );
     this.list()
@@ -53,23 +50,25 @@ export class SettingsService implements LoadableService {
   public list(): Observable<Setting[]> {
     const url: string = `${ environment['apiHost'] }${ environment['apiBase'] }/${ this.basePath }`;
 
-    return this.waitForTurn()
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => this.httpClient.get<JsonApi<ApiSetting[]>>(url)),
-        catchError((error: HttpErrorResponse) => {
-          this.isLoadingSubject.next(false);
+        switchMap((release: VoidFunction) => this.httpClient.get<JsonApi<ApiSetting[]>>(url)
+          .pipe(
+            catchError((error: HttpErrorResponse) => {
+              release();
 
-          if (error.status === 404) {
-            return of({ data: [] });
-          }
+              if (error.status === 404) {
+                return of({ data: [] });
+              }
 
-          return this.processError(error);
-        }),
-        map(
-          (response: JsonApi<ApiSetting[]>) => (response.data && adaptSettings(response.data)) as Setting[],
-        ),
-        tap((tasks: Setting[]) => this.settingsSubject.next(tasks)),
-        tap(() => this.isLoadingSubject.next(false)),
+              return this.processError(error);
+            }),
+            map(
+              (response: JsonApi<ApiSetting[]>) => (response.data && adaptSettings(response.data)) as Setting[],
+            ),
+            finalize(release),
+          )),
+        tap((tasks: Setting[]) => this.settingsSignal.set(tasks)),
       );
   }
 
@@ -84,11 +83,16 @@ export class SettingsService implements LoadableService {
       value: String(setting.value),
     };
 
-    return this.waitForTurn()
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => this.httpClient.post<JsonApi<ApiSetting[]>>(url, body)),
-        catchError((error) => this.processError(error)),
-        tap(() => this.isLoadingSubject.next(false)),
+        switchMap((release: VoidFunction) => this.httpClient.post<JsonApi<ApiSetting[]>>(url, body)
+          .pipe(
+            catchError((error) => {
+              release();
+              return this.processError(error);
+            }),
+            finalize(release),
+          )),
         switchMap(() => this.reloadList(skipReload)),
         map((settings: Setting[]) => this.findSetting(settings, setting)),
       );
@@ -106,11 +110,16 @@ export class SettingsService implements LoadableService {
       value: String(setting.value),
     };
 
-    return this.waitForTurn()
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => this.httpClient.patch<JsonApi<ApiSetting[]>>(url, body)),
-        catchError((error) => this.processError(error)),
-        tap(() => this.isLoadingSubject.next(false)),
+        switchMap((release: VoidFunction) => this.httpClient.patch<JsonApi<ApiSetting[]>>(url, body)
+          .pipe(
+            catchError((error) => {
+              release();
+              return this.processError(error);
+            }),
+            finalize(release),
+          )),
         switchMap(() => this.reloadList(skipReload)),
         map((settings: Setting[]) => this.findSetting(settings, setting)),
       );
@@ -121,11 +130,16 @@ export class SettingsService implements LoadableService {
   ): Observable<void> {
     const url: string = `${ environment['apiHost'] }${ environment['apiBase'] }/${ this.basePath }/${ setting.id }`;
 
-    return this.waitForTurn()
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => this.httpClient.delete<void>(url)),
-        catchError((error) => this.processError(error)),
-        tap(() => this.isLoadingSubject.next(false)),
+        switchMap((release: VoidFunction) => this.httpClient.delete<void>(url)
+          .pipe(
+            catchError((error) => {
+              release();
+              return this.processError(error);
+            }),
+            finalize(release),
+          )),
         switchMap(
           () => this.list().pipe(take(1)),
         ),
@@ -133,19 +147,12 @@ export class SettingsService implements LoadableService {
       );
   }
 
-  private waitForTurn(): Observable<boolean> {
-    return waitForTurn(
-      this.isLoading$,
-      this.isLoadingSubject,
-    );
-  }
-
   private reloadList(
     skipReload: boolean = false,
   ): Observable<Setting[]> {
     return (
       skipReload ?
-        this.settings$ :
+        of(this.settings()) :
         this.list()
     )
       .pipe(take(1));
@@ -169,20 +176,17 @@ export class SettingsService implements LoadableService {
   private processError(
     error: unknown,
   ): Observable<never> {
-    this.isLoadingSubject.next(false);
+    this.isLoadingSignal.set(false);
 
-    return this.settings$
+    return from(this.loadErrorDialogService())
       .pipe(
-        take(1),
-        switchMap(
-          (settings: Setting[]) => this.errorDialogService.openDialog(
-            {
-              errorTitle: 'Error while doing db action :D',
-              errorMessage: JSON.stringify(error),
-              idbData: settings,
-            },
-          ),
-        ),
+        switchMap((errorDialogService) => errorDialogService.openDialog(
+          {
+            errorTitle: 'Error while doing db action :D',
+            errorMessage: JSON.stringify(error),
+            idbData: this.settings(),
+          },
+        )),
         take(1),
         switchMap(() => throwError(() => error)),
       );

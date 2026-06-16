@@ -1,6 +1,18 @@
-import { AsyncPipe } from '@angular/common';
-import { Component, inject, input, InputSignal, OnInit, output, OutputEmitterRef } from '@angular/core';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  injectAsync,
+  input,
+  InputSignal,
+  output,
+  OutputEmitterRef,
+  Signal,
+  signal,
+  WritableSignal,
+} from '@angular/core';
+import { type FieldTree, form, FormField, required, validate } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -10,26 +22,29 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { Observable, take } from 'rxjs';
+import { take } from 'rxjs';
 
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
-import { AreYouSureService } from '@shared/services/are-you-sure.service';
+import type { AreYouSureService } from '@shared/services/are-you-sure.service';
+import { TagsService } from '@shared/services/tags.service';
+import { TasksService } from '@shared/services/tasks.service';
+import type { AsyncLoader } from '@shared/types/async-loader.type';
 
-import { TaskUpdateActionEnum } from '@tasks/enums/task-update-action.enum';
-import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
-import { TaskEditService } from '@tasks/services/task-edit.service';
-import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
-import { buildTaskUpdatePayload } from '@tasks/utils/task-payload-builder.util';
+import { TaskUpdateAction } from '@tasks/enums/task-update-action.enum';
+import type { TaskFormValue } from '@tasks/interfaces/task-form-value.interface';
+import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
+import type { TimeLogEditService } from '@tasks/services/time-log-edit.service';
+import { buildTaskUpdatePayload } from '@tasks/utility/task-payload-builder.utility';
 
 @Component({
   selector: 'tasks-task',
   templateUrl: './task.component.html',
   styleUrls: ['./task.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ReactiveFormsModule,
     MatCardModule,
     MatChipsModule,
     MatFormFieldModule,
@@ -39,35 +54,63 @@ import { buildTaskUpdatePayload } from '@tasks/utils/task-payload-builder.util';
     MatIconModule,
     MatTooltipModule,
     MatInputModule,
-    AsyncPipe,
+    FormField,
   ],
 })
-export class TaskComponent implements OnInit {
+export class TaskComponent {
   public readonly task: InputSignal<Task> = input.required<Task>();
   public readonly isLoading: InputSignal<boolean> = input.required<boolean>();
 
-  protected readonly action: OutputEmitterRef<[Task, TaskUpdateActionEnum]> = output<[
+  protected readonly action: OutputEmitterRef<[Task, TaskUpdateAction]> = output<[
     Task,
-    TaskUpdateActionEnum
+    TaskUpdateAction
   ]>();
   protected readonly update: OutputEmitterRef<Task> = output<Task>();
   protected readonly remove: OutputEmitterRef<Task> = output<Task>();
   protected readonly timeLogsSaved: OutputEmitterRef<void> = output<void>();
+  protected readonly taskFormModel: WritableSignal<TaskFormValue> = signal<TaskFormValue>({
+    name: '',
+    description: '',
+    tags: [],
+  });
+  protected readonly editMode: WritableSignal<boolean> = signal(false);
 
-  protected formGroup!: FormGroup;
+  private readonly loadAreYouSureService: AsyncLoader<AreYouSureService> = injectAsync(
+    () => import('@shared/services/are-you-sure.service').then((m) => m.AreYouSureService),
+  );
 
-  protected editMode: boolean = false;
+  private readonly tagsService: TagsService = inject(TagsService);
+  private readonly loadTimeLogEditService: AsyncLoader<TimeLogEditService> = injectAsync(
+    () => import('@tasks/services/time-log-edit.service').then((m) => m.TimeLogEditService),
+  );
+  private readonly tasksService: TasksService = inject(TasksService);
+  private readonly tasks: Signal<Task[]> = this.tasksService.tasks;
 
-  private readonly areYouSureService: AreYouSureService = inject(AreYouSureService);
-  private readonly taskEditService: TaskEditService = inject(TaskEditService);
-  private readonly timeLogEditService: TimeLogEditService = inject(TimeLogEditService);
+  protected readonly taskForm: FieldTree<TaskFormValue> = form(this.taskFormModel, (path) => {
+    required(path.name, { message: 'Task name is required.' });
+    validate(path.name, ({ value }) => {
+      const name: string = value().trim();
 
-  protected get tags$(): Observable<Tag[]> {
-    return this.taskEditService.tags$;
-  }
+      if (!name) {
+        return null;
+      }
 
-  public ngOnInit(): void {
-    this.formGroup = this.taskEditService.createFormGroup(this.task());
+      return this.tasks().some((task) => task.id !== this.task().id && task.name === name) ?
+        {
+          kind: 'duplicate-task',
+          message: 'Task already exists.',
+        } :
+        null;
+    });
+  });
+  protected readonly tags: Signal<Tag[]> = this.tagsService.tags;
+
+  constructor() {
+    effect(() => {
+      if (!this.editMode()) {
+        this.taskForm().reset(this.buildFormValue(this.task()));
+      }
+    });
   }
 
   protected isSameTag(
@@ -81,15 +124,31 @@ export class TaskComponent implements OnInit {
     return this.task().isTimeLogRunning;
   }
 
-  protected onUpdate(): void {
-    const taskPayload: Task = buildTaskUpdatePayload(this.task(), this.formGroup.getRawValue());
-    taskPayload.updateTimeLogged();
-    this.update.emit(taskPayload);
-    this.onToggleEditMode();
+  protected onTagsChange(tags: Tag[]): void {
+    const field: ReturnType<typeof this.taskForm.tags> = this.taskForm.tags();
+    field.value.set(tags);
+    field.markAsDirty();
+    field.markAsTouched({ skipDescendants: true });
   }
 
-  protected onRemove(): void {
-    this.areYouSureService.openDialog(`Task "${ this.task().name }"`)
+  protected onUpdate(event?: Event): void {
+    event?.preventDefault?.();
+
+    if (!this.taskForm().valid()) {
+      this.taskForm().markAsTouched();
+      return;
+    }
+
+    const taskPayload: Task = buildTaskUpdatePayload(this.task(), this.taskFormModel());
+    taskPayload.updateTimeLogged();
+    this.update.emit(taskPayload);
+    this.editMode.set(false);
+  }
+
+  protected async onRemove(): Promise<void> {
+    const areYouSureService: AreYouSureService = await this.loadAreYouSureService();
+
+    areYouSureService.openDialog(`Task "${ this.task().name }"`)
       .pipe(take(1))
       .subscribe((response: boolean | undefined) => {
         if (response === true) {
@@ -99,17 +158,18 @@ export class TaskComponent implements OnInit {
   }
 
   protected onToggleEditMode(): void {
-    this.editMode = !this.editMode;
+    const nextEditMode: boolean = !this.editMode();
+    this.editMode.set(nextEditMode);
 
-    if (this.editMode) {
-      this.formGroup = this.taskEditService.createFormGroup(this.task());
+    if (nextEditMode) {
+      this.taskForm().reset(this.buildFormValue(this.task()));
     }
   }
 
   protected onToggleTimeLogging(): void {
-    const action: TaskUpdateActionEnum = this.isTimeLogRunning() ?
-      TaskUpdateActionEnum.stopWorkLog :
-      TaskUpdateActionEnum.startWorkLog;
+    const action: TaskUpdateAction = this.isTimeLogRunning() ?
+      TaskUpdateAction.stopWorkLog :
+      TaskUpdateAction.startWorkLog;
 
     this.action.emit([
       this.task(),
@@ -117,13 +177,23 @@ export class TaskComponent implements OnInit {
     ]);
   }
 
-  protected onOpenTimeLogsModal(): void {
-    this.timeLogEditService.openTimeLogsListDialog(this.task())
+  protected async onOpenTimeLogsModal(): Promise<void> {
+    const timeLogEditService: TimeLogEditService = await this.loadTimeLogEditService();
+
+    timeLogEditService.openTimeLogsListDialog(this.task())
       .pipe(take(1))
-      .subscribe((response: TimeLogsModalResponseInterface | undefined) => {
+      .subscribe((response: TimeLogsModalResponse | undefined) => {
         if (response?.saved) {
           this.timeLogsSaved.emit();
         }
       });
+  }
+
+  private buildFormValue(task: Task): TaskFormValue {
+    return {
+      name: task.name,
+      description: task.description ?? '',
+      tags: [...task.tags],
+    };
   }
 }

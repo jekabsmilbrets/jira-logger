@@ -1,4 +1,4 @@
-import { Component, input, InputSignal, output, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, type InputSignal, output, type OutputEmitterRef } from '@angular/core';
 import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 @Component({
@@ -6,6 +6,7 @@ import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/sl
   templateUrl: './report-hide-unreported-tasks.component.html',
   styleUrls: ['./report-hide-unreported-tasks.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatSlideToggleModule,
   ],

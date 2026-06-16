@@ -1,8 +1,13 @@
+import type { TimezoneDateParts } from '@core/interfaces/timezone-date-parts.interface';
 import { Base } from '@core/models/base.model';
-import { getDateParts } from '@core/utils/get-date-parts.utility';
-import { fromWallClockDateInTimezone, getDateTimePartsInTimezone, isSameCalendarDateInTimezone } from '@core/utils/timezone-date.utility';
+import { getDateParts } from '@core/utilities/get-date-parts.utility';
+import {
+  fromWallClockDateInTimezone,
+  getDateTimePartsInTimezone,
+  isSameCalendarDateInTimezone,
+} from '@core/utilities/timezone-date.utility';
 
-import { Searchable } from '@shared/interfaces/searchable.interface';
+import type { Searchable } from '@shared/interfaces/searchable.interface';
 import { JiraWorkLog } from '@shared/models/jira-work-log.model';
 import { Tag } from '@shared/models/tag.model';
 import { TimeLog } from '@shared/models/time-log.model';
@@ -15,7 +20,7 @@ export class Task extends Base implements Searchable {
   private _timeLogs: TimeLog[] = [];
   private _jiraWorkLogs: JiraWorkLog[] = [];
 
-  private _timeLogged = 0;
+  private _timeLogged: number = 0;
 
   private _tags: Tag[] = [];
 
@@ -30,11 +35,11 @@ export class Task extends Base implements Searchable {
   }
 
   public get jiraWorkLogs(): JiraWorkLog[] {
-    return this._jiraWorkLogs;
+    return [...this._jiraWorkLogs];
   }
 
   public set jiraWorkLogs(value: JiraWorkLog[]) {
-    this._jiraWorkLogs = value;
+    this._jiraWorkLogs = [...(value ?? [])];
   }
 
   public get name(): string {
@@ -54,11 +59,12 @@ export class Task extends Base implements Searchable {
   }
 
   public get timeLogs(): TimeLog[] {
-    return this._timeLogs;
+    return [...this._timeLogs];
   }
 
   public set timeLogs(value: TimeLog[]) {
-    this._timeLogs = value;
+    this._timeLogs = [...(value ?? [])];
+    this.updateTimeLogged();
   }
 
   public get description(): string {
@@ -78,11 +84,11 @@ export class Task extends Base implements Searchable {
   }
 
   public get tags(): Tag[] {
-    return this._tags;
+    return [...this._tags];
   }
 
   public set tags(value: Tag[]) {
-    this._tags = value;
+    this._tags = [...(value ?? [])];
   }
 
   public get lastTimeLogStartTime(): Date | null {
@@ -106,7 +112,10 @@ export class Task extends Base implements Searchable {
 
   public addTag(tag: Tag): void {
     if (!this.tags.includes(tag)) {
-      this.tags.push(tag);
+      this.tags = [
+        ...this.tags,
+        tag,
+      ];
     }
   }
 
@@ -175,9 +184,9 @@ export class Task extends Base implements Searchable {
 
   private getDayRange(date: Date, timezone?: string): [Date, Date] {
     if (timezone) {
-      const parts = getDateTimePartsInTimezone(date, timezone);
-      const dayStartWallClock = new Date(parts.year, parts.month - 1, parts.day, 0, 0, 0, 0);
-      const nextDayStartWallClock = new Date(parts.year, parts.month - 1, parts.day + 1, 0, 0, 0, 0);
+      const parts: TimezoneDateParts = getDateTimePartsInTimezone(date, timezone);
+      const dayStartWallClock: Date = new Date(parts.year, parts.month - 1, parts.day, 0, 0, 0, 0);
+      const nextDayStartWallClock: Date = new Date(parts.year, parts.month - 1, parts.day + 1, 0, 0, 0, 0);
 
       return [
         fromWallClockDateInTimezone(dayStartWallClock, timezone),
@@ -186,17 +195,17 @@ export class Task extends Base implements Searchable {
     }
 
     const [year, month, day] = getDateParts(date);
-    const dayStart = new Date(year, month, day, 0, 0, 0, 0);
-    const nextDayStart = new Date(year, month, day + 1, 0, 0, 0, 0);
+    const dayStart: Date = new Date(year, month, day, 0, 0, 0, 0);
+    const nextDayStart: Date = new Date(year, month, day + 1, 0, 0, 0, 0);
 
     return [dayStart, nextDayStart];
   }
 
   private getTimeLogOverlapSeconds(timeLog: TimeLog, rangeStart: Date, rangeEnd: Date): number {
-    const timeLogStart = timeLog.startTime;
-    const timeLogEnd = timeLog.endTime ?? new Date();
-    const overlapStart = Math.max(timeLogStart.getTime(), rangeStart.getTime());
-    const overlapEnd = Math.min(timeLogEnd.getTime(), rangeEnd.getTime());
+    const timeLogStart: Date = timeLog.startTime;
+    const timeLogEnd: Date = timeLog.endTime ?? new Date();
+    const overlapStart: number = Math.max(timeLogStart.getTime(), rangeStart.getTime());
+    const overlapEnd: number = Math.min(timeLogEnd.getTime(), rangeEnd.getTime());
 
     if (overlapEnd <= overlapStart) {
       return 0;

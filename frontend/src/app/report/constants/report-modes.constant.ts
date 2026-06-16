@@ -1,19 +1,19 @@
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 
 export const reportModes: {
-  value: ReportModeEnum;
+  value: ReportMode;
   viewValue: string;
 }[] = [
   {
-    value: ReportModeEnum.total,
+    value: ReportMode.total,
     viewValue: 'Total',
   },
   {
-    value: ReportModeEnum.date,
+    value: ReportMode.date,
     viewValue: 'Date',
   },
   {
-    value: ReportModeEnum.dateRange,
+    value: ReportMode.dateRange,
     viewValue: 'Date Range',
   },
 ];

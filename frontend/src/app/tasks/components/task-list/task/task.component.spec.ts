@@ -1,5 +1,5 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { FormControl, FormGroup } from '@angular/forms';
 import { By } from '@angular/platform-browser';
 
 import { of } from 'rxjs';
@@ -9,8 +9,9 @@ import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
+import { TagsService } from '@shared/services/tags.service';
+import { TasksService } from '@shared/services/tasks.service';
 
-import { TaskEditService } from '@tasks/services/task-edit.service';
 import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
 
 import { TaskComponent } from './task.component';
@@ -34,14 +35,6 @@ describe('Tasks Components task.component', () => {
     startTime: new Date(startIso),
   });
 
-  const buildFormGroup = () => new FormGroup({
-    name: new FormControl('Updated name'),
-    description: new FormControl('Updated description'),
-    jiraWorkLogDescription: new FormControl('Jira description'),
-    jiraIssueId: new FormControl('PROJ-1'),
-    tags: new FormControl<Tag[]>([]),
-  });
-
   const setup = async () => {
     const baseTask = buildTask();
 
@@ -49,12 +42,15 @@ describe('Tasks Components task.component', () => {
       openDialog: vi.fn(() => of(true)),
     };
 
-    const taskEditService = {
-      tags$: of([
+    const tagsService = {
+      tags: signal([
         new Tag({ id: '1', name: 'Frontend' }),
         new Tag({ id: '2', name: 'Backend' }),
-      ]),
-      createFormGroup: vi.fn(() => buildFormGroup()),
+      ]).asReadonly(),
+    };
+
+    const tasksService = {
+      tasks: signal([baseTask]).asReadonly(),
     };
 
     const timeLogEditService = {
@@ -65,7 +61,8 @@ describe('Tasks Components task.component', () => {
       imports: [TaskComponent],
       providers: [
         { provide: AreYouSureService, useValue: areYouSureService },
-        { provide: TaskEditService, useValue: taskEditService },
+        { provide: TagsService, useValue: tagsService },
+        { provide: TasksService, useValue: tasksService },
         { provide: TimeLogEditService, useValue: timeLogEditService },
       ],
     });
@@ -82,7 +79,8 @@ describe('Tasks Components task.component', () => {
       component,
       baseTask,
       areYouSureService,
-      taskEditService,
+      tagsService,
+      tasksService,
       timeLogEditService,
     };
   };
@@ -91,11 +89,12 @@ describe('Tasks Components task.component', () => {
     TestBed.resetTestingModule();
   });
 
-  it('creates form from TaskEditService on init', async () => {
-    const { component, taskEditService, baseTask } = await setup();
+  it('initializes its signal-form model from the input task', async () => {
+    const { component, baseTask } = await setup();
 
-    expect(taskEditService.createFormGroup).toHaveBeenCalledWith(baseTask);
-    expect(component['formGroup']).toBeTruthy();
+    expect(component['taskFormModel']().name).toBe(baseTask.name);
+    expect(component['taskFormModel']().description).toBe(baseTask.description);
+    expect(component['taskFormModel']().tags).toEqual(baseTask.tags);
   });
 
   it('returns true when tags have same id', async () => {
@@ -105,14 +104,21 @@ describe('Tasks Components task.component', () => {
     expect(component['isSameTag'](new Tag({ id: '1' }), new Tag({ id: '2' }))).toBe(false);
   });
 
-  it('toggles edit mode and rebuilds form only when entering edit mode', async () => {
-    const { component, taskEditService } = await setup();
+  it('toggles edit mode and resets form only when entering edit mode', async () => {
+    const { component } = await setup();
+
+    component['taskFormModel'].update((value: { name: string; description: string; tags: Tag[] }) => ({
+      ...value,
+      name: 'Modified name',
+    }));
+    component['taskForm']().markAsDirty();
 
     component['onToggleEditMode']();
-    component['onToggleEditMode']();
+    expect(component['editMode']()).toBe(true);
+    expect(component['taskFormModel']().name).toBe('Task name');
 
-    expect(component['editMode']).toBe(false);
-    expect(taskEditService.createFormGroup).toHaveBeenCalledTimes(2);
+    component['onToggleEditMode']();
+    expect(component['editMode']()).toBe(false);
   });
 
   it('emits update payload and exits edit mode on update', async () => {
@@ -120,21 +126,27 @@ describe('Tasks Components task.component', () => {
     const updateSpy = vi.spyOn(component['update'], 'emit');
 
     component['onToggleEditMode']();
+    component['taskFormModel'].set({
+      name: 'Updated name',
+      description: 'Updated description',
+      tags: [],
+    });
+    component['taskForm']().markAsDirty();
     component['onUpdate']();
 
     expect(updateSpy).toHaveBeenCalledOnce();
-    expect(component['editMode']).toBe(false);
+    expect(component['editMode']()).toBe(false);
   });
 
   it('emits remove only when confirmation is true', async () => {
     const { component, baseTask, areYouSureService } = await setup();
     const removeSpy = vi.spyOn(component['remove'], 'emit');
 
-    component['onRemove']();
+    await component['onRemove']();
     expect(removeSpy).toHaveBeenCalledWith(baseTask);
 
     areYouSureService.openDialog.mockReturnValueOnce(of(false));
-    component['onRemove']();
+    await component['onRemove']();
     expect(removeSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -162,7 +174,7 @@ describe('Tasks Components task.component', () => {
 
     const savedSpy = vi.spyOn(component['timeLogsSaved'], 'emit');
 
-    component['onOpenTimeLogsModal']();
+    await component['onOpenTimeLogsModal']();
 
     expect(savedSpy).toHaveBeenCalledOnce();
   });
@@ -172,12 +184,28 @@ describe('Tasks Components task.component', () => {
     const savedSpy = vi.spyOn(component['timeLogsSaved'], 'emit');
 
     timeLogEditService.openTimeLogsListDialog.mockReturnValueOnce(of(undefined));
-    component['onOpenTimeLogsModal']();
+    await component['onOpenTimeLogsModal']();
 
     timeLogEditService.openTimeLogsListDialog.mockReturnValueOnce(of({ saved: false }) as any);
-    component['onOpenTimeLogsModal']();
+    await component['onOpenTimeLogsModal']();
 
     expect(savedSpy).not.toHaveBeenCalled();
+  });
+
+  it('reuses cached lazy service promises for confirmation and time-log dialogs', async () => {
+    const { component, areYouSureService, timeLogEditService } = await setup();
+
+    const firstConfirm = component['loadAreYouSureService']();
+    const secondConfirm = component['loadAreYouSureService']();
+    const [confirmServiceA, confirmServiceB] = await Promise.all([firstConfirm, secondConfirm]);
+    expect(confirmServiceA).toBe(confirmServiceB);
+    expect(confirmServiceA).toBe(areYouSureService);
+
+    const firstEdit = component['loadTimeLogEditService']();
+    const secondEdit = component['loadTimeLogEditService']();
+    const [editServiceA, editServiceB] = await Promise.all([firstEdit, secondEdit]);
+    expect(editServiceA).toBe(editServiceB);
+    expect(editServiceA).toBe(timeLogEditService);
   });
 
   it('renders non-edit mode controls and switches to edit mode controls', async () => {
@@ -234,6 +262,10 @@ describe('Tasks Components task.component', () => {
     fixture.debugElement.query(By.css('button[aria-label="Remove"]')).nativeElement.click();
     fixture.debugElement.query(By.css('button[aria-label="Edit"]')).nativeElement.click();
     fixture.detectChanges();
+    await Promise.all([
+      modalSpy.mock.results[0]?.value,
+      removeSpy.mock.results[0]?.value,
+    ]);
 
     expect(toggleSpy).toHaveBeenCalledTimes(1);
     expect(modalSpy).toHaveBeenCalledTimes(1);
@@ -246,11 +278,15 @@ describe('Tasks Components task.component', () => {
     const updateSpy = vi.spyOn(component as any, 'onUpdate');
 
     component['onToggleEditMode']();
-    component['formGroup'].get('name')?.setValue('Updated over DOM');
+    component['taskFormModel'].update((value: { name: string; description: string; tags: Tag[] }) => ({
+      ...value,
+      name: 'Updated over DOM',
+    }));
+    component['taskForm']().markAsDirty();
     fixture.detectChanges();
 
     const form = fixture.debugElement.query(By.css('form'));
-    form.triggerEventHandler('ngSubmit', {});
+    form.triggerEventHandler('submit', {});
 
     expect(updateSpy).toHaveBeenCalledTimes(1);
   });
