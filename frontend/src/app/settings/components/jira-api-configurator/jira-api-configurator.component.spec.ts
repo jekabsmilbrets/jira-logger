@@ -6,6 +6,7 @@ import { vi } from 'vitest';
 import { Setting } from '@core/models/setting.model';
 
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
+import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
 
 import { JiraApiConfiguratorComponent } from './jira-api-configurator.component';
 
@@ -100,13 +101,16 @@ describe('Settings Components jira-api-configurator.component', () => {
     (component as any).onSaveFormData();
 
     expect(emitSpy).toHaveBeenCalledTimes(1);
-    expect(emitSpy.mock.calls[0][0]).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        id: '2',
-        name: JiraApiSettings.host,
-        value: 'https://jira.changed.local',
-      }),
-    ]));
+    expect(emitSpy.mock.calls[0][0]).toEqual(expect.objectContaining({
+      successMessage: 'Successfully saved JIRA API settings!',
+      changedSettings: expect.arrayContaining([
+        expect.objectContaining({
+          id: '2',
+          name: JiraApiSettings.host,
+          value: 'https://jira.changed.local',
+        }),
+      ]),
+    }));
   });
 
   it('does not emit token changes when jira is disabled and token is left empty', () => {
@@ -120,13 +124,16 @@ describe('Settings Components jira-api-configurator.component', () => {
     (component as any).onSaveFormData();
 
     expect(emitSpy).toHaveBeenCalledTimes(1);
-    expect(emitSpy.mock.calls[0][0]).toEqual([
-      expect.objectContaining({
-        id: '1',
-        name: JiraApiSettings.enabled,
-        value: 'false',
-      }),
-    ]);
+    expect(emitSpy.mock.calls[0][0]).toEqual(expect.objectContaining({
+      successMessage: 'Successfully saved JIRA API settings!',
+      changedSettings: [
+        expect.objectContaining({
+          id: '1',
+          name: JiraApiSettings.enabled,
+          value: 'false',
+        }),
+      ],
+    }));
   });
 
   it('resets form values back to persisted settings on cancel', () => {
@@ -155,8 +162,9 @@ describe('Settings Components jira-api-configurator.component', () => {
 
     (component as any).onSaveFormData();
 
-    const [emittedSettings] = emitSpy.mock.calls[0];
-    expect(emittedSettings).toEqual([
+    const [emittedEvent] = emitSpy.mock.calls[0];
+    expect((emittedEvent as SettingsSaveEvent).successMessage).toBe('Successfully saved JIRA API settings!');
+    expect((emittedEvent as SettingsSaveEvent).changedSettings).toEqual([
       expect.objectContaining({
         id: '1',
         name: JiraApiSettings.enabled,
@@ -174,8 +182,9 @@ describe('Settings Components jira-api-configurator.component', () => {
 
     (component as any).onSaveFormData();
 
-    const [emittedSettings] = emitSpy.mock.calls[0];
-    expect(emittedSettings).toEqual(expect.arrayContaining([
+    const [emittedEvent] = emitSpy.mock.calls[0];
+    expect((emittedEvent as SettingsSaveEvent).successMessage).toBe('Successfully saved JIRA API settings!');
+    expect((emittedEvent as SettingsSaveEvent).changedSettings).toEqual(expect.arrayContaining([
       expect.objectContaining({
         id: '3',
         name: JiraApiSettings.personalAccessToken,

@@ -21,6 +21,7 @@ import { Setting } from '@core/models/setting.model';
 import { LocaleService } from '@core/services/locale.service';
 
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
+import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
 import type { UserSettingsFormValue } from '@settings/interfaces/user-settings-form-value.interface';
 
 @Component({
@@ -42,7 +43,7 @@ export class UserSettingsConfiguratorComponent {
   public readonly settings: InputSignal<Setting[]> = input<Setting[]>([]);
   public readonly disabled: InputSignal<boolean | null | undefined> = input<boolean | null>();
 
-  protected readonly settingsChange: OutputEmitterRef<Setting[]> = output<Setting[]>();
+  protected readonly settingsChange: OutputEmitterRef<SettingsSaveEvent> = output<SettingsSaveEvent>();
   protected readonly userSettingsFormModel: WritableSignal<UserSettingsFormValue> = signal({
     locale: 'lv-LV',
     timezone: '',
@@ -112,7 +113,10 @@ export class UserSettingsConfiguratorComponent {
     }
 
     if (changedSettings.length > 0) {
-      this.settingsChange.emit(changedSettings);
+      this.settingsChange.emit({
+        changedSettings,
+        successMessage: 'Successfully saved user preferences!',
+      });
     }
   }
 

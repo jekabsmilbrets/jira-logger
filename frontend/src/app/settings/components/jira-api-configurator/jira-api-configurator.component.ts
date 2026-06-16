@@ -21,6 +21,7 @@ import { Setting } from '@core/models/setting.model';
 
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import type { JiraApiFormValue } from '@settings/interfaces/jira-api-form-value.interface';
+import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
 
 @Component({
   selector: 'settings-jira-api-configurator',
@@ -42,7 +43,7 @@ export class JiraApiConfiguratorComponent {
   public readonly settings: InputSignal<Setting[]> = input<Setting[]>([]);
   public readonly disabled: InputSignal<boolean | null | undefined> = input<boolean | null>();
 
-  protected readonly settingsChange: OutputEmitterRef<Setting[]> = output<Setting[]>();
+  protected readonly settingsChange: OutputEmitterRef<SettingsSaveEvent> = output<SettingsSaveEvent>();
   protected readonly jiraApiFormModel: WritableSignal<JiraApiFormValue> = signal({
     enabled: false,
     host: '',
@@ -121,7 +122,10 @@ export class JiraApiConfiguratorComponent {
     }
 
     if (changedSettings.length > 0) {
-      this.settingsChange.emit(changedSettings);
+      this.settingsChange.emit({
+        changedSettings,
+        successMessage: 'Successfully saved JIRA API settings!',
+      });
     }
   }
 

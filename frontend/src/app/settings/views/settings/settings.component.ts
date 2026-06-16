@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, type Signal } from '@angular/core';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { forkJoin, switchMap, take } from 'rxjs';
 
@@ -17,6 +18,7 @@ import { UserSettingsConfiguratorComponent } from '@settings/components/user-set
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 import type { ReportSettings } from '@settings/interfaces/report-settings.interface';
+import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
 
 @Component({
   selector: 'settings-view',
@@ -28,11 +30,13 @@ import type { ReportSettings } from '@settings/interfaces/report-settings.interf
     JiraApiConfiguratorComponent,
     UserSettingsConfiguratorComponent,
     ReportConfiguratorComponent,
+    MatSnackBarModule,
   ],
 })
 export class SettingsComponent {
   protected readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
+  private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
   private readonly settingsService: SettingsService = inject(SettingsService);
   private readonly reportService: ReportService = inject(ReportService);
 
@@ -93,10 +97,10 @@ export class SettingsComponent {
   }
 
   protected onSettingsChange(
-    changedSettings: Setting[],
+    saveEvent: SettingsSaveEvent,
   ): void {
     forkJoin(
-      changedSettings.map(
+      saveEvent.changedSettings.map(
         (setting: Setting) => this.settingsService.update(setting, true),
       ),
     )
@@ -105,7 +109,18 @@ export class SettingsComponent {
         switchMap(() => this.settingsService.list()),
         take(1),
       )
-      .subscribe();
+      .subscribe({
+        next: () => {
+          this.matSnackBar.open(
+            saveEvent.successMessage,
+            undefined,
+            {
+              duration: 5000,
+            },
+          );
+        },
+        error: () => undefined,
+      });
   }
 
   private filterSettings(settingNames: string[]): Setting[] {

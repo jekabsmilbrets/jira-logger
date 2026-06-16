@@ -6,6 +6,7 @@ import { vi } from 'vitest';
 import { Setting } from '@core/models/setting.model';
 
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
+import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
 
 import { UserSettingsConfiguratorComponent } from './user-settings-configurator.component';
 
@@ -33,7 +34,7 @@ describe('Settings Components user-settings-configurator.component', () => {
     const title = fixture.debugElement.query(By.css('mat-card-title'))?.nativeElement as HTMLElement;
     const selects = fixture.debugElement.queryAll(By.css('mat-select'));
 
-    expect(title.textContent?.trim()).toBe('User Time Zone');
+    expect(title.textContent?.trim()).toBe('User Preferences');
     expect(selects).toHaveLength(2);
     expect((component as any).userSettingsFormModel().timezone).toBe('Europe/Riga');
     expect((component as any).userSettingsFormModel().locale).toBe('lv-LV');
@@ -47,10 +48,11 @@ describe('Settings Components user-settings-configurator.component', () => {
     (component as any).onSaveFormData();
 
     expect(emitSpy).toHaveBeenCalledTimes(1);
-    const emitted = emitSpy.mock.calls[0][0] as Setting[];
-    expect(emitted).toHaveLength(1);
-    expect(emitted[0].name).toBe(JiraUserSettings.userTimeZone);
-    expect(emitted[0].value).toBe('UTC');
+    const emitted = emitSpy.mock.calls[0][0] as SettingsSaveEvent;
+    expect(emitted.successMessage).toBe('Successfully saved user preferences!');
+    expect(emitted.changedSettings).toHaveLength(1);
+    expect(emitted.changedSettings[0].name).toBe(JiraUserSettings.userTimeZone);
+    expect(emitted.changedSettings[0].value).toBe('UTC');
   });
 
   it('resets form values on cancel', () => {
@@ -70,9 +72,10 @@ describe('Settings Components user-settings-configurator.component', () => {
     (component as any).onSaveFormData();
 
     expect(emitSpy).toHaveBeenCalledTimes(1);
-    const emitted = emitSpy.mock.calls[0][0] as Setting[];
-    expect(emitted).toHaveLength(1);
-    expect(emitted[0].name).toBe(JiraUserSettings.locale);
-    expect(emitted[0].value).toBe('en-US');
+    const emitted = emitSpy.mock.calls[0][0] as SettingsSaveEvent;
+    expect(emitted.successMessage).toBe('Successfully saved user preferences!');
+    expect(emitted.changedSettings).toHaveLength(1);
+    expect(emitted.changedSettings[0].name).toBe(JiraUserSettings.locale);
+    expect(emitted.changedSettings[0].value).toBe('en-US');
   });
 });
