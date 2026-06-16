@@ -11,23 +11,19 @@ import {
   viewChild,
   ViewContainerRef,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSidenav } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { NavigationEnd, Router, RouterLink } from '@angular/router';
-
-import { filter, map, startWith } from 'rxjs';
+import { RouterLink } from '@angular/router';
 
 import { DynamicMenuDirective } from '@core/directives/dynamic-menu.directive';
-import type { DynamicMenu as DynamicMenuData } from '@core/interfaces/dynamic-menu.interface';
-import { DynamicMenu } from '@core/models/dynamic-menu';
-import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
 import { Task } from '@shared/models/task.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
+
+import type { HeaderMenuRouteData } from '@layout/interfaces/header-menu-route-data.interface';
 
 @Component({
   selector: 'layout-header',
@@ -38,25 +34,15 @@ import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
   imports: [MatToolbarModule, MatButtonModule, RouterLink, MatIconModule, ReadableTimePipe, DynamicMenuDirective, MatProgressBarModule],
 })
 export class HeaderComponent implements AfterViewInit {
+  public readonly activeMenu: InputSignal<HeaderMenuRouteData | null> = input<HeaderMenuRouteData | null>(null);
   public readonly sidenav: InputSignal<MatSidenav> = input.required<MatSidenav>();
   public readonly activeTask: InputSignal<null | Task> = input.required<Task | null>();
   public readonly isLoading: InputSignal<boolean> = input(false);
   public readonly timeLoggedToday: InputSignal<number> = input(0);
 
-  private readonly dynamicMenuService: DynamicMenuService = inject(DynamicMenuService);
-  private readonly router: Router = inject(Router);
-  private readonly _injector: Injector = inject(Injector);
+  private readonly injector: Injector = inject(Injector);
 
   private readonly dynamicMenu: Signal<DynamicMenuDirective> = viewChild.required(DynamicMenuDirective);
-  private readonly dynamicMenus: Signal<DynamicMenu[]> = this.dynamicMenuService.dynamicMenus;
-  private readonly activeRoute: Signal<string> = toSignal(
-    this.router.events.pipe(
-      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-      map((event: NavigationEnd) => event.urlAfterRedirects),
-      startWith(this.router.url),
-    ),
-    { initialValue: this.router.url },
-  );
 
   protected reportDateLink(): string {
     const date: Date = new Date();
@@ -69,24 +55,14 @@ export class HeaderComponent implements AfterViewInit {
 
   public ngAfterViewInit(): void {
     effect(() => {
-      const dynamicMenu: DynamicMenu | undefined = this.dynamicMenus().find(
-        (menu: DynamicMenu) => this.activeRoute().includes(menu.data.route),
-      );
       const viewContainerRef: ViewContainerRef = this.dynamicMenu().viewContainerRef;
+      const activeMenu: HeaderMenuRouteData | null = this.activeMenu();
 
       viewContainerRef.clear();
 
-      if (dynamicMenu) {
-        viewContainerRef.createComponent<DynamicMenuData>(
-          dynamicMenu.component as never,
-          {
-            injector: Injector.create({
-              providers: dynamicMenu.data?.providers ?? [],
-              parent: this._injector,
-            }),
-          },
-        );
+      if (activeMenu) {
+        viewContainerRef.createComponent(activeMenu.menuComponent);
       }
-    }, { injector: this._injector });
+    }, { injector: this.injector });
   }
 }

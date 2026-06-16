@@ -5,8 +5,6 @@ import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { DynamicMenuService } from '@core/services/dynamic-menu.service';
-
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TasksService } from '@shared/services/tasks.service';
@@ -46,16 +44,11 @@ describe('Tasks Views tasks-view.component', () => {
       stop: vi.fn(() => of(true)),
     };
 
-    const dynamicMenuService = {
-      addDynamicMenu: vi.fn(),
-    };
-
     await TestBed.configureTestingModule({
       imports: [TasksViewComponent],
       providers: [
         { provide: TasksService, useValue: tasksService },
         { provide: TimeLogsService, useValue: timeLogsService },
-        { provide: DynamicMenuService, useValue: dynamicMenuService },
         { provide: TasksSettingsService, useValue: {} },
       ],
     });
@@ -70,23 +63,11 @@ describe('Tasks Views tasks-view.component', () => {
       tasksState,
       tasksService,
       timeLogsService,
-      dynamicMenuService,
     };
   };
 
   afterEach(() => {
     TestBed.resetTestingModule();
-  });
-
-  it('adds tasks menu on init', async () => {
-    const { component, dynamicMenuService, tasksService } = await setup();
-
-    component.ngOnInit();
-
-    expect(dynamicMenuService.addDynamicMenu).toHaveBeenCalled();
-    const [menu] = dynamicMenuService.addDynamicMenu.mock.calls[0];
-    expect(menu.data.route).toBe('/tasks');
-    expect(menu.data.providers).toContainEqual(expect.objectContaining({ provide: TasksService, useValue: tasksService }));
   });
 
   it('sorts tasks by latest time log descending', async () => {

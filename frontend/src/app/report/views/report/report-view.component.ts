@@ -1,12 +1,9 @@
 import { Clipboard } from '@angular/cdk/clipboard';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, type OnInit, type Signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, type Signal } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { catchError, type Observable, of, switchMap } from 'rxjs';
-
-import { DynamicMenu } from '@core/models/dynamic-menu';
-import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
 import { TableComponent } from '@shared/components/table/table.component';
 import type { Column } from '@shared/interfaces/column.interface';
@@ -16,7 +13,6 @@ import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
-import { ReportMenuComponent } from '@report/components/report-menu/report-menu.component';
 import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 
@@ -30,8 +26,7 @@ import { ReportService } from '@report/services/report.service';
     TableComponent,
   ],
 })
-export class ReportViewComponent implements OnInit {
-  private readonly dynamicMenuService: DynamicMenuService = inject(DynamicMenuService);
+export class ReportViewComponent {
   private readonly reportService: ReportService = inject(ReportService);
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
@@ -45,10 +40,6 @@ export class ReportViewComponent implements OnInit {
 
   protected get columns(): Signal<Column[]> {
     return this.reportService.columns;
-  }
-
-  public ngOnInit(): void {
-    this.createDynamicMenu();
   }
 
   protected onCellClick(
@@ -157,20 +148,4 @@ export class ReportViewComponent implements OnInit {
     );
   }
 
-  private createDynamicMenu(): void {
-    this.dynamicMenuService.addDynamicMenu(
-      new DynamicMenu(
-        ReportMenuComponent,
-        {
-          route: '/report',
-          providers: [
-            {
-              provide: ReportService,
-              useValue: this.reportService,
-            },
-          ],
-        },
-      ),
-    );
-  }
 }

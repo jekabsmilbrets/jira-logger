@@ -1,9 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject, type OnInit, type Signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, type Signal } from '@angular/core';
 
 import { map, type Observable, of, switchMap, take } from 'rxjs';
-
-import { DynamicMenu } from '@core/models/dynamic-menu';
-import { DynamicMenuService } from '@core/services/dynamic-menu.service';
 
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
@@ -13,7 +10,6 @@ import { TimeLogsService } from '@shared/services/time-logs.service';
 import { TaskComponent } from '@tasks/components/task-list/task/task.component';
 import { TaskListComponent } from '@tasks/components/task-list/task-list.component';
 import { TaskViewHeaderComponent } from '@tasks/components/task-view-header/task-view-header.component';
-import { TasksMenuComponent } from '@tasks/components/tasks-menu/tasks-menu.component';
 import { TaskUpdateAction } from '@tasks/enums/task-update-action.enum';
 
 @Component({
@@ -28,17 +24,12 @@ import { TaskUpdateAction } from '@tasks/enums/task-update-action.enum';
     TaskComponent,
   ],
 })
-export class TasksViewComponent implements OnInit {
+export class TasksViewComponent {
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
-  private readonly dynamicMenuService: DynamicMenuService = inject(DynamicMenuService);
 
   protected readonly isLoading: Signal<boolean> = this.tasksService.isLoading;
   protected readonly tasks: Signal<Task[]> = computed(() => [...this.tasksService.tasks()].sort(this.taskSort));
-
-  public ngOnInit(): void {
-    this.createDynamicMenu();
-  }
 
   protected onAction(
     [task, action]: [Task, TaskUpdateAction],
@@ -109,23 +100,6 @@ export class TasksViewComponent implements OnInit {
         take(1),
         map(() => true),
       );
-  }
-
-  private createDynamicMenu(): void {
-    this.dynamicMenuService.addDynamicMenu(
-      new DynamicMenu(
-        TasksMenuComponent,
-        {
-          route: '/tasks',
-          providers: [
-            {
-              provide: TasksService,
-              useValue: this.tasksService,
-            },
-          ],
-        },
-      ),
-    );
   }
 
   private taskSort(
