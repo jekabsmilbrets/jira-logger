@@ -1,7 +1,7 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { of } from 'rxjs';
 import { vi } from 'vitest';
 
 import { Tag } from '@shared/models/tag.model';
@@ -13,7 +13,7 @@ describe('Shared Components report-tag-filter.component', () => {
   it('renders select and emits tagChange on value change callback', async () => {
     await TestBed.configureTestingModule({
       imports: [ReportTagFilterComponent],
-      providers: [{ provide: TagsService, useValue: { tags$: of([{ id: '1', name: 'Backend' } as Tag]) } }],
+      providers: [{ provide: TagsService, useValue: { tags: signal([{ id: '1', name: 'Backend' } as Tag]).asReadonly() } }],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(ReportTagFilterComponent);
@@ -32,7 +32,7 @@ describe('Shared Components report-tag-filter.component', () => {
   it('handles disabled and tags inputs', async () => {
     await TestBed.configureTestingModule({
       imports: [ReportTagFilterComponent],
-      providers: [{ provide: TagsService, useValue: { tags$: of([]) } }],
+      providers: [{ provide: TagsService, useValue: { tags: signal<Tag[]>([]).asReadonly() } }],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(ReportTagFilterComponent);
@@ -40,24 +40,24 @@ describe('Shared Components report-tag-filter.component', () => {
 
     fixture.componentRef.setInput('disabled', true);
     fixture.detectChanges();
-    expect(component.tagFormControl.disabled).toBe(true);
+    expect(component.reportTagForm().disabled()).toBe(true);
 
     const tags = [{ id: '2', name: 'Frontend' } as Tag];
     fixture.componentRef.setInput('disabled', false);
     fixture.componentRef.setInput('tags', tags);
     fixture.detectChanges();
-    expect(component.tagFormControl.enabled).toBe(true);
-    expect(component.tagFormControl.value).toEqual(tags);
+    expect(component.reportTagForm().disabled()).toBe(false);
+    expect(component.reportTagFormModel().tags).toEqual(tags);
 
     fixture.componentRef.setInput('tags', null);
     fixture.detectChanges();
-    expect(component.tagFormControl.value).toEqual(tags);
+    expect(component.reportTagFormModel().tags).toBeNull();
   });
 
   it('triggers mat-select valueChange listener from template', async () => {
     await TestBed.configureTestingModule({
       imports: [ReportTagFilterComponent],
-      providers: [{ provide: TagsService, useValue: { tags$: of([]) } }],
+      providers: [{ provide: TagsService, useValue: { tags: signal<Tag[]>([]).asReadonly() } }],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(ReportTagFilterComponent);

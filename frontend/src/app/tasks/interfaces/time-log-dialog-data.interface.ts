@@ -1,7 +1,7 @@
 import { TimeLog } from '@shared/models/time-log.model';
 
-import { TimeLogListDialogDataInterface } from '@tasks/interfaces/time-log-list-dialog-data.interface';
+import type { TimeLogListDialogData } from '@tasks/interfaces/time-log-list-dialog-data.interface';
 
-export interface TimeLogDialogDataInterface extends TimeLogListDialogDataInterface {
+export interface TimeLogDialogData extends TimeLogListDialogData {
   timeLog: TimeLog;
 }

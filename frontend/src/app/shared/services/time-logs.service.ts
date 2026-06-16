@@ -1,49 +1,48 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { inject, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { BehaviorSubject, catchError, map, Observable, of, Subject, switchMap, tap, throwError } from 'rxjs';
+import { catchError, finalize, map, type Observable, of, Subject, switchMap, tap, throwError } from 'rxjs';
 
-import { JsonApi } from '@core/interfaces/json-api.interface';
+import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { waitForTurn } from '@core/utils/wait-for.utility';
+import { RequestGate } from '@core/utilities/request-gate.utility';
+import { waitForTurn } from '@core/utilities/wait-for.utility';
 
 import { adaptTimeLog, adaptTimeLogs } from '@shared/adapters/time-log.adapter';
-import { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
-import { LoadableService } from '@shared/interfaces/loadable-service.interface';
-import { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
+import type { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
+import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import type { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
-import { ApiRequestBody } from '@shared/types/api-request-body.type';
-import { toUnixMs } from '@shared/utils/to-unix-ms.util';
+import type { ApiRequestBody } from '@shared/types/api-request-body.type';
+import { toUnixMs } from '@shared/utilities/to-unix-ms.utility';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class TimeLogsService implements LoadableService, MakeRequestService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
-  public isLoading$: Observable<boolean>;
   public taskStarted$: Observable<Task>;
   public taskFinished$: Observable<Task>;
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
+  private readonly isLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
+  public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
+  private readonly requestGate: RequestGate = new RequestGate();
 
   private basePath: string = 'task';
   private baseTimeLogPath: string = 'time-log';
 
-  private isLoadingSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   private taskStartedSubject: Subject<Task> = new Subject<Task>();
   private taskFinishedSubject: Subject<Task> = new Subject<Task>();
 
   constructor() {
-    this.isLoading$ = this.isLoadingSubject.asObservable();
     this.taskStarted$ = this.taskStartedSubject.asObservable();
     this.taskFinished$ = this.taskFinishedSubject.asObservable();
   }
 
   public init(): void {
-    this.loaderStateService.addLoader(this.isLoading$, this.constructor.name);
+    this.loaderStateService.addLoader(this.isLoading, this.constructor.name);
   }
 
   public list(
@@ -55,7 +54,7 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
       .pipe(
         map((response: JsonApi<ApiTimeLog[]>): TimeLog[] => (response.data && adaptTimeLogs(response.data)) as TimeLog[]),
         catchError((error: HttpErrorResponse) => {
-          const errors = Array.isArray(error.error?.errors) ? error.error.errors : [];
+          const errors: string[] = Array.isArray(error.error?.errors) ? error.error.errors : [];
 
           if (error.status === 404 && errors.includes('TimeLogs not found')) {
             return of([]);
@@ -166,17 +165,18 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
     );
 
     return waitForTurn(
-      this.isLoading$,
-      this.isLoadingSubject,
+      this.requestGate,
+      this.isLoadingSignal,
     )
       .pipe(
-        switchMap(() => request$),
-        catchError((error: HttpErrorResponse) => {
-          this.isLoadingSubject.next(false);
-
-          return throwError(() => error);
-        }),
-        tap(() => this.isLoadingSubject.next(false)),
+        switchMap((release: VoidFunction) => request$
+          .pipe(
+            catchError((error: HttpErrorResponse) => {
+              release();
+              return throwError(() => error);
+            }),
+            finalize(release),
+          )),
       );
   }
 }

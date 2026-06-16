@@ -1,30 +1,28 @@
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatSidenav } from '@angular/material/sidenav';
 import { By } from '@angular/platform-browser';
-import { NavigationEnd, provideRouter } from '@angular/router';
+import { provideRouter } from '@angular/router';
 
-import { BehaviorSubject, firstValueFrom } from 'rxjs';
-import { vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { DynamicMenuService } from '@core/services/dynamic-menu.service';
+import type { HeaderMenuRouteData } from '@layout/interfaces/header-menu-route-data.interface';
 
 import { HeaderComponent } from './header.component';
 
-describe('Layout Components header.component', () => {
-  const dynamicMenusSubject = new BehaviorSubject<any[]>([]);
+@Component({
+  standalone: true,
+  template: '',
+})
+class DummyDynamicMenuComponent {
+}
 
+describe('Layout Components header.component', () => {
   beforeEach(async () => {
-    dynamicMenusSubject.next([]);
     await TestBed.configureTestingModule({
       imports: [HeaderComponent],
       providers: [
         provideRouter([]),
-        {
-          provide: DynamicMenuService,
-          useValue: {
-            dynamicMenus$: dynamicMenusSubject.asObservable(),
-          },
-        },
       ],
     }).compileComponents();
   });
@@ -80,10 +78,10 @@ describe('Layout Components header.component', () => {
     fixture.componentRef.setInput('isLoading', true);
     fixture.detectChanges();
 
-    expect(fixture.debugElement.query(By.css('mat-progress-bar'))).toBeTruthy();
+    expect(fixture.debugElement.query(By.css('mat-progress-bar'))).not.toBeNull();
   });
 
-  it('renders a date-based report link in the toolbar', () => {
+  it('renders report date link for today', () => {
     const { fixture } = createComponentWithRequiredInputs();
 
     fixture.detectChanges();
@@ -93,9 +91,8 @@ describe('Layout Components header.component', () => {
     expect(timeSpentLink.getAttribute('href')).toMatch(/^\/report\/date\/\d{4}-\d{2}-\d{2}$/);
   });
 
-  it('clears dynamic menu container when no menu matches current route', async () => {
+  it('clears dynamic menu container when no active menu is provided', () => {
     const { fixture } = createComponentWithRequiredInputs();
-    fixture.detectChanges();
     const component = fixture.componentInstance as any;
     const clear = vi.fn();
     const createComponent = vi.fn();
@@ -109,25 +106,21 @@ describe('Layout Components header.component', () => {
       }),
     });
 
-    dynamicMenusSubject.next([{
-      data: { route: '/other' }, component: class Dummy {
-      },
-    }]);
-    await firstValueFrom(component['loadDynamicMenu'](new NavigationEnd(1, '/tasks', '/tasks')));
+    fixture.detectChanges();
 
     expect(clear).toHaveBeenCalled();
     expect(createComponent).not.toHaveBeenCalled();
   });
 
-  it('creates dynamic menu component when route matches', async () => {
+  it('creates dynamic menu component when active menu is provided', () => {
     const { fixture } = createComponentWithRequiredInputs();
-    fixture.detectChanges();
     const component = fixture.componentInstance as any;
     const clear = vi.fn();
     const createComponent = vi.fn();
-
-    class DummyDynamicComponent {
-    }
+    const activeMenu: HeaderMenuRouteData = {
+      menuId: 'tasks',
+      menuComponent: DummyDynamicMenuComponent,
+    };
 
     Object.defineProperty(component, 'dynamicMenu', {
       value: () => ({
@@ -138,23 +131,10 @@ describe('Layout Components header.component', () => {
       }),
     });
 
-    dynamicMenusSubject.next([{ data: { route: '/tasks', providers: [] }, component: DummyDynamicComponent }]);
-    await firstValueFrom(component['loadDynamicMenu'](new NavigationEnd(1, '/tasks', '/tasks/list')));
+    fixture.componentRef.setInput('activeMenu', activeMenu);
+    fixture.detectChanges();
 
     expect(clear).toHaveBeenCalled();
-    expect(createComponent).toHaveBeenCalledWith(
-      DummyDynamicComponent,
-      expect.objectContaining({ injector: expect.any(Object) }),
-    );
-  });
-
-  it('unsubscribes router subscription on destroy', () => {
-    const { fixture } = createComponentWithRequiredInputs();
-    fixture.detectChanges();
-    const component = fixture.componentInstance as any;
-    const unsub = vi.spyOn(component['routerEventsSubscription'], 'unsubscribe');
-
-    component.ngOnDestroy();
-    expect(unsub).toHaveBeenCalledTimes(1);
+    expect(createComponent).toHaveBeenCalledWith(DummyDynamicMenuComponent);
   });
 });

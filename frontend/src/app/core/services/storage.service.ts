@@ -1,34 +1,30 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
 import { UseStore } from 'idb-keyval';
-import { BehaviorSubject, catchError, from, map, Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, finalize, from, map, Observable, of, switchMap, take, throwError } from 'rxjs';
 
-import { DbFailInterface } from '@core/interfaces/db-fail.interface';
+import type { DbFail } from '@core/interfaces/db-fail.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { storageIdbGateway } from '@core/services/storage-idb.gateway';
-import { KeyValueEntry } from '@core/types/key-value-entry.type';
-import { waitForTurn } from '@core/utils/wait-for.utility';
+import type { KeyValueEntry } from '@core/types/key-value-entry.type';
+import { RequestGate } from '@core/utilities/request-gate.utility';
+import { waitForTurn } from '@core/utilities/wait-for.utility';
 
-import { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class StorageService implements LoadableService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
-  public isLoading$: Observable<boolean>;
-  public isDbFailed$: Observable<DbFailInterface | undefined>;
-
   protected stores: Map<string, UseStore> = new Map<string, UseStore>([]);
 
-  private isLoadingSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  private isDbFailedSubject: BehaviorSubject<DbFailInterface | undefined> = new BehaviorSubject<DbFailInterface | undefined>(undefined);
+  private readonly isLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
+  private readonly isDbFailedSignal: WritableSignal<DbFail | undefined> = signal<DbFail | undefined>(undefined);
 
-  constructor() {
-    this.isLoading$ = this.isLoadingSubject.asObservable();
-    this.isDbFailed$ = this.isDbFailedSubject.asObservable();
-  }
+  public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
+  public readonly isDbFailed: Signal<DbFail | undefined> = this.isDbFailedSignal.asReadonly();
+
+  private readonly requestGate: RequestGate = new RequestGate();
 
   private static createStore(
     name: string,
@@ -44,7 +40,7 @@ export class StorageService implements LoadableService {
 
   public init(): void {
     this.loaderStateService.addLoader(
-      this.isLoading$,
+      this.isLoading,
       this.constructor.name,
     );
     this.createStores();
@@ -67,26 +63,25 @@ export class StorageService implements LoadableService {
       ),
     );
 
-    return waitForTurn(
-      this.isLoading$,
-      this.isLoadingSubject,
-    )
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => request(customStoreName)),
-        catchError((error) => this.reportError(
-            error,
-            request,
-            {
-              customStoreName,
-            },
-          ),
-        ),
-        tap(() => this.isLoadingSubject.next(false)),
+        switchMap((release: VoidFunction) => request(customStoreName)
+          .pipe(
+            catchError((error) => {
+              release();
+              return this.reportError(
+                error,
+                request,
+                {
+                  customStoreName,
+                },
+              );
+            }),
+            finalize(release),
+          )),
       );
   }
 
-  // Allows callers to request a concrete decoded value type.
-  // Storage itself is untyped, so default remains unknown.
   public read<TValue = unknown>(
     key: IDBValidKey,
     customStoreName?: string,
@@ -107,25 +102,26 @@ export class StorageService implements LoadableService {
       ),
     ) as Observable<TValue>;
 
-    return waitForTurn(
-      this.isLoading$,
-      this.isLoadingSubject,
-    )
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => request(
+        switchMap((release: VoidFunction) => request(
           key,
           customStoreName,
-        )),
-        catchError((error) => this.reportError(
-            error,
-            request,
-            {
-              customStoreName,
-              key,
-            },
-          ),
-        ),
-        tap(() => this.isLoadingSubject.next(false)),
+        )
+          .pipe(
+            catchError((error) => {
+              release();
+              return this.reportError(
+                error,
+                request,
+                {
+                  customStoreName,
+                  key,
+                },
+              );
+            }),
+            finalize(release),
+          )),
       );
   }
 
@@ -152,27 +148,28 @@ export class StorageService implements LoadableService {
       ),
     );
 
-    return waitForTurn(
-      this.isLoading$,
-      this.isLoadingSubject,
-    )
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => request(
+        switchMap((release: VoidFunction) => request(
           key,
           value,
           customStoreName,
-        )),
-        catchError((error) => this.reportError(
-            error,
-            request,
-            {
-              customStoreName,
-              key,
-              value,
-            },
-          ),
-        ),
-        tap(() => this.isLoadingSubject.next(false)),
+        )
+          .pipe(
+            catchError((error) => {
+              release();
+              return this.reportError(
+                error,
+                request,
+                {
+                  customStoreName,
+                  key,
+                  value,
+                },
+              );
+            }),
+            finalize(release),
+          )),
       );
   }
 
@@ -220,25 +217,26 @@ export class StorageService implements LoadableService {
       ),
     );
 
-    return waitForTurn(
-      this.isLoading$,
-      this.isLoadingSubject,
-    )
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => request(
+        switchMap((release: VoidFunction) => request(
           dataEntries,
           customStoreName,
-        )),
-        catchError((error) => this.reportError(
-            error,
-            request,
-            {
-              customStoreName,
-              dataEntries,
-            },
-          ),
-        ),
-        tap(() => this.isLoadingSubject.next(false)),
+        )
+          .pipe(
+            catchError((error) => {
+              release();
+              return this.reportError(
+                error,
+                request,
+                {
+                  customStoreName,
+                  dataEntries,
+                },
+              );
+            }),
+            finalize(release),
+          )),
       );
   }
 
@@ -262,25 +260,26 @@ export class StorageService implements LoadableService {
       ),
     );
 
-    return waitForTurn(
-      this.isLoading$,
-      this.isLoadingSubject,
-    )
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
       .pipe(
-        switchMap(() => request(
+        switchMap((release: VoidFunction) => request(
           key,
           customStoreName,
-        )),
-        catchError((error) => this.reportError(
-            error,
-            request,
-            {
-              customStoreName,
-              key,
-            },
-          ),
-        ),
-        tap(() => this.isLoadingSubject.next(false)),
+        )
+          .pipe(
+            catchError((error) => {
+              release();
+              return this.reportError(
+                error,
+                request,
+                {
+                  customStoreName,
+                  key,
+                },
+              );
+            }),
+            finalize(release),
+          )),
       );
   }
 
@@ -324,7 +323,9 @@ export class StorageService implements LoadableService {
       dataEntries?: KeyValueEntry[]
     },
   ): Observable<never> {
-    this.isDbFailedSubject.next({
+    void request;
+
+    this.isDbFailedSignal.set({
       customStoreName: args.customStoreName,
       data: {
         key: args.key,
@@ -332,6 +333,8 @@ export class StorageService implements LoadableService {
         dataEntries: args.dataEntries,
       },
     });
+
+    this.isLoadingSignal.set(false);
 
     return throwError(() => error);
   }
@@ -357,4 +360,5 @@ export class StorageService implements LoadableService {
       ),
     );
   }
+
 }

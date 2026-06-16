@@ -1,38 +1,36 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, injectAsync, type Signal, signal, type WritableSignal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 
-import { concatMap, from, Observable, switchMap, take, tap, toArray } from 'rxjs';
+import { concatMap, from, switchMap, take, tap, toArray } from 'rxjs';
 
 import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
 
 import { TableComponent } from '@shared/components/table/table.component';
-import { Column } from '@shared/interfaces/column.interface';
-import { Searchable } from '@shared/interfaces/searchable.interface';
+import type { Column } from '@shared/interfaces/column.interface';
+import type { Searchable } from '@shared/interfaces/searchable.interface';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TimeLogsService } from '@shared/services/time-logs.service';
+import type { AsyncLoader } from '@shared/types/async-loader.type';
 
 import { createTimeLogListColumns } from '@tasks/constants/time-log-list-columns.constant';
-import { TimeLogListDialogDataInterface } from '@tasks/interfaces/time-log-list-dialog-data.interface';
-import { TimeLogModalResponseInterface } from '@tasks/interfaces/time-log-modal-response.interface';
-import { TimeLogsModalResponseInterface } from '@tasks/interfaces/time-logs-modal-response.interface';
-import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
-
-interface SaveOperation {
-  request$: Observable<TimeLog | void>;
-  onSuccess: (result: TimeLog | void) => void;
-}
+import type { SaveOperation } from '@tasks/interfaces/save-operation.interface';
+import type { TimeLogListDialogData } from '@tasks/interfaces/time-log-list-dialog-data.interface';
+import type { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
+import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
+import type { TimeLogEditService } from '@tasks/services/time-log-edit.service';
 
 @Component({
   selector: 'tasks-time-log-list-modal',
   templateUrl: './time-log-list-modal.component.html',
   styleUrls: ['./time-log-list-modal.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatDialogModule,
     MatButtonModule,
@@ -43,22 +41,26 @@ interface SaveOperation {
   ],
 })
 export class TimeLogListModalComponent {
-  protected data: TimeLogListDialogDataInterface = inject<TimeLogListDialogDataInterface>(MAT_DIALOG_DATA);
+  protected readonly data: TimeLogListDialogData = inject<TimeLogListDialogData>(MAT_DIALOG_DATA);
 
   protected columns: Column[];
 
-  private readonly timeLogEditService: TimeLogEditService = inject(TimeLogEditService);
+  private readonly loadTimeLogEditService: AsyncLoader<TimeLogEditService> = injectAsync(
+    () => import('@tasks/services/time-log-edit.service').then((m) => m.TimeLogEditService),
+  );
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
   private readonly localeService: LocaleService = inject(LocaleService);
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
+  private readonly dialogRef: MatDialogRef<TimeLogListModalComponent, undefined | TimeLogsModalResponse> = inject<MatDialogRef<TimeLogListModalComponent, TimeLogsModalResponse | undefined>>(MatDialogRef);
+  private readonly timeLogsState: WritableSignal<TimeLog[]> = signal([...this.data.task.timeLogs]);
 
-  private dialogRef: MatDialogRef<TimeLogListModalComponent, undefined | TimeLogsModalResponseInterface> = inject<MatDialogRef<TimeLogListModalComponent, TimeLogsModalResponseInterface | undefined>>(MatDialogRef);
+  protected readonly timeLogs: Signal<TimeLog[]> = computed(() => this.timeLogsState());
 
-  private createdTimeLogs: TimeLog[] = [];
-  private updatedTimeLogs: TimeLog[] = [];
-  private deletedTimeLogs: TimeLog[] = [];
-  private isSaving: boolean = false;
+  private readonly createdTimeLogs: WritableSignal<TimeLog[]> = signal([]);
+  private readonly updatedTimeLogs: WritableSignal<TimeLog[]> = signal([]);
+  private readonly deletedTimeLogs: WritableSignal<TimeLog[]> = signal([]);
+  private readonly isSaving: WritableSignal<boolean> = signal(false);
 
   constructor() {
     this.columns = createTimeLogListColumns(
@@ -67,27 +69,23 @@ export class TimeLogListModalComponent {
     );
   }
 
-  protected get timeLogs(): TimeLog[] {
-    return this.data.task.timeLogs;
-  }
-
   protected onCancel(): void {
     this.dialogRef.close();
   }
 
   protected onSave(): void {
-    if (this.isSaving) {
+    if (this.isSaving()) {
       return;
     }
 
-    const operations = this.buildSaveOperations();
+    const operations: SaveOperation[] = this.buildSaveOperations();
     if (operations.length === 0) {
       this.dialogRef.close();
 
       return;
     }
 
-    this.isSaving = true;
+    this.isSaving.set(true);
 
     from(operations)
       .pipe(
@@ -100,26 +98,33 @@ export class TimeLogListModalComponent {
       )
       .subscribe({
         next: (timeLogs: TimeLog[]) => {
-          this.data.task.timeLogs = [...timeLogs];
+          const nextTimeLogs: TimeLog[] = [...timeLogs];
+
+          this.timeLogsState.set(nextTimeLogs);
           this.resetTrackedChanges();
-          this.isSaving = false;
+          this.isSaving.set(false);
           this.openSnackBar('Time logs updated.');
-          this.dialogRef.close({ saved: true });
+          this.dialogRef.close({
+            saved: true,
+            timeLogs: nextTimeLogs,
+          });
         },
         error: (error: HttpErrorResponse) => {
-          this.isSaving = false;
+          this.isSaving.set(false);
           this.openSnackBar(this.buildSaveErrorMessage(error));
         },
       });
   }
 
-  protected onCellClick(
+  protected async onCellClick(
     [timeLog]: [Searchable, Column],
-  ): void {
-    this.timeLogEditService
+  ): Promise<void> {
+    const timeLogEditService: TimeLogEditService = await this.loadTimeLogEditService();
+
+    timeLogEditService
       .openTimeLogDialog(timeLog as TimeLog)
       .pipe(take(1))
-      .subscribe((response: TimeLogModalResponseInterface | undefined) => {
+      .subscribe((response: TimeLogModalResponse | undefined) => {
         if (response) {
           switch (response.responseType) {
             case 'cancel':
@@ -140,32 +145,41 @@ export class TimeLogListModalComponent {
   protected onCreateAction(
     timeLog: TimeLog,
   ): void {
-    this.createdTimeLogs.push(timeLog);
-    this.data.task.timeLogs = [
-      ...this.data.task.timeLogs,
+    this.createdTimeLogs.update((createdTimeLogs: TimeLog[]) => [
+      ...createdTimeLogs,
       timeLog,
-    ];
+    ]);
+    this.timeLogsState.update((timeLogs: TimeLog[]) => [
+      ...timeLogs,
+      timeLog,
+    ]);
   }
 
   protected onUpdateAction(
     sourceTimeLog: TimeLog,
     nextTimeLog: TimeLog,
   ): void {
-    const indexOfTimeLog = this.findTimeLogIndex(sourceTimeLog);
+    const indexOfTimeLog: number = this.findTimeLogIndex(sourceTimeLog);
     if (indexOfTimeLog < 0) {
       return;
     }
 
-    const timeLogs: TimeLog[] = [...this.data.task.timeLogs];
+    const timeLogs: TimeLog[] = [...this.timeLogsState()];
     timeLogs.splice(indexOfTimeLog, 1, nextTimeLog);
-    this.data.task.timeLogs = timeLogs;
+    this.timeLogsState.set(timeLogs);
 
-    const createdTimeLogIndex = this.createdTimeLogs.findIndex(
+    const createdTimeLogs: TimeLog[] = this.createdTimeLogs();
+    const createdTimeLogIndex: number = createdTimeLogs.findIndex(
       (createdTimeLog: TimeLog) => createdTimeLog === sourceTimeLog,
     );
 
     if (createdTimeLogIndex >= 0) {
-      this.createdTimeLogs.splice(createdTimeLogIndex, 1, nextTimeLog);
+      this.createdTimeLogs.update((currentCreatedTimeLogs: TimeLog[]) => {
+        const nextCreatedTimeLogs: TimeLog[] = [...currentCreatedTimeLogs];
+        nextCreatedTimeLogs.splice(createdTimeLogIndex, 1, nextTimeLog);
+
+        return nextCreatedTimeLogs;
+      });
 
       return;
     }
@@ -177,43 +191,53 @@ export class TimeLogListModalComponent {
     timeLog: Searchable,
   ): void {
     const timeLogModel: TimeLog = timeLog as TimeLog;
-    const indexOfTimeLog = this.findTimeLogIndex(timeLogModel);
+    const indexOfTimeLog: number = this.findTimeLogIndex(timeLogModel);
     if (indexOfTimeLog < 0) {
       return;
     }
 
-    const timeLogs: TimeLog[] = [...this.data.task.timeLogs];
+    const timeLogs: TimeLog[] = [...this.timeLogsState()];
     timeLogs.splice(indexOfTimeLog, 1);
-    this.data.task.timeLogs = timeLogs;
+    this.timeLogsState.set(timeLogs);
 
-    const createdTimeLogIndex = this.createdTimeLogs.findIndex(
+    const createdTimeLogs: TimeLog[] = this.createdTimeLogs();
+    const createdTimeLogIndex: number = createdTimeLogs.findIndex(
       (createdTimeLog: TimeLog) => createdTimeLog === timeLogModel,
     );
 
     if (createdTimeLogIndex >= 0) {
-      this.createdTimeLogs.splice(createdTimeLogIndex, 1);
+      this.createdTimeLogs.update((currentCreatedTimeLogs: TimeLog[]) => {
+        const nextCreatedTimeLogs: TimeLog[] = [...currentCreatedTimeLogs];
+        nextCreatedTimeLogs.splice(createdTimeLogIndex, 1);
+
+        return nextCreatedTimeLogs;
+      });
 
       return;
     }
 
-    this.updatedTimeLogs = this.updatedTimeLogs.filter(
+    this.updatedTimeLogs.set(this.updatedTimeLogs().filter(
       (updatedTimeLog: TimeLog) => updatedTimeLog.id !== timeLogModel.id,
-    );
+    ));
 
-    if (timeLogModel.id && !this.deletedTimeLogs.some((deletedTimeLog: TimeLog) => deletedTimeLog.id === timeLogModel.id)) {
-      this.deletedTimeLogs.push(timeLogModel);
+    if (timeLogModel.id && !this.deletedTimeLogs().some((deletedTimeLog: TimeLog) => deletedTimeLog.id === timeLogModel.id)) {
+      this.deletedTimeLogs.update((deletedTimeLogs: TimeLog[]) => [
+        ...deletedTimeLogs,
+        timeLogModel,
+      ]);
     }
   }
 
-  protected onAddTimeLogClick(): void {
+  protected async onAddTimeLogClick(): Promise<void> {
+    const timeLogEditService: TimeLogEditService = await this.loadTimeLogEditService();
     const timeLog: TimeLog = new TimeLog({
       startTime: new Date(),
       endTime: new Date(),
     });
 
-    this.timeLogEditService.openTimeLogDialog(timeLog)
+    timeLogEditService.openTimeLogDialog(timeLog)
       .pipe(take(1))
-      .subscribe((response: TimeLogModalResponseInterface | undefined) => {
+      .subscribe((response: TimeLogModalResponse | undefined) => {
         if (response) {
           switch (response.responseType) {
             case 'cancel':
@@ -231,7 +255,7 @@ export class TimeLogListModalComponent {
   private findTimeLogIndex(
     timeLog: TimeLog,
   ): number {
-    return this.data.task.timeLogs.findIndex(
+    return this.timeLogsState().findIndex(
       (currentTimeLog: TimeLog) => currentTimeLog === timeLog ||
         (Boolean(currentTimeLog.id) && Boolean(timeLog.id) && currentTimeLog.id === timeLog.id),
     );
@@ -240,51 +264,59 @@ export class TimeLogListModalComponent {
   private upsertUpdatedTimeLog(
     timeLog: TimeLog,
   ): void {
-    const existingIndex = this.updatedTimeLogs.findIndex(
+    const existingIndex: number = this.updatedTimeLogs().findIndex(
       (updatedTimeLog: TimeLog) => updatedTimeLog.id === timeLog.id,
     );
 
     if (existingIndex >= 0) {
-      this.updatedTimeLogs.splice(existingIndex, 1, timeLog);
+      this.updatedTimeLogs.update((updatedTimeLogs: TimeLog[]) => {
+        const nextUpdatedTimeLogs: TimeLog[] = [...updatedTimeLogs];
+        nextUpdatedTimeLogs.splice(existingIndex, 1, timeLog);
+
+        return nextUpdatedTimeLogs;
+      });
 
       return;
     }
 
-    this.updatedTimeLogs.push(timeLog);
+    this.updatedTimeLogs.update((updatedTimeLogs: TimeLog[]) => [
+      ...updatedTimeLogs,
+      timeLog,
+    ]);
   }
 
   private buildSaveOperations(): SaveOperation[] {
     return [
-      ...this.createdTimeLogs.map((timeLog: TimeLog) => ({
+      ...this.createdTimeLogs().map((timeLog: TimeLog) => ({
         request$: this.timeLogsService.create(this.data.task, timeLog),
         onSuccess: (result: TimeLog | void) => {
           if (result instanceof TimeLog) {
             this.replaceTimeLog(timeLog, result);
           }
 
-          this.createdTimeLogs = this.createdTimeLogs.filter(
+          this.createdTimeLogs.set(this.createdTimeLogs().filter(
             (createdTimeLog: TimeLog) => createdTimeLog !== timeLog,
-          );
+          ));
         },
       })),
-      ...this.updatedTimeLogs.map((timeLog: TimeLog) => ({
+      ...this.updatedTimeLogs().map((timeLog: TimeLog) => ({
         request$: this.timeLogsService.update(this.data.task, timeLog),
         onSuccess: (result: TimeLog | void) => {
           if (result instanceof TimeLog) {
             this.replaceTimeLog(timeLog, result);
           }
 
-          this.updatedTimeLogs = this.updatedTimeLogs.filter(
+          this.updatedTimeLogs.set(this.updatedTimeLogs().filter(
             (updatedTimeLog: TimeLog) => updatedTimeLog.id !== timeLog.id,
-          );
+          ));
         },
       })),
-      ...this.deletedTimeLogs.map((timeLog: TimeLog) => ({
+      ...this.deletedTimeLogs().map((timeLog: TimeLog) => ({
         request$: this.timeLogsService.delete(this.data.task, timeLog),
         onSuccess: () => {
-          this.deletedTimeLogs = this.deletedTimeLogs.filter(
+          this.deletedTimeLogs.set(this.deletedTimeLogs().filter(
             (deletedTimeLog: TimeLog) => deletedTimeLog.id !== timeLog.id,
-          );
+          ));
         },
       })),
     ];
@@ -294,26 +326,26 @@ export class TimeLogListModalComponent {
     sourceTimeLog: TimeLog,
     nextTimeLog: TimeLog,
   ): void {
-    const timeLogIndex = this.findTimeLogIndex(sourceTimeLog);
+    const timeLogIndex: number = this.findTimeLogIndex(sourceTimeLog);
     if (timeLogIndex < 0) {
       return;
     }
 
-    const timeLogs = [...this.data.task.timeLogs];
+    const timeLogs: TimeLog[] = [...this.timeLogsState()];
     timeLogs.splice(timeLogIndex, 1, nextTimeLog);
-    this.data.task.timeLogs = timeLogs;
+    this.timeLogsState.set(timeLogs);
   }
 
   private resetTrackedChanges(): void {
-    this.createdTimeLogs = [];
-    this.updatedTimeLogs = [];
-    this.deletedTimeLogs = [];
+    this.createdTimeLogs.set([]);
+    this.updatedTimeLogs.set([]);
+    this.deletedTimeLogs.set([]);
   }
 
   private buildSaveErrorMessage(
     error: HttpErrorResponse,
   ): string {
-    const errors = Array.isArray(error.error?.errors) ? error.error.errors.join(', ') : '';
+    const errors: string = Array.isArray(error.error?.errors) ? error.error.errors.join(', ') : '';
 
     return errors ? `Time logs update failed! ${ errors }` : 'Time logs update failed!';
   }

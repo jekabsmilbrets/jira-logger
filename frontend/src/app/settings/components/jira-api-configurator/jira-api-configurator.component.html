@@ -1,5 +1,4 @@
-<form (ngSubmit)="onSaveFormData()"
-      [formGroup]="formGroup">
+<form (submit)="onSaveFormData($event)">
     <mat-card>
         <mat-card-header>
             <mat-card-title>JIRA API</mat-card-title>
@@ -7,38 +6,46 @@
 
         @if (settings()) {
             <mat-card-content>
-                <mat-slide-toggle formControlName="jira-enabled">Enabled</mat-slide-toggle>
+                <mat-slide-toggle (change)="onEnabledChange($event.checked)"
+                                  [checked]="jiraApiFormModel().enabled"
+                                  [disabled]="jiraApiForm().disabled()">
+                    Enabled
+                </mat-slide-toggle>
 
                 <mat-form-field>
                     <mat-label>Jira Host</mat-label>
 
-                    <input formControlName="jira-host"
+                    <input [formField]="jiraApiForm.host"
                            matInput/>
 
-                    <mat-error>Host is required.</mat-error>
+                    @if (jiraApiForm.host().touched() && jiraApiForm.host().invalid()) {
+                        <mat-error>Host is required.</mat-error>
+                    }
                 </mat-form-field>
 
                 <mat-form-field>
                     <mat-label>Personal Access Token</mat-label>
 
-                    <input [type]="hidePersonalAccessToken ? 'password' : 'text'"
+                    <input [formField]="jiraApiForm.personalAccessToken"
+                           [type]="hidePersonalAccessToken() ? 'password' : 'text'"
                            autoComplete="off"
-                           formControlName="jira-personal-access-token"
                            matInput/>
 
-                    <mat-error>Token is required.</mat-error>
+                    @if (jiraApiForm.personalAccessToken().touched() && isTokenRequired()) {
+                        <mat-error>Token is required.</mat-error>
+                    }
 
-                    @if (hasStoredPersonalAccessToken) {
+                    @if (hasStoredPersonalAccessToken()) {
                         <mat-hint>Token already configured. Leave blank to keep it, or enter a new token.</mat-hint>
                     }
 
-                    <button (click)="hidePersonalAccessToken = !hidePersonalAccessToken"
-                            [attr.aria-label]="hidePersonalAccessToken ? 'Show token' : 'Hide token'"
-                            [attr.aria-pressed]="hidePersonalAccessToken"
+                    <button (click)="hidePersonalAccessToken.set(!hidePersonalAccessToken())"
+                            [attr.aria-label]="hidePersonalAccessToken() ? 'Show token' : 'Hide token'"
+                            [attr.aria-pressed]="hidePersonalAccessToken()"
                             mat-icon-button
                             matSuffix
                             type="button">
-                        <mat-icon>{{ hidePersonalAccessToken ? 'visibility_off' : 'visibility' }}</mat-icon>
+                        <mat-icon>{{ hidePersonalAccessToken() ? 'visibility_off' : 'visibility' }}</mat-icon>
                     </button>
                 </mat-form-field>
             </mat-card-content>
@@ -46,7 +53,7 @@
 
         <mat-card-actions>
             <button (click)="onCancel()"
-                    [disabled]="formGroup.disabled"
+                    [disabled]="jiraApiForm().disabled()"
                     aria-label="Cancel"
                     color="danger"
                     mat-raised-button
@@ -54,7 +61,7 @@
                 Cancel
             </button>
 
-            <button [disabled]="formGroup.disabled || !formGroup.dirty || formGroup.invalid"
+            <button [disabled]="jiraApiForm().disabled() || !jiraApiForm().dirty() || jiraApiForm().invalid()"
                     aria-label="Save"
                     color="primary"
                     mat-raised-button

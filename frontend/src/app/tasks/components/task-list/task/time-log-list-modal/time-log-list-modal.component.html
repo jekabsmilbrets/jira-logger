@@ -24,7 +24,7 @@
     <shared-shared-table (cellClicked)="onCellClick($event)"
                          (removeAction)="onRemoveAction($event)"
                          [columns]="columns"
-                         [data]="timeLogs"
+                         [data]="timeLogs()"
                          [enableFooter]="true"
                          [enableRemoveAction]="true"
                          [isSelectable]="false"

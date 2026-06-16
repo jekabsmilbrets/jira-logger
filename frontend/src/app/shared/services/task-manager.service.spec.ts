@@ -1,11 +1,11 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { BehaviorSubject, Subject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { vi } from 'vitest';
 
 import { Task } from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
-import { TimeLogsService } from '@shared/services/time-logs.service';
 
 import { TaskManagerService } from './task-manager.service';
 
@@ -19,104 +19,78 @@ describe('Shared Services task-manager.service', () => {
     TestBed.resetTestingModule();
   });
 
-  it('tracks active task from start/finish streams and computes logged time', async () => {
-    const taskStarted$ = new Subject<Task>();
-    const taskFinished$ = new Subject<Task>();
-    const tasks$ = new BehaviorSubject<Task[]>([]);
+  it('derives active task from tasks state and computes logged time', async () => {
+    const tasks = signal<Task[]>([]);
 
     const runningTask = new Task({ id: '1', name: 'A' } as any);
-    const finishedTask = new Task({ id: '2', name: 'B' } as any);
 
     const tasksServiceMock = {
-      tasks$,
+      tasks: tasks.asReadonly(),
       filteredList: vi.fn(() => new BehaviorSubject<Task[]>([runningTask])),
-    } as any;
-
-    const timeLogsServiceMock = {
-      taskStarted$,
-      taskFinished$,
     } as any;
 
     await TestBed.configureTestingModule({
       providers: [
         { provide: TasksService, useValue: tasksServiceMock },
-        { provide: TimeLogsService, useValue: timeLogsServiceMock },
       ],
     });
 
     const service = TestBed.inject(TaskManagerService);
 
-    const activeStates: (Task | null)[] = [];
-    service.activeTask$.subscribe((v) => activeStates.push(v));
+    runningTask.lastTimeLog = { startTime: new Date('2026-01-01T10:00:00.000Z') } as any;
+    tasks.set([runningTask]);
+    expect(service.activeTask()?.id).toBe('1');
 
-    taskStarted$.next(runningTask);
-    expect(activeStates.at(-1)?.id).toBe('1');
-
-    taskFinished$.next(finishedTask);
-    expect(activeStates.at(-1)?.id).toBe('1');
-
-    taskFinished$.next(runningTask);
-    expect(activeStates.at(-1)).toBeNull();
+    tasks.set([]);
+    expect(service.activeTask()).toBeNull();
 
     vi.advanceTimersByTime(10010);
     expect(tasksServiceMock.filteredList).toHaveBeenCalled();
   });
 
-  it('swallows start stream errors and still initializes', async () => {
-    const taskFinished$ = new Subject<Task>();
-    const tasks$ = new BehaviorSubject<Task[]>([]);
+  it('returns null when no running task exists', async () => {
+    const tasks = signal<Task[]>([]);
     const runningTask = new Task({ id: '1', name: 'A' } as any);
 
     const tasksServiceMock = {
-      tasks$,
+      tasks: tasks.asReadonly(),
       filteredList: vi.fn(() => new BehaviorSubject<Task[]>([runningTask])),
-    } as any;
-
-    const timeLogsServiceMock = {
-      taskStarted$: new Subject<Task>(),
-      taskFinished$,
     } as any;
 
     await TestBed.configureTestingModule({
       providers: [
         { provide: TasksService, useValue: tasksServiceMock },
-        { provide: TimeLogsService, useValue: timeLogsServiceMock },
       ],
     });
 
     const service = TestBed.inject(TaskManagerService);
-    const activeStates: (Task | null)[] = [];
-    service.activeTask$.subscribe((v) => activeStates.push(v));
-    taskFinished$.next(runningTask);
-    expect(activeStates.at(-1)).toBeNull();
+    expect(service.activeTask()).toBeNull();
   });
 
-  it('sets active task from tasks list when running task exists', async () => {
-    const taskStarted$ = new Subject<Task>();
-    const taskFinished$ = new Subject<Task>();
+  it('updates active task when the running task in tasks state changes', async () => {
     const runningLog = new Date('2026-01-01T10:00:00.000Z');
     const runningTask = new Task({ id: '1', name: 'A', timeLogs: [{ startTime: runningLog }] } as any);
     runningTask.lastTimeLog = runningTask.timeLogs[0];
-    const tasks$ = new BehaviorSubject<Task[]>([runningTask]);
+    const nextRunningLog = new Date('2026-01-01T11:00:00.000Z');
+    const nextRunningTask = new Task({ id: '2', name: 'B', timeLogs: [{ startTime: nextRunningLog }] } as any);
+    nextRunningTask.lastTimeLog = nextRunningTask.timeLogs[0];
+    const tasks = signal<Task[]>([runningTask]);
 
     const tasksServiceMock = {
-      tasks$,
+      tasks: tasks.asReadonly(),
       filteredList: vi.fn(() => new BehaviorSubject<Task[]>([runningTask])),
-    } as any;
-
-    const timeLogsServiceMock = {
-      taskStarted$,
-      taskFinished$,
     } as any;
 
     await TestBed.configureTestingModule({
       providers: [
         { provide: TasksService, useValue: tasksServiceMock },
-        { provide: TimeLogsService, useValue: timeLogsServiceMock },
       ],
     });
 
     const service = TestBed.inject(TaskManagerService);
-    expect((await new Promise<Task | null>((resolve) => service.activeTask$.subscribe(resolve)))?.id).toBe('1');
+    expect(service.activeTask()?.id).toBe('1');
+
+    tasks.set([nextRunningTask]);
+    expect(service.activeTask()?.id).toBe('2');
   });
 });

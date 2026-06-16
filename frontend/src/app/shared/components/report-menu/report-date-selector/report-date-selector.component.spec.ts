@@ -3,62 +3,71 @@ import { By } from '@angular/platform-browser';
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 
 import { ReportDateSelectorComponent } from './report-date-selector.component';
 
 describe('Shared Components report-date-selector.component', () => {
-  const createComponent = async (): Promise<ReportDateSelectorComponent> => {
+  const createComponent = async (): Promise<{
+    fixture: ReturnType<typeof TestBed.createComponent<ReportDateSelectorComponent>>;
+    component: ReportDateSelectorComponent;
+  }> => {
     await TestBed.configureTestingModule({
       imports: [ReportDateSelectorComponent],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(ReportDateSelectorComponent);
-    fixture.componentRef.setInput('reportMode', ReportModeEnum.date);
+    fixture.componentRef.setInput('reportMode', ReportMode.date);
     fixture.detectChanges();
-    return fixture.componentInstance;
+    return { fixture, component: fixture.componentInstance };
   };
 
   it('toggles all form controls with disabled input', async () => {
-    const component = await createComponent();
+    const { fixture, component } = await createComponent();
 
-    component.disabled = true;
-    expect(component['dateFormControl'].disabled).toBe(true);
-    expect(component['startDateFormControl'].disabled).toBe(true);
-    expect(component['endDateFormControl'].disabled).toBe(true);
+    fixture.componentRef.setInput('disabled', true);
+    fixture.detectChanges();
+    expect(component['reportDateForm']().disabled()).toBe(true);
+    expect(component['reportDateForm'].date().disabled()).toBe(true);
+    expect(component['reportDateForm'].startDate().disabled()).toBe(true);
+    expect(component['reportDateForm'].endDate().disabled()).toBe(true);
 
-    component.disabled = false;
-    expect(component['dateFormControl'].enabled).toBe(true);
-    expect(component['startDateFormControl'].enabled).toBe(true);
-    expect(component['endDateFormControl'].enabled).toBe(true);
+    fixture.componentRef.setInput('disabled', false);
+    fixture.detectChanges();
+    expect(component['reportDateForm']().disabled()).toBe(false);
+    expect(component['reportDateForm'].date().disabled()).toBe(false);
+    expect(component['reportDateForm'].startDate().disabled()).toBe(false);
+    expect(component['reportDateForm'].endDate().disabled()).toBe(false);
   });
 
   it('sets control values only when date inputs are non-null', async () => {
-    const component = await createComponent();
+    const { fixture, component } = await createComponent();
 
     const date = new Date('2024-01-02T10:00:00.000Z');
     const startDate = new Date('2024-01-03T10:00:00.000Z');
     const endDate = new Date('2024-01-04T10:00:00.000Z');
 
-    component.date = null;
-    component.startDate = null;
-    component.endDate = null;
+    fixture.componentRef.setInput('date', null);
+    fixture.componentRef.setInput('startDate', null);
+    fixture.componentRef.setInput('endDate', null);
+    fixture.detectChanges();
 
-    expect(component['dateFormControl'].value).toBeNull();
-    expect(component['startDateFormControl'].value).toBeNull();
-    expect(component['endDateFormControl'].value).toBeNull();
+    expect(component['reportDateFormModel']().date).toBeNull();
+    expect(component['reportDateFormModel']().startDate).toBeNull();
+    expect(component['reportDateFormModel']().endDate).toBeNull();
 
-    component.date = date;
-    component.startDate = startDate;
-    component.endDate = endDate;
+    fixture.componentRef.setInput('date', date);
+    fixture.componentRef.setInput('startDate', startDate);
+    fixture.componentRef.setInput('endDate', endDate);
+    fixture.detectChanges();
 
-    expect(component['dateFormControl'].value).toEqual(date);
-    expect(component['startDateFormControl'].value).toEqual(startDate);
-    expect(component['endDateFormControl'].value).toEqual(endDate);
+    expect(component['reportDateFormModel']().date).toEqual(date);
+    expect(component['reportDateFormModel']().startDate).toEqual(startDate);
+    expect(component['reportDateFormModel']().endDate).toEqual(endDate);
   });
 
   it('normalizes and emits start/end/single date change events', async () => {
-    const component = await createComponent();
+    const { component } = await createComponent();
 
     const startEmit = vi.spyOn(component['startDateChange'], 'emit');
     const endEmit = vi.spyOn(component['endDateChange'], 'emit');
@@ -84,7 +93,7 @@ describe('Shared Components report-date-selector.component', () => {
   });
 
   it('does not emit when date change events contain null values', async () => {
-    const component = await createComponent();
+    const { component } = await createComponent();
 
     const startEmit = vi.spyOn(component['startDateChange'], 'emit');
     const endEmit = vi.spyOn(component['endDateChange'], 'emit');
@@ -105,7 +114,7 @@ describe('Shared Components report-date-selector.component', () => {
     }).compileComponents();
 
     const fixture = TestBed.createComponent(ReportDateSelectorComponent);
-    fixture.componentRef.setInput('reportMode', ReportModeEnum.dateRange);
+    fixture.componentRef.setInput('reportMode', ReportMode.dateRange);
     fixture.componentRef.setInput('showLabel', true);
     fixture.detectChanges();
 
@@ -115,7 +124,7 @@ describe('Shared Components report-date-selector.component', () => {
     expect(fixture.debugElement.query(By.css('mat-label'))?.nativeElement.textContent).toContain('Enter a date range');
     expect(fixture.debugElement.query(By.css('input[placeholder="Date"]'))).toBeFalsy();
 
-    fixture.componentRef.setInput('reportMode', ReportModeEnum.date);
+    fixture.componentRef.setInput('reportMode', ReportMode.date);
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('mat-date-range-input'))).toBeFalsy();
@@ -135,12 +144,12 @@ describe('Shared Components report-date-selector.component', () => {
     const dateSpy = vi.spyOn(component, 'onDateChange');
     const date = new Date('2026-05-30T00:00:00.000Z');
 
-    fixture.componentRef.setInput('reportMode', ReportModeEnum.dateRange);
+    fixture.componentRef.setInput('reportMode', ReportMode.dateRange);
     fixture.detectChanges();
     fixture.debugElement.query(By.css('input[matStartDate]')).triggerEventHandler('dateChange', { value: date });
     fixture.debugElement.query(By.css('input[matEndDate]')).triggerEventHandler('dateChange', { value: date });
 
-    fixture.componentRef.setInput('reportMode', ReportModeEnum.date);
+    fixture.componentRef.setInput('reportMode', ReportMode.date);
     fixture.detectChanges();
     fixture.debugElement.query(By.css('input[placeholder="Date"]')).triggerEventHandler('dateChange', { value: date });
 

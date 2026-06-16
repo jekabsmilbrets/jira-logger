@@ -1,4 +1,4 @@
-import { ApiSetting } from '@core/interfaces/api/api-setting.interface';
+import type { ApiSetting } from '@core/interfaces/api/api-setting.interface';
 import { Setting } from '@core/models/setting.model';
 
 export const adaptSetting: (apiSetting: ApiSetting) => Setting = (apiSetting: ApiSetting): Setting =>

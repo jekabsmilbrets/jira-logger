@@ -557,10 +557,10 @@ class TaskController extends BaseApiController
         ),
     ]
     final public function taskExists(
-        ?Task $foundTask,
+        string $name,
     ): JsonResponse {
         return $this->jsonApi(
-            status: $foundTask ? Response::HTTP_CONFLICT : Response::HTTP_NO_CONTENT,
+            status: $this->taskService->findByName(trim($name)) ? Response::HTTP_CONFLICT : Response::HTTP_NO_CONTENT,
         );
     }
 

@@ -1,39 +1,24 @@
-import { Injectable } from '@angular/core';
+import { computed, Service, type Signal, signal, type WritableSignal } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
-import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, map, Observable, share, switchMap } from 'rxjs';
+import { debounceTime } from 'rxjs';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class LoaderStateService {
-  public isLoading$: Observable<boolean>;
+  private readonly loaderMarks: WritableSignal<Map<string, Signal<boolean>>> = signal<Map<string, Signal<boolean>>>(new Map<string, Signal<boolean>>());
+  private readonly aggregateLoading: Signal<boolean> = computed(() => [...this.loaderMarks().values()].some((loader: Signal<boolean>) => loader()));
+  private readonly debounceDelay: number = 50;
 
-  private loaderMarks: BehaviorSubject<Map<string, Observable<boolean>>> = new BehaviorSubject<Map<string, Observable<boolean>>>(
-    new Map<string, Observable<boolean>>([]),
+  public readonly isLoading: Signal<boolean> = toSignal(
+    toObservable(this.aggregateLoading).pipe(debounceTime(this.debounceDelay)),
+    { initialValue: false },
   );
 
-  private debounceDelay = 50;
-
-  constructor() {
-    this.isLoading$ = this.loaderMarks.asObservable()
-      .pipe(
-        switchMap(
-          (marks: Map<string, Observable<boolean>>) => combineLatest([...marks.values()]),
-        ),
-        debounceTime(this.debounceDelay),
-        distinctUntilChanged(),
-        map(
-          (marks: boolean[]) => marks.includes(true),
-        ),
-        share(),
-      );
-  }
-
   public addLoader(
-    loader: Observable<boolean>,
+    loader: Signal<boolean>,
     name?: string,
   ): void {
-    const loaderMarks: Map<string, Observable<boolean>> = this.loaderMarks.getValue();
+    const loaderMarks: Map<string, Signal<boolean>> = new Map<string, Signal<boolean>>(this.loaderMarks());
 
     if (!name) {
       name = [...loaderMarks.keys()].length.toString();
@@ -44,6 +29,6 @@ export class LoaderStateService {
       loader,
     );
 
-    this.loaderMarks.next(loaderMarks);
+    this.loaderMarks.set(loaderMarks);
   }
 }

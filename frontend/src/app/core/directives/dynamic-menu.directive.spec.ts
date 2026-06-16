@@ -1,15 +1,15 @@
-import { Component, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, viewChild } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { DynamicMenuDirective } from './dynamic-menu.directive';
 
 @Component({
-  template: '<ng-container appDynamicMenu></ng-container>',
+  template: '<ng-container appDynamicMenu />',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DynamicMenuDirective],
 })
 class HostComponent {
-  @ViewChild(DynamicMenuDirective)
-  directive!: DynamicMenuDirective;
+  readonly directive = viewChild.required(DynamicMenuDirective);
 }
 
 describe('Core Directives dynamic-menu.directive', () => {
@@ -20,6 +20,6 @@ describe('Core Directives dynamic-menu.directive', () => {
 
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.directive.viewContainerRef).toBeTruthy();
+    expect(fixture.componentInstance.directive().viewContainerRef).toBeTruthy();
   });
 });

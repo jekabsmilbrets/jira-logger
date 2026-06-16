@@ -6,7 +6,7 @@ import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Column } from '../../interfaces/column.interface';
+import type { Column } from '../../interfaces/column.interface';
 import { AreYouSureService } from '../../services/are-you-sure.service';
 import { TableComponent } from './table.component';
 
@@ -44,20 +44,23 @@ describe('Shared Components table.component', () => {
     const { fixture, component } = await createComponent();
     fixture.componentRef.setInput('columns', [
       createColumn({ columnDef: 'name' }),
+      createColumn({ columnDef: 'sync' }),
       createColumn({ columnDef: 'hidden', hidden: true }),
       createColumn({ columnDef: 'excluded', excludeFromLoop: true }),
     ]);
     fixture.componentRef.setInput('enableRemoveAction', true);
+    fixture.componentRef.setInput('enableSyncAction', true);
     fixture.componentRef.setInput('isSelectable', true);
     fixture.detectChanges();
 
-    expect(component['displayedColumns']).toEqual(['select', 'name', 'remove']);
+    expect(component['displayedColumns']()).toEqual(['select', 'name', 'sync', 'remove']);
 
     fixture.componentRef.setInput('enableRemoveAction', false);
+    fixture.componentRef.setInput('enableSyncAction', false);
     fixture.componentRef.setInput('isSelectable', false);
     fixture.detectChanges();
 
-    expect(component['displayedColumns']).toEqual(['name']);
+    expect(component['displayedColumns']()).toEqual(['name', 'sync']);
   });
 
   it('wires real sort/paginator and nested sorting accessor in ngAfterViewInit', async () => {
@@ -66,7 +69,7 @@ describe('Shared Components table.component', () => {
     const paginator = (component as any).paginator();
 
     const row = { nested: { value: 123 } } as any;
-    component.data = [row];
+    fixture.componentRef.setInput('data', [row]);
     fixture.detectChanges();
 
     expect(component['dataSource'].data).toEqual([row]);
@@ -80,24 +83,26 @@ describe('Shared Components table.component', () => {
     const date = new Date('2026-05-31T12:00:00.000Z');
     const row = { meta: { createdAt: date } } as any;
 
-    component.data = [row];
+    fixture.componentRef.setInput('data', [row]);
     fixture.detectChanges();
 
     expect(component['dataSource'].sortingDataAccessor(row, 'meta.createdAt')).toBe(date.getTime());
   });
 
   it('maps null data input to empty data source', async () => {
-    const { component } = await createComponent();
+    const { fixture, component } = await createComponent();
 
-    component.data = null;
+    fixture.componentRef.setInput('data', null);
+    fixture.detectChanges();
 
     expect(component['dataSource'].data).toEqual([]);
   });
 
   it('checks and toggles selection state', async () => {
-    const { component } = await createComponent();
+    const { fixture, component } = await createComponent();
     const rows = [{ id: 1 } as any, { id: 2 } as any];
-    component.data = rows;
+    fixture.componentRef.setInput('data', rows);
+    fixture.detectChanges();
 
     expect(component['isAllSelected']()).toBe(false);
 
@@ -134,10 +139,11 @@ describe('Shared Components table.component', () => {
   });
 
   it('emits footer click only for clickable footer cells not disabled', async () => {
-    const { component } = await createComponent();
+    const { fixture, component } = await createComponent();
     const emitSpy = vi.spyOn(component['footerCellClicked'], 'emit');
     const rows = [{ id: 1 } as any];
-    component.data = rows;
+    fixture.componentRef.setInput('data', rows);
+    fixture.detectChanges();
 
     component['onFooterCellClicked'](createColumn({ isClickable: false }));
     component['onFooterCellClicked'](createColumn({ isClickable: true, disableFooterClick: true }));
@@ -157,11 +163,11 @@ describe('Shared Components table.component', () => {
     } as any;
 
     areYouSureService.openDialog.mockReturnValueOnce(of(false));
-    component['onRemoveAction'](timeLog);
+    await component['onRemoveAction'](timeLog);
     expect(emitSpy).not.toHaveBeenCalled();
 
     areYouSureService.openDialog.mockReturnValueOnce(of(true));
-    component['onRemoveAction'](timeLog);
+    await component['onRemoveAction'](timeLog);
 
     expect(areYouSureService.openDialog).toHaveBeenCalledTimes(2);
     expect(areYouSureService.openDialog.mock.calls[1][0]).toContain('Time log "');
@@ -179,7 +185,7 @@ describe('Shared Components table.component', () => {
     } as any;
 
     areYouSureService.openDialog.mockReturnValueOnce(undefined);
-    component['onRemoveAction'](timeLog);
+    await component['onRemoveAction'](timeLog);
 
     expect(areYouSureService.openDialog).toHaveBeenCalledTimes(1);
     expect(emitSpy).not.toHaveBeenCalled();
@@ -189,7 +195,7 @@ describe('Shared Components table.component', () => {
     const { component } = await createComponent();
     const emitSpy = vi.spyOn(component['removeAction'], 'emit');
 
-    component['onRemoveAction'](null as any);
+    await component['onRemoveAction'](null as any);
 
     expect(areYouSureService.openDialog).not.toHaveBeenCalled();
     expect(emitSpy).not.toHaveBeenCalled();
@@ -203,10 +209,21 @@ describe('Shared Components table.component', () => {
     } as any;
 
     areYouSureService.openDialog.mockReturnValueOnce(undefined);
-    component['onRemoveAction'](rowWithoutStartTime);
+    await component['onRemoveAction'](rowWithoutStartTime);
 
     expect(areYouSureService.openDialog).toHaveBeenCalledTimes(1);
     expect(areYouSureService.openDialog.mock.calls[0][0]).toContain('null-null');
+  });
+
+  it('reuses the cached confirmation service promise', async () => {
+    const { component } = await createComponent();
+
+    const first = component['loadAreYouSureService']();
+    const second = component['loadAreYouSureService']();
+
+    const [firstService, secondService] = await Promise.all([first, second]);
+    expect(firstService).toBe(secondService);
+    expect(firstService).toBe(areYouSureService);
   });
 
   it('emits sync action with provided row cast as task', async () => {
@@ -222,6 +239,7 @@ describe('Shared Components table.component', () => {
 
   it('renders switch-pipe cell branches and sync/remove/select columns in template', async () => {
     const { fixture, component } = await createComponent();
+    const removeSpy = vi.spyOn(component as any, 'onRemoveAction');
     const syncEmitSpy = vi.spyOn(component['syncAction'], 'emit');
     const row = {
       id: '1',
@@ -265,7 +283,7 @@ describe('Shared Components table.component', () => {
         cell: () => undefined,
       } as any,
     ]);
-    component.data = [row];
+    fixture.componentRef.setInput('data', [row]);
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('mat-header-row'))).toBeTruthy();
@@ -280,6 +298,7 @@ describe('Shared Components table.component', () => {
 
     fixture.debugElement.query(By.css('button[aria-label="Remove row"]')).nativeElement.click();
     fixture.detectChanges();
+    await removeSpy.mock.results[0]?.value;
     expect(areYouSureService.openDialog).toHaveBeenCalled();
   });
 
@@ -289,7 +308,7 @@ describe('Shared Components table.component', () => {
     fixture.componentRef.setInput('columns', [
       { columnDef: 'plain', header: 'Plain', sortable: true, cell: () => 'abc' } as any,
     ]);
-    component.data = [{ id: '1' } as any];
+    fixture.componentRef.setInput('data', [{ id: '1' } as any]);
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('mat-row'))).toBeTruthy();
@@ -310,7 +329,7 @@ describe('Shared Components table.component', () => {
         footerCell: () => 'footer',
       } as any,
     ]);
-    component.data = [{ id: '1' } as any];
+    fixture.componentRef.setInput('data', [{ id: '1' } as any]);
     fixture.detectChanges();
 
     const clickableCell = fixture.debugElement.query(By.css('.mat-cell-clickable'));
@@ -329,7 +348,7 @@ describe('Shared Components table.component', () => {
     fixture.componentRef.setInput('columns', [
       { columnDef: 'plain', header: 'Plain', sortable: true, cell: () => 'abc' } as any,
     ]);
-    component.data = [{ id: '1' } as any, { id: '2' } as any];
+    fixture.componentRef.setInput('data', [{ id: '1' } as any, { id: '2' } as any]);
     fixture.detectChanges();
 
     const checkboxes = fixture.debugElement.queryAll(By.css('mat-checkbox'));

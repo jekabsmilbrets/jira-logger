@@ -1,91 +1,80 @@
 import { TestBed } from '@angular/core/testing';
-import { convertToParamMap, Router } from '@angular/router';
+import { convertToParamMap, RedirectCommand, Router } from '@angular/router';
 
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, isObservable } from 'rxjs';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
-import { ReportResolver } from '@report/resolvers/report.resolver';
+import { ReportMode } from '@report/enums/report-mode.enum';
+import { reportResolver } from '@report/resolvers/report.resolver';
 import { ReportService } from '@report/services/report.service';
+import { ReportServiceStub } from '@report/testing/report-service.stub';
 
-class ReportServiceStub {
-  public reportMode: ReportModeEnum = ReportModeEnum.total;
-  public date: Date | null = null;
-}
-
-describe('ReportResolver', () => {
-  let resolver: ReportResolver;
-  let router: { navigate: ReturnType<typeof vi.fn> };
+describe('reportResolver', () => {
+  let router: { parseUrl: ReturnType<typeof vi.fn> };
   let reportService: ReportServiceStub;
 
   const createRoute = (params: Record<string, string>) => ({
     paramMap: convertToParamMap(params),
   });
+  const runResolver = async (params: Record<string, string>) => {
+    const result = TestBed.runInInjectionContext(() => reportResolver(createRoute(params) as never, {} as never));
+
+    if (isObservable(result)) {
+      return firstValueFrom(result);
+    }
+
+    return Promise.resolve(result);
+  };
 
   beforeEach(() => {
     router = {
-      navigate: vi.fn().mockResolvedValue(true),
+      parseUrl: vi.fn().mockReturnValue('/report'),
     };
+    reportService = new ReportServiceStub();
 
     TestBed.configureTestingModule({
       providers: [
-        ReportResolver,
         { provide: Router, useValue: router },
-        { provide: ReportService, useClass: ReportServiceStub },
+        { provide: ReportService, useValue: reportService },
       ],
     });
-
-    resolver = TestBed.inject(ReportResolver);
-    reportService = TestBed.inject(ReportService) as unknown as ReportServiceStub;
   });
 
   it('returns true when no relevant route params are present', async () => {
-    const result = await firstValueFrom(
-      resolver.resolve(createRoute({}) as never),
-    );
+    const result = await runResolver({});
 
     expect(result).toBe(true);
-    expect(router.navigate).not.toHaveBeenCalled();
+    expect(router.parseUrl).not.toHaveBeenCalled();
   });
 
   it('sets report mode from a valid reportMode param', async () => {
-    const result = await firstValueFrom(
-      resolver.resolve(createRoute({ reportMode: ReportModeEnum.date }) as never),
-    );
+    const result = await runResolver({ reportMode: ReportMode.date });
 
     expect(result).toBe(true);
-    expect(reportService.reportMode).toBe(ReportModeEnum.date);
+    expect(reportService.reportMode()).toBe(ReportMode.date);
   });
 
   it('falls back to total mode for an invalid reportMode param', async () => {
-    reportService.reportMode = ReportModeEnum.dateRange;
+    reportService.setReportMode(ReportMode.dateRange);
 
-    const result = await firstValueFrom(
-      resolver.resolve(createRoute({ reportMode: 'invalid-mode' }) as never),
-    );
+    const result = await runResolver({ reportMode: 'invalid-mode' });
 
     expect(result).toBe(true);
-    expect(reportService.reportMode).toBe(ReportModeEnum.total);
+    expect(reportService.reportMode()).toBe(ReportMode.total);
   });
 
   it('navigates to /report and returns false for a valid date param', async () => {
-    const result = await firstValueFrom(
-      resolver.resolve(createRoute({ date: '2026-05-30T12:00:00.000Z' }) as never),
-    );
+    const result = await runResolver({ date: '2026-05-30T12:00:00.000Z' });
 
-    await Promise.resolve();
-
-    expect(result).toBe(false);
-    expect(router.navigate).toHaveBeenCalledWith(['report']);
-    expect(reportService.date).toBeInstanceOf(Date);
-    expect((reportService.date as Date).toISOString()).toBe('2026-05-30T12:00:00.000Z');
+    expect(result).toBeInstanceOf(RedirectCommand);
+    expect(router.parseUrl).toHaveBeenCalledWith('/report');
+    expect(reportService.date()).toBeInstanceOf(Date);
+    expect(reportService.date()?.toISOString()).toBe('2026-05-30T12:00:00.000Z');
   });
 
   it('returns true and does not navigate for an invalid date param', async () => {
-    const result = await firstValueFrom(
-      resolver.resolve(createRoute({ date: 'not-a-date' }) as never),
-    );
+    const result = await runResolver({ date: 'not-a-date' });
 
     expect(result).toBe(true);
-    expect(router.navigate).not.toHaveBeenCalled();
+    expect(router.parseUrl).not.toHaveBeenCalled();
   });
 });

@@ -3,7 +3,7 @@ import { By } from '@angular/platform-browser';
 
 import { vi } from 'vitest';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 
 import { ReportModeSwitcherComponent } from './report-mode-switcher.component';
 
@@ -22,9 +22,9 @@ describe('Shared Components report-mode-switcher.component', () => {
 
     const component = fixture.componentInstance as any;
     const emitSpy = vi.spyOn(component.reportModeChange, 'emit');
-    component.reportModeValueChange(ReportModeEnum.dateRange);
+    component.reportModeValueChange(ReportMode.dateRange);
 
-    expect(emitSpy).toHaveBeenCalledWith(ReportModeEnum.dateRange);
+    expect(emitSpy).toHaveBeenCalledWith(ReportMode.dateRange);
   });
 
   it('handles disabled and reportMode inputs', async () => {
@@ -36,17 +36,17 @@ describe('Shared Components report-mode-switcher.component', () => {
     const component = fixture.componentInstance as any;
     fixture.componentRef.setInput('disabled', true);
     fixture.detectChanges();
-    expect(component.reportModeFormControl.disabled).toBe(true);
+    expect(component.reportModeForm().disabled()).toBe(true);
 
     fixture.componentRef.setInput('disabled', false);
-    fixture.componentRef.setInput('reportMode', ReportModeEnum.date);
+    fixture.componentRef.setInput('reportMode', ReportMode.date);
     fixture.detectChanges();
-    expect(component.reportModeFormControl.enabled).toBe(true);
-    expect(component.reportModeFormControl.value).toBe(ReportModeEnum.date);
+    expect(component.reportModeForm().disabled()).toBe(false);
+    expect(component.reportModeFormModel().reportMode).toBe(ReportMode.date);
 
     fixture.componentRef.setInput('reportMode', null);
     fixture.detectChanges();
-    expect(component.reportModeFormControl.value).toBe(ReportModeEnum.date);
+    expect(component.reportModeFormModel().reportMode).toBe(ReportMode.total);
   });
 
   it('triggers mat-select valueChange listener from template', async () => {
@@ -59,8 +59,8 @@ describe('Shared Components report-mode-switcher.component', () => {
     const component = fixture.componentInstance as any;
     const spy = vi.spyOn(component, 'reportModeValueChange');
 
-    fixture.debugElement.query(By.css('mat-select')).triggerEventHandler('valueChange', ReportModeEnum.total);
+    fixture.debugElement.query(By.css('mat-select')).triggerEventHandler('valueChange', ReportMode.total);
 
-    expect(spy).toHaveBeenCalledWith(ReportModeEnum.total);
+    expect(spy).toHaveBeenCalledWith(ReportMode.total);
   });
 });

@@ -1,7 +1,7 @@
-import { AsyncPipe } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, type Signal } from '@angular/core';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
-import { combineLatest, forkJoin, map, Observable, shareReplay, switchMap, take } from 'rxjs';
+import { forkJoin, switchMap, take } from 'rxjs';
 
 import { Setting } from '@core/models/setting.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
@@ -9,7 +9,7 @@ import { SettingsService } from '@core/services/settings.service';
 
 import { Tag } from '@shared/models/tag.model';
 
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import type { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 
 import { JiraApiConfiguratorComponent } from '@settings/components/jira-api-configurator/jira-api-configurator.component';
@@ -17,130 +17,90 @@ import { ReportConfiguratorComponent } from '@settings/components/report-configu
 import { UserSettingsConfiguratorComponent } from '@settings/components/user-settings-configurator/user-settings-configurator.component';
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
-import { ReportSettings } from '@settings/interfaces/report-settings.interface';
+import type { ReportSettings } from '@settings/interfaces/report-settings.interface';
+import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
 
 @Component({
   selector: 'settings-view',
   templateUrl: './settings.component.html',
   styleUrls: ['./settings.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     JiraApiConfiguratorComponent,
     UserSettingsConfiguratorComponent,
     ReportConfiguratorComponent,
-    AsyncPipe,
+    MatSnackBarModule,
   ],
 })
 export class SettingsComponent {
   protected readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
-  protected isLoading$: Observable<boolean>;
-  protected settings$: Observable<Setting[]>;
-  protected jiraApiSettings$: Observable<Setting[]>;
-  protected jiraUserSettings$: Observable<Setting[]>;
-  protected reportSettings$: Observable<ReportSettings>;
-
+  private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
   private readonly settingsService: SettingsService = inject(SettingsService);
   private readonly reportService: ReportService = inject(ReportService);
 
-  constructor() {
-    this.isLoading$ = this.loaderStateService.isLoading$.pipe(shareReplay());
-    this.settings$ = this.settingsService.settings$;
-    this.jiraApiSettings$ = this.settings$.pipe(
-      map(
-        (settings: Setting[]) => settings.filter(
-          (setting: Setting) => Object.values(JiraApiSettings)
-            .includes(setting.name as JiraApiSettings),
-        ),
-      ),
-    );
-    this.jiraUserSettings$ = this.settings$.pipe(
-      map(
-        (settings: Setting[]) => settings.filter(
-          (setting: Setting) => Object.values(JiraUserSettings)
-            .includes(setting.name as JiraUserSettings),
-        ),
-      ),
-    );
-    this.reportSettings$ = combineLatest([
-      this.reportService.reportMode$,
-      this.reportService.tags$,
-      this.reportService.date$,
-      this.reportService.startDate$,
-      this.reportService.endDate$,
-      this.reportService.showWeekends$,
-      this.reportService.hideUnreportedTasks$,
-    ])
-      .pipe(
-        map(
-          ([reportMode, tags, date, startDate, endDate, showWeekends, hideUnreportedTasks]: [
-            ReportModeEnum,
-            Tag[],
-              Date | null,
-              Date | null,
-              Date | null,
-            boolean,
-            boolean,
-          ]) => ({
-            reportMode,
-            tags,
-            date,
-            startDate,
-            endDate,
-            showWeekends,
-            hideUnreportedTasks,
-          }),
-        ),
-      );
-  }
+  protected readonly isLoading: Signal<boolean> = this.loaderStateService.isLoading;
+  protected readonly settings: Signal<Setting[]> = this.settingsService.settings;
+  protected readonly jiraApiSettings: Signal<Setting[]> = computed(() => this.filterSettings(Object.values(JiraApiSettings)));
+  protected readonly jiraUserSettings: Signal<Setting[]> = computed(() => this.filterSettings(Object.values(JiraUserSettings)));
+  protected readonly reportSettings: Signal<ReportSettings> = computed<ReportSettings>(() => ({
+    reportMode: this.reportService.reportMode(),
+    tags: this.reportService.tags(),
+    date: this.reportService.date(),
+    startDate: this.reportService.startDate(),
+    endDate: this.reportService.endDate(),
+    showWeekends: this.reportService.showWeekends(),
+    hideUnreportedTasks: this.reportService.hideUnreportedTasks(),
+  }));
 
   protected onReportModeChange(
-    value: ReportModeEnum,
+    value: ReportMode,
   ): void {
-    this.reportService.reportMode = value;
+    this.reportService.setReportMode(value);
   }
 
   protected onTagChange(
     value: Tag[],
   ): void {
-    this.reportService.tags = value;
+    this.reportService.setTags(value);
   }
 
   protected onDateChange(
     date: Date | null,
   ): void {
-    this.reportService.date = date;
+    this.reportService.setDate(date);
   }
 
   protected onStartDateChange(
     date: Date | null,
   ): void {
-    this.reportService.startDate = date;
+    this.reportService.setStartDate(date);
   }
 
   protected onEndDateChange(
     date: Date | null,
   ): void {
-    this.reportService.endDate = date;
+    this.reportService.setEndDate(date);
   }
 
   protected onShowWeekendsChange(
     showWeekends: boolean,
   ): void {
-    this.reportService.showWeekends = showWeekends;
+    this.reportService.setShowWeekends(showWeekends);
   }
 
   protected onHideUnreportedTasksChange(
     hideUnreportedTasks: boolean,
   ): void {
-    this.reportService.hideUnreportedTasks = hideUnreportedTasks;
+    this.reportService.setHideUnreportedTasks(hideUnreportedTasks);
   }
 
   protected onSettingsChange(
-    changedSettings: Setting[],
+    saveEvent: SettingsSaveEvent,
   ): void {
     forkJoin(
-      changedSettings.map(
+      saveEvent.changedSettings.map(
         (setting: Setting) => this.settingsService.update(setting, true),
       ),
     )
@@ -149,6 +109,21 @@ export class SettingsComponent {
         switchMap(() => this.settingsService.list()),
         take(1),
       )
-      .subscribe();
+      .subscribe({
+        next: () => {
+          this.matSnackBar.open(
+            saveEvent.successMessage,
+            undefined,
+            {
+              duration: 5000,
+            },
+          );
+        },
+        error: () => undefined,
+      });
+  }
+
+  private filterSettings(settingNames: string[]): Setting[] {
+    return this.settings().filter((setting: Setting) => settingNames.includes(setting.name));
   }
 }

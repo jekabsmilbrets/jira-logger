@@ -1,15 +1,16 @@
-import { Component, output, OutputEmitterRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, output, type OutputEmitterRef } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListItem, MatNavList } from '@angular/material/list';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
-import { SideNavInterface } from '@layout/interfaces/side-nav.interface';
+import type { SideNav } from '@layout/interfaces/side-nav.interface';
 
 @Component({
   selector: 'layout-sidenav',
   templateUrl: './sidenav.component.html',
   styleUrls: ['./sidenav.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatNavList,
     MatListItem,
@@ -21,7 +22,7 @@ import { SideNavInterface } from '@layout/interfaces/side-nav.interface';
 export class SidenavComponent {
   protected readonly sidenavClose: OutputEmitterRef<void> = output<void>();
 
-  protected navData: SideNavInterface[] = [
+  protected navData: SideNav[] = [
     {
       route: '/tasks/list',
       icon: 'list',

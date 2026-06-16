@@ -25,6 +25,15 @@ describe('Tasks Components time-log-list-modal.component', () => {
     endTime: new Date(startIso),
   });
 
+  const setComponentTimeLogs = (
+    component: TimeLogListModalComponent,
+    task: Task,
+    timeLogs: TimeLog[],
+  ): void => {
+    task.timeLogs = timeLogs;
+    component['timeLogsState'].set([...timeLogs]);
+  };
+
   const setup = async () => {
     const task = new Task({ timeLogs: [] });
 
@@ -96,73 +105,73 @@ describe('Tasks Components time-log-list-modal.component', () => {
     const existing = buildTimeLog('2', '2026-03-02T11:00:00.000Z');
     const updated = buildTimeLog('2', '2026-03-02T12:00:00.000Z');
 
-    task.timeLogs = [existing];
+    setComponentTimeLogs(component, task, [existing]);
 
     component['onCreateAction'](created);
     component['onUpdateAction'](existing, updated);
     component['onRemoveAction'](updated);
 
-    expect(task.timeLogs).toEqual([created]);
+    expect(component['timeLogs']()).toEqual([created]);
   });
 
   it('opens edit dialog and updates row when response is update', async () => {
     const { component, task, timeLogEditService } = await setup();
     const current = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
     const updated = buildTimeLog('1', '2026-03-02T11:00:00.000Z');
-    task.timeLogs = [current];
+    setComponentTimeLogs(component, task, [current]);
 
     timeLogEditService.openTimeLogDialog.mockReturnValueOnce(of({
       responseType: 'update',
       responseData: updated,
     }));
 
-    component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
+    await component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
 
-    expect(task.timeLogs).toEqual([updated]);
+    expect(component['timeLogs']()).toEqual([updated]);
   });
 
   it('opens edit dialog and removes row when response is delete', async () => {
     const { component, task, timeLogEditService } = await setup();
     const current = buildTimeLog('9', '2026-03-02T10:00:00.000Z');
-    task.timeLogs = [current];
+    setComponentTimeLogs(component, task, [current]);
 
     timeLogEditService.openTimeLogDialog.mockReturnValueOnce(of({
       responseType: 'delete',
     }));
 
-    component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
+    await component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
 
-    expect(task.timeLogs).toEqual([]);
+    expect(component['timeLogs']()).toEqual([]);
   });
 
   it('ignores cancel response from edit dialog', async () => {
     const { component, task, timeLogEditService } = await setup();
     const current = buildTimeLog('11', '2026-03-02T10:00:00.000Z');
-    task.timeLogs = [current];
+    setComponentTimeLogs(component, task, [current]);
 
     timeLogEditService.openTimeLogDialog.mockReturnValueOnce(of({
       responseType: 'cancel',
     }));
 
-    component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
-    expect(task.timeLogs).toEqual([current]);
+    await component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
+    expect(component['timeLogs']()).toEqual([current]);
   });
 
   it('ignores undefined and update-without-data responses from edit dialog', async () => {
     const { component, task, timeLogEditService } = await setup();
     const current = buildTimeLog('11', '2026-03-02T10:00:00.000Z');
-    task.timeLogs = [current];
+    setComponentTimeLogs(component, task, [current]);
 
     timeLogEditService.openTimeLogDialog.mockReturnValueOnce(of(undefined) as any);
-    component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
-    expect(task.timeLogs).toEqual([current]);
+    await component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
+    expect(component['timeLogs']()).toEqual([current]);
 
     timeLogEditService.openTimeLogDialog.mockReturnValueOnce(of({
       responseType: 'update',
       responseData: undefined,
     }));
-    component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
-    expect(task.timeLogs).toEqual([current]);
+    await component['onCellClick']([current, { columnDef: 'startTime', header: 'Start' } as any]);
+    expect(component['timeLogs']()).toEqual([current]);
   });
 
   it('saves staged changes, refreshes rows, and closes the modal', async () => {
@@ -173,7 +182,7 @@ describe('Tasks Components time-log-list-modal.component', () => {
     const created = buildTimeLog(undefined, '2026-03-02T09:00:00.000Z');
     const persistedCreated = buildTimeLog('created-id', '2026-03-02T09:00:00.000Z');
 
-    task.timeLogs = [existing, removed];
+    setComponentTimeLogs(component, task, [existing, removed]);
     timeLogsService.create.mockReturnValueOnce(of(persistedCreated));
     timeLogsService.list.mockReturnValueOnce(of([persistedCreated, updated]));
 
@@ -185,8 +194,8 @@ describe('Tasks Components time-log-list-modal.component', () => {
     expect(timeLogsService.create).toHaveBeenCalledWith(task, created);
     expect(timeLogsService.update).toHaveBeenCalledWith(task, updated);
     expect(timeLogsService.delete).toHaveBeenCalledWith(task, removed);
-    expect(task.timeLogs).toEqual([persistedCreated, updated]);
-    expect(dialogRef.close).toHaveBeenCalledWith({ saved: true });
+    expect(component['timeLogs']()).toEqual([persistedCreated, updated]);
+    expect(dialogRef.close).toHaveBeenCalledWith({ saved: true, timeLogs: [persistedCreated, updated] });
   });
 
   it('keeps the modal open when save fails', async () => {
@@ -200,14 +209,14 @@ describe('Tasks Components time-log-list-modal.component', () => {
     component['onSave']();
 
     expect(dialogRef.close).not.toHaveBeenCalled();
-    expect(task.timeLogs).toEqual([createdUnsaved]);
+    expect(component['timeLogs']()).toEqual([createdUnsaved]);
   });
 
   it('treats an empty refreshed list as a successful save after deleting all logs', async () => {
     const { component, task, dialogRef, timeLogsService } = await setup();
     const first = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
     const second = buildTimeLog('2', '2026-03-02T11:00:00.000Z');
-    task.timeLogs = [first, second];
+    setComponentTimeLogs(component, task, [first, second]);
     timeLogsService.list.mockReturnValueOnce(of([]));
 
     component['onRemoveAction'](first);
@@ -216,8 +225,8 @@ describe('Tasks Components time-log-list-modal.component', () => {
 
     expect(timeLogsService.delete).toHaveBeenCalledWith(task, first);
     expect(timeLogsService.delete).toHaveBeenCalledWith(task, second);
-    expect(task.timeLogs).toEqual([]);
-    expect(dialogRef.close).toHaveBeenCalledWith({ saved: true });
+    expect(component['timeLogs']()).toEqual([]);
+    expect(dialogRef.close).toHaveBeenCalledWith({ saved: true, timeLogs: [] });
   });
 
   it('creates a new log via add button flow on update response', async () => {
@@ -229,46 +238,57 @@ describe('Tasks Components time-log-list-modal.component', () => {
       responseData: created,
     }));
 
-    component['onAddTimeLogClick']();
+    await component['onAddTimeLogClick']();
 
-    expect(task.timeLogs).toContain(created);
+    expect(component['timeLogs']()).toContain(created);
   });
 
   it('ignores cancel/undefined/update-without-data in add button flow', async () => {
     const { component, task, timeLogEditService } = await setup();
-    const initial = [...task.timeLogs];
+    const initial = [...component['timeLogs']()];
 
     timeLogEditService.openTimeLogDialog.mockReturnValueOnce(of({ responseType: 'cancel' }));
-    component['onAddTimeLogClick']();
-    expect(task.timeLogs).toEqual(initial);
+    await component['onAddTimeLogClick']();
+    expect(component['timeLogs']()).toEqual(initial);
 
     timeLogEditService.openTimeLogDialog.mockReturnValueOnce(of(undefined) as any);
-    component['onAddTimeLogClick']();
-    expect(task.timeLogs).toEqual(initial);
+    await component['onAddTimeLogClick']();
+    expect(component['timeLogs']()).toEqual(initial);
 
     timeLogEditService.openTimeLogDialog.mockReturnValueOnce(of({ responseType: 'update', responseData: undefined }));
-    component['onAddTimeLogClick']();
-    expect(task.timeLogs).toEqual(initial);
+    await component['onAddTimeLogClick']();
+    expect(component['timeLogs']()).toEqual(initial);
+  });
+
+  it('reuses the cached time-log-edit service promise', async () => {
+    const { component, timeLogEditService } = await setup();
+
+    const first = component['loadTimeLogEditService']();
+    const second = component['loadTimeLogEditService']();
+
+    const [firstService, secondService] = await Promise.all([first, second]);
+    expect(firstService).toBe(secondService);
+    expect(firstService).toBe(timeLogEditService);
   });
 
   it('does not remove when time log id is not found', async () => {
     const { component, task } = await setup();
     const existing = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
     const unknown = buildTimeLog('2', '2026-03-02T11:00:00.000Z');
-    task.timeLogs = [existing];
+    setComponentTimeLogs(component, task, [existing]);
 
     component['onRemoveAction'](unknown);
-    expect(task.timeLogs).toEqual([existing]);
+    expect(component['timeLogs']()).toEqual([existing]);
   });
 
   it('does not update when time log id is not found', async () => {
     const { component, task } = await setup();
     const existing = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
     const unknown = buildTimeLog('2', '2026-03-02T11:00:00.000Z');
-    task.timeLogs = [existing];
+    setComponentTimeLogs(component, task, [existing]);
 
     component['onUpdateAction'](unknown, buildTimeLog('2', '2026-03-02T12:00:00.000Z'));
-    expect(task.timeLogs).toEqual([existing]);
+    expect(component['timeLogs']()).toEqual([existing]);
   });
 
   it('formats rows using the saved timezone instead of browser local time', async () => {
@@ -297,6 +317,7 @@ describe('Tasks Components time-log-list-modal.component', () => {
     buttons.find((btn) => btn.nativeElement.getAttribute('aria-label') === 'close dialog')?.nativeElement.click();
     buttons.find((btn) => btn.nativeElement.textContent.includes('Add Time Log'))?.nativeElement.click();
     buttons.find((btn) => btn.nativeElement.textContent.includes('Save changes'))?.nativeElement.click();
+    await addSpy.mock.results[0]?.value;
 
     expect(cancelSpy).toHaveBeenCalledTimes(1);
     expect(addSpy).toHaveBeenCalledTimes(1);
@@ -314,6 +335,7 @@ describe('Tasks Components time-log-list-modal.component', () => {
     const timeLog = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
     table.cellClicked.emit([timeLog, { columnDef: 'startTime', header: 'Start' }]);
     table.removeAction.emit(timeLog);
+    await cellSpy.mock.results[0]?.value;
 
     expect(cellSpy).toHaveBeenCalledTimes(1);
     expect(removeSpy).toHaveBeenCalledTimes(1);

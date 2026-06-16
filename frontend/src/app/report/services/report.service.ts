@@ -1,328 +1,128 @@
 import { formatDate } from '@angular/common';
-import { inject, Injectable } from '@angular/core';
-
-import {
-  BehaviorSubject,
-  catchError,
-  combineLatest,
-  debounceTime,
-  distinctUntilChanged,
-  Observable,
-  of,
-  switchMap,
-  take,
-  tap,
-  withLatestFrom,
-} from 'rxjs';
+import { computed, inject, Service, type Signal } from '@angular/core';
 
 import { LocaleService } from '@core/services/locale.service';
-import { StorageService } from '@core/services/storage.service';
 import { TimezoneService } from '@core/services/timezone.service';
 
-import { Column } from '@shared/interfaces/column.interface';
-import { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
+import type { Column } from '@shared/interfaces/column.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
-import { TagsService } from '@shared/services/tags.service';
-import { TasksService } from '@shared/services/tasks.service';
 
 import { columns as monthModelColumns } from '@report/constants/report-date-range-columns.constant';
 import { columns as totalModelColumns } from '@report/constants/report-total-columns.constant';
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
-import { ReportSettingsStorageValue } from '@report/interfaces/report-settings-storage-value.interface';
+import { ReportMode } from '@report/enums/report-mode.enum';
+import { ReportStateService } from '@report/services/report-state.service';
+import { ReportTaskQueryService } from '@report/services/report-task-query.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class ReportService {
-  public tasks$!: Observable<Task[]>;
-  public reportMode$: Observable<ReportModeEnum>;
-  public tags$: Observable<Tag[]>;
-  public date$: Observable<Date | null>;
-  public startDate$: Observable<Date | null>;
-  public endDate$: Observable<Date | null>;
-  public showWeekends$: Observable<boolean>;
-  public hideUnreportedTasks$: Observable<boolean>;
-  public reload$: Observable<void>;
-
-  public columns: Column[] = [];
-
-  private readonly storageService: StorageService = inject(StorageService);
-  private readonly tagsService: TagsService = inject(TagsService);
-  private readonly tasksService: TasksService = inject(TasksService);
+  private readonly reportStateService: ReportStateService = inject(ReportStateService);
+  private readonly reportTaskQueryService: ReportTaskQueryService = inject(ReportTaskQueryService);
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
   private readonly localeService: LocaleService = inject(LocaleService);
 
-  private reportModeSubject: BehaviorSubject<ReportModeEnum> = new BehaviorSubject<ReportModeEnum>(ReportModeEnum.total);
-  private tagsSubject: BehaviorSubject<Tag[]> = new BehaviorSubject<Tag[]>([]);
-  private dateSubject: BehaviorSubject<Date | null> = new BehaviorSubject<Date | null>(null);
-  private startDateSubject: BehaviorSubject<Date | null> = new BehaviorSubject<Date | null>(null);
-  private endDateSubject: BehaviorSubject<Date | null> = new BehaviorSubject<Date | null>(null);
-  private showWeekendsSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  private hideUnreportedTasksSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  private reloadSubject: BehaviorSubject<void> = new BehaviorSubject<void>(undefined);
-
-  private settingsKey: IDBValidKey = 'report';
-  private customStoreName: string = 'settings';
-
-  constructor() {
-    this.reportMode$ = this.reportModeSubject.asObservable();
-    this.tags$ = this.tagsSubject.asObservable();
-    this.date$ = this.dateSubject.asObservable();
-    this.startDate$ = this.startDateSubject.asObservable();
-    this.endDate$ = this.endDateSubject.asObservable();
-    this.showWeekends$ = this.showWeekendsSubject.asObservable();
-    this.hideUnreportedTasks$ = this.hideUnreportedTasksSubject.asObservable();
-    this.reload$ = this.reloadSubject.asObservable();
-
-    this.initSettings();
-
-    this.listenToChanges()
-      .subscribe();
-
-    this.tasks$ = this.getTasks();
-  }
-
-  public set date(
-    date: Date | null,
-  ) {
-    date?.setHours(0, 0, 0, 0);
-    this.dateSubject.next(date);
-  }
-
-  public set startDate(
-    startDate: Date | null,
-  ) {
-    startDate?.setHours(0, 0, 0, 0);
-    this.startDateSubject.next(startDate);
-  }
-
-  public set endDate(
-    endDate: Date | null,
-  ) {
-    endDate?.setHours(23, 59, 59);
-    this.endDateSubject.next(endDate);
-  }
-
-  public set reportMode(
-    mode: ReportModeEnum,
-  ) {
-    this.reportModeSubject.next(mode);
-  }
-
-  public set tags(
-    tags: Tag[],
-  ) {
-    this.tagsSubject.next(tags);
-  }
-
-  public set showWeekends(
-    showWeekends: boolean,
-  ) {
-    this.showWeekendsSubject.next(showWeekends);
-  }
-
-  public set hideUnreportedTasks(
-    hideUnreportedTasks: boolean,
-  ) {
-    this.hideUnreportedTasksSubject.next(hideUnreportedTasks);
-  }
+  public readonly columns: Signal<Column[]> = computed(() => this.buildColumns());
+  public readonly reportMode: Signal<ReportMode> = this.reportStateService.reportMode;
+  public readonly tags: Signal<Tag[]> = this.reportStateService.tags;
+  public readonly date: Signal<Date | null> = this.reportStateService.date;
+  public readonly startDate: Signal<Date | null> = this.reportStateService.startDate;
+  public readonly endDate: Signal<Date | null> = this.reportStateService.endDate;
+  public readonly showWeekends: Signal<boolean> = this.reportStateService.showWeekends;
+  public readonly hideUnreportedTasks: Signal<boolean> = this.reportStateService.hideUnreportedTasks;
+  public readonly tasks: Signal<Task[]> = this.reportTaskQueryService.tasks;
 
   public reload(): void {
-    this.reloadSubject.next();
+    this.reportTaskQueryService.reload();
   }
 
-  private getAllChanges(): Observable<[Tag[], Date | null, Date | null, Date | null, ReportModeEnum, boolean, boolean, void]> {
-    return combineLatest([
-      this.tags$,
-      this.date$,
-      this.startDate$,
-      this.endDate$,
-      this.reportMode$,
-      this.showWeekends$,
-      this.hideUnreportedTasks$,
-      this.reload$,
-    ])
-      .pipe(
-        debounceTime(250),
-        distinctUntilChanged(),
-      );
+  public setReportMode(
+    mode: ReportMode,
+  ): void {
+    this.reportStateService.setReportMode(mode);
   }
 
-  private getTasks(): Observable<Task[]> {
-    return this.getAllChanges()
-      .pipe(
-        switchMap(
-          ([tags, date, startDate, endDate, reportMode, showWeekends, hideUnreportedTasks]: [
-            Tag[],
-              Date | null,
-              Date | null,
-              Date | null,
-            ReportModeEnum,
-            boolean,
-            boolean,
-            void,
-          ]) => this.filterTasks(
-            reportMode,
-            tags,
-            date,
-            startDate,
-            endDate,
-            showWeekends,
-            hideUnreportedTasks,
-          ),
-        ),
-      );
-  }
-
-  private filterTasks(
-    reportMode: ReportModeEnum,
+  public setTags(
     tags: Tag[],
+  ): void {
+    this.reportStateService.setTags(tags);
+  }
+
+  public setDate(
     date: Date | null,
+  ): void {
+    this.reportStateService.setDate(date);
+  }
+
+  public setStartDate(
     startDate: Date | null,
+  ): void {
+    this.reportStateService.setStartDate(startDate);
+  }
+
+  public setEndDate(
     endDate: Date | null,
+  ): void {
+    this.reportStateService.setEndDate(endDate);
+  }
+
+  public setShowWeekends(
     showWeekends: boolean,
+  ): void {
+    this.reportStateService.setShowWeekends(showWeekends);
+  }
+
+  public setHideUnreportedTasks(
     hideUnreportedTasks: boolean,
-  ): Observable<Task[]> {
-    const filter: TaskListFilter = {
-      tags: tags.map((t: Tag) => t.id),
-      date,
-      startDate,
-      endDate,
-      hideUnreported: hideUnreportedTasks,
-    };
+  ): void {
+    this.reportStateService.setHideUnreportedTasks(hideUnreportedTasks);
+  }
 
-    if (tags.length === 0) {
-      delete filter.tags;
-    }
-
-    if (
-      reportMode === ReportModeEnum.date &&
-      !date
-    ) {
-      reportMode = ReportModeEnum.total;
-    }
-
-    if (
-      reportMode === ReportModeEnum.dateRange &&
-      (!startDate || !endDate)
-    ) {
-      reportMode = ReportModeEnum.total;
-    }
-
-    switch (reportMode) {
-      case ReportModeEnum.total:
-        delete filter.date;
-        delete filter.endDate;
-        delete filter.startDate;
-
-        this.columns = totalModelColumns;
-        break;
-
-      case ReportModeEnum.date:
-        delete filter.endDate;
-        delete filter.startDate;
-
-        this.columns = this.generateMonthColumns(
-          date as Date,
-          date as Date,
-          showWeekends,
-          reportMode,
-        );
-        break;
-
-      case ReportModeEnum.dateRange:
-        delete filter.date;
-
-        this.columns = this.generateMonthColumns(
-          startDate as Date,
-          endDate as Date,
-          showWeekends,
-          reportMode,
-        );
-        break;
-    }
-
-    return this.tasksService.filteredList(
-      filter,
-      true,
+  private buildColumns(): Column[] {
+    const reportMode: ReportMode = this.reportStateService.getEffectiveReportMode(
+      this.reportMode(),
+      this.date(),
+      this.startDate(),
+      this.endDate(),
     );
-  }
 
-  private initSettings(): void {
-    this.storageService.read<ReportSettingsStorageValue | undefined>(
-      this.settingsKey,
-      this.customStoreName,
-    )
-      .pipe(
-        take(1),
-        withLatestFrom(this.tagsService.tags$),
-        take(1),
-        tap(
-          ([settings, tags]: [ReportSettingsStorageValue | undefined, Tag[]]) => {
-            this.reportModeSubject.next(settings?.reportMode ?? ReportModeEnum.total);
-            this.tagsSubject.next(tags.filter((t: Tag) => settings?.tags.includes(t.id)) ?? []);
-            this.dateSubject.next(settings?.date ?? null);
-            this.startDateSubject.next(settings?.startDate ?? null);
-            this.endDateSubject.next(settings?.endDate ?? null);
-            this.showWeekendsSubject.next(settings?.showWeekends ?? false);
-            this.hideUnreportedTasksSubject.next(settings?.hideUnreportedTasks ?? false);
-          },
-        ),
-      )
-      .subscribe();
-  }
+    if (reportMode === ReportMode.total) {
+      return [...totalModelColumns];
+    }
 
-  private listenToChanges(): Observable<void | (null | false | true | void | Tag[] | Date | ReportModeEnum)[]> {
-    return this.getAllChanges()
-      .pipe(
-        switchMap(
-          ([tags, date, startDate, endDate, reportMode, showWeekends, hideUnreportedTasks, reload]: [
-            Tag[],
-              Date | null,
-              Date | null,
-              Date | null,
-            ReportModeEnum,
-            boolean,
-            boolean,
-            void,
-          ]) => this.storageService.create(
-            this.settingsKey,
-            {
-              reportMode,
-              tags: tags.map((t: Tag) => t.id),
-              date,
-              startDate,
-              endDate,
-              showWeekends,
-              hideUnreportedTasks,
-            },
-            this.customStoreName,
-          )
-            .pipe(
-              take(1),
-              catchError(() => {
-                return of([
-                  tags,
-                  date,
-                  startDate,
-                  endDate,
-                  reportMode,
-                  showWeekends,
-                  hideUnreportedTasks,
-                  reload,
-                ]);
-              }),
-            ),
-        ),
-      );
+    if (reportMode === ReportMode.date) {
+      const date: Date | null = this.date();
+
+      return date ?
+        this.generateMonthColumns(
+          date,
+          date,
+          this.showWeekends(),
+          reportMode,
+          this.reportTaskQueryService.jiraApiEnabled(),
+        ) :
+        [...totalModelColumns];
+    }
+
+    const startDate: Date | null = this.startDate();
+    const endDate: Date | null = this.endDate();
+
+    return startDate && endDate ?
+      this.generateMonthColumns(
+        startDate,
+        endDate,
+        this.showWeekends(),
+        reportMode,
+        this.reportTaskQueryService.jiraApiEnabled(),
+      ) :
+      [...totalModelColumns];
   }
 
   private generateMonthColumns(
     startDate: Date,
     endDate: Date,
     showWeekends: boolean,
-    reportMode: ReportModeEnum,
+    reportMode: ReportMode,
+    jiraApiEnabled: boolean,
   ): Column[] {
     const modifiedMonthModelColumns: Column[] = [...monthModelColumns];
     const currentDate: Date = new Date(startDate);
@@ -348,7 +148,7 @@ export class ReportService {
           this.timezoneService.timezone,
         ),
         sortable: false,
-        hidden: reportMode !== ReportModeEnum.date ? shouldShowWeekends : false,
+        hidden: reportMode !== ReportMode.date ? shouldShowWeekends : false,
         pipe: 'readableTime',
         isClickable: true,
         cellClickType: 'readableTime',
@@ -364,7 +164,7 @@ export class ReportService {
       currentDate.setDate(curDate + 1);
     }
 
-    if (reportMode !== ReportModeEnum.date) {
+    if (reportMode !== ReportMode.date) {
       modifiedMonthModelColumns.push({
         columnDef: 'timeLogged',
         header: 'Total Time Logged',
@@ -384,7 +184,7 @@ export class ReportService {
       });
     }
 
-    if (reportMode === ReportModeEnum.date) {
+    if (reportMode === ReportMode.date && jiraApiEnabled) {
       const taskSynced: (task: Task) => boolean = (
         task: Task,
       ) => task.calcTimeLogged() > 0 && task.calcTimeLogged() === task.calcTimeSynced(startDate, this.timezoneService.timezone);
@@ -423,4 +223,5 @@ export class ReportService {
 
     return modifiedMonthModelColumns;
   }
+
 }

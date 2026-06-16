@@ -1,6 +1,6 @@
-import { ApiTag } from '@shared/interfaces/api/api-tag.interface';
-import { ApiTask } from '@shared/interfaces/api/api-task.interface';
-import { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
+import type { ApiTag } from '@shared/interfaces/api/api-tag.interface';
+import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
+import type { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
 
 export interface TagInterfaceObjectData {
   id?: ApiTag['id'];

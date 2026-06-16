@@ -48,11 +48,11 @@ describe('Tasks Components time-log-modal.component', () => {
     TestBed.resetTestingModule();
   });
 
-  it('patches form from dialog data on init', async () => {
+  it('initializes form state from dialog data', async () => {
     const { component } = await setup();
 
-    expect(component['formGroup'].value.description).toBe('desc');
-    expect(component['formGroup'].value.startTime).toBeInstanceOf(Date);
+    expect(component['timeLogFormModel']().description).toBe('desc');
+    expect(component['timeLogFormModel']().startTime).toBeInstanceOf(Date);
   });
 
   it('closes with cancel response', async () => {
@@ -74,7 +74,7 @@ describe('Tasks Components time-log-modal.component', () => {
   it('normalizes zero end time to null and closes with update payload', async () => {
     const { component, dialogRef } = await setup();
 
-    component['formGroup'].patchValue({
+    component['timeLogFormModel'].set({
       startTime: new Date('2026-03-02T10:00:00.000Z'),
       endTime: new Date(0),
       description: 'updated',
@@ -105,9 +105,9 @@ describe('Tasks Components time-log-modal.component', () => {
   it('normalizes undefined end time to null before payload build', async () => {
     const { component, dialogRef } = await setup();
 
-    component['formGroup'].patchValue({
+    component['timeLogFormModel'].set({
       startTime: new Date('2026-03-02T10:00:00.000Z'),
-      endTime: undefined,
+      endTime: undefined as unknown as Date | null,
       description: 'updated',
     });
 
@@ -121,30 +121,33 @@ describe('Tasks Components time-log-modal.component', () => {
   it('returns invalid chronology when end is not after start', async () => {
     const { component, fixture } = await setup();
 
-    component['formGroup'].patchValue({
+    component['timeLogFormModel'].set({
       startTime: new Date('2026-03-02T10:00:00.000Z'),
       endTime: new Date('2026-03-02T09:59:00.000Z'),
+      description: 'desc',
     });
     fixture.detectChanges();
 
-    expect(component['formGroup'].errors).toEqual({ invalidChronology: true });
+    expect(component['timeLogForm'].endTime().getError('invalidChronology')).toBeTruthy();
     expect(fixture.debugElement.query(By.css('p'))?.nativeElement.textContent).toContain('End time must be later than start time.');
   });
 
   it('returns valid chronology for null and strictly later end times', async () => {
     const { component } = await setup();
 
-    component['formGroup'].patchValue({
+    component['timeLogFormModel'].set({
       startTime: new Date('2026-03-02T10:00:00.000Z'),
       endTime: null,
+      description: 'desc',
     });
-    expect(component['formGroup'].errors).toBeNull();
+    expect(component['timeLogForm'].endTime().getError('invalidChronology')).toBeUndefined();
 
-    component['formGroup'].patchValue({
+    component['timeLogFormModel'].set({
       startTime: new Date('2026-03-02T10:00:00.000Z'),
       endTime: new Date('2026-03-02T11:00:00.000Z'),
+      description: 'desc',
     });
-    expect(component['formGroup'].errors).toBeNull();
+    expect(component['timeLogForm'].endTime().getError('invalidChronology')).toBeUndefined();
   });
 
   it('triggers title/action button handlers from DOM', async () => {

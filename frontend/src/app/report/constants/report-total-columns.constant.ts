@@ -1,7 +1,7 @@
-import { Column } from '@shared/interfaces/column.interface';
+import type { Column } from '@shared/interfaces/column.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
-import { columnValue } from '@shared/utils/column-value.util';
+import { columnValue } from '@shared/utilities/column-value.utility';
 
 export const columns: Column[] = [
   {

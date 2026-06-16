@@ -1,8 +1,8 @@
-import { ApiBase } from '@core/interfaces/api/base.interface';
+import type { ApiBase } from '@core/interfaces/api/base.interface';
 
-import { ApiTag } from '@shared/interfaces/api/api-tag.interface';
-import { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
-import { ApiJiraWorkLog } from '@shared/interfaces/api/jira-work-log.interface';
+import type { ApiTag } from '@shared/interfaces/api/api-tag.interface';
+import type { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
+import type { ApiJiraWorkLog } from '@shared/interfaces/api/jira-work-log.interface';
 
 export interface ApiTask extends ApiBase {
   name: string;

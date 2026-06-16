@@ -1,8 +1,10 @@
 import { registerLocaleData } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import localeLv from '@angular/common/locales/lv';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
+import { firstValueFrom, of, throwError } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
@@ -14,7 +16,6 @@ import { TasksService } from './tasks.service';
 
 describe('Shared Services tasks.service', () => {
   let service: TasksService;
-  const isLoading$ = new BehaviorSubject(false);
   const apiRequestService = {
     buildApiUrl: vi.fn((base: string, suffix = '') => `https://api/${ base }${ suffix }`),
     request: vi.fn(),
@@ -31,7 +32,7 @@ describe('Shared Services tasks.service', () => {
     errorDialogService.openDialog.mockReturnValue(of(undefined));
     await TestBed.configureTestingModule({
       providers: [
-        { provide: LoaderStateService, useValue: { isLoading$, addLoader: vi.fn() } },
+        { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly(), addLoader: vi.fn() } },
         { provide: ApiRequestService, useValue: apiRequestService },
         { provide: ErrorDialogService, useValue: errorDialogService },
       ],
@@ -97,6 +98,24 @@ describe('Shared Services tasks.service', () => {
     await expect(firstValueFrom(service.syncDateToJiraApi(new Task({ id: '1' } as any), new Date('2024-01-01T00:00:00.000Z')))).resolves.toBe(true);
   });
 
+  it('taskExist does not open error dialog for duplicate-name conflicts', async () => {
+    apiRequestService.request.mockReturnValueOnce(
+      throwError(() => new HttpErrorResponse({ status: 409 })),
+    );
+
+    await expect(firstValueFrom(service.taskExist('duplicate-name'))).rejects.toMatchObject({ status: 409 });
+    expect(errorDialogService.openDialog).not.toHaveBeenCalled();
+  });
+
+  it('taskExist also suppresses dialog for plain 409 error objects', async () => {
+    apiRequestService.request.mockReturnValueOnce(
+      throwError(() => ({ status: 409 })),
+    );
+
+    await expect(firstValueFrom(service.taskExist('duplicate-name'))).rejects.toMatchObject({ status: 409 });
+    expect(errorDialogService.openDialog).not.toHaveBeenCalled();
+  });
+
   it('create/update/delete trigger expected request flow', async () => {
     apiRequestService.request
       .mockReturnValueOnce(of({}))
@@ -131,5 +150,14 @@ describe('Shared Services tasks.service', () => {
 
     await expect(firstValueFrom(service.create(task))).rejects.toThrow('create-fail');
     expect(errorDialogService.openDialog).toHaveBeenCalledTimes(1);
+  });
+
+  it('reuses the cached error-dialog service promise', async () => {
+    const first = (service as any)['loadErrorDialogService']();
+    const second = (service as any)['loadErrorDialogService']();
+
+    const [firstService, secondService] = await Promise.all([first, second]);
+    expect(firstService).toBe(secondService);
+    expect(firstService).toBe(errorDialogService);
   });
 });

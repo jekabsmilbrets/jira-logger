@@ -1,24 +1,19 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import { AsyncPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, type Signal } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
-import { catchError, filter, map, Observable, of, switchMap, take } from 'rxjs';
-
-import { DynamicMenu } from '@core/models/dynamic-menu';
-import { DynamicMenuService } from '@core/services/dynamic-menu.service';
+import { catchError, type Observable, of, switchMap } from 'rxjs';
 
 import { TableComponent } from '@shared/components/table/table.component';
-import { Column } from '@shared/interfaces/column.interface';
-import { Searchable } from '@shared/interfaces/searchable.interface';
+import type { Column } from '@shared/interfaces/column.interface';
+import type { Searchable } from '@shared/interfaces/searchable.interface';
 import { Task } from '@shared/models/task.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
-import { ReportMenuComponent } from '@report/components/report-menu/report-menu.component';
-import { ReportModeEnum } from '@report/enums/report-mode.enum';
+import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 
 @Component({
@@ -26,37 +21,25 @@ import { ReportService } from '@report/services/report.service';
   templateUrl: './report-view.component.html',
   styleUrls: ['./report-view.component.scss'],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     TableComponent,
-    AsyncPipe,
   ],
 })
-export class ReportViewComponent implements OnInit {
-  protected tasks$!: Observable<Task[]>;
-
-  protected ReportModeEnum = ReportModeEnum;
-
-  private readonly dynamicMenuService: DynamicMenuService = inject(DynamicMenuService);
+export class ReportViewComponent {
   private readonly reportService: ReportService = inject(ReportService);
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
   private readonly clipboard: Clipboard = inject(Clipboard);
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
 
-  constructor() {
-    this.tasks$ = this.reportService.tasks$;
-  }
+  protected readonly tasks: Signal<Task[]> = this.reportService.tasks;
+  protected readonly reportMode: Signal<ReportMode> = this.reportService.reportMode;
 
-  protected get columns(): Column[] {
+  protected readonly ReportMode: typeof ReportMode = ReportMode;
+
+  protected get columns(): Signal<Column[]> {
     return this.reportService.columns;
-  }
-
-  protected get reportMode$(): Observable<ReportModeEnum> {
-    return this.reportService.reportMode$;
-  }
-
-  public ngOnInit(): void {
-    this.createDynamicMenu();
   }
 
   protected onCellClick(
@@ -92,42 +75,35 @@ export class ReportViewComponent implements OnInit {
     row: Searchable,
   ): void {
     const task: Task = row as Task;
+    const date: Date | null = this.reportService.date();
 
-    this.reportService.date$
-      .pipe(
-        filter((date: Date | null) => date instanceof Date),
-        take(1),
-        map((date: Date | null): Date => date as Date),
-        switchMap(
-          (date: Date) => {
-            const syncDateToJiraApi$: Observable<boolean> = this.tasksService.syncDateToJiraApi(
-              task,
-              date,
-            );
+    if (!(date instanceof Date)) {
+      return;
+    }
 
-            if (task.isTimeLogRunning) {
-              return this.timeLogsService.stop(task)
-                .pipe(
-                  catchError(() => of(null)),
-                  switchMap(() => syncDateToJiraApi$),
-                  switchMap(() => this.timeLogsService.start(task)),
-                );
-            }
+    const syncDateToJiraApi$: Observable<boolean> = this.tasksService.syncDateToJiraApi(
+      task,
+      date,
+    );
 
-            return syncDateToJiraApi$;
-          },
-        ),
-        take(1),
-      )
-      .subscribe({
-        next: () => {
-          this.openSnackBar(`Task "${ task.name }" synced successfully!`);
-          this.reportService.reload();
-        },
-        error: (error: HttpErrorResponse) => this.openSnackBar(
-          `Task "${ task.name }" failed synced! ${ error?.error?.errors?.join(', ') }`,
-        ),
-      });
+    const syncRequest$: Observable<unknown> = task.isTimeLogRunning ?
+      this.timeLogsService.stop(task)
+        .pipe(
+          catchError(() => of(null)),
+          switchMap(() => syncDateToJiraApi$),
+          switchMap(() => this.timeLogsService.start(task)),
+        ) :
+      syncDateToJiraApi$;
+
+    syncRequest$.subscribe({
+      next: () => {
+        this.openSnackBar(`Task "${ task.name }" synced successfully!`);
+        this.reportService.reload();
+      },
+      error: (error: HttpErrorResponse) => this.openSnackBar(
+        `Task "${ task.name }" failed synced! ${ error?.error?.errors?.join(', ') }`,
+      ),
+    });
   }
 
   protected onFooterCellClicked(
@@ -172,20 +148,4 @@ export class ReportViewComponent implements OnInit {
     );
   }
 
-  private createDynamicMenu(): void {
-    this.dynamicMenuService.addDynamicMenu(
-      new DynamicMenu(
-        ReportMenuComponent,
-        {
-          route: '/report',
-          providers: [
-            {
-              provide: ReportService,
-              useValue: this.reportService,
-            },
-          ],
-        },
-      ),
-    );
-  }
 }

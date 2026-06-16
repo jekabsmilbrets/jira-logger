@@ -1,9 +1,9 @@
-import { ApiTask } from '@shared/interfaces/api/api-task.interface';
+import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { Tag } from '@shared/models/tag.model';
 
 import { validateTagsInterfaceData } from '@tasks/data-validators/tag-interface-data.validator';
 import { validateTimeLogsInterfaceData } from '@tasks/data-validators/time-log-interface.validator';
-import { TaskInterfaceData, TasksInterfaceData } from '@tasks/interfaces/imported-task-data.interface';
+import type { TaskInterfaceData, TasksInterfaceData } from '@tasks/interfaces/imported-task-data.interface';
 
 export const validateTaskInterfaceData: (taskInterfaceData: TaskInterfaceData, tags: Tag[]) => ApiTask = (
   taskInterfaceData: TaskInterfaceData,

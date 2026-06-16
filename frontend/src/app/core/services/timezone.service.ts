@@ -1,6 +1,4 @@
-import { inject, Injectable } from '@angular/core';
-
-import { map } from 'rxjs';
+import { computed, inject, Service, type Signal } from '@angular/core';
 
 import { environment } from '@environments/environment';
 
@@ -9,34 +7,13 @@ import { SettingsService } from '@core/services/settings.service';
 
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class TimezoneService {
   private readonly settingsService: SettingsService | null = inject(SettingsService, { optional: true });
-
-  private _timezone: string = environment['appTimeZone'] as string;
+  private readonly timezoneState: Signal<string> = computed(() => this.resolveTimezone(this.settingsService?.settings()));
 
   public get timezone(): string {
-    return this._timezone;
-  }
-
-  constructor() {
-    this.settingsService?.settings$
-      .pipe(
-        map((settings: Setting[]) =>
-          settings.find(
-            (setting: Setting) => setting.name === JiraUserSettings.userTimeZone,
-          )?.value,
-        ),
-      )
-      .subscribe((timezone: string | undefined) => {
-        if (typeof timezone === 'string' && this.isValidTimezone(timezone)) {
-          this._timezone = timezone.trim();
-        } else {
-          this._timezone = environment['appTimeZone'] as string;
-        }
-      });
+    return this.timezoneState();
   }
 
   private isValidTimezone(timezone: string): boolean {
@@ -53,5 +30,17 @@ export class TimezoneService {
     } catch {
       return false;
     }
+  }
+
+  private resolveTimezone(settings: Setting[] | undefined): string {
+    const timezone: string | undefined = settings?.find(
+      (setting: Setting) => setting.name === JiraUserSettings.userTimeZone,
+    )?.value as string | undefined;
+
+    if (typeof timezone === 'string' && this.isValidTimezone(timezone)) {
+      return timezone.trim();
+    }
+
+    return environment['appTimeZone'] as string;
   }
 }
