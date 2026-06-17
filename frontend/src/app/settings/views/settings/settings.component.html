@@ -1,7 +1,7 @@
 <div class="settings-container">
-    <settings-task-list-configurator (tagChange)="onTaskListTagChange($event)"
-                                     [disabled]="isLoading()"
-                                     [tags]="tags()"/>
+    <settings-tag-management-configurator (tagChange)="onTaskListTagChange($event)"
+                                          [disabled]="isLoading()"
+                                          [tags]="tags()"/>
 
     <settings-report-configurator (dateChange)="onDateChange($event)"
                                   (endDateChange)="onEndDateChange($event)"

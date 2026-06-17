@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, type Signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, type Signal } from '@angular/core';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { forkJoin, type Observable, switchMap, take } from 'rxjs';
@@ -15,7 +15,7 @@ import { ReportService } from '@report/services/report.service';
 
 import { JiraApiConfiguratorComponent } from '@settings/components/jira-api-configurator/jira-api-configurator.component';
 import { ReportConfiguratorComponent } from '@settings/components/report-configurator/report-configurator.component';
-import { TaskListConfiguratorComponent } from '@settings/components/task-list-configurator/task-list-configurator.component';
+import { TagManagementConfiguratorComponent } from '@settings/components/tag-management-configurator/tag-management-configurator.component';
 import { UserSettingsConfiguratorComponent } from '@settings/components/user-settings-configurator/user-settings-configurator.component';
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
@@ -33,11 +33,11 @@ import type { TaskListTagChangeEvent } from '@settings/interfaces/task-list-tag-
     JiraApiConfiguratorComponent,
     UserSettingsConfiguratorComponent,
     ReportConfiguratorComponent,
-    TaskListConfiguratorComponent,
+    TagManagementConfiguratorComponent,
     MatSnackBarModule,
   ],
 })
-export class SettingsComponent {
+export class SettingsComponent implements OnInit {
   protected readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
@@ -59,6 +59,15 @@ export class SettingsComponent {
     showWeekends: this.reportService.showWeekends(),
     hideUnreportedTasks: this.reportService.hideUnreportedTasks(),
   }));
+
+  public ngOnInit(): void {
+    this.tagsService.list()
+      .pipe(take(1))
+      .subscribe({
+        next: () => undefined,
+        error: () => undefined,
+      });
+  }
 
   protected onReportModeChange(
     value: ReportMode,

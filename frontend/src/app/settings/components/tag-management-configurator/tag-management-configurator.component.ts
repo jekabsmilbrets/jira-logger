@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, effect, inject, input, type InputSi
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 
 import { take } from 'rxjs';
@@ -12,9 +13,9 @@ import { AreYouSureService } from '@shared/services/are-you-sure.service';
 import type { TaskListTagChangeEvent } from '@settings/interfaces/task-list-tag-change-event.interface';
 
 @Component({
-  selector: 'settings-task-list-configurator',
-  templateUrl: './task-list-configurator.component.html',
-  styleUrls: ['./task-list-configurator.component.scss'],
+  selector: 'settings-tag-management-configurator',
+  templateUrl: './tag-management-configurator.component.html',
+  styleUrls: ['./tag-management-configurator.component.scss'],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
@@ -22,9 +23,10 @@ import type { TaskListTagChangeEvent } from '@settings/interfaces/task-list-tag-
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
+    MatIconModule,
   ],
 })
-export class TaskListConfiguratorComponent {
+export class TagManagementConfiguratorComponent {
   private readonly areYouSureService: AreYouSureService = inject(AreYouSureService);
 
   public readonly disabled: InputSignal<boolean> = input<boolean>(false);
@@ -33,6 +35,7 @@ export class TaskListConfiguratorComponent {
   protected readonly tagChange: OutputEmitterRef<TaskListTagChangeEvent> = output<TaskListTagChangeEvent>();
   protected readonly newTagName: WritableSignal<string> = signal('');
   protected readonly editedTagNames: WritableSignal<Record<string, string>> = signal<Record<string, string>>({});
+  protected readonly editingTagId: WritableSignal<string | null> = signal<string | null>(null);
 
   constructor() {
     effect(() => {
@@ -59,6 +62,26 @@ export class TaskListConfiguratorComponent {
       ...tagNames,
       [tagId]: value,
     }));
+  }
+
+  protected onStartEdit(tag: Tag): void {
+    if (this.disabled()) {
+      return;
+    }
+
+    this.editedTagNames.update((tagNames: Record<string, string>) => ({
+      ...tagNames,
+      [tag.id]: tag.name,
+    }));
+    this.editingTagId.set(tag.id);
+  }
+
+  protected onCancelEdit(tag: Tag): void {
+    this.editedTagNames.update((tagNames: Record<string, string>) => ({
+      ...tagNames,
+      [tag.id]: tag.name,
+    }));
+    this.editingTagId.set(null);
   }
 
   protected onCreateTag(): void {
@@ -92,6 +115,7 @@ export class TaskListConfiguratorComponent {
         name,
       }),
     });
+    this.editingTagId.set(null);
   }
 
   protected onDeleteTag(tag: Tag): void {
@@ -116,6 +140,10 @@ export class TaskListConfiguratorComponent {
 
   protected isCreateDisabled(): boolean {
     return this.disabled() || !this.isValidTagName(this.trimmedTagName(this.newTagName()));
+  }
+
+  protected isEditingTag(tag: Tag): boolean {
+    return this.editingTagId() === tag.id;
   }
 
   protected isSaveDisabled(tag: Tag): boolean {

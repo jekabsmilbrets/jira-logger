@@ -1,0 +1,86 @@
+<mat-card>
+    <mat-card-header>
+        <mat-card-title>Tags</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content class="tag-management-configurator">
+        @for (tag of tags(); track tag.id) {
+            <div class="tag-management-configurator__row">
+                @if (isEditingTag(tag)) {
+                    <mat-form-field class="tag-management-configurator__field">
+                        <mat-label>Tag Name</mat-label>
+                        <input (input)="onTagNameInput(tag.id, tagNameInput.value)"
+                               [disabled]="disabled()"
+                               [value]="getTagNameValue(tag)"
+                               #tagNameInput
+                               matInput>
+                    </mat-form-field>
+
+                    <div class="tag-management-configurator__actions">
+                        <button (click)="onSaveTag(tag)"
+                                [disabled]="isSaveDisabled(tag)"
+                                aria-label="Save tag"
+                                mat-icon-button
+                                type="button">
+                            <mat-icon>check</mat-icon>
+                        </button>
+
+                        <button (click)="onCancelEdit(tag)"
+                                [disabled]="disabled()"
+                                aria-label="Cancel editing tag"
+                                mat-icon-button
+                                type="button">
+                            <mat-icon>close</mat-icon>
+                        </button>
+                    </div>
+                } @else {
+                    <div class="tag-management-configurator__tag">
+                        <span class="tag-management-configurator__name">{{ tag.name }}</span>
+                        @if (tag.isUsed) {
+                            <span class="tag-management-configurator__badge">In use</span>
+                        }
+                    </div>
+
+                    <div class="tag-management-configurator__actions">
+                        <button (click)="onStartEdit(tag)"
+                                [disabled]="disabled()"
+                                aria-label="Edit tag"
+                                mat-icon-button
+                                type="button">
+                            <mat-icon>edit</mat-icon>
+                        </button>
+
+                        <button (click)="onDeleteTag(tag)"
+                                [disabled]="isDeleteDisabled(tag)"
+                                aria-label="Delete tag"
+                                mat-icon-button
+                                type="button">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="tag-management-configurator__row tag-management-configurator__row--create">
+            <mat-form-field class="tag-management-configurator__field">
+                <mat-label>New Tag</mat-label>
+                <input (input)="onNewTagNameInput(newTagInput.value)"
+                       [disabled]="disabled()"
+                       [value]="newTagName()"
+                       #newTagInput
+                       matInput>
+            </mat-form-field>
+
+            <div class="tag-management-configurator__actions">
+                <button (click)="onCreateTag()"
+                        [disabled]="isCreateDisabled()"
+                        aria-label="Create tag"
+                        mat-icon-button
+                        type="button">
+                    <mat-icon>add</mat-icon>
+                </button>
+            </div>
+        </div>
+    </mat-card-content>
+</mat-card>

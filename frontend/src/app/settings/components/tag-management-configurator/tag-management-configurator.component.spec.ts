@@ -7,11 +7,11 @@ import { of } from 'rxjs';
 import { Tag } from '@shared/models/tag.model';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
 
-import { TaskListConfiguratorComponent } from './task-list-configurator.component';
+import { TagManagementConfiguratorComponent } from './tag-management-configurator.component';
 
-describe('Settings Components task-list-configurator.component', () => {
-  let fixture: ComponentFixture<TaskListConfiguratorComponent>;
-  let component: TaskListConfiguratorComponent;
+describe('Settings Components tag-management-configurator.component', () => {
+  let fixture: ComponentFixture<TagManagementConfiguratorComponent>;
+  let component: TagManagementConfiguratorComponent;
   let areYouSureServiceMock: {
     openDialog: ReturnType<typeof vi.fn>;
   };
@@ -23,7 +23,7 @@ describe('Settings Components task-list-configurator.component', () => {
 
     await TestBed.configureTestingModule({
       imports: [
-        TaskListConfiguratorComponent,
+        TagManagementConfiguratorComponent,
         NoopAnimationsModule,
       ],
       providers: [
@@ -31,7 +31,7 @@ describe('Settings Components task-list-configurator.component', () => {
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TaskListConfiguratorComponent);
+    fixture = TestBed.createComponent(TagManagementConfiguratorComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('tags', [
       new Tag({ id: 'tag-1', name: 'Backend', isUsed: false }),
@@ -42,9 +42,9 @@ describe('Settings Components task-list-configurator.component', () => {
 
   it('renders task list card heading and tag rows', () => {
     const heading = fixture.debugElement.query(By.css('mat-card-title'))?.nativeElement as HTMLElement;
-    const rowCount = fixture.debugElement.queryAll(By.css('.task-list-configurator__row')).length;
+    const rowCount = fixture.debugElement.queryAll(By.css('.tag-management-configurator__row')).length;
 
-    expect(heading.textContent?.trim()).toBe('Task List');
+    expect(heading.textContent?.trim()).toBe('Tags');
     expect(rowCount).toBe(3);
   });
 
@@ -54,7 +54,7 @@ describe('Settings Components task-list-configurator.component', () => {
 
   it('emits create events for valid trimmed names', () => {
     const emitSpy = vi.spyOn((component as any).tagChange, 'emit');
-    const addButton = fixture.debugElement.queryAll(By.css('button'))[0].nativeElement as HTMLButtonElement;
+    const addButton = fixture.debugElement.query(By.css('.tag-management-configurator__row--create button'))?.nativeElement as HTMLButtonElement;
 
     expect(addButton.disabled).toBe(true);
 
@@ -75,6 +75,7 @@ describe('Settings Components task-list-configurator.component', () => {
 
     expect((component as any).isSaveDisabled(backendTag)).toBe(true);
 
+    (component as any).onStartEdit(backendTag);
     (component as any).onTagNameInput(backendTag.id, '  Backend Team  ');
     fixture.detectChanges();
     (component as any).onSaveTag(backendTag);
@@ -91,13 +92,12 @@ describe('Settings Components task-list-configurator.component', () => {
   });
 
   it('disables delete and renders a usage hint for used tags', () => {
-    const deleteButtons = fixture.debugElement.queryAll(By.css('button'))
-      .filter((button) => (button.nativeElement as HTMLButtonElement).textContent?.trim() === 'Delete');
-    const usageHint = fixture.debugElement.query(By.css('.task-list-configurator__usage-hint'))?.nativeElement as HTMLElement;
+    const deleteButtons = fixture.debugElement.queryAll(By.css('button[aria-label="Delete tag"]'));
+    const usageHint = fixture.debugElement.query(By.css('.tag-management-configurator__badge'))?.nativeElement as HTMLElement;
 
     expect((component as any).isDeleteDisabled(component.tags()[1])).toBe(true);
     expect((deleteButtons[1].nativeElement as HTMLButtonElement).disabled).toBe(true);
-    expect(usageHint.textContent?.trim()).toBe('Used by existing tasks');
+    expect(usageHint.textContent?.trim()).toBe('In use');
   });
 
   it('opens confirmation and emits delete only for unused tags', () => {
@@ -112,6 +112,22 @@ describe('Settings Components task-list-configurator.component', () => {
       successMessage: 'Successfully deleted tag!',
       tag: backendTag,
     });
+  });
+
+  it('switches a tag row into edit mode and can cancel editing', () => {
+    const backendTag = component.tags()[0];
+
+    expect((component as any).isEditingTag(backendTag)).toBe(false);
+
+    (component as any).onStartEdit(backendTag);
+    fixture.detectChanges();
+
+    expect((component as any).isEditingTag(backendTag)).toBe(true);
+    expect(fixture.debugElement.query(By.css('input[matInput]'))).toBeTruthy();
+
+    (component as any).onCancelEdit(backendTag);
+
+    expect((component as any).isEditingTag(backendTag)).toBe(false);
   });
 
   it('respects parent disabled state', () => {

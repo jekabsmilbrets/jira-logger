@@ -19,7 +19,7 @@ import { ReportServiceStub } from '@report/testing/report-service.stub';
 
 import { JiraApiConfiguratorComponent } from '@settings/components/jira-api-configurator/jira-api-configurator.component';
 import { ReportConfiguratorComponent } from '@settings/components/report-configurator/report-configurator.component';
-import { TaskListConfiguratorComponent } from '@settings/components/task-list-configurator/task-list-configurator.component';
+import { TagManagementConfiguratorComponent } from '@settings/components/tag-management-configurator/tag-management-configurator.component';
 import { UserSettingsConfiguratorComponent } from '@settings/components/user-settings-configurator/user-settings-configurator.component';
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
@@ -74,12 +74,12 @@ class UserSettingsConfiguratorStubComponent {
 }
 
 @Component({
-  selector: 'settings-task-list-configurator',
+  selector: 'settings-tag-management-configurator',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
-class TaskListConfiguratorStubComponent {
+class TagManagementConfiguratorStubComponent {
   public readonly disabled = input(false);
   public readonly tags = input<Tag[]>([]);
   public readonly tagChange = output<TaskListTagChangeEvent>();
@@ -106,6 +106,7 @@ describe('Settings Views settings.component', () => {
   };
   let tagsServiceMock: {
     tags: Signal<Tag[]>;
+    list: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
     update: ReturnType<typeof vi.fn>;
     delete: ReturnType<typeof vi.fn>;
@@ -137,6 +138,7 @@ describe('Settings Views settings.component', () => {
         new Tag({ id: 'tag-1', name: 'Tag 1', isUsed: false }),
         new Tag({ id: 'tag-2', name: 'Tag 2', isUsed: true }),
       ]).asReadonly(),
+      list: vi.fn(() => of([])),
       create: vi.fn((tag: Tag) => of(tag)),
       update: vi.fn((tag: Tag) => of(tag)),
       delete: vi.fn(() => of(undefined)),
@@ -184,7 +186,7 @@ describe('Settings Views settings.component', () => {
               ReportConfiguratorStubComponent,
               JiraApiConfiguratorStubComponent,
               UserSettingsConfiguratorStubComponent,
-              TaskListConfiguratorStubComponent,
+              TagManagementConfiguratorStubComponent,
             ],
           },
         },
@@ -197,16 +199,21 @@ describe('Settings Views settings.component', () => {
   });
 
   it('renders settings configurators', () => {
+    expect(tagsServiceMock.list).toHaveBeenCalledTimes(1);
     expect(fixture.debugElement.query(By.css('settings-report-configurator'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('settings-jira-api-configurator'))).toBeTruthy();
-    expect(fixture.debugElement.query(By.css('settings-task-list-configurator'))).toBeTruthy();
+    expect(fixture.debugElement.query(By.css('settings-tag-management-configurator'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('settings-timezone-configurator'))).toBeTruthy();
+  });
+
+  it('reloads tags when the settings page initializes', () => {
+    expect(tagsServiceMock.list).toHaveBeenCalledTimes(1);
   });
 
   it('binds configurator inputs from signal state', async () => {
     const reportCfg = fixture.debugElement.query(By.directive(ReportConfiguratorStubComponent)).componentInstance as ReportConfiguratorStubComponent;
     const jiraCfg = fixture.debugElement.query(By.directive(JiraApiConfiguratorStubComponent)).componentInstance as JiraApiConfiguratorStubComponent;
-    const taskListCfg = fixture.debugElement.query(By.directive(TaskListConfiguratorStubComponent)).componentInstance as TaskListConfiguratorStubComponent;
+    const taskListCfg = fixture.debugElement.query(By.directive(TagManagementConfiguratorStubComponent)).componentInstance as TagManagementConfiguratorStubComponent;
     const timezoneCfg = fixture.debugElement.query(By.directive(UserSettingsConfiguratorStubComponent)).componentInstance as UserSettingsConfiguratorStubComponent;
 
     expect(reportCfg.disabled()).toBe(false);
@@ -222,7 +229,7 @@ describe('Settings Views settings.component', () => {
   it('forwards child output events through template bindings', () => {
     const reportCfg = fixture.debugElement.query(By.directive(ReportConfiguratorStubComponent)).componentInstance as ReportConfiguratorStubComponent;
     const jiraCfg = fixture.debugElement.query(By.directive(JiraApiConfiguratorStubComponent)).componentInstance as JiraApiConfiguratorStubComponent;
-    const taskListCfg = fixture.debugElement.query(By.directive(TaskListConfiguratorStubComponent)).componentInstance as TaskListConfiguratorStubComponent;
+    const taskListCfg = fixture.debugElement.query(By.directive(TagManagementConfiguratorStubComponent)).componentInstance as TagManagementConfiguratorStubComponent;
     const timezoneCfg = fixture.debugElement.query(By.directive(UserSettingsConfiguratorStubComponent)).componentInstance as UserSettingsConfiguratorStubComponent;
     const changedSettings: SettingsSaveEvent = {
       changedSettings: [new Setting({ id: 'x', name: JiraApiSettings.host, value: 'https://x' })],
@@ -390,6 +397,7 @@ describe('Settings Views settings.component integration', () => {
     };
     const tagsServiceMock = {
       tags: signal([new Tag({ id: 'tag-1', name: 'Tag 1', isUsed: false })]).asReadonly(),
+      list: vi.fn(() => of([])),
       create: vi.fn((tag: Tag) => of(tag)),
       update: vi.fn((tag: Tag) => of(tag)),
       delete: vi.fn(() => of(undefined)),
@@ -422,7 +430,7 @@ describe('Settings Views settings.component integration', () => {
     expect(fixture.debugElement.query(By.css('.settings-container'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('settings-report-configurator'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('settings-jira-api-configurator'))).toBeTruthy();
-    expect(fixture.debugElement.query(By.css('settings-task-list-configurator'))).toBeTruthy();
+    expect(fixture.debugElement.query(By.css('settings-tag-management-configurator'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('settings-timezone-configurator'))).toBeTruthy();
   });
 
