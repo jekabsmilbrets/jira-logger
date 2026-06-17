@@ -6,10 +6,10 @@ import { MatOptionModule } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { catchError, map, of, switchMap, take } from 'rxjs';
 
-import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TagsService } from '@shared/services/tags.service';
@@ -18,6 +18,7 @@ import type { AsyncLoader } from '@shared/types/async-loader.type';
 
 import { TasksSettingsToggleComponent } from '@tasks/components/tasks-menu/tasks-settings-toggler/tasks-settings-toggle.component';
 import type { CreateTaskFormValue } from '@tasks/interfaces/create-task-form-value.interface';
+import type { ImportReport, TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 import { TaskImportService } from '@tasks/services/task-import.service';
 import { TasksMenuFilterService } from '@tasks/services/tasks-menu-filter.service';
 import type { TasksSettingsService } from '@tasks/services/tasks-settings.service';
@@ -36,6 +37,7 @@ import type { TasksSettingsService } from '@tasks/services/tasks-settings.servic
     TasksSettingsToggleComponent,
     MatButtonModule,
     MatInputModule,
+    MatSnackBarModule,
     FormField,
   ],
 })
@@ -80,6 +82,7 @@ export class TasksMenuComponent {
     });
   });
 
+  private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
   private readonly loadTasksSettingsService: AsyncLoader<TasksSettingsService> = injectAsync(
     () => import('@tasks/services/tasks-settings.service').then((m) => m.TasksSettingsService),
   );
@@ -103,17 +106,37 @@ export class TasksMenuComponent {
     tasksSettingsService.openDialog(this.tasksService.tasks())
       .pipe(
         take(1),
-        switchMap((result: ApiTask[] | undefined) => result ?
+        switchMap((result: TaskImportRequest | undefined) => result ?
           this.taskImportService.importData(result)
             .pipe(
               take(1),
-              switchMap(() => this.tasksService.list()),
-              take(1),
+              switchMap((report: ImportReport) => report.status === 'success' ?
+                this.tasksService.list()
+                  .pipe(
+                    take(1),
+                    map(() => report),
+                  ) :
+                of(report),
+              ),
             ) :
-          of(false),
+          of(undefined),
         ),
       )
-      .subscribe();
+      .subscribe({
+        next: (report: ImportReport | undefined) => {
+          if (!report) {
+            return;
+          }
+
+          this.matSnackBar.open(
+            this.formatImportReport(report),
+            undefined,
+            {
+              duration: report.status === 'success' ? 7000 : 9000,
+            },
+          );
+        },
+      });
   }
 
   protected onTagsChange(tags: Tag[]): void {
@@ -148,5 +171,28 @@ export class TasksMenuComponent {
       description: '',
       tags: [],
     });
+  }
+
+  private formatImportReport(
+    report: ImportReport,
+  ): string {
+    if (report.status === 'blocked') {
+      return report.errors.join(' ');
+    }
+
+    const segments: string[] = [
+      `Imported ${ report.createdTaskCount } task${ report.createdTaskCount === 1 ? '' : 's' }`,
+      `${ report.createdTimeLogCount } time log${ report.createdTimeLogCount === 1 ? '' : 's' }`,
+    ];
+
+    if (report.createdTagCount > 0) {
+      segments.push(`created ${ report.createdTagCount } tag${ report.createdTagCount === 1 ? '' : 's' }`);
+    }
+
+    if (report.warnings.length > 0) {
+      segments.push(`${ report.warnings.length } warning${ report.warnings.length === 1 ? '' : 's' }`);
+    }
+
+    return segments.join(', ') + '.';
   }
 }

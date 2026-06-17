@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { By } from '@angular/platform-browser';
 
 import { of, throwError } from 'rxjs';
@@ -10,6 +11,7 @@ import { Task } from '@shared/models/task.model';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 
+import type { ImportReport, TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 import { TaskImportService } from '@tasks/services/task-import.service';
 import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
 
@@ -37,6 +39,28 @@ describe('Tasks Components tasks-menu.component', () => {
     tags: signal<Tag[]>([]).asReadonly(),
   };
 
+  const matSnackBarMock = {
+    open: vi.fn(),
+  };
+
+  const importRequest: TaskImportRequest = {
+    tasks: [{
+      name: 'Imported',
+      description: undefined,
+      timeLogs: [],
+      tags: [],
+    }],
+    warnings: [],
+  };
+  const importReport: ImportReport = {
+    status: 'success',
+    createdTaskCount: 1,
+    createdTagCount: 0,
+    createdTimeLogCount: 0,
+    warnings: [],
+    errors: [],
+  };
+
   beforeEach(async () => {
     vi.useFakeTimers();
 
@@ -44,15 +68,18 @@ describe('Tasks Components tasks-menu.component', () => {
     tasksServiceMock.create.mockReset();
     tasksServiceMock.list.mockReset();
     tasksServiceMock.taskExist.mockReset();
+    tasksServiceMock.tasks = signal<Task[]>([]).asReadonly();
     tasksSettingsServiceMock.openDialog.mockReset();
     taskImportServiceMock.importData.mockReset();
+    matSnackBarMock.open.mockReset();
+    tagsServiceMock.tags = signal<Tag[]>([]).asReadonly();
 
     tasksServiceMock.filteredList.mockReturnValue(of([]));
     tasksServiceMock.create.mockImplementation((task: Task) => of(task));
     tasksServiceMock.list.mockReturnValue(of([]));
     tasksServiceMock.taskExist.mockReturnValue(of(null));
     tasksSettingsServiceMock.openDialog.mockReturnValue(of(undefined));
-    taskImportServiceMock.importData.mockReturnValue(of(true));
+    taskImportServiceMock.importData.mockReturnValue(of(importReport));
 
     await TestBed.configureTestingModule({
       imports: [TasksMenuComponent],
@@ -61,6 +88,7 @@ describe('Tasks Components tasks-menu.component', () => {
         { provide: TasksSettingsService, useValue: tasksSettingsServiceMock },
         { provide: TaskImportService, useValue: taskImportServiceMock },
         { provide: TagsService, useValue: tagsServiceMock },
+        { provide: MatSnackBar, useValue: matSnackBarMock },
       ],
     }).compileComponents();
   });
@@ -199,6 +227,7 @@ describe('Tasks Components tasks-menu.component', () => {
         { provide: TasksSettingsService, useValue: tasksSettingsServiceMock },
         { provide: TaskImportService, useValue: taskImportServiceMock },
         { provide: TagsService, useValue: tagsServiceMock },
+        { provide: MatSnackBar, useValue: matSnackBarMock },
       ],
     }).compileComponents();
 
@@ -247,14 +276,35 @@ describe('Tasks Components tasks-menu.component', () => {
     };
 
     const task = new Task({ id: '1', name: 'Existing', tags: [], timeLogs: [] });
-    const result = [{ id: '10', createdAt: '2026-01-01T00:00:00.000Z', name: 'Imported', timeLogs: [], tags: [] }];
-
     tasksServiceMock.tasks = signal([task]).asReadonly();
-    tasksSettingsServiceMock.openDialog.mockReturnValue(of(result));
+    tasksSettingsServiceMock.openDialog.mockReturnValue(of(importRequest));
 
     await component.onOpenSettingsDialog();
+    await Promise.resolve();
 
-    expect(taskImportServiceMock.importData).toHaveBeenCalledWith(result);
+    expect(taskImportServiceMock.importData).toHaveBeenCalledWith(importRequest);
     expect(tasksServiceMock.list).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows blocked import report without refreshing list', async () => {
+    const fixture = TestBed.createComponent(TasksMenuComponent);
+    const component = fixture.componentInstance as unknown as {
+      onOpenSettingsDialog: () => Promise<void>;
+    };
+
+    taskImportServiceMock.importData.mockReturnValue(of({
+      status: 'blocked',
+      createdTaskCount: 0,
+      createdTagCount: 0,
+      createdTimeLogCount: 0,
+      warnings: [],
+      errors: ['Duplicate task names detected.'],
+    }));
+    tasksSettingsServiceMock.openDialog.mockReturnValue(of(importRequest));
+
+    await component.onOpenSettingsDialog();
+    await Promise.resolve();
+
+    expect(tasksServiceMock.list).not.toHaveBeenCalled();
   });
 });
