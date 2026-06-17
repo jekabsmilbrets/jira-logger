@@ -100,13 +100,15 @@ class TaskRequest
 
     final public function setTags(array $tagIds): self
     {
+        $tags = new ArrayCollection([]);
+
         if (empty($tagIds)) {
+            $this->tags = $tags;
+
             return $this;
         }
 
-        $tags = new ArrayCollection([]);
-
-        foreach ($this->tagService->list() as $tag) {
+        foreach (($this->tagService->list() ?? new ArrayCollection([])) as $tag) {
             $tagInTags = $tags->contains($tag);
 
             if (\in_array($tag->getId(), $tagIds, true)) {

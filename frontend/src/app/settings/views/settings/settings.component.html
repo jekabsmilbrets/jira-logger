@@ -1,5 +1,7 @@
 <div class="settings-container">
-    <!--    <app-task-list-configurator [disabled]="isLoading()"></app-task-list-configurator>-->
+    <settings-tag-management-configurator (tagChange)="onTaskListTagChange($event)"
+                                          [disabled]="isLoading()"
+                                          [tags]="tags()"/>
 
     <settings-report-configurator (dateChange)="onDateChange($event)"
                                   (endDateChange)="onEndDateChange($event)"

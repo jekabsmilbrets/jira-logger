@@ -8,11 +8,13 @@ use App\Dto\Tag\TagRequest;
 use App\Entity\Tag\Tag;
 use App\Factory\Tag\TagFactory;
 use App\Repository\Tag\TagRepository;
+use DomainException;
 use Doctrine\Common\Collections\ArrayCollection;
 
 class TagService
 {
     final public const NO_DATA_PROVIDED = 'No Tag Model or TagRequest was provided';
+    final public const TAG_IN_USE = 'Tag is used by existing tasks';
 
     public function __construct(
         private readonly TagRepository $tagRepository,
@@ -100,6 +102,10 @@ class TagService
 
         if (!$tag instanceof Tag) {
             return false;
+        }
+
+        if ($tag->getIsUsed()) {
+            throw new DomainException(self::TAG_IN_USE);
         }
 
         $this->tagRepository->remove(

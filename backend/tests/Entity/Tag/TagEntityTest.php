@@ -28,4 +28,15 @@ class TagEntityTest extends TestCase
         $tag->removeTask($task);
         self::assertCount(0, $tag->getTasks());
     }
+
+    public function testGetIsUsedReflectsTaskAssignments(): void
+    {
+        $tag = new Tag();
+
+        self::assertFalse($tag->getIsUsed());
+
+        $tag->addTask(new Task());
+
+        self::assertTrue($tag->getIsUsed());
+    }
 }
