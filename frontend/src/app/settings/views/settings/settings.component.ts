@@ -1,24 +1,27 @@
 import { ChangeDetectionStrategy, Component, computed, inject, type Signal } from '@angular/core';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
-import { forkJoin, switchMap, take } from 'rxjs';
+import { forkJoin, type Observable, switchMap, take } from 'rxjs';
 
 import { Setting } from '@core/models/setting.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { SettingsService } from '@core/services/settings.service';
 
 import { Tag } from '@shared/models/tag.model';
+import { TagsService } from '@shared/services/tags.service';
 
 import type { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 
 import { JiraApiConfiguratorComponent } from '@settings/components/jira-api-configurator/jira-api-configurator.component';
 import { ReportConfiguratorComponent } from '@settings/components/report-configurator/report-configurator.component';
+import { TaskListConfiguratorComponent } from '@settings/components/task-list-configurator/task-list-configurator.component';
 import { UserSettingsConfiguratorComponent } from '@settings/components/user-settings-configurator/user-settings-configurator.component';
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 import type { ReportSettings } from '@settings/interfaces/report-settings.interface';
 import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
+import type { TaskListTagChangeEvent } from '@settings/interfaces/task-list-tag-change-event.interface';
 
 @Component({
   selector: 'settings-view',
@@ -30,6 +33,7 @@ import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event
     JiraApiConfiguratorComponent,
     UserSettingsConfiguratorComponent,
     ReportConfiguratorComponent,
+    TaskListConfiguratorComponent,
     MatSnackBarModule,
   ],
 })
@@ -39,9 +43,11 @@ export class SettingsComponent {
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
   private readonly settingsService: SettingsService = inject(SettingsService);
   private readonly reportService: ReportService = inject(ReportService);
+  private readonly tagsService: TagsService = inject(TagsService);
 
   protected readonly isLoading: Signal<boolean> = this.loaderStateService.isLoading;
   protected readonly settings: Signal<Setting[]> = this.settingsService.settings;
+  protected readonly tags: Signal<Tag[]> = this.tagsService.tags;
   protected readonly jiraApiSettings: Signal<Setting[]> = computed(() => this.filterSettings(Object.values(JiraApiSettings)));
   protected readonly jiraUserSettings: Signal<Setting[]> = computed(() => this.filterSettings(Object.values(JiraUserSettings)));
   protected readonly reportSettings: Signal<ReportSettings> = computed<ReportSettings>(() => ({
@@ -113,6 +119,39 @@ export class SettingsComponent {
         next: () => {
           this.matSnackBar.open(
             saveEvent.successMessage,
+            undefined,
+            {
+              duration: 5000,
+            },
+          );
+        },
+        error: () => undefined,
+      });
+  }
+
+  protected onTaskListTagChange(
+    tagChangeEvent: TaskListTagChangeEvent,
+  ): void {
+    let request$: Observable<Tag | void>;
+
+    switch (tagChangeEvent.action) {
+      case 'create':
+        request$ = this.tagsService.create(tagChangeEvent.tag);
+        break;
+      case 'update':
+        request$ = this.tagsService.update(tagChangeEvent.tag);
+        break;
+      case 'delete':
+        request$ = this.tagsService.delete(tagChangeEvent.tag);
+        break;
+    }
+
+    request$
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.matSnackBar.open(
+            tagChangeEvent.successMessage,
             undefined,
             {
               duration: 5000,

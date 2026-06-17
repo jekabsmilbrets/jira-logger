@@ -4,6 +4,7 @@ import { Tag } from '@shared/models/tag.model';
 export const adaptTag: (apiTag: ApiTag) => Tag = (apiTag: ApiTag): Tag =>
   new Tag({
     id: apiTag.id,
+    isUsed: apiTag.isUsed,
     name: apiTag.name,
     createdAt: apiTag.createdAt ? new Date(apiTag.createdAt) : undefined,
     updatedAt: apiTag.updatedAt ? new Date(apiTag.updatedAt) : undefined,
