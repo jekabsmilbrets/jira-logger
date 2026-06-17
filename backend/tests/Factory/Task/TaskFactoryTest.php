@@ -6,6 +6,7 @@ namespace App\Tests\Factory\Task;
 
 use App\Dto\Task\TaskRequest;
 use App\Entity\Tag\Tag;
+use App\Entity\Task\Task;
 use App\Factory\Task\TaskFactory;
 use App\Repository\Tag\TagRepository;
 use App\Service\Tag\TagService;
@@ -33,5 +34,25 @@ class TaskFactoryTest extends TestCase
         self::assertSame('T', $task->getName());
         self::assertSame('Desc', $task->getDescription());
         self::assertCount(1, $task->getTags());
+    }
+
+    public function testCreateClearsExistingTagsWhenRequestContainsEmptyArray(): void
+    {
+        $existingTag = (new Tag())->setName('A');
+        $this->setEntityId($existingTag, '11111111-1111-1111-1111-111111111111');
+
+        $repository = $this->createMock(TagRepository::class);
+        $repository->method('findAll')->willReturn([$existingTag]);
+
+        $request = new TaskRequest(new TagService($repository));
+        $request->setName('Task');
+        $request->setTags([]);
+
+        $task = new Task();
+        $task->addTag($existingTag);
+
+        $updatedTask = TaskFactory::create($request, $task);
+
+        self::assertCount(0, $updatedTask->getTags());
     }
 }

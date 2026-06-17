@@ -11,6 +11,7 @@ import { LoaderStateService } from '@core/services/loader-state.service';
 import { SettingsService } from '@core/services/settings.service';
 
 import { Tag } from '@shared/models/tag.model';
+import { TagsService } from '@shared/services/tags.service';
 
 import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
@@ -18,11 +19,13 @@ import { ReportServiceStub } from '@report/testing/report-service.stub';
 
 import { JiraApiConfiguratorComponent } from '@settings/components/jira-api-configurator/jira-api-configurator.component';
 import { ReportConfiguratorComponent } from '@settings/components/report-configurator/report-configurator.component';
+import { TagManagementConfiguratorComponent } from '@settings/components/tag-management-configurator/tag-management-configurator.component';
 import { UserSettingsConfiguratorComponent } from '@settings/components/user-settings-configurator/user-settings-configurator.component';
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 import type { ReportSettings } from '@settings/interfaces/report-settings.interface';
 import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
+import type { TaskListTagChangeEvent } from '@settings/interfaces/task-list-tag-change-event.interface';
 import { SettingsComponent } from '@settings/views/settings/settings.component';
 
 @Component({
@@ -70,6 +73,18 @@ class UserSettingsConfiguratorStubComponent {
   public readonly settingsChange = output<SettingsSaveEvent>();
 }
 
+@Component({
+  selector: 'settings-tag-management-configurator',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: '',
+})
+class TagManagementConfiguratorStubComponent {
+  public readonly disabled = input(false);
+  public readonly tags = input<Tag[]>([]);
+  public readonly tagChange = output<TaskListTagChangeEvent>();
+}
+
 const reportSetters = {
   reportMode: vi.fn<(value: ReportMode) => void>(),
   tags: vi.fn<(value: Tag[]) => void>(),
@@ -88,6 +103,13 @@ describe('Settings Views settings.component', () => {
     settings: Signal<Setting[]>;
     update: ReturnType<typeof vi.fn>;
     list: ReturnType<typeof vi.fn>;
+  };
+  let tagsServiceMock: {
+    tags: Signal<Tag[]>;
+    list: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
   };
   let matSnackBarMock: {
     open: ReturnType<typeof vi.fn>;
@@ -110,6 +132,16 @@ describe('Settings Views settings.component', () => {
     };
     matSnackBarMock = {
       open: vi.fn(),
+    };
+    tagsServiceMock = {
+      tags: signal([
+        new Tag({ id: 'tag-1', name: 'Tag 1', isUsed: false }),
+        new Tag({ id: 'tag-2', name: 'Tag 2', isUsed: true }),
+      ]).asReadonly(),
+      list: vi.fn(() => of([])),
+      create: vi.fn((tag: Tag) => of(tag)),
+      update: vi.fn((tag: Tag) => of(tag)),
+      delete: vi.fn(() => of(undefined)),
     };
     reportService = new ReportServiceStub({
       reportMode: ReportMode.dateRange,
@@ -141,6 +173,7 @@ describe('Settings Views settings.component', () => {
           { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly() } },
           { provide: MatSnackBar, useValue: matSnackBarMock },
           { provide: SettingsService, useValue: settingsServiceMock },
+          { provide: TagsService, useValue: tagsServiceMock },
           { provide: ReportService, useValue: reportService },
           { provide: Window, useValue: windowMock },
         ],
@@ -153,6 +186,7 @@ describe('Settings Views settings.component', () => {
               ReportConfiguratorStubComponent,
               JiraApiConfiguratorStubComponent,
               UserSettingsConfiguratorStubComponent,
+              TagManagementConfiguratorStubComponent,
             ],
           },
         },
@@ -165,20 +199,29 @@ describe('Settings Views settings.component', () => {
   });
 
   it('renders settings configurators', () => {
+    expect(tagsServiceMock.list).toHaveBeenCalledTimes(1);
     expect(fixture.debugElement.query(By.css('settings-report-configurator'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('settings-jira-api-configurator'))).toBeTruthy();
+    expect(fixture.debugElement.query(By.css('settings-tag-management-configurator'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('settings-timezone-configurator'))).toBeTruthy();
+  });
+
+  it('reloads tags when the settings page initializes', () => {
+    expect(tagsServiceMock.list).toHaveBeenCalledTimes(1);
   });
 
   it('binds configurator inputs from signal state', async () => {
     const reportCfg = fixture.debugElement.query(By.directive(ReportConfiguratorStubComponent)).componentInstance as ReportConfiguratorStubComponent;
     const jiraCfg = fixture.debugElement.query(By.directive(JiraApiConfiguratorStubComponent)).componentInstance as JiraApiConfiguratorStubComponent;
+    const taskListCfg = fixture.debugElement.query(By.directive(TagManagementConfiguratorStubComponent)).componentInstance as TagManagementConfiguratorStubComponent;
     const timezoneCfg = fixture.debugElement.query(By.directive(UserSettingsConfiguratorStubComponent)).componentInstance as UserSettingsConfiguratorStubComponent;
 
     expect(reportCfg.disabled()).toBe(false);
     expect(reportCfg.reportSettings().reportMode).toBe(ReportMode.dateRange);
     expect(jiraCfg.disabled()).toBe(false);
     expect(jiraCfg.settings().length).toBe(2);
+    expect(taskListCfg.disabled()).toBe(false);
+    expect(taskListCfg.tags().length).toBe(2);
     expect(timezoneCfg.disabled()).toBe(false);
     expect(timezoneCfg.settings().length).toBe(2);
   });
@@ -186,6 +229,7 @@ describe('Settings Views settings.component', () => {
   it('forwards child output events through template bindings', () => {
     const reportCfg = fixture.debugElement.query(By.directive(ReportConfiguratorStubComponent)).componentInstance as ReportConfiguratorStubComponent;
     const jiraCfg = fixture.debugElement.query(By.directive(JiraApiConfiguratorStubComponent)).componentInstance as JiraApiConfiguratorStubComponent;
+    const taskListCfg = fixture.debugElement.query(By.directive(TagManagementConfiguratorStubComponent)).componentInstance as TagManagementConfiguratorStubComponent;
     const timezoneCfg = fixture.debugElement.query(By.directive(UserSettingsConfiguratorStubComponent)).componentInstance as UserSettingsConfiguratorStubComponent;
     const changedSettings: SettingsSaveEvent = {
       changedSettings: [new Setting({ id: 'x', name: JiraApiSettings.host, value: 'https://x' })],
@@ -194,6 +238,11 @@ describe('Settings Views settings.component', () => {
     const timezoneChangedSettings: SettingsSaveEvent = {
       changedSettings: [new Setting({ id: 'z', name: JiraUserSettings.userTimeZone, value: 'UTC' })],
       successMessage: 'Successfully saved user preferences!',
+    };
+    const tagCreateEvent: TaskListTagChangeEvent = {
+      action: 'create',
+      successMessage: 'Successfully created tag!',
+      tag: new Tag({ name: 'New Tag' }),
     };
     const date = new Date('2026-02-10T00:00:00.000Z');
 
@@ -205,6 +254,7 @@ describe('Settings Views settings.component', () => {
     reportCfg.showWeekendsChange.emit(true);
     reportCfg.hideUnreportedTasksChange.emit(true);
     jiraCfg.settingsChange.emit(changedSettings);
+    taskListCfg.tagChange.emit(tagCreateEvent);
     timezoneCfg.settingsChange.emit(timezoneChangedSettings);
 
     expect(reportSetters.reportMode).toHaveBeenCalledWith(ReportMode.date);
@@ -216,7 +266,9 @@ describe('Settings Views settings.component', () => {
     expect(reportSetters.hideUnreportedTasks).toHaveBeenCalledWith(true);
     expect(settingsServiceMock.update).toHaveBeenCalledWith(changedSettings.changedSettings[0], true);
     expect(settingsServiceMock.update).toHaveBeenCalledWith(timezoneChangedSettings.changedSettings[0], true);
+    expect(tagsServiceMock.create).toHaveBeenCalledWith(tagCreateEvent.tag);
     expect(matSnackBarMock.open).toHaveBeenCalledWith('Successfully saved JIRA API settings!', undefined, { duration: 5000 });
+    expect(matSnackBarMock.open).toHaveBeenCalledWith('Successfully created tag!', undefined, { duration: 5000 });
     expect(matSnackBarMock.open).toHaveBeenCalledWith('Successfully saved user preferences!', undefined, { duration: 5000 });
   });
 
@@ -274,6 +326,48 @@ describe('Settings Views settings.component', () => {
     expect(matSnackBarMock.open).toHaveBeenCalledWith('Successfully saved JIRA API settings!', undefined, { duration: 5000 });
   });
 
+  it('routes task-list tag events to tags service requests', () => {
+    const createEvent: TaskListTagChangeEvent = {
+      action: 'create',
+      successMessage: 'Successfully created tag!',
+      tag: new Tag({ name: 'New Tag' }),
+    };
+    const updateEvent: TaskListTagChangeEvent = {
+      action: 'update',
+      successMessage: 'Successfully updated tag!',
+      tag: new Tag({ id: 'tag-1', name: 'Updated Tag' }),
+    };
+    const deleteEvent: TaskListTagChangeEvent = {
+      action: 'delete',
+      successMessage: 'Successfully deleted tag!',
+      tag: new Tag({ id: 'tag-1', name: 'Updated Tag' }),
+    };
+
+    (component as any).onTaskListTagChange(createEvent);
+    (component as any).onTaskListTagChange(updateEvent);
+    (component as any).onTaskListTagChange(deleteEvent);
+
+    expect(tagsServiceMock.create).toHaveBeenCalledWith(createEvent.tag);
+    expect(tagsServiceMock.update).toHaveBeenCalledWith(updateEvent.tag);
+    expect(tagsServiceMock.delete).toHaveBeenCalledWith(deleteEvent.tag);
+    expect(matSnackBarMock.open).toHaveBeenCalledWith('Successfully created tag!', undefined, { duration: 5000 });
+    expect(matSnackBarMock.open).toHaveBeenCalledWith('Successfully updated tag!', undefined, { duration: 5000 });
+    expect(matSnackBarMock.open).toHaveBeenCalledWith('Successfully deleted tag!', undefined, { duration: 5000 });
+  });
+
+  it('does not open a success snackbar when the tag request fails', () => {
+    tagsServiceMock.create.mockReturnValueOnce(throwError(() => new Error('save failed')));
+
+    (component as any).onTaskListTagChange({
+      action: 'create',
+      successMessage: 'Successfully created tag!',
+      tag: new Tag({ name: 'New Tag' }),
+    });
+
+    expect(tagsServiceMock.create).toHaveBeenCalledTimes(1);
+    expect(matSnackBarMock.open).not.toHaveBeenCalled();
+  });
+
   it('does not open a success snackbar when the save pipeline fails', () => {
     settingsServiceMock.update.mockReturnValueOnce(throwError(() => new Error('save failed')));
     const saveEvent: SettingsSaveEvent = {
@@ -301,6 +395,13 @@ describe('Settings Views settings.component integration', () => {
       update: vi.fn((setting: Setting) => of(setting)),
       list: vi.fn(() => of([])),
     };
+    const tagsServiceMock = {
+      tags: signal([new Tag({ id: 'tag-1', name: 'Tag 1', isUsed: false })]).asReadonly(),
+      list: vi.fn(() => of([])),
+      create: vi.fn((tag: Tag) => of(tag)),
+      update: vi.fn((tag: Tag) => of(tag)),
+      delete: vi.fn(() => of(undefined)),
+    };
     const windowMock = {
       location: {
         ...window.location,
@@ -316,6 +417,7 @@ describe('Settings Views settings.component integration', () => {
           { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly() } },
           { provide: MatSnackBar, useValue: { open: vi.fn() } },
           { provide: SettingsService, useValue: settingsServiceMock },
+          { provide: TagsService, useValue: tagsServiceMock },
           { provide: ReportService, useValue: reportService },
           { provide: Window, useValue: windowMock },
         ],
@@ -328,6 +430,7 @@ describe('Settings Views settings.component integration', () => {
     expect(fixture.debugElement.query(By.css('.settings-container'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('settings-report-configurator'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('settings-jira-api-configurator'))).toBeTruthy();
+    expect(fixture.debugElement.query(By.css('settings-tag-management-configurator'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('settings-timezone-configurator'))).toBeTruthy();
   });
 

@@ -6,8 +6,10 @@ namespace App\Tests\Service\Tag;
 
 use App\Dto\Tag\TagRequest;
 use App\Entity\Tag\Tag;
+use App\Entity\Task\Task;
 use App\Repository\Tag\TagRepository;
 use App\Service\Tag\TagService;
+use DomainException;
 use PHPUnit\Framework\TestCase;
 
 class TagServiceTest extends TestCase
@@ -47,6 +49,20 @@ class TagServiceTest extends TestCase
         $service = new TagService($repository);
 
         self::assertFalse($service->delete('missing-id'));
+    }
+
+    public function testDeleteThrowsWhenTagIsUsed(): void
+    {
+        $tag = new Tag();
+        $tag->addTask(new Task());
+        $repository = $this->createMock(TagRepository::class);
+        $repository->method('find')->willReturn($tag);
+        $service = new TagService($repository);
+
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage(TagService::TAG_IN_USE);
+
+        $service->delete('used-tag');
     }
 
     public function testEditReturnsNullWhenTagDoesNotExist(): void

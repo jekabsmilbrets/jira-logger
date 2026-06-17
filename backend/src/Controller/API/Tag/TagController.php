@@ -8,6 +8,7 @@ use App\Controller\API\BaseApiController;
 use App\Dto\Tag\TagRequest;
 use App\Entity\Tag\Tag;
 use App\Service\Tag\TagService;
+use DomainException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
 use OpenApi\Attributes as OA;
@@ -437,12 +438,33 @@ class TagController extends BaseApiController
                 ]
             ),
         ),
+        OA\Response(
+            response: 409,
+            description: TagService::TAG_IN_USE,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(
+                        property: 'errors',
+                        type: 'array',
+                        items: new OA\Items(
+                            type: 'string',
+                            example: TagService::TAG_IN_USE
+                        )
+                    ),
+                ]
+            ),
+        ),
     ]
     final public function delete(
         string $id
     ): JsonResponse {
         try {
             $status = $this->tagService->delete($id);
+        } catch (DomainException $exception) {
+            return $this->jsonApi(
+                errors: [$exception->getMessage()],
+                status: 409
+            );
         } catch (Exception) {
             return $this->jsonApi(
                 errors: [self::CANNOT_DELETE_TAG],

@@ -69,6 +69,19 @@ class Tag implements EntityBaseInterface
         return $this;
     }
 
+    #[
+        Groups([Group::LIST]),
+        OA\Property(
+            property: 'isUsed',
+            type: 'boolean',
+            example: false,
+        )
+    ]
+    final public function getIsUsed(): bool
+    {
+        return $this->tasks->count() > 0;
+    }
+
     final public function getTasks(): Collection
     {
         return $this->tasks;
