@@ -13,14 +13,14 @@
 <mat-dialog-content>
     <mat-slide-toggle (toggleChange)="showCurrent = !showCurrent">Show Current Data JSON</mat-slide-toggle>
 
-    <button [cdkCopyToClipboard]="data.currentTasks | json"
+    <button [cdkCopyToClipboard]="currentBackupJson()"
             mat-button
             type="button">
         Copy to clipboard
     </button>
 
     @if (showCurrent) {
-        <pre>{{ data.currentTasks | json }}</pre>
+        <pre>{{ currentBackupJson() }}</pre>
     }
 
     <form>
@@ -33,6 +33,10 @@
             </textarea>
         </mat-form-field>
     </form>
+
+    @if (importErrorMessage()) {
+        <p>{{ importErrorMessage() }}</p>
+    }
 </mat-dialog-content>
 
 <mat-dialog-actions>

@@ -7,6 +7,7 @@ import { vi } from 'vitest';
 import { Task } from '@shared/models/task.model';
 
 import { TasksSettingsDialogComponent } from '@tasks/components/tasks-menu/settings-dialog/tasks-settings-dialog.component';
+import type { TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 
 import { TasksSettingsService } from './tasks-settings.service';
 
@@ -40,7 +41,10 @@ describe('Tasks Services tasks-settings.service', () => {
 
   it('opens settings dialog with current tasks and returns afterClosed stream', () => {
     const currentTasks = [new Task({ id: '1', name: 'Task 1', timeLogs: [], tags: [] })];
-    const closeResult = [{ name: 'Imported', timeLogs: [], tags: [] }];
+    const closeResult: TaskImportRequest = {
+      tasks: [{ name: 'Imported', description: undefined, timeLogs: [], tags: [] }],
+      warnings: [],
+    };
 
     dialogRefMock.afterClosed.mockReturnValue(of(closeResult));
     matDialogMock.open.mockReturnValue(dialogRefMock);

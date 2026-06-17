@@ -3,20 +3,20 @@ import { MatDialog, type MatDialogRef } from '@angular/material/dialog';
 
 import { Observable } from 'rxjs';
 
-import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { Task } from '@shared/models/task.model';
 
 import { TasksSettingsDialogComponent } from '@tasks/components/tasks-menu/settings-dialog/tasks-settings-dialog.component';
+import type { TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 
 @Service()
 export class TasksSettingsService {
   private readonly matDialog: MatDialog = inject(MatDialog);
 
-  private dialogRef!: MatDialogRef<TasksSettingsDialogComponent, ApiTask[] | undefined>;
+  private dialogRef!: MatDialogRef<TasksSettingsDialogComponent, TaskImportRequest | undefined>;
 
   public openDialog(
     currentTasks: Task[],
-  ): Observable<ApiTask[] | undefined> {
+  ): Observable<TaskImportRequest | undefined> {
     this.dialogRef = this.matDialog.open(
       TasksSettingsDialogComponent,
       {

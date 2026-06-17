@@ -6,6 +6,7 @@ import { By } from '@angular/platform-browser';
 import { vi } from 'vitest';
 
 import { Tag } from '@shared/models/tag.model';
+import { Task } from '@shared/models/task.model';
 import { TagsService } from '@shared/services/tags.service';
 
 import { TasksSettingsDialogComponent } from './tasks-settings-dialog.component';
@@ -56,20 +57,20 @@ describe('Tasks Components tasks-settings-dialog.component', () => {
   it('does not import when form is invalid', () => {
     const fixture = TestBed.createComponent(TasksSettingsDialogComponent);
     const component = fixture.componentInstance as unknown as {
-      onImport: () => void;
+      onImport: () => Promise<void>;
       tasksSettingsFormModel: { set: (value: { json: string }) => void };
     };
 
     component.tasksSettingsFormModel.set({ json: '' });
-    component.onImport();
+    void component.onImport();
 
     expect(dialogRefMock.close).not.toHaveBeenCalled();
   });
 
-  it('validates JSON and closes with imported tasks on valid input', () => {
+  it('validates JSON and closes with imported tasks on valid input', async () => {
     const fixture = TestBed.createComponent(TasksSettingsDialogComponent);
     const component = fixture.componentInstance as unknown as {
-      onImport: () => void;
+      onImport: () => Promise<void>;
       tasksSettingsFormModel: { set: (value: { json: string }) => void };
     };
     const tag = new Tag({ id: '1', name: 'Frontend' });
@@ -87,37 +88,74 @@ describe('Tasks Components tasks-settings-dialog.component', () => {
       ]),
     });
 
-    component.onImport();
+    await component.onImport();
 
     expect(dialogRefMock.close).toHaveBeenCalledTimes(1);
-    expect(dialogRefMock.close).toHaveBeenCalledWith([
-      {
-        name: 'Imported task',
-        description: 'Imported',
-        timeLogs: [],
-        tags: [{ id: '1', name: 'Frontend' }],
-      },
-    ]);
+    expect(dialogRefMock.close).toHaveBeenCalledWith({
+      tasks: [
+        {
+          name: 'Imported task',
+          description: 'Imported',
+          timeLogs: [],
+          tags: ['Frontend'],
+          unsupportedMetadata: {
+            task: undefined,
+            timeLogs: undefined,
+            tags: [{ id: '1', createdAt: undefined, updatedAt: undefined }],
+            lastTimeLog: undefined,
+            jiraWorkLogs: undefined,
+            timeLogged: undefined,
+          },
+        },
+      ],
+      warnings: [
+        {
+          code: 'unsupported-metadata',
+          taskName: 'Imported task',
+          fields: ['source tag metadata'],
+          message: 'Task "Imported task" contains backup-only metadata: source tag metadata.',
+          metadata: {
+            task: undefined,
+            timeLogs: undefined,
+            tags: [{ id: '1', createdAt: undefined, updatedAt: undefined }],
+            lastTimeLog: undefined,
+            jiraWorkLogs: undefined,
+            timeLogged: undefined,
+          },
+        },
+      ],
+    });
   });
 
-  it('logs error and does not close when JSON is invalid', () => {
+  it('shows inline error and does not close when JSON is invalid', async () => {
     const fixture = TestBed.createComponent(TasksSettingsDialogComponent);
     const component = fixture.componentInstance as unknown as {
-      onImport: () => void;
+      onImport: () => Promise<void>;
       tasksSettingsFormModel: { set: (value: { json: string }) => void };
     };
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
     component.tasksSettingsFormModel.set({
       json: '{invalid json}',
     });
 
-    component.onImport();
+    await component.onImport();
+    fixture.detectChanges();
 
     expect(dialogRefMock.close).not.toHaveBeenCalled();
-    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(fixture.nativeElement.textContent).toContain('JSON');
+  });
 
-    errorSpy.mockRestore();
+  it('exports canonical backup JSON in preview and clipboard binding', async () => {
+    const fixture = TestBed.createComponent(TasksSettingsDialogComponent);
+    const component = fixture.componentInstance as any;
+    component.showCurrent = true;
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const preview = fixture.debugElement.query(By.css('pre'));
+
+    expect(preview.nativeElement.textContent).toContain('"version": 2');
+    expect(component.currentBackupJson()).toContain('"tasks"');
   });
 
   it('toggles current JSON preview and handles close/import button clicks from template', () => {
@@ -135,7 +173,7 @@ describe('Tasks Components tasks-settings-dialog.component', () => {
     expect(fixture.debugElement.query(By.css('pre'))).toBeTruthy();
 
     const closeSpy = vi.spyOn(component, 'onClose');
-    const importSpy = vi.spyOn(component, 'onImport');
+    const importSpy = vi.spyOn(component, 'onImport').mockResolvedValue(undefined);
 
     const buttons = fixture.debugElement.queryAll(By.css('button[mat-button]'));
     buttons.find((btn) => btn.nativeElement.textContent.includes('Close'))?.nativeElement.click();
