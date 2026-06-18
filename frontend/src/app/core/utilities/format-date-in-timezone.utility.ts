@@ -1,3 +1,5 @@
+import { getTimeZoneFormatParts } from './timezone-date-time-format-parts.utility';
+
 export const formatDateInTimezone: (
   value: Date | string | number,
   format: string,
@@ -16,7 +18,7 @@ export const formatDateInTimezone: (
   }
 
   try {
-    const parts: Record<string, string> = new Intl.DateTimeFormat(locale, {
+    const parts: Record<string, string> = getTimeZoneFormatParts(new Intl.DateTimeFormat(locale, {
       timeZone: timezone,
       year: 'numeric',
       month: '2-digit',
@@ -25,13 +27,7 @@ export const formatDateInTimezone: (
       minute: '2-digit',
       second: '2-digit',
       hourCycle: 'h23',
-    }).formatToParts(date).reduce<Record<string, string>>((accumulator: Record<string, string>, part: Intl.DateTimeFormatPart) => {
-      if (part.type !== 'literal') {
-        accumulator[part.type] = part.value;
-      }
-
-      return accumulator;
-    }, {});
+    }), date);
 
     const replacements: Record<string, string> = {
       yyyy: parts['year'] ?? '',

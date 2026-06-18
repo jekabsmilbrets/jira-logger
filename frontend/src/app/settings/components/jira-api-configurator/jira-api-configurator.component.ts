@@ -22,6 +22,7 @@ import { Setting } from '@core/models/setting.model';
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import type { JiraApiFormValue } from '@settings/interfaces/jira-api-form-value.interface';
 import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
+import { findSettingByName } from '@settings/utilities/find-setting-by-name.utility';
 
 @Component({
   selector: 'settings-jira-api-configurator',
@@ -147,9 +148,7 @@ export class JiraApiConfiguratorComponent {
     const settings: Setting[] = this.settings();
 
     if (Array.isArray(settings)) {
-      return settings.find(
-        (s: Setting) => s.name === name,
-      );
+      return findSettingByName(settings, name);
     }
 
     return undefined;
@@ -162,9 +161,7 @@ export class JiraApiConfiguratorComponent {
     const settings: Setting[] = this.settings();
 
     if (Array.isArray(settings)) {
-      const setting: undefined | Setting = settings.find(
-        (s: Setting) => s.name === name,
-      );
+      const setting: undefined | Setting = findSettingByName(settings, name);
 
       if (setting) {
         if (

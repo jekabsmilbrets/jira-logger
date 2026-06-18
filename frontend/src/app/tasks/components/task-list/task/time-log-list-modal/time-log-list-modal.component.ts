@@ -124,22 +124,7 @@ export class TimeLogListModalComponent {
     timeLogEditService
       .openTimeLogDialog(timeLog as TimeLog)
       .pipe(take(1))
-      .subscribe((response: TimeLogModalResponse | undefined) => {
-        if (response) {
-          switch (response.responseType) {
-            case 'cancel':
-              break;
-            case 'update':
-              if (response.responseData) {
-                this.onUpdateAction(timeLog as TimeLog, response.responseData);
-              }
-              break;
-            case 'delete':
-              this.onRemoveAction(timeLog as TimeLog);
-              break;
-          }
-        }
-      });
+      .subscribe((response: TimeLogModalResponse | undefined) => this.handleTimeLogDialogResponse(response, timeLog as TimeLog));
   }
 
   protected onCreateAction(
@@ -237,19 +222,35 @@ export class TimeLogListModalComponent {
 
     timeLogEditService.openTimeLogDialog(timeLog)
       .pipe(take(1))
-      .subscribe((response: TimeLogModalResponse | undefined) => {
-        if (response) {
-          switch (response.responseType) {
-            case 'cancel':
-              break;
-            case 'update':
-              if (response.responseData) {
-                this.onCreateAction(response.responseData);
-              }
-              break;
+      .subscribe((response: TimeLogModalResponse | undefined) => this.handleTimeLogDialogResponse(response));
+  }
+
+  private handleTimeLogDialogResponse(
+    response: TimeLogModalResponse | undefined,
+    timeLog?: TimeLog,
+  ): void {
+    if (!response) {
+      return;
+    }
+
+    switch (response.responseType) {
+      case 'cancel':
+        break;
+      case 'update':
+        if (response.responseData) {
+          if (timeLog) {
+            this.onUpdateAction(timeLog, response.responseData);
+          } else {
+            this.onCreateAction(response.responseData);
           }
         }
-      });
+        break;
+      case 'delete':
+        if (timeLog) {
+          this.onRemoveAction(timeLog);
+        }
+        break;
+    }
   }
 
   private findTimeLogIndex(

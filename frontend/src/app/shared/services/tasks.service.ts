@@ -2,13 +2,13 @@ import { formatDate } from '@angular/common';
 import { HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, injectAsync, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { catchError, finalize, from, map, type Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, map, type Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { LocaleService } from '@core/services/locale.service';
 import { RequestGate } from '@core/utilities/request-gate.utility';
-import { waitForTurn } from '@core/utilities/wait-for.utility';
+import { runGatedRequest } from '@core/utilities/run-gated-request.utility';
 
 import { adaptTasks } from '@shared/adapters/task.adapter';
 import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
@@ -22,6 +22,7 @@ import type { ErrorDialogService } from '@shared/services/error-dialog.service';
 import type { ApiRequestBody } from '@shared/types/api-request-body.type';
 import type { AsyncLoader } from '@shared/types/async-loader.type';
 import type { QueryParams } from '@shared/types/query-params.type';
+import { openLoadErrorDialog } from '@shared/utilities/open-load-error-dialog.utility';
 
 @Service()
 export class TasksService implements LoadableService, MakeRequestService {
@@ -110,47 +111,24 @@ export class TasksService implements LoadableService, MakeRequestService {
     task: Task,
     skipReload: boolean = false,
   ): Observable<Task> {
-    const body: ApiRequestBody = {
-      name: task.name && task.name.trim(),
-      description: task.description && task.description.trim(),
-      tags: task.tags.map((tag: Tag) => tag.id),
-    };
-
-    return this.makeRequest<JsonApi<ApiTask>>(
+    return this.saveTask(
+      task,
       '',
       'post',
-      body,
-      true,
-    )
-      .pipe(
-        switchMap(() => this.reloadList(skipReload)),
-        map((tasks: Task[]) => this.findTask(tasks, task)),
-      );
+      skipReload,
+    );
   }
 
   public update(
     task: Task,
     skipReload: boolean = false,
   ): Observable<Task> {
-    const url: string = `/${ task.id }`;
-
-    const body: ApiRequestBody = {
-      id: task.id,
-      name: task.name && task.name.trim(),
-      description: task.description && task.description.trim(),
-      tags: task.tags.map((tag: Tag) => tag.id),
-    };
-
-    return this.makeRequest<JsonApi<ApiTask>>(
-      url,
+    return this.saveTask(
+      task,
+      `/${ task.id }`,
       'patch',
-      body,
-      true,
-    )
-      .pipe(
-        switchMap(() => this.reloadList(skipReload)),
-        map((tasks: Task[]) => this.findTask(tasks, task)),
-      );
+      skipReload,
+    );
   }
 
   public delete(
@@ -233,22 +211,14 @@ export class TasksService implements LoadableService, MakeRequestService {
       body,
     );
 
-    return waitForTurn(this.requestGate, this.isLoadingSignal)
-      .pipe(
-        switchMap((release: VoidFunction) => request$
-          .pipe(
-            catchError((error) => {
-              release();
-
-              if (reportError) {
-                return this.processError(error);
-              }
-
-              return throwError(() => error);
-            }),
-            finalize(release),
-          )),
-      );
+    return runGatedRequest(
+      this.requestGate,
+      this.isLoadingSignal,
+      request$,
+      reportError ?
+        (error: unknown) => this.processError(error) as Observable<T> :
+        undefined,
+    );
   }
 
   private buildQueryParams(
@@ -296,18 +266,41 @@ export class TasksService implements LoadableService, MakeRequestService {
   private processError(
     error: unknown,
   ): Observable<never> {
-    this.isLoadingSignal.set(false);
+    return openLoadErrorDialog(
+      this.loadErrorDialogService,
+      this.isLoadingSignal,
+      error,
+      this.tasks(),
+    );
+  }
 
-    return from(this.loadErrorDialogService())
+  private saveTask(
+    task: Task,
+    url: string,
+    method: 'post' | 'patch',
+    skipReload: boolean,
+  ): Observable<Task> {
+    return this.makeRequest<JsonApi<ApiTask>>(
+      url,
+      method,
+      this.buildTaskRequestBody(task),
+      true,
+    )
       .pipe(
-        switchMap((errorDialogService) => errorDialogService.openDialog({
-          errorTitle: 'Error while doing db action :D',
-          errorMessage: JSON.stringify(error),
-          idbData: this.tasks(),
-        })),
-        take(1),
-        switchMap(() => throwError(() => error)),
+        switchMap(() => this.reloadList(skipReload)),
+        map((tasks: Task[]) => this.findTask(tasks, task)),
       );
+  }
+
+  private buildTaskRequestBody(
+    task: Task,
+  ): ApiRequestBody {
+    return {
+      id: task.id,
+      name: task.name && task.name.trim(),
+      description: task.description && task.description.trim(),
+      tags: task.tags.map((tag: Tag) => tag.id),
+    };
   }
 
   private reloadList(

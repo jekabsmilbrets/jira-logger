@@ -1,7 +1,7 @@
 import { HttpClient, type HttpErrorResponse } from '@angular/common/http';
 import { inject, injectAsync, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { catchError, finalize, from, map, type Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, finalize, map, type Observable, of, switchMap, take, tap } from 'rxjs';
 
 import { environment } from '@environments/environment';
 
@@ -17,6 +17,7 @@ import type { LoadableService } from '@shared/interfaces/loadable-service.interf
 import type { ErrorDialogService } from '@shared/services/error-dialog.service';
 import type { ApiRequestBody } from '@shared/types/api-request-body.type';
 import type { AsyncLoader } from '@shared/types/async-loader.type';
+import { openLoadErrorDialog } from '@shared/utilities/open-load-error-dialog.utility';
 
 @Service()
 export class SettingsService implements LoadableService {
@@ -176,19 +177,11 @@ export class SettingsService implements LoadableService {
   private processError(
     error: unknown,
   ): Observable<never> {
-    this.isLoadingSignal.set(false);
-
-    return from(this.loadErrorDialogService())
-      .pipe(
-        switchMap((errorDialogService) => errorDialogService.openDialog(
-          {
-            errorTitle: 'Error while doing db action :D',
-            errorMessage: JSON.stringify(error),
-            idbData: this.settings(),
-          },
-        )),
-        take(1),
-        switchMap(() => throwError(() => error)),
-      );
+    return openLoadErrorDialog(
+      this.loadErrorDialogService,
+      this.isLoadingSignal,
+      error,
+      this.settings(),
+    );
   }
 }

@@ -69,6 +69,7 @@ export class SettingsComponent implements OnInit {
       });
   }
 
+  // fallow-ignore-next-line code-duplication
   protected onReportModeChange(
     value: ReportMode,
   ): void {
