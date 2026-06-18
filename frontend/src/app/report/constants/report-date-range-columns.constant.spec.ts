@@ -1,10 +1,10 @@
-import { columns } from './report-date-range-columns.constant';
+import { reportDateRangeColumns } from './report-date-range-columns.constant';
 
 describe('Report Constants report-date-range-columns.constant', () => {
   it('exports expected column contract and callable cells', () => {
-    expect(columns.length).toBeGreaterThan(0);
+    expect(reportDateRangeColumns.length).toBeGreaterThan(0);
 
-    const first = columns[0];
+    const first = reportDateRangeColumns[0];
     expect(first.columnDef).toBe('name');
     expect(first.hidden).toBe(false);
 
@@ -15,7 +15,7 @@ describe('Report Constants report-date-range-columns.constant', () => {
       lastTimeLogStartTime: new Date('2024-01-01T00:00:00.000Z'),
     };
 
-    for (const c of columns) {
+    for (const c of reportDateRangeColumns) {
       if (typeof c.cell === 'function') {
         c.cell(task);
       }

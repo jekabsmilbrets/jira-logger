@@ -1,11 +1,11 @@
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 
-import { columns } from './report-total-columns.constant';
+import { reportTotalColumns } from './report-total-columns.constant';
 
 describe('Report Constants report-total-columns.constant', () => {
   it('exports expected column contract and computes footer totals', () => {
-    expect(columns.length).toBeGreaterThan(0);
+    expect(reportTotalColumns.length).toBeGreaterThan(0);
 
     const timeLog = new TimeLog({
       startTime: new Date('2024-01-01T10:00:00.000Z'),
@@ -19,7 +19,7 @@ describe('Report Constants report-total-columns.constant', () => {
       timeLogs: [timeLog],
     } as any);
 
-    for (const c of columns) {
+    for (const c of reportTotalColumns) {
       if (typeof c.cell === 'function') {
         c.cell(task);
       }
@@ -28,7 +28,7 @@ describe('Report Constants report-total-columns.constant', () => {
       }
     }
 
-    const timeLoggedCol = columns.find((c) => c.columnDef === 'timeLogged');
+    const timeLoggedCol = reportTotalColumns.find((c) => c.columnDef === 'timeLogged');
     expect(timeLoggedCol?.footerCell?.([task])).toBe(60);
   });
 });

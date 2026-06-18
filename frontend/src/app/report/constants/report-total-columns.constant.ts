@@ -3,7 +3,7 @@ import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { columnValue } from '@shared/utilities/column-value.utility';
 
-export const columns: Column[] = [
+export const reportTotalColumns: Column[] = [
   {
     columnDef: 'name',
     header: 'Name',
