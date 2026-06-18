@@ -76,6 +76,7 @@ export class ReportMenuComponent {
     this.showDatePicker = computed(() => ['dateRange', 'date'].includes(this.reportMode()));
   }
 
+  // fallow-ignore-next-line code-duplication
   protected onReportModeChange(
     value: ReportMode,
   ): void {
