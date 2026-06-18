@@ -1,4 +1,5 @@
 import type { TimezoneDateParts } from '@core/interfaces/timezone-date-parts.interface';
+import { getTimeZoneFormatParts } from './timezone-date-time-format-parts.utility';
 
 const createFormatter: (
   timezone: string,
@@ -50,15 +51,7 @@ export const getDateTimePartsInTimezone: (
   timezone: string,
 ): TimezoneDateParts => {
   try {
-    const parts: Record<string, string> = createFormatter(timezone)
-      .formatToParts(date)
-      .reduce<Record<string, string>>((accumulator: Record<string, string>, part: Intl.DateTimeFormatPart) => {
-        if (part.type !== 'literal') {
-          accumulator[part.type] = part.value;
-        }
-
-        return accumulator;
-      }, {});
+    const parts: Record<string, string> = getTimeZoneFormatParts(createFormatter(timezone), date);
 
     return {
       year: Number(parts['year']),
