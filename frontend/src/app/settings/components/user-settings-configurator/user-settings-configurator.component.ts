@@ -23,6 +23,7 @@ import { LocaleService } from '@core/services/locale.service';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
 import type { UserSettingsFormValue } from '@settings/interfaces/user-settings-form-value.interface';
+import { findSettingByName } from '@settings/utilities/find-setting-by-name.utility';
 
 @Component({
   selector: 'settings-timezone-configurator',
@@ -140,7 +141,7 @@ export class UserSettingsConfiguratorComponent {
     const settings: Setting[] = this.settings();
 
     if (Array.isArray(settings)) {
-      return settings.find((s: Setting) => s.name === name);
+      return findSettingByName(settings, name);
     }
 
     return undefined;
@@ -153,7 +154,7 @@ export class UserSettingsConfiguratorComponent {
     const settings: Setting[] = this.settings();
 
     if (Array.isArray(settings)) {
-      const setting: undefined | Setting = settings.find((s: Setting) => s.name === name);
+      const setting: undefined | Setting = findSettingByName(settings, name);
 
       if (setting && typeof setting.value === 'string') {
         return setting.value;

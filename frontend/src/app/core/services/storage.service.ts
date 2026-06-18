@@ -102,27 +102,17 @@ export class StorageService implements LoadableService {
       ),
     ) as Observable<TValue>;
 
-    return waitForTurn(this.requestGate, this.isLoadingSignal)
-      .pipe(
-        switchMap((release: VoidFunction) => request(
-          key,
-          customStoreName,
-        )
-          .pipe(
-            catchError((error) => {
-              release();
-              return this.reportError(
-                error,
-                request,
-                {
-                  customStoreName,
-                  key,
-                },
-              );
-            }),
-            finalize(release),
-          )),
-      );
+    return this.runProtectedRequest(
+      request,
+      [
+        key,
+        customStoreName,
+      ],
+      {
+        customStoreName,
+        key,
+      },
+    );
   }
 
   public create(
@@ -260,27 +250,17 @@ export class StorageService implements LoadableService {
       ),
     );
 
-    return waitForTurn(this.requestGate, this.isLoadingSignal)
-      .pipe(
-        switchMap((release: VoidFunction) => request(
-          key,
-          customStoreName,
-        )
-          .pipe(
-            catchError((error) => {
-              release();
-              return this.reportError(
-                error,
-                request,
-                {
-                  customStoreName,
-                  key,
-                },
-              );
-            }),
-            finalize(release),
-          )),
-      );
+    return this.runProtectedRequest(
+      request,
+      [
+        key,
+        customStoreName,
+      ],
+      {
+        customStoreName,
+        key,
+      },
+    );
   }
 
   public recreateStore(
@@ -337,6 +317,34 @@ export class StorageService implements LoadableService {
     this.isLoadingSignal.set(false);
 
     return throwError(() => error);
+  }
+
+  private runProtectedRequest<TValue, TArgs extends unknown[]>(
+    request: (...args: TArgs) => Observable<TValue>,
+    args: TArgs,
+    errorContext: {
+      customStoreName?: string;
+      key?: IDBValidKey;
+      value?: unknown;
+      dataEntries?: KeyValueEntry[]
+    },
+  ): Observable<TValue> {
+    return waitForTurn(this.requestGate, this.isLoadingSignal)
+      .pipe(
+        switchMap((release: VoidFunction) => request(...args)
+          .pipe(
+            catchError((error) => {
+              release();
+
+              return this.reportError(
+                error,
+                request,
+                errorContext,
+              ) as Observable<TValue>;
+            }),
+            finalize(release),
+          )),
+      );
   }
 
   private getUseStore(

@@ -1,12 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { catchError, finalize, map, type Observable, of, Subject, switchMap, tap, throwError } from 'rxjs';
+import { catchError, map, type Observable, of, Subject, tap, throwError } from 'rxjs';
 
 import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { RequestGate } from '@core/utilities/request-gate.utility';
-import { waitForTurn } from '@core/utilities/wait-for.utility';
+import { runGatedRequest } from '@core/utilities/run-gated-request.utility';
 
 import { adaptTimeLog, adaptTimeLogs } from '@shared/adapters/time-log.adapter';
 import type { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
@@ -69,48 +69,24 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
     task: Task,
     timeLog: TimeLog,
   ): Observable<TimeLog> {
-    const url: string = `/${ task.id }/${ this.baseTimeLogPath }`;
-
-    const body: ApiRequestBody = {
-      id: timeLog.id,
-      startTime: timeLog.startTime && toUnixMs<string>(timeLog.startTime, 'string'),
-      endTime: timeLog.endTime && toUnixMs<string>(timeLog.endTime, 'string'),
-      description: timeLog.description && timeLog.description.trim(),
-      task: task.id,
-    };
-
-    return this.makeRequest<JsonApi<ApiTimeLog>>(
-      url,
+    return this.saveTimeLog(
+      task,
+      timeLog,
+      `/${ task.id }/${ this.baseTimeLogPath }`,
       'post',
-      body,
-    )
-      .pipe(
-        map((response: JsonApi<ApiTimeLog>): TimeLog => (response.data && adaptTimeLog(response.data)) as TimeLog),
-      );
+    );
   }
 
   public update(
     task: Task,
     timeLog: TimeLog,
   ): Observable<TimeLog> {
-    const url: string = `/${ task.id }/${ this.baseTimeLogPath }/${ timeLog.id }`;
-
-    const body: ApiRequestBody = {
-      id: timeLog.id,
-      startTime: timeLog.startTime && toUnixMs<string>(timeLog.startTime, 'string'),
-      endTime: timeLog.endTime && toUnixMs<string>(timeLog.endTime, 'string'),
-      description: timeLog.description && timeLog.description.trim(),
-      task: task.id,
-    };
-
-    return this.makeRequest<JsonApi<ApiTimeLog>>(
-      url,
+    return this.saveTimeLog(
+      task,
+      timeLog,
+      `/${ task.id }/${ this.baseTimeLogPath }/${ timeLog.id }`,
       'patch',
-      body,
-    )
-      .pipe(
-        map((response: JsonApi<ApiTimeLog>): TimeLog => (response.data && adaptTimeLog(response.data)) as TimeLog),
-      );
+    );
   }
 
   public delete(
@@ -164,19 +140,39 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
       body,
     );
 
-    return waitForTurn(
+    return runGatedRequest(
       this.requestGate,
       this.isLoadingSignal,
+      request$,
+    );
+  }
+
+  private saveTimeLog(
+    task: Task,
+    timeLog: TimeLog,
+    url: string,
+    method: 'post' | 'patch',
+  ): Observable<TimeLog> {
+    return this.makeRequest<JsonApi<ApiTimeLog>>(
+      url,
+      method,
+      this.buildTimeLogRequestBody(task, timeLog),
     )
       .pipe(
-        switchMap((release: VoidFunction) => request$
-          .pipe(
-            catchError((error: HttpErrorResponse) => {
-              release();
-              return throwError(() => error);
-            }),
-            finalize(release),
-          )),
+        map((response: JsonApi<ApiTimeLog>): TimeLog => (response.data && adaptTimeLog(response.data)) as TimeLog),
       );
+  }
+
+  private buildTimeLogRequestBody(
+    task: Task,
+    timeLog: TimeLog,
+  ): ApiRequestBody {
+    return {
+      id: timeLog.id,
+      startTime: timeLog.startTime && toUnixMs<string>(timeLog.startTime, 'string'),
+      endTime: timeLog.endTime && toUnixMs<string>(timeLog.endTime, 'string'),
+      description: timeLog.description && timeLog.description.trim(),
+      task: task.id,
+    };
   }
 }

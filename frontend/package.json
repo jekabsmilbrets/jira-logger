@@ -4,7 +4,7 @@
     "name": "Jēkabs Milbrets",
     "email": "jekabs.milbrets@me.com"
   },
-  "version": "0.5.4",
+  "version": "0.5.5",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
