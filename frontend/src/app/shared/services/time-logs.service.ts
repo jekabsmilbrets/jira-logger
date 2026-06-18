@@ -1,12 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { catchError, finalize, map, type Observable, of, Subject, switchMap, tap, throwError } from 'rxjs';
+import { catchError, map, type Observable, of, Subject, tap, throwError } from 'rxjs';
 
 import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { RequestGate } from '@core/utilities/request-gate.utility';
-import { waitForTurn } from '@core/utilities/wait-for.utility';
+import { runGatedRequest } from '@core/utilities/run-gated-request.utility';
 
 import { adaptTimeLog, adaptTimeLogs } from '@shared/adapters/time-log.adapter';
 import type { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
@@ -140,20 +140,11 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
       body,
     );
 
-    return waitForTurn(
+    return runGatedRequest(
       this.requestGate,
       this.isLoadingSignal,
-    )
-      .pipe(
-        switchMap((release: VoidFunction) => request$
-          .pipe(
-            catchError((error: HttpErrorResponse) => {
-              release();
-              return throwError(() => error);
-            }),
-            finalize(release),
-          )),
-      );
+      request$,
+    );
   }
 
   private saveTimeLog(

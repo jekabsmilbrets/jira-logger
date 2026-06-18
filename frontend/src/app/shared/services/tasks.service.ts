@@ -2,13 +2,13 @@ import { formatDate } from '@angular/common';
 import { HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, injectAsync, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { catchError, finalize, from, map, type Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, map, type Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
 import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { LocaleService } from '@core/services/locale.service';
 import { RequestGate } from '@core/utilities/request-gate.utility';
-import { waitForTurn } from '@core/utilities/wait-for.utility';
+import { runGatedRequest } from '@core/utilities/run-gated-request.utility';
 
 import { adaptTasks } from '@shared/adapters/task.adapter';
 import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
@@ -22,6 +22,7 @@ import type { ErrorDialogService } from '@shared/services/error-dialog.service';
 import type { ApiRequestBody } from '@shared/types/api-request-body.type';
 import type { AsyncLoader } from '@shared/types/async-loader.type';
 import type { QueryParams } from '@shared/types/query-params.type';
+import { openLoadErrorDialog } from '@shared/utilities/open-load-error-dialog.utility';
 
 @Service()
 export class TasksService implements LoadableService, MakeRequestService {
@@ -210,22 +211,14 @@ export class TasksService implements LoadableService, MakeRequestService {
       body,
     );
 
-    return waitForTurn(this.requestGate, this.isLoadingSignal)
-      .pipe(
-        switchMap((release: VoidFunction) => request$
-          .pipe(
-            catchError((error) => {
-              release();
-
-              if (reportError) {
-                return this.processError(error);
-              }
-
-              return throwError(() => error);
-            }),
-            finalize(release),
-          )),
-      );
+    return runGatedRequest(
+      this.requestGate,
+      this.isLoadingSignal,
+      request$,
+      reportError ?
+        (error: unknown) => this.processError(error) as Observable<T> :
+        undefined,
+    );
   }
 
   private buildQueryParams(
@@ -273,18 +266,12 @@ export class TasksService implements LoadableService, MakeRequestService {
   private processError(
     error: unknown,
   ): Observable<never> {
-    this.isLoadingSignal.set(false);
-
-    return from(this.loadErrorDialogService())
-      .pipe(
-        switchMap((errorDialogService) => errorDialogService.openDialog({
-          errorTitle: 'Error while doing db action :D',
-          errorMessage: JSON.stringify(error),
-          idbData: this.tasks(),
-        })),
-        take(1),
-        switchMap(() => throwError(() => error)),
-      );
+    return openLoadErrorDialog(
+      this.loadErrorDialogService,
+      this.isLoadingSignal,
+      error,
+      this.tasks(),
+    );
   }
 
   private saveTask(

@@ -1,12 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { inject, injectAsync, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { catchError, finalize, from, map, type Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, map, type Observable, of, switchMap, take, tap } from 'rxjs';
 
 import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { RequestGate } from '@core/utilities/request-gate.utility';
-import { waitForTurn } from '@core/utilities/wait-for.utility';
+import { runGatedRequest } from '@core/utilities/run-gated-request.utility';
 
 import { adaptTag, adaptTags } from '@shared/adapters/api-tag.adapter';
 import type { ApiTag } from '@shared/interfaces/api/api-tag.interface';
@@ -17,6 +17,7 @@ import { ApiRequestService } from '@shared/services/api-request.service';
 import type { ErrorDialogService } from '@shared/services/error-dialog.service';
 import type { ApiRequestBody } from '@shared/types/api-request-body.type';
 import type { AsyncLoader } from '@shared/types/async-loader.type';
+import { openLoadErrorDialog } from '@shared/utilities/open-load-error-dialog.utility';
 
 @Service()
 export class TagsService implements LoadableService, MakeRequestService {
@@ -146,22 +147,14 @@ export class TagsService implements LoadableService, MakeRequestService {
   ): Observable<T> {
     const request$: Observable<T> = this.apiRequestService.request<T>(url, method, body);
 
-    return waitForTurn(this.requestGate, this.isLoadingSignal)
-      .pipe(
-        switchMap((release: VoidFunction) => request$
-          .pipe(
-            catchError((error: HttpErrorResponse) => {
-              release();
-
-              if (reportError) {
-                return this.processError(error);
-              }
-
-              return throwError(() => error);
-            }),
-            finalize(release),
-          )),
-      );
+    return runGatedRequest(
+      this.requestGate,
+      this.isLoadingSignal,
+      request$,
+      reportError ?
+        (error: unknown) => this.processError(error as HttpErrorResponse) as Observable<T> :
+        undefined,
+    );
   }
 
   private reloadList(
@@ -182,18 +175,12 @@ export class TagsService implements LoadableService, MakeRequestService {
   private processError(
     error: HttpErrorResponse,
   ): Observable<never> {
-    this.isLoadingSignal.set(false);
-
-    return from(this.loadErrorDialogService())
-      .pipe(
-        switchMap((errorDialogService) => errorDialogService.openDialog({
-          errorTitle: 'Error while doing db action :D',
-          errorMessage: JSON.stringify(error),
-          idbData: this.tags(),
-        })),
-        take(1),
-        switchMap(() => throwError(() => error)),
-      );
+    return openLoadErrorDialog(
+      this.loadErrorDialogService,
+      this.isLoadingSignal,
+      error,
+      this.tags(),
+    );
   }
 
 }

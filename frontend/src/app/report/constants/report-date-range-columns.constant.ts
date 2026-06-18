@@ -1,4 +1,5 @@
 import type { Column } from '@shared/interfaces/column.interface';
+
 import { reportBaseColumns } from './report-base-columns.constant';
 
 export const reportDateRangeColumns: Column[] = [

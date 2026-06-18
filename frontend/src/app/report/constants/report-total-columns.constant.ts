@@ -1,6 +1,7 @@
 import type { Column } from '@shared/interfaces/column.interface';
 import { Task } from '@shared/models/task.model';
 import { columnValue } from '@shared/utilities/column-value.utility';
+
 import { reportBaseColumns } from './report-base-columns.constant';
 
 export const reportTotalColumns: Column[] = [
