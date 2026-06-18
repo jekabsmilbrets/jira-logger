@@ -12,7 +12,7 @@ import { AreYouSureService } from '@shared/services/are-you-sure.service';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 
-import { TimeLogEditService } from '@tasks/services/time-log-edit.service';
+import { TimeLogListService } from '@tasks/services/time-log-list.service';
 
 import { TaskComponent } from './task.component';
 
@@ -53,7 +53,7 @@ describe('Tasks Components task.component', () => {
       tasks: signal([baseTask]).asReadonly(),
     };
 
-    const timeLogEditService = {
+    const timeLogListService = {
       openTimeLogsListDialog: vi.fn(() => of(undefined)),
     };
 
@@ -63,7 +63,7 @@ describe('Tasks Components task.component', () => {
         { provide: AreYouSureService, useValue: areYouSureService },
         { provide: TagsService, useValue: tagsService },
         { provide: TasksService, useValue: tasksService },
-        { provide: TimeLogEditService, useValue: timeLogEditService },
+        { provide: TimeLogListService, useValue: timeLogListService },
       ],
     });
 
@@ -81,7 +81,7 @@ describe('Tasks Components task.component', () => {
       areYouSureService,
       tagsService,
       tasksService,
-      timeLogEditService,
+      timeLogListService,
     };
   };
 
@@ -167,8 +167,8 @@ describe('Tasks Components task.component', () => {
   });
 
   it('emits timeLogsSaved when modal reports a successful save', async () => {
-    const { component, timeLogEditService } = await setup();
-    timeLogEditService.openTimeLogsListDialog.mockReturnValueOnce(of({
+    const { component, timeLogListService } = await setup();
+    timeLogListService.openTimeLogsListDialog.mockReturnValueOnce(of({
       saved: true,
     }) as any);
 
@@ -180,20 +180,20 @@ describe('Tasks Components task.component', () => {
   });
 
   it('ignores undefined and unsaved modal responses when opening time logs modal', async () => {
-    const { component, timeLogEditService } = await setup();
+    const { component, timeLogListService } = await setup();
     const savedSpy = vi.spyOn(component['timeLogsSaved'], 'emit');
 
-    timeLogEditService.openTimeLogsListDialog.mockReturnValueOnce(of(undefined));
+    timeLogListService.openTimeLogsListDialog.mockReturnValueOnce(of(undefined));
     await component['onOpenTimeLogsModal']();
 
-    timeLogEditService.openTimeLogsListDialog.mockReturnValueOnce(of({ saved: false }) as any);
+    timeLogListService.openTimeLogsListDialog.mockReturnValueOnce(of({ saved: false }) as any);
     await component['onOpenTimeLogsModal']();
 
     expect(savedSpy).not.toHaveBeenCalled();
   });
 
   it('reuses cached lazy service promises for confirmation and time-log dialogs', async () => {
-    const { component, areYouSureService, timeLogEditService } = await setup();
+    const { component, areYouSureService, timeLogListService } = await setup();
 
     const firstConfirm = component['loadAreYouSureService']();
     const secondConfirm = component['loadAreYouSureService']();
@@ -201,11 +201,11 @@ describe('Tasks Components task.component', () => {
     expect(confirmServiceA).toBe(confirmServiceB);
     expect(confirmServiceA).toBe(areYouSureService);
 
-    const firstEdit = component['loadTimeLogEditService']();
-    const secondEdit = component['loadTimeLogEditService']();
-    const [editServiceA, editServiceB] = await Promise.all([firstEdit, secondEdit]);
-    expect(editServiceA).toBe(editServiceB);
-    expect(editServiceA).toBe(timeLogEditService);
+    const firstList = component['loadTimeLogListService']();
+    const secondList = component['loadTimeLogListService']();
+    const [listServiceA, listServiceB] = await Promise.all([firstList, secondList]);
+    expect(listServiceA).toBe(listServiceB);
+    expect(listServiceA).toBe(timeLogListService);
   });
 
   it('renders non-edit mode controls and switches to edit mode controls', async () => {

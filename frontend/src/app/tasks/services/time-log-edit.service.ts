@@ -3,32 +3,14 @@ import { MatDialog, type MatDialogRef } from '@angular/material/dialog';
 
 import { Observable } from 'rxjs';
 
-import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 
-import { TimeLogListModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-list-modal.component';
 import { TimeLogModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-modal/time-log-modal.component';
 import type { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
-import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
 
 @Service()
 export class TimeLogEditService {
   private readonly matDialog: MatDialog = inject(MatDialog);
-
-  public openTimeLogsListDialog(
-    task: Task,
-  ): Observable<TimeLogsModalResponse | undefined> {
-    const timeLogsListDialogRef: MatDialogRef<TimeLogListModalComponent, TimeLogsModalResponse> = this.matDialog.open(
-      TimeLogListModalComponent,
-      {
-        data: {
-          task: this.cloneTask(task),
-        },
-      },
-    );
-
-    return timeLogsListDialogRef.afterClosed();
-  }
 
   public openTimeLogDialog(
     timeLog: TimeLog,
@@ -43,20 +25,5 @@ export class TimeLogEditService {
     );
 
     return timeLogDialogRef.afterClosed();
-  }
-
-  private cloneTask(
-    task: Task,
-  ): Task {
-    return new Task({
-      id: task.id,
-      name: task.name,
-      description: task.description,
-      lastTimeLog: task.lastTimeLog,
-      timeLogs: task.timeLogs,
-      jiraWorkLogs: task.jiraWorkLogs,
-      timeLogged: task.timeLogged,
-      tags: task.tags,
-    });
   }
 }
