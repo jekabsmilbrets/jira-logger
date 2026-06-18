@@ -19,6 +19,12 @@ import type {
   LegacyTaskInput,
   LegacyTimeLogInput,
 } from '@tasks/interfaces/task-backup-legacy-input.interface';
+import type { UnsupportedMetadataParser } from '@tasks/interfaces/unsupported-metadata-parser.interface';
+import type {
+  TimestampResolver,
+  UnsupportedMetadataField,
+  UnsupportedMetadataValue,
+} from '@tasks/types/task-backup-metadata.type';
 
 const normalizeKey: (value: string) => string = (value: string): string => value.trim().toLowerCase();
 
@@ -43,6 +49,91 @@ const pickArray: (
   return output;
 };
 
+const timestampResolvers: TimestampResolver[] = [
+  (value: string): number | undefined => {
+    const numericValue: number = Number(value);
+    return Number.isFinite(numericValue) ? numericValue : undefined;
+  },
+  (value: string): number | undefined => {
+    const parsedDate: number = Date.parse(value);
+    return Number.isFinite(parsedDate) ? parsedDate : undefined;
+  },
+];
+
+const unsupportedMetadataFieldDefinitions: {
+  field: UnsupportedMetadataField;
+  label: string;
+}[] = [
+  { field: 'task', label: 'source task metadata' },
+  { field: 'timeLogs', label: 'source time log metadata' },
+  { field: 'tags', label: 'source tag metadata' },
+  { field: 'lastTimeLog', label: 'lastTimeLog' },
+  { field: 'jiraWorkLogs', label: 'jiraWorkLogs' },
+  { field: 'timeLogged', label: 'timeLogged' },
+];
+
+const currentMetadataParsers: (
+  metadataRecord: Record<string, unknown>,
+) => UnsupportedMetadataParser[] = (
+  metadataRecord: Record<string, unknown>,
+): UnsupportedMetadataParser[] => [
+  {
+    field: 'task',
+    parse: () => toMetadataEntry(metadataRecord['task'], ['id'], ['createdAt'], ['updatedAt']),
+  },
+  {
+    field: 'timeLogs',
+    parse: () => toMetadataEntries(metadataRecord['timeLogs'], ['id'], ['createdAt'], ['updatedAt']),
+  },
+  {
+    field: 'tags',
+    parse: () => toMetadataEntries(metadataRecord['tags'], ['id'], ['createdAt'], ['updatedAt']),
+  },
+  {
+    field: 'lastTimeLog',
+    parse: () => parseNullableBackupTimeLog(metadataRecord['lastTimeLog']),
+  },
+  {
+    field: 'jiraWorkLogs',
+    parse: () => toJiraWorkLogs(metadataRecord['jiraWorkLogs'], ['id'], 'metadata.jiraWorkLogs.startTime', false),
+  },
+  {
+    field: 'timeLogged',
+    parse: () => toOptionalLoggedTime(metadataRecord['timeLogged']),
+  },
+];
+
+const legacyMetadataParsers: (
+  value: LegacyTaskInput,
+) => UnsupportedMetadataParser[] = (
+  value: LegacyTaskInput,
+): UnsupportedMetadataParser[] => [
+  {
+    field: 'task',
+    parse: () => toMetadataEntry(value, ['id', '_id'], ['createdAt', '_createdAt'], ['updatedAt', '_updatedAt']),
+  },
+  {
+    field: 'timeLogs',
+    parse: () => toMetadataEntries(value.timeLogs ?? value._timeLogs, ['_id', 'id'], ['_createdAt'], ['_updatedAt']),
+  },
+  {
+    field: 'tags',
+    parse: () => toMetadataEntries(value.tags ?? value._tags, ['_id', 'id'], ['_createdAt'], ['_updatedAt']),
+  },
+  {
+    field: 'lastTimeLog',
+    parse: () => parseNullableBackupTimeLog(value.lastTimeLog ?? value._lastTimeLog),
+  },
+  {
+    field: 'jiraWorkLogs',
+    parse: () => toJiraWorkLogs(value.jiraWorkLogs ?? value._jiraWorkLogs, ['id', '_id'], 'jiraWorkLogs.startTime'),
+  },
+  {
+    field: 'timeLogged',
+    parse: () => toOptionalLoggedTime(value.timeLogged ?? value._timeLogged),
+  },
+];
+
 const normalizeTimestamp: (
   value: unknown,
   field: string,
@@ -50,29 +141,27 @@ const normalizeTimestamp: (
   value: unknown,
   field: string,
 ): number => {
-  if (value instanceof Date) {
-    const output: number = value.getTime();
+  const dateValue: number | undefined = value instanceof Date ?
+    value.getTime() :
+    undefined;
 
-    if (Number.isFinite(output)) {
-      return output;
-    }
+  if (dateValue !== undefined && Number.isFinite(dateValue)) {
+    return dateValue;
   }
 
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
+  if (typeof value === 'number') {
+    if (Number.isFinite(value)) {
+      return value;
+    }
   }
 
   if (typeof value === 'string' && value.trim()) {
-    const numericValue: number = Number(value);
+    for (const resolveTimestamp of timestampResolvers) {
+      const resolvedTimestamp: number | undefined = resolveTimestamp(value);
 
-    if (Number.isFinite(numericValue)) {
-      return numericValue;
-    }
-
-    const parsedDate: number = Date.parse(value);
-
-    if (Number.isFinite(parsedDate)) {
-      return parsedDate;
+      if (resolvedTimestamp !== undefined) {
+        return resolvedTimestamp;
+      }
     }
   }
 
@@ -289,6 +378,36 @@ const toUnsupportedMetadataResult: (
     undefined;
 };
 
+const toOptionalLoggedTime: (
+  value: unknown,
+) => number | null | undefined = (
+  value: unknown,
+): number | null | undefined => {
+  if (value === null) {
+    return null;
+  }
+
+  return typeof value === 'number' && Number.isFinite(value) ?
+    value :
+    undefined;
+};
+
+const collectUnsupportedMetadataFromParsers: (
+  parsers: UnsupportedMetadataParser[],
+) => TaskBackupUnsupportedMetadata | undefined = (
+  parsers: UnsupportedMetadataParser[],
+): TaskBackupUnsupportedMetadata | undefined => {
+  const metadata: TaskBackupUnsupportedMetadata = {};
+
+  parsers.forEach((parser: UnsupportedMetadataParser) => {
+    Object.assign(metadata, {
+      [parser.field]: parser.parse(),
+    });
+  });
+
+  return toUnsupportedMetadataResult(metadata);
+};
+
 const toUnsupportedMetadata: (
   task: Task,
 ) => TaskBackupUnsupportedMetadata | undefined = (
@@ -342,13 +461,12 @@ const normalizeBackupTimeLog: (
   }
 
   const source: LegacyTimeLogInput = value as LegacyTimeLogInput;
-  const startTime: unknown = source.startTime ?? source._startTime;
+  const [startTime, endTime] = [source.startTime ?? source._startTime, source.endTime ?? source._endTime];
 
   if (startTime === undefined) {
     throw new Error('Missing required field "startTime" for imported time log.');
   }
 
-  const endTime: unknown = source.endTime ?? source._endTime;
   const description: string | undefined = normalizeOptionalText(
     source.description,
     source._description,
@@ -386,7 +504,8 @@ const normalizeTagName: (
   currentTags: Tag[],
 ): string => {
   if (typeof value === 'string' && value.trim()) {
-    const existingTag: Tag | undefined = currentTags.find((tag: Tag) => normalizeKey(tag.name) === normalizeKey(value));
+    const normalizedName: string = normalizeKey(value);
+    const existingTag: Tag | undefined = currentTags.find((tag: Tag) => normalizeKey(tag.name) === normalizedName);
 
     return existingTag?.name ?? value.trim();
   }
@@ -418,31 +537,17 @@ const buildUnsupportedMetadataWarning: (
   taskName: string,
   metadata: TaskBackupUnsupportedMetadata,
 ): ImportWarning => {
-  const fields: string[] = [];
+  const fields: string[] = unsupportedMetadataFieldDefinitions
+    .filter(({ field }) => {
+      const value: UnsupportedMetadataValue = metadata[field];
 
-  if (metadata.task) {
-    fields.push('source task metadata');
-  }
+      if (Array.isArray(value)) {
+        return value.length > 0;
+      }
 
-  if (metadata.timeLogs?.length) {
-    fields.push('source time log metadata');
-  }
-
-  if (metadata.tags?.length) {
-    fields.push('source tag metadata');
-  }
-
-  if (metadata.lastTimeLog) {
-    fields.push('lastTimeLog');
-  }
-
-  if (metadata.jiraWorkLogs?.length) {
-    fields.push('jiraWorkLogs');
-  }
-
-  if (metadata.timeLogged !== undefined && metadata.timeLogged !== null) {
-    fields.push('timeLogged');
-  }
+      return value !== undefined && value !== null;
+    })
+    .map(({ label }) => label);
 
   return {
     code: 'unsupported-metadata',
@@ -459,88 +564,10 @@ const collectUnsupportedMetadata: (
   value: LegacyTaskInput,
 ): TaskBackupUnsupportedMetadata | undefined => {
   if (isRecord(value.metadata)) {
-    const metadataRecord: Record<string, unknown> = value.metadata;
-    const task: TaskBackupSourceMetadataEntry | undefined = toMetadataEntry(
-      metadataRecord['task'],
-      ['id'],
-      ['createdAt'],
-      ['updatedAt'],
-    );
-    const timeLogs: TaskBackupSourceMetadataEntry[] | undefined = toMetadataEntries(
-      metadataRecord['timeLogs'],
-      ['id'],
-      ['createdAt'],
-      ['updatedAt'],
-    );
-    const tags: TaskBackupSourceMetadataEntry[] | undefined = toMetadataEntries(
-      metadataRecord['tags'],
-      ['id'],
-      ['createdAt'],
-      ['updatedAt'],
-    );
-    const lastTimeLog: TaskBackupTimeLog | null | undefined = parseNullableBackupTimeLog(metadataRecord['lastTimeLog']);
-    const jiraWorkLogs: TaskBackupJiraWorkLog[] | undefined = toJiraWorkLogs(
-      metadataRecord['jiraWorkLogs'],
-      ['id'],
-      'metadata.jiraWorkLogs.startTime',
-      false,
-    );
-    const timeLogged: number | null | undefined = metadataRecord['timeLogged'] === null ?
-      null :
-      typeof metadataRecord['timeLogged'] === 'number' && Number.isFinite(metadataRecord['timeLogged']) ?
-        metadataRecord['timeLogged'] :
-        undefined;
-
-    return toUnsupportedMetadataResult({
-      task,
-      timeLogs,
-      tags,
-      lastTimeLog,
-      jiraWorkLogs,
-      timeLogged,
-    });
+    return collectUnsupportedMetadataFromParsers(currentMetadataParsers(value.metadata));
   }
 
-  const taskMetadata: TaskBackupSourceMetadataEntry | undefined = toMetadataEntry(
-    value,
-    ['id', '_id'],
-    ['createdAt', '_createdAt'],
-    ['updatedAt', '_updatedAt'],
-  );
-  const timeLogsMetadata: TaskBackupSourceMetadataEntry[] | undefined = toMetadataEntries(
-    value.timeLogs ?? value._timeLogs,
-    ['_id', 'id'],
-    ['_createdAt'],
-    ['_updatedAt'],
-  );
-  const tagsMetadata: TaskBackupSourceMetadataEntry[] | undefined = toMetadataEntries(
-    value.tags ?? value._tags,
-    ['_id', 'id'],
-    ['_createdAt'],
-    ['_updatedAt'],
-  );
-  const lastTimeLog: TaskBackupTimeLog | null | undefined = parseNullableBackupTimeLog(value.lastTimeLog ?? value._lastTimeLog);
-  const jiraWorkLogs: TaskBackupJiraWorkLog[] | undefined = toJiraWorkLogs(
-    value.jiraWorkLogs ?? value._jiraWorkLogs,
-    ['id', '_id'],
-    'jiraWorkLogs.startTime',
-  );
-
-  const rawTimeLogged: unknown = value.timeLogged ?? value._timeLogged;
-  const timeLogged: number | null | undefined = rawTimeLogged === null ?
-    null :
-    typeof rawTimeLogged === 'number' && Number.isFinite(rawTimeLogged) ?
-      rawTimeLogged :
-      undefined;
-
-  return toUnsupportedMetadataResult({
-    task: taskMetadata,
-    timeLogs: timeLogsMetadata,
-    tags: tagsMetadata,
-    lastTimeLog,
-    jiraWorkLogs,
-    timeLogged,
-  });
+  return collectUnsupportedMetadataFromParsers(legacyMetadataParsers(value));
 };
 
 const normalizeTaskInput: (
