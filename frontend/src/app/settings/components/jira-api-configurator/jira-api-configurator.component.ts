@@ -89,6 +89,32 @@ export class JiraApiConfiguratorComponent {
     this.emitChangedSettings(this.collectChangedSettings(this.jiraApiFormModel()));
   }
 
+  protected togglePersonalAccessTokenVisibility(): void {
+    this.hidePersonalAccessToken.set(!this.hidePersonalAccessToken());
+  }
+
+  protected getPersonalAccessTokenInputType(): 'password' | 'text' {
+    return this.hidePersonalAccessToken() ?
+      'password' :
+      'text';
+  }
+
+  protected getPersonalAccessTokenVisibilityLabel(): string {
+    return this.hidePersonalAccessToken() ?
+      'Show token' :
+      'Hide token';
+  }
+
+  protected getPersonalAccessTokenVisibilityIcon(): string {
+    return this.hidePersonalAccessToken() ?
+      'visibility_off' :
+      'visibility';
+  }
+
+  protected isSaveDisabled(): boolean {
+    return this.jiraApiForm().disabled() || !this.jiraApiForm().dirty() || this.jiraApiForm().invalid();
+  }
+
   private resetFormData(): void {
     this.hasStoredPersonalAccessToken.set(!!this.getSettingValue(JiraApiSettings.personalAccessToken, ''));
     this.jiraApiForm().reset({

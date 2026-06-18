@@ -173,6 +173,16 @@ export class TableComponent implements AfterViewInit {
     }
   }
 
+  protected onMasterToggle(): void {
+    this.masterToggle();
+  }
+
+  protected onSelectionToggle(
+    row: Searchable,
+  ): void {
+    this.selection.toggle(row);
+  }
+
   protected shouldDisplayColumn(
     column: Column,
   ): boolean {
@@ -242,19 +252,7 @@ export class TableComponent implements AfterViewInit {
     row: Searchable,
     column: Column,
   ): string | number {
-    const value: unknown = column.cell(row);
-
-    if (column.pipe === 'readableTime') {
-      return this.readableTimePipe.transform(typeof value === 'number' ? value : Number(value ?? 0));
-    }
-
-    if (column.pipe === 'date') {
-      return this.formatDateValue(value as Date | string | number | null | undefined, 'yyyy-MM-dd');
-    }
-
-    return typeof value === 'string' || typeof value === 'number' ?
-      value :
-      '';
+    return this.formatCellValue(column.cell(row), column.pipe, 'yyyy-MM-dd');
   }
 
   protected getFooterCellValue(
@@ -262,15 +260,9 @@ export class TableComponent implements AfterViewInit {
   ): string | number {
     const footerValue: unknown = column.hasFooter && column.footerCell ?
       column.footerCell(this.dataSource.data) :
-      '';
+      undefined;
 
-    if (column.pipe === 'readableTime') {
-      return this.readableTimePipe.transform(typeof footerValue === 'number' ? footerValue : Number(footerValue ?? 0));
-    }
-
-    return typeof footerValue === 'string' || typeof footerValue === 'number' ?
-      footerValue :
-      '';
+    return this.formatCellValue(footerValue, column.pipe);
   }
 
   protected shouldShowFooter(): boolean {
@@ -322,6 +314,38 @@ export class TableComponent implements AfterViewInit {
     }
 
     return formatDate(value, format, this.localeService.locale, this.timezoneService.timezone);
+  }
+
+  private formatCellValue(
+    value: unknown,
+    pipe: Column['pipe'],
+    dateFormat?: string,
+  ): string | number {
+    if (pipe === 'readableTime') {
+      return this.readableTimePipe.transform(this.toNumericValue(value));
+    }
+
+    if (pipe === 'date') {
+      return this.formatDateValue(value as Date | string | number | null | undefined, dateFormat ?? 'yyyy-MM-dd');
+    }
+
+    return this.toDisplayValue(value);
+  }
+
+  private toNumericValue(
+    value: unknown,
+  ): number {
+    return typeof value === 'number' ?
+      value :
+      Number(value ?? 0);
+  }
+
+  private toDisplayValue(
+    value: unknown,
+  ): string | number {
+    return typeof value === 'string' || typeof value === 'number' ?
+      value :
+      '';
   }
 
   private buildRemoveConfirmationLabel(

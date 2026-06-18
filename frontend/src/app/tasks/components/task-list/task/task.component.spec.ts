@@ -210,16 +210,17 @@ describe('Tasks Components task.component', () => {
 
   it('renders non-edit mode controls and switches to edit mode controls', async () => {
     const { component, fixture } = await setup();
+    const getUpdateButton = (): HTMLButtonElement => fixture.debugElement.query(By.css('button[aria-label="Update"]')).nativeElement as HTMLButtonElement;
 
     expect(fixture.debugElement.query(By.css('mat-card-header'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('button[aria-label="Edit"] mat-icon'))?.nativeElement.textContent.trim()).toBe('edit');
-    expect(fixture.debugElement.query(By.css('button[aria-label="Update"]'))).toBeFalsy();
+    expect(getUpdateButton().style.display).toBe('none');
 
     component['onToggleEditMode']();
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('mat-card-content'))).toBeTruthy();
-    expect(fixture.debugElement.query(By.css('button[aria-label="Update"]'))).toBeTruthy();
+    expect(getUpdateButton().style.display).toBe('');
     expect(fixture.debugElement.query(By.css('button[aria-label="Edit"] mat-icon'))?.nativeElement.textContent.trim()).toBe('cancel');
   });
 

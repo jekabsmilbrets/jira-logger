@@ -26,9 +26,7 @@
                                      [class.mat-cell-clickable]="isFooterClickable(column)">
                         <span>{{ getFooterCellValue(column) }}</span>
                     </mat-footer-cell>
-                }
-
-                @if (shouldShowSyncColumn(column)) {
+                } @else if (shouldShowSyncColumn(column)) {
                     <mat-header-cell *cdkHeaderCellDef>Sync</mat-header-cell>
 
                     <mat-cell *cdkCellDef="let row"
@@ -50,13 +48,13 @@
         }
         <ng-container cdkColumnDef="select">
             <mat-header-cell *cdkHeaderCellDef>
-                <mat-checkbox (change)="$event ? masterToggle() : null"
+                <mat-checkbox (change)="onMasterToggle()"
                               [checked]="selection.hasValue() && isAllSelected()"
                               [indeterminate]="selection.hasValue() && !isAllSelected()"/>
             </mat-header-cell>
 
             <mat-cell *cdkCellDef="let row">
-                <mat-checkbox (change)="$event ? selection.toggle(row) : null"
+                <mat-checkbox (change)="onSelectionToggle(row)"
                               (click)="$event.stopPropagation()"
                               [checked]="selection.isSelected(row)"/>
             </mat-cell>
