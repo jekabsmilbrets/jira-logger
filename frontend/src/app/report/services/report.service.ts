@@ -8,8 +8,8 @@ import type { Column } from '@shared/interfaces/column.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 
-import { columns as monthModelColumns } from '@report/constants/report-date-range-columns.constant';
-import { columns as totalModelColumns } from '@report/constants/report-total-columns.constant';
+import { reportDateRangeColumns } from '@report/constants/report-date-range-columns.constant';
+import { reportTotalColumns } from '@report/constants/report-total-columns.constant';
 import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportStateService } from '@report/services/report-state.service';
 import { ReportTaskQueryService } from '@report/services/report-task-query.service';
@@ -86,7 +86,7 @@ export class ReportService {
     );
 
     if (reportMode === ReportMode.total) {
-      return [...totalModelColumns];
+      return [...reportTotalColumns];
     }
 
     if (reportMode === ReportMode.date) {
@@ -100,7 +100,7 @@ export class ReportService {
           reportMode,
           this.reportTaskQueryService.jiraApiEnabled(),
         ) :
-        [...totalModelColumns];
+        [...reportTotalColumns];
     }
 
     const startDate: Date | null = this.startDate();
@@ -114,7 +114,7 @@ export class ReportService {
         reportMode,
         this.reportTaskQueryService.jiraApiEnabled(),
       ) :
-      [...totalModelColumns];
+      [...reportTotalColumns];
   }
 
   private generateMonthColumns(
@@ -124,7 +124,7 @@ export class ReportService {
     reportMode: ReportMode,
     jiraApiEnabled: boolean,
   ): Column[] {
-    const modifiedMonthModelColumns: Column[] = [...monthModelColumns];
+    const modifiedMonthModelColumns: Column[] = [...reportDateRangeColumns];
     const currentDate: Date = new Date(startDate);
     const weekendIndexes: number[] = [0, 6];
     const reduceFn: (acc: number, value: number) => number = (
