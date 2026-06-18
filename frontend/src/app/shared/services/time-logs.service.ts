@@ -69,48 +69,24 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
     task: Task,
     timeLog: TimeLog,
   ): Observable<TimeLog> {
-    const url: string = `/${ task.id }/${ this.baseTimeLogPath }`;
-
-    const body: ApiRequestBody = {
-      id: timeLog.id,
-      startTime: timeLog.startTime && toUnixMs<string>(timeLog.startTime, 'string'),
-      endTime: timeLog.endTime && toUnixMs<string>(timeLog.endTime, 'string'),
-      description: timeLog.description && timeLog.description.trim(),
-      task: task.id,
-    };
-
-    return this.makeRequest<JsonApi<ApiTimeLog>>(
-      url,
+    return this.saveTimeLog(
+      task,
+      timeLog,
+      `/${ task.id }/${ this.baseTimeLogPath }`,
       'post',
-      body,
-    )
-      .pipe(
-        map((response: JsonApi<ApiTimeLog>): TimeLog => (response.data && adaptTimeLog(response.data)) as TimeLog),
-      );
+    );
   }
 
   public update(
     task: Task,
     timeLog: TimeLog,
   ): Observable<TimeLog> {
-    const url: string = `/${ task.id }/${ this.baseTimeLogPath }/${ timeLog.id }`;
-
-    const body: ApiRequestBody = {
-      id: timeLog.id,
-      startTime: timeLog.startTime && toUnixMs<string>(timeLog.startTime, 'string'),
-      endTime: timeLog.endTime && toUnixMs<string>(timeLog.endTime, 'string'),
-      description: timeLog.description && timeLog.description.trim(),
-      task: task.id,
-    };
-
-    return this.makeRequest<JsonApi<ApiTimeLog>>(
-      url,
+    return this.saveTimeLog(
+      task,
+      timeLog,
+      `/${ task.id }/${ this.baseTimeLogPath }/${ timeLog.id }`,
       'patch',
-      body,
-    )
-      .pipe(
-        map((response: JsonApi<ApiTimeLog>): TimeLog => (response.data && adaptTimeLog(response.data)) as TimeLog),
-      );
+    );
   }
 
   public delete(
@@ -178,5 +154,34 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
             finalize(release),
           )),
       );
+  }
+
+  private saveTimeLog(
+    task: Task,
+    timeLog: TimeLog,
+    url: string,
+    method: 'post' | 'patch',
+  ): Observable<TimeLog> {
+    return this.makeRequest<JsonApi<ApiTimeLog>>(
+      url,
+      method,
+      this.buildTimeLogRequestBody(task, timeLog),
+    )
+      .pipe(
+        map((response: JsonApi<ApiTimeLog>): TimeLog => (response.data && adaptTimeLog(response.data)) as TimeLog),
+      );
+  }
+
+  private buildTimeLogRequestBody(
+    task: Task,
+    timeLog: TimeLog,
+  ): ApiRequestBody {
+    return {
+      id: timeLog.id,
+      startTime: timeLog.startTime && toUnixMs<string>(timeLog.startTime, 'string'),
+      endTime: timeLog.endTime && toUnixMs<string>(timeLog.endTime, 'string'),
+      description: timeLog.description && timeLog.description.trim(),
+      task: task.id,
+    };
   }
 }

@@ -110,47 +110,24 @@ export class TasksService implements LoadableService, MakeRequestService {
     task: Task,
     skipReload: boolean = false,
   ): Observable<Task> {
-    const body: ApiRequestBody = {
-      name: task.name && task.name.trim(),
-      description: task.description && task.description.trim(),
-      tags: task.tags.map((tag: Tag) => tag.id),
-    };
-
-    return this.makeRequest<JsonApi<ApiTask>>(
+    return this.saveTask(
+      task,
       '',
       'post',
-      body,
-      true,
-    )
-      .pipe(
-        switchMap(() => this.reloadList(skipReload)),
-        map((tasks: Task[]) => this.findTask(tasks, task)),
-      );
+      skipReload,
+    );
   }
 
   public update(
     task: Task,
     skipReload: boolean = false,
   ): Observable<Task> {
-    const url: string = `/${ task.id }`;
-
-    const body: ApiRequestBody = {
-      id: task.id,
-      name: task.name && task.name.trim(),
-      description: task.description && task.description.trim(),
-      tags: task.tags.map((tag: Tag) => tag.id),
-    };
-
-    return this.makeRequest<JsonApi<ApiTask>>(
-      url,
+    return this.saveTask(
+      task,
+      `/${ task.id }`,
       'patch',
-      body,
-      true,
-    )
-      .pipe(
-        switchMap(() => this.reloadList(skipReload)),
-        map((tasks: Task[]) => this.findTask(tasks, task)),
-      );
+      skipReload,
+    );
   }
 
   public delete(
@@ -308,6 +285,35 @@ export class TasksService implements LoadableService, MakeRequestService {
         take(1),
         switchMap(() => throwError(() => error)),
       );
+  }
+
+  private saveTask(
+    task: Task,
+    url: string,
+    method: 'post' | 'patch',
+    skipReload: boolean,
+  ): Observable<Task> {
+    return this.makeRequest<JsonApi<ApiTask>>(
+      url,
+      method,
+      this.buildTaskRequestBody(task),
+      true,
+    )
+      .pipe(
+        switchMap(() => this.reloadList(skipReload)),
+        map((tasks: Task[]) => this.findTask(tasks, task)),
+      );
+  }
+
+  private buildTaskRequestBody(
+    task: Task,
+  ): ApiRequestBody {
+    return {
+      id: task.id,
+      name: task.name && task.name.trim(),
+      description: task.description && task.description.trim(),
+      tags: task.tags.map((tag: Tag) => tag.id),
+    };
   }
 
   private reloadList(
