@@ -4,10 +4,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 
-import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 
-import { TimeLogListModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-list-modal.component';
 import { TimeLogModalComponent } from '@tasks/components/task-list/task/time-log-list-modal/time-log-modal/time-log-modal.component';
 
 import { TimeLogEditService } from './time-log-edit.service';
@@ -38,26 +36,6 @@ describe('Tasks Services time-log-edit.service', () => {
     });
 
     service = TestBed.inject(TimeLogEditService);
-  });
-
-  it('opens time log list dialog with task and returns close stream', () => {
-    const task = new Task({ id: '1', name: 'Task 1', timeLogs: [], tags: [] });
-    const closeValue = { updated: true };
-
-    dialogRefMock.afterClosed.mockReturnValue(of(closeValue));
-    matDialogMock.open.mockReturnValue(dialogRefMock);
-
-    let result: unknown;
-    service.openTimeLogsListDialog(task).subscribe((value) => {
-      result = value;
-    });
-
-    expect(matDialogMock.open).toHaveBeenCalledWith(TimeLogListModalComponent, {
-      data: {
-        task,
-      },
-    });
-    expect(result).toEqual(closeValue);
   });
 
   it('opens time log dialog with time log and returns close stream', () => {

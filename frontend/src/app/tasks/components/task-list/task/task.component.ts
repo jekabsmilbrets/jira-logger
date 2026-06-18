@@ -35,7 +35,7 @@ import type { AsyncLoader } from '@shared/types/async-loader.type';
 import { TaskUpdateAction } from '@tasks/enums/task-update-action.enum';
 import type { TaskFormValue } from '@tasks/interfaces/task-form-value.interface';
 import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
-import type { TimeLogEditService } from '@tasks/services/time-log-edit.service';
+import type { TimeLogListService } from '@tasks/services/time-log-list.service';
 import { buildTaskUpdatePayload } from '@tasks/utility/task-payload-builder.utility';
 
 @Component({
@@ -80,8 +80,8 @@ export class TaskComponent {
   );
 
   private readonly tagsService: TagsService = inject(TagsService);
-  private readonly loadTimeLogEditService: AsyncLoader<TimeLogEditService> = injectAsync(
-    () => import('@tasks/services/time-log-edit.service').then((m) => m.TimeLogEditService),
+  private readonly loadTimeLogListService: AsyncLoader<TimeLogListService> = injectAsync(
+    () => import('@tasks/services/time-log-list.service').then((m) => m.TimeLogListService),
   );
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly tasks: Signal<Task[]> = this.tasksService.tasks;
@@ -178,9 +178,9 @@ export class TaskComponent {
   }
 
   protected async onOpenTimeLogsModal(): Promise<void> {
-    const timeLogEditService: TimeLogEditService = await this.loadTimeLogEditService();
+    const timeLogListService: TimeLogListService = await this.loadTimeLogListService();
 
-    timeLogEditService.openTimeLogsListDialog(this.task())
+    timeLogListService.openTimeLogsListDialog(this.task())
       .pipe(take(1))
       .subscribe((response: TimeLogsModalResponse | undefined) => {
         if (response?.saved) {
