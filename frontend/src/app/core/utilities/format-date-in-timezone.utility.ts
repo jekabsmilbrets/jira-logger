@@ -11,6 +11,19 @@ const formatOptions: Intl.DateTimeFormatOptions = {
 };
 
 const formatTokens: string[] = ['yyyy', 'MM', 'dd', 'HH', 'H', 'mm', 'm', 'ss', 's'];
+const tokenPartKeys: Record<string, keyof Intl.DateTimeFormatPartTypesRegistry | 'hour'> = {
+  yyyy: 'year',
+  MM: 'month',
+  dd: 'day',
+  HH: 'hour',
+  mm: 'minute',
+  ss: 'second',
+};
+const normalizedTokenSources: Record<string, string> = {
+  H: 'HH',
+  m: 'mm',
+  s: 'ss',
+};
 
 const normalizeDateInput: (
   value: Date | string | number,
@@ -28,23 +41,14 @@ const toTokenValues: (
   parts: Record<string, string>,
 ) => Record<string, string> = (
   parts: Record<string, string>,
-): Record<string, string> => {
-  const paddedValues: Record<string, string> = {
-    yyyy: parts['year'] ?? '',
-    MM: parts['month'] ?? '',
-    dd: parts['day'] ?? '',
-    HH: parts['hour'] ?? '',
-    mm: parts['minute'] ?? '',
-    ss: parts['second'] ?? '',
-  };
+): Record<string, string> => Object.fromEntries(formatTokens.map((token: string) => {
+  const paddedTokenKey: string | undefined = normalizedTokenSources[token];
+  const sourceValue: string = paddedTokenKey ?
+    String(Number(parts[tokenPartKeys[paddedTokenKey] ?? 'hour'] ?? '0')) :
+    parts[tokenPartKeys[token] ?? 'year'] ?? '';
 
-  return {
-    ...paddedValues,
-    H: String(Number(paddedValues['HH'] ?? '0')),
-    m: String(Number(paddedValues['mm'] ?? '0')),
-    s: String(Number(paddedValues['ss'] ?? '0')),
-  };
-};
+  return [token, sourceValue];
+}));
 
 const replaceFormatTokens: (
   format: string,

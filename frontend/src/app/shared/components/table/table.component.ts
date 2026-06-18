@@ -116,6 +116,8 @@ export class TableComponent implements AfterViewInit {
 
     return columns;
   });
+  protected readonly loopColumns: Signal<Column[]> = computed(() => this.columns().filter((column: Column) => this.shouldDisplayColumn(column)));
+  protected readonly syncColumn: Signal<Column | undefined> = computed(() => this.columns().find((column: Column) => this.shouldShowSyncColumn(column)));
 
   protected selection: SelectionModel<Searchable> = new SelectionModel<Searchable>(true, []);
 
@@ -273,6 +275,10 @@ export class TableComponent implements AfterViewInit {
     column: Column,
   ): boolean {
     return column.columnDef === 'sync' && !column.hidden && !column.excludeFromLoop;
+  }
+
+  protected hasSyncColumn(): boolean {
+    return this.syncColumn() !== undefined;
   }
 
   protected isSyncDisabled(

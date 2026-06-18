@@ -4,46 +4,50 @@
                [matSortDirection]="sortDirection()"
                matSort
                matSortDisableClear>
-        @for (column of columns(); track column.columnDef) {
+        @for (column of loopColumns(); track column.columnDef) {
             <ng-container [cdkColumnDef]="column.columnDef"
                           [stickyEnd]="column.stickyEnd"
                           [sticky]="column.sticky">
-                @if (shouldDisplayColumn(column)) {
-                    <mat-header-cell *cdkHeaderCellDef
-                                     [disabled]="!column.sortable"
-                                     [mat-sort-header]="column.columnDef">
-                        {{ column.header }}
-                    </mat-header-cell>
+                <mat-header-cell *cdkHeaderCellDef
+                                 [disabled]="!column.sortable"
+                                 [mat-sort-header]="column.columnDef">
+                    {{ column.header }}
+                </mat-header-cell>
 
-                    <mat-cell (click)="onCellClick(row, column)"
-                              *cdkCellDef="let row"
-                              [class.mat-cell-clickable]="column.isClickable">
-                        <span>{{ getColumnCellValue(row, column) }}</span>
-                    </mat-cell>
+                <mat-cell (click)="onCellClick(row, column)"
+                          *cdkCellDef="let row"
+                          [class.mat-cell-clickable]="column.isClickable">
+                    <span>{{ getColumnCellValue(row, column) }}</span>
+                </mat-cell>
 
-                    <mat-footer-cell (click)="onFooterCellClicked(column)"
-                                     *cdkFooterCellDef
-                                     [class.mat-cell-clickable]="isFooterClickable(column)">
-                        <span>{{ getFooterCellValue(column) }}</span>
-                    </mat-footer-cell>
-                } @else if (shouldShowSyncColumn(column)) {
-                    <mat-header-cell *cdkHeaderCellDef>Sync</mat-header-cell>
+                <mat-footer-cell (click)="onFooterCellClicked(column)"
+                                 *cdkFooterCellDef
+                                 [class.mat-cell-clickable]="isFooterClickable(column)">
+                    <span>{{ getFooterCellValue(column) }}</span>
+                </mat-footer-cell>
+            </ng-container>
+        }
 
-                    <mat-cell *cdkCellDef="let row"
-                              [matTooltipDisabled]="!isSyncDisabled(row, column)"
-                              matTooltip="Task already synced with JIRA server!">
-                        <button (click)="onSyncAction(row)"
-                                [disabled]="isSyncDisabled(row, column)"
-                                aria-label="Sync task to Jira"
-                                color="warn"
-                                type="button"
-                                mat-icon-button>
-                                <mat-icon>sync</mat-icon>
-                            </button>
-                    </mat-cell>
+        @if (hasSyncColumn()) {
+            <ng-container [cdkColumnDef]="syncColumn()!.columnDef"
+                          [stickyEnd]="syncColumn()!.stickyEnd"
+                          [sticky]="syncColumn()!.sticky">
+                <mat-header-cell *cdkHeaderCellDef>Sync</mat-header-cell>
 
-                    <mat-footer-cell *cdkFooterCellDef/>
-                }
+                <mat-cell *cdkCellDef="let row"
+                          [matTooltipDisabled]="!isSyncDisabled(row, syncColumn()!)"
+                          matTooltip="Task already synced with JIRA server!">
+                    <button (click)="onSyncAction(row)"
+                            [disabled]="isSyncDisabled(row, syncColumn()!)"
+                            aria-label="Sync task to Jira"
+                            color="warn"
+                            type="button"
+                            mat-icon-button>
+                            <mat-icon>sync</mat-icon>
+                        </button>
+                </mat-cell>
+
+                <mat-footer-cell *cdkFooterCellDef/>
             </ng-container>
         }
         <ng-container cdkColumnDef="select">

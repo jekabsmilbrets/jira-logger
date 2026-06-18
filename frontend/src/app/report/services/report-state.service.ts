@@ -109,15 +109,15 @@ export class ReportStateService {
     startDate: Date | null,
     endDate: Date | null,
   ): ReportMode {
-    if (reportMode === ReportMode.date && !date) {
-      return ReportMode.total;
-    }
+    const isInvalidMode: Record<ReportMode, boolean> = {
+      [ReportMode.total]: false,
+      [ReportMode.date]: !date,
+      [ReportMode.dateRange]: !startDate || !endDate,
+    };
 
-    if (reportMode === ReportMode.dateRange && (!startDate || !endDate)) {
-      return ReportMode.total;
-    }
-
-    return reportMode;
+    return isInvalidMode[reportMode] ?
+      ReportMode.total :
+      reportMode;
   }
 
   private registerSettingsPersistence(): void {
