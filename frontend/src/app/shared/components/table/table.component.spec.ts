@@ -126,6 +126,23 @@ describe('Shared Components table.component', () => {
     expect(component['shouldDisplayColumn'](createColumn({ columnDef: 'sync' }))).toBe(false);
   });
 
+  it('computes sync/footer helper states from the column definition', async () => {
+    const { component } = await createComponent();
+    const syncColumn = createColumn({
+      columnDef: 'sync',
+      taskSynced: () => true,
+      isClickable: true,
+      disableFooterClick: false,
+      hidden: false,
+      excludeFromLoop: false,
+    });
+
+    expect(component['shouldShowSyncColumn'](syncColumn)).toBe(true);
+    expect(component['isSyncDisabled']({} as any, syncColumn)).toBe(true);
+    expect(component['isFooterClickable'](syncColumn)).toBe(true);
+    expect(component['shouldShowFooter']()).toBe(false);
+  });
+
   it('emits cell click only for clickable columns', async () => {
     const { component } = await createComponent();
     const emitSpy = vi.spyOn(component['cellClicked'], 'emit');
@@ -213,6 +230,23 @@ describe('Shared Components table.component', () => {
 
     expect(areYouSureService.openDialog).toHaveBeenCalledTimes(1);
     expect(areYouSureService.openDialog.mock.calls[0][0]).toContain('null-null');
+  });
+
+  it('formats cell and footer values through helper methods', async () => {
+    const { fixture, component } = await createComponent();
+    const row = {
+      when: new Date('2026-05-01T00:00:00.000Z'),
+      value: 120,
+      name: 'Alpha',
+    } as any;
+    fixture.componentRef.setInput('data', [row]);
+    fixture.detectChanges();
+
+    expect(component['getColumnCellValue'](row, createColumn({ pipe: 'date', cell: () => row.when }))).toBeTruthy();
+    expect(component['getColumnCellValue'](row, createColumn({ pipe: 'readableTime', cell: () => row.value }))).toBe('2m');
+    expect(component['getColumnCellValue'](row, createColumn({ cell: () => row.name }))).toBe('Alpha');
+    expect(component['getFooterCellValue'](createColumn({ hasFooter: true, footerCell: () => 300, pipe: 'readableTime' }))).toBe('5m');
+    expect(component['getFooterCellValue'](createColumn({ hasFooter: true, footerCell: () => 'done' }))).toBe('done');
   });
 
   it('reuses the cached confirmation service promise', async () => {
