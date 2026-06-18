@@ -195,6 +195,43 @@ describe('task-backup.utility', () => {
     }]);
   });
 
+  it('ignores non-object jira work log metadata entries in version 2 backups', () => {
+    const result = prepareTaskImportRequest(
+      {
+        version: 2,
+        tasks: [{
+          name: 'Imported task',
+          timeLogs: [],
+          tags: [],
+          metadata: {
+            jiraWorkLogs: [
+              'skip-me',
+              {
+                id: 'jira-1',
+                workLogId: 'worklog-7',
+                description: 'Synced work',
+                startTime: '2026-06-01T13:00:00.000Z',
+                timeSpentSeconds: 7200,
+              },
+            ],
+          },
+        }],
+      },
+      [],
+      [],
+    );
+
+    expect(result.tasks[0]?.unsupportedMetadata).toEqual({
+      jiraWorkLogs: [{
+        id: 'jira-1',
+        workLogId: 'worklog-7',
+        description: 'Synced work',
+        startTime: Date.parse('2026-06-01T13:00:00.000Z'),
+        timeSpentSeconds: 7200,
+      }],
+    });
+  });
+
   it('parses legacy task metadata fields and keeps existing tag names', () => {
     const result = prepareTaskImportRequest(
       [{
