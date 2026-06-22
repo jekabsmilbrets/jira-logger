@@ -39,6 +39,14 @@ import { findSettingByName } from '@settings/utilities/find-setting-by-name.util
   ],
 })
 export class UserSettingsConfiguratorComponent {
+  private static readonly timezoneFallback: string[] = [
+    'UTC',
+    'Europe/Riga',
+    'Europe/London',
+    'Europe/Berlin',
+    'Europe/Vienna',
+  ];
+
   private readonly localeService: LocaleService = inject(LocaleService);
 
   public readonly settings: InputSignal<Setting[]> = input<Setting[]>([]);
@@ -82,36 +90,11 @@ export class UserSettingsConfiguratorComponent {
   protected onSaveFormData(event?: Event): void {
     event?.preventDefault?.();
 
-    const changedSettings: Setting[] = [];
     const formData: UserSettingsFormValue = this.userSettingsFormModel();
-
-    const timezoneValue: string = formData.timezone;
-    const originalTimezoneSetting: Setting | undefined = this.getSetting(JiraUserSettings.userTimeZone);
-    if (
-      originalTimezoneSetting &&
-      this.getSettingValue(JiraUserSettings.userTimeZone, '') !== timezoneValue
-    ) {
-      changedSettings.push(
-        new Setting({
-          ...originalTimezoneSetting,
-          value: timezoneValue,
-        }),
-      );
-    }
-
-    const localeValue: string = formData.locale;
-    const originalLocaleSetting: Setting | undefined = this.getSetting(JiraUserSettings.locale);
-    if (
-      originalLocaleSetting &&
-      this.getSettingValue(JiraUserSettings.locale, '') !== localeValue
-    ) {
-      changedSettings.push(
-        new Setting({
-          ...originalLocaleSetting,
-          value: localeValue,
-        }),
-      );
-    }
+    const changedSettings: Setting[] = [
+      this.buildChangedSetting(JiraUserSettings.userTimeZone, formData.timezone),
+      this.buildChangedSetting(JiraUserSettings.locale, formData.locale),
+    ].filter((setting: Setting | undefined): setting is Setting => setting !== undefined);
 
     if (changedSettings.length > 0) {
       this.settingsChange.emit({
@@ -164,29 +147,33 @@ export class UserSettingsConfiguratorComponent {
     return defaultValue;
   }
 
-  private getSupportedTimezones(): string[] {
-    const fallback: string[] = [
-      'UTC',
-      'Europe/Riga',
-      'Europe/London',
-      'Europe/Berlin',
-      'Europe/Vienna',
-    ];
+  private buildChangedSetting(
+    name: JiraUserSettings,
+    nextValue: string,
+  ): Setting | undefined {
+    const originalSetting: Setting | undefined = this.getSetting(name);
 
-    if (
-      typeof Intl !== 'undefined' &&
-      'supportedValuesOf' in Intl &&
-      typeof Intl.supportedValuesOf === 'function'
-    ) {
-      try {
-        return Intl.supportedValuesOf('timeZone')
-          .filter((timezone: string) => typeof timezone === 'string' && timezone.length > 0)
-          .sort((a: string, b: string) => a.localeCompare(b));
-      } catch {
-        return fallback;
-      }
+    if (!originalSetting || this.getSettingValue(name, '') === nextValue) {
+      return undefined;
     }
 
-    return fallback;
+    return new Setting({
+      ...originalSetting,
+      value: nextValue,
+    });
+  }
+
+  private getSupportedTimezones(): string[] {
+    if (typeof Intl.supportedValuesOf !== 'function') {
+      return UserSettingsConfiguratorComponent.timezoneFallback;
+    }
+
+    try {
+      return Intl.supportedValuesOf('timeZone')
+        .filter((timezone: string) => timezone.length > 0)
+        .sort((a: string, b: string) => a.localeCompare(b));
+    } catch {
+      return UserSettingsConfiguratorComponent.timezoneFallback;
+    }
   }
 }

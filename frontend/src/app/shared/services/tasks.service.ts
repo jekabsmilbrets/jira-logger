@@ -24,6 +24,18 @@ import type { AsyncLoader } from '@shared/types/async-loader.type';
 import type { QueryParams } from '@shared/types/query-params.type';
 import { openLoadErrorDialog } from '@shared/utilities/open-load-error-dialog.utility';
 
+type QueryParamKey = keyof QueryParams;
+type QueryParamEntry = readonly [QueryParamKey, string | undefined];
+
+const queryParamBuilders: [QueryParamKey, (filter: TaskListFilter, formatDateForQuery: (date: Date) => string) => string | undefined][] = [
+  ['hideUnreported', (filter: TaskListFilter) => filter.hideUnreported ? String(filter.hideUnreported) : undefined],
+  ['date', (filter: TaskListFilter, formatDateForQuery: (date: Date) => string) => filter.date ? formatDateForQuery(filter.date) : undefined],
+  ['startDate', (filter: TaskListFilter, formatDateForQuery: (date: Date) => string) => filter.startDate ? formatDateForQuery(filter.startDate) : undefined],
+  ['endDate', (filter: TaskListFilter, formatDateForQuery: (date: Date) => string) => filter.endDate ? formatDateForQuery(filter.endDate) : undefined],
+  ['tags', (filter: TaskListFilter) => filter.tags ? filter.tags.join(',') : undefined],
+  ['name', (filter: TaskListFilter) => filter.name],
+];
+
 @Service()
 export class TasksService implements LoadableService, MakeRequestService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
@@ -161,15 +173,7 @@ export class TasksService implements LoadableService, MakeRequestService {
     )
       .pipe(
         catchError((error: unknown) => {
-          if (
-            (error instanceof HttpErrorResponse && error.status === 409) ||
-            (
-              typeof error === 'object' &&
-              error !== null &&
-              'status' in error &&
-              error.status === 409
-            )
-          ) {
+          if (this.isConflictError(error)) {
             return throwError(() => error);
           }
 
@@ -224,33 +228,32 @@ export class TasksService implements LoadableService, MakeRequestService {
   private buildQueryParams(
     filter: TaskListFilter,
   ): QueryParams {
-    const outputQueryParams: QueryParams = {};
+    return Object.fromEntries(
+      queryParamBuilders
+        .map(([key, buildValue]) => [key, buildValue(filter, (date: Date) => this.formatDateForQuery(date))] as QueryParamEntry)
+        .filter((entry: QueryParamEntry) => entry[1] !== undefined) as [QueryParamKey, string][],
+    ) as QueryParams;
+  }
 
-    if (filter.hideUnreported) {
-      outputQueryParams.hideUnreported = String(filter.hideUnreported);
+  private isConflictError(
+    error: unknown,
+  ): boolean {
+    return this.getErrorStatus(error) === 409;
+  }
+
+  private getErrorStatus(
+    error: unknown,
+  ): number | undefined {
+    if (error instanceof HttpErrorResponse) {
+      return error.status;
     }
 
-    if (filter.date) {
-      outputQueryParams.date = this.formatDateForQuery(filter.date);
-    }
-
-    if (filter.startDate) {
-      outputQueryParams.startDate = this.formatDateForQuery(filter.startDate);
-    }
-
-    if (filter.endDate) {
-      outputQueryParams.endDate = this.formatDateForQuery(filter.endDate);
-    }
-
-    if (filter.tags) {
-      outputQueryParams.tags = filter.tags.join(',');
-    }
-
-    if (filter.name) {
-      outputQueryParams.name = filter.name;
-    }
-
-    return outputQueryParams;
+    return typeof error === 'object'
+      && error !== null
+      && 'status' in error
+      && typeof error.status === 'number' ?
+      error.status :
+      undefined;
   }
 
   private formatDateForQuery(
