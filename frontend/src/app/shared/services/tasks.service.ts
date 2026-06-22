@@ -249,9 +249,9 @@ export class TasksService implements LoadableService, MakeRequestService {
     }
 
     return typeof error === 'object'
-      && error !== null
-      && 'status' in error
-      && typeof error.status === 'number' ?
+    && error !== null
+    && 'status' in error
+    && typeof error.status === 'number' ?
       error.status :
       undefined;
   }

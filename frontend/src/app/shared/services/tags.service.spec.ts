@@ -34,7 +34,14 @@ describe('Shared Services tags.service', () => {
   });
 
   it('lists tags and maps response', async () => {
-    apiRequestService.request.mockReturnValueOnce(of({ data: [{ id: '1', isUsed: true, name: 'Backend', createdAt: '2024-01-01T00:00:00.000Z' }] }));
+    apiRequestService.request.mockReturnValueOnce(of({
+      data: [{
+        id: '1',
+        isUsed: true,
+        name: 'Backend',
+        createdAt: '2024-01-01T00:00:00.000Z',
+      }],
+    }));
     const result = await firstValueFrom(service.list());
 
     expect(apiRequestService.buildApiUrl).toHaveBeenCalledWith('tag');

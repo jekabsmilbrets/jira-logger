@@ -14,17 +14,9 @@ import type {
   TaskBackupUnsupportedMetadata,
   TaskBackupV2,
 } from '@tasks/interfaces/task-backup.interface';
-import type {
-  LegacyTagInput,
-  LegacyTaskInput,
-  LegacyTimeLogInput,
-} from '@tasks/interfaces/task-backup-legacy-input.interface';
+import type { LegacyTagInput, LegacyTaskInput, LegacyTimeLogInput } from '@tasks/interfaces/task-backup-legacy-input.interface';
 import type { UnsupportedMetadataParser } from '@tasks/interfaces/unsupported-metadata-parser.interface';
-import type {
-  TimestampResolver,
-  UnsupportedMetadataField,
-  UnsupportedMetadataValue,
-} from '@tasks/types/task-backup-metadata.type';
+import type { TimestampResolver, UnsupportedMetadataField, UnsupportedMetadataValue } from '@tasks/types/task-backup-metadata.type';
 
 const normalizeKey: (value: string) => string = (value: string): string => value.trim().toLowerCase();
 

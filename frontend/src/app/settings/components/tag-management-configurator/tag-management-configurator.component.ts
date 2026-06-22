@@ -1,4 +1,15 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, type InputSignal, output, type OutputEmitterRef, signal, type WritableSignal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  input,
+  type InputSignal,
+  output,
+  type OutputEmitterRef,
+  signal,
+  type WritableSignal,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';

@@ -19,7 +19,6 @@ import { ReportServiceStub } from '@report/testing/report-service.stub';
 
 import { JiraApiConfiguratorComponent } from '@settings/components/jira-api-configurator/jira-api-configurator.component';
 import { ReportConfiguratorComponent } from '@settings/components/report-configurator/report-configurator.component';
-import { TagManagementConfiguratorComponent } from '@settings/components/tag-management-configurator/tag-management-configurator.component';
 import { UserSettingsConfiguratorComponent } from '@settings/components/user-settings-configurator/user-settings-configurator.component';
 import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
