@@ -6,7 +6,6 @@ import { By } from '@angular/platform-browser';
 import { vi } from 'vitest';
 
 import { Tag } from '@shared/models/tag.model';
-import { Task } from '@shared/models/task.model';
 import { TagsService } from '@shared/services/tags.service';
 
 import { TasksSettingsDialogComponent } from './tasks-settings-dialog.component';

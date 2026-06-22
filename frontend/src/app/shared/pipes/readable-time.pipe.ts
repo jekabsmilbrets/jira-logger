@@ -5,6 +5,9 @@ import { Pipe, type PipeTransform } from '@angular/core';
   standalone: true,
 })
 export class ReadableTimePipe implements PipeTransform {
+  private static readonly hourInSeconds: number = 3600;
+  private static readonly minuteInSeconds: number = 60;
+
   public transform(
     seconds: number,
     withSeconds: boolean = false,
@@ -12,37 +15,26 @@ export class ReadableTimePipe implements PipeTransform {
     if (Number.isNaN(seconds)) {
       return '0s';
     }
+
     if (seconds < 60) {
       return `${ seconds }s`;
     }
 
-    const levels: (string | number)[][] = [
-      [
-        Math.floor((seconds % 31536000) / 3600),
-        'h',
-      ], // hours
-      [
-        Math.floor((((seconds % 31536000) % 86400) % 3600) / 60),
-        'm',
-      ], // minutes
+    const units: [number, string][] = [
+      [Math.floor(seconds / ReadableTimePipe.hourInSeconds), 'h'],
+      [Math.floor((seconds % ReadableTimePipe.hourInSeconds) / ReadableTimePipe.minuteInSeconds), 'm'],
     ];
 
     if (withSeconds) {
-      levels.push([
-        (((seconds % 31536000) % 86400) % 3600) % 60,
+      units.push([
+        seconds % ReadableTimePipe.minuteInSeconds,
         's',
-      ]); // seconds
+      ]);
     }
 
-    let output: string = '';
-
-    for (let i: number = 0, max: number = levels.length; i < max; i++) {
-      if (levels[i][0] === 0) {
-        continue;
-      }
-      output += ` ${ levels[i][0] }${ levels[i][1] }`;
-    }
-
-    return output.trim();
+    return units
+      .filter(([value]: [number, string]) => value > 0)
+      .map(([value, suffix]: [number, string]) => `${ value }${ suffix }`)
+      .join(' ');
   }
 }

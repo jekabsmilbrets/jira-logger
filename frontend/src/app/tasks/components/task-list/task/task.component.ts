@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -55,6 +56,7 @@ import { buildTaskUpdatePayload } from '@tasks/utility/task-payload-builder.util
     MatTooltipModule,
     MatInputModule,
     FormField,
+    NgClass,
   ],
 })
 export class TaskComponent {
@@ -122,6 +124,57 @@ export class TaskComponent {
 
   protected isTimeLogRunning(): boolean {
     return this.task().isTimeLogRunning;
+  }
+
+  protected getCardClassMap(): Record<string, boolean> {
+    return {
+      'task-card-editing': this.editMode(),
+      'task-card--started': this.isTimeLogRunning() && !this.editMode(),
+    };
+  }
+
+  protected getViewModeDisplay(): string {
+    return this.editMode() ?
+      'none' :
+      '';
+  }
+
+  protected getEditModeDisplay(): string {
+    return this.editMode() ?
+      '' :
+      'none';
+  }
+
+  protected hasNameError(): boolean {
+    return this.taskForm.name().touched() && this.taskForm.name().invalid();
+  }
+
+  protected getTaskDescription(): string {
+    return this.task().description ?? '';
+  }
+
+  protected isViewActionDisabled(): boolean {
+    return this.isLoading() || this.editMode();
+  }
+
+  protected isRemoveDisabled(): boolean {
+    return this.isLoading() || this.editMode();
+  }
+
+  protected isSaveDisabled(): boolean {
+    return this.isLoading() || this.taskForm().invalid() || !this.taskForm().dirty();
+  }
+
+  protected getEditButtonIcon(): string {
+    return this.editMode() ?
+      'cancel' :
+      'edit';
+  }
+
+  protected getTimerActionIcon(): string {
+    return this.isTimeLogRunning() ?
+      'pause' :
+      'play_arrow';
   }
 
   protected onTagsChange(tags: Tag[]): void {

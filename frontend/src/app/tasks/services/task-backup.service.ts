@@ -5,15 +5,12 @@ import { Task } from '@shared/models/task.model';
 
 import type { TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 import type { TaskBackupV2 } from '@tasks/interfaces/task-backup.interface';
-import {
-  createTaskBackupV2,
-  prepareTaskImportRequest,
-} from '@tasks/utilities/task-backup.utility';
+import { createTaskBackupV2, prepareTaskImportRequest } from '@tasks/utilities/task-backup.utility';
 
 @Service()
 export class TaskBackupService {
   public createTaskBackupV2(
-  tasks: Task[],
+    tasks: Task[],
   ): TaskBackupV2 {
     return createTaskBackupV2(tasks);
   }

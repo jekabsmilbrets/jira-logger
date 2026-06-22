@@ -46,6 +46,7 @@
     "jsdom": "^29.1.1",
     "typescript": "~6.0.3",
     "typescript-eslint": "8.59.2",
+    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.7"
   },
   "engines": {

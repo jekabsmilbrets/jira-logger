@@ -1,13 +1,5 @@
 import { SelectionModel } from '@angular/cdk/collections';
-import {
-  CdkCellDef,
-  CdkColumnDef,
-  CdkFooterCellDef,
-  CdkFooterRowDef,
-  CdkHeaderCellDef,
-  CdkHeaderRowDef,
-  CdkRowDef,
-} from '@angular/cdk/table';
+import { CdkCellDef, CdkColumnDef, CdkFooterCellDef, CdkFooterRowDef, CdkHeaderCellDef, CdkHeaderRowDef } from '@angular/cdk/table';
 import { formatDate } from '@angular/common';
 import {
   AfterViewInit,
@@ -61,17 +53,21 @@ import { getNestedObject } from '@shared/utilities/get-nested-object.utility';
     MatIconModule,
     MatButtonModule,
     MatPaginatorModule,
-    ReadableTimePipe,
     CdkHeaderCellDef,
     CdkColumnDef,
     CdkCellDef,
     CdkFooterCellDef,
     CdkHeaderRowDef,
     CdkFooterRowDef,
-    CdkRowDef,
   ],
 })
 export class TableComponent implements AfterViewInit {
+  private static readonly hiddenLoopColumns: string[] = [
+    'select',
+    'remove',
+    'sync',
+  ];
+
   public readonly isSelectable: InputSignal<boolean> = input(true);
   public readonly enableRemoveAction: InputSignal<boolean> = input(false);
   public readonly enableSyncAction: InputSignal<boolean> = input(false);
@@ -113,6 +109,8 @@ export class TableComponent implements AfterViewInit {
 
     return columns;
   });
+  protected readonly loopColumns: Signal<Column[]> = computed(() => this.columns().filter((column: Column) => this.shouldDisplayColumn(column)));
+  protected readonly syncColumn: Signal<Column | undefined> = computed(() => this.columns().find((column: Column) => this.shouldShowSyncColumn(column)));
 
   protected selection: SelectionModel<Searchable> = new SelectionModel<Searchable>(true, []);
 
@@ -123,6 +121,7 @@ export class TableComponent implements AfterViewInit {
   );
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
   private readonly localeService: LocaleService = inject(LocaleService);
+  private readonly readableTimePipe: ReadableTimePipe = new ReadableTimePipe();
 
   private _data: Searchable[] = [];
 
@@ -169,16 +168,22 @@ export class TableComponent implements AfterViewInit {
     }
   }
 
+  protected onMasterToggle(): void {
+    this.masterToggle();
+  }
+
+  protected onSelectionToggle(
+    row: Searchable,
+  ): void {
+    this.selection.toggle(row);
+  }
+
   protected shouldDisplayColumn(
     column: Column,
   ): boolean {
     return !column.hidden &&
       !column.excludeFromLoop &&
-      ![
-        'select',
-        'remove',
-        'sync',
-      ].includes(column.columnDef);
+      !TableComponent.hiddenLoopColumns.includes(column.columnDef);
   }
 
   protected onCellClick(
@@ -213,19 +218,9 @@ export class TableComponent implements AfterViewInit {
       return;
     }
 
-    const timeLogDate: string = formatDateInTimezone(timeLog.date, 'yyyy-MM-dd', this.localeService.locale, this.timezoneService.timezone);
-    const timeLogStartTime: Date = timeLog.startTime;
-    const timeLogStart: null | string = timeLogStartTime ?
-      formatDateInTimezone(timeLogStartTime, 'HH:mm:ss', this.localeService.locale, this.timezoneService.timezone) :
-      null;
-    const timeLogEndTime: undefined | Date = timeLog.endTime;
-    const timeLogEnd: null | string = timeLogEndTime ?
-      formatDateInTimezone(timeLogEndTime, 'HH:mm:ss', this.localeService.locale, this.timezoneService.timezone) :
-      null;
-
     const areYouSureService: AreYouSureService = await this.loadAreYouSureService();
     const confirmation$: ReturnType<AreYouSureService['openDialog']> | undefined = areYouSureService.openDialog(
-      `Time log "${ timeLogDate } ${ timeLogStart }-${ timeLogEnd }"`,
+      this.buildRemoveConfirmationLabel(timeLog),
     );
 
     if (!confirmation$) {
@@ -248,6 +243,58 @@ export class TableComponent implements AfterViewInit {
     this.syncAction.emit(task);
   }
 
+  protected getColumnCellValue(
+    row: Searchable,
+    column: Column,
+  ): string | number {
+    return this.formatCellValue(column.cell(row), column.pipe, 'yyyy-MM-dd');
+  }
+
+  protected getFooterCellValue(
+    column: Column,
+  ): string | number {
+    const footerValue: unknown = column.hasFooter && column.footerCell ?
+      column.footerCell(this.dataSource.data) :
+      undefined;
+
+    return this.formatCellValue(footerValue, column.pipe);
+  }
+
+  protected shouldShowFooter(): boolean {
+    return this.enableFooter();
+  }
+
+  protected shouldShowSyncColumn(
+    column: Column,
+  ): boolean {
+    return column.columnDef === 'sync' && !column.hidden && !column.excludeFromLoop;
+  }
+
+  protected hasSyncColumn(): boolean {
+    return this.syncColumn() !== undefined;
+  }
+
+  protected isSyncDisabled(
+    row: Searchable,
+    column: Column,
+  ): boolean {
+    return column.taskSynced?.(row) ?? false;
+  }
+
+  protected isFooterClickable(
+    column: Column,
+  ): boolean {
+    return !!column.isClickable && !column.disableFooterClick;
+  }
+
+  protected onRowClick(
+    row: Searchable,
+  ): void {
+    if (this.isSelectable()) {
+      this.selection.toggle(row);
+    }
+  }
+
   protected formatDateValue(
     value: Date | string | number | null | undefined,
     format: string = 'yyyy-MM-dd',
@@ -266,5 +313,61 @@ export class TableComponent implements AfterViewInit {
     }
 
     return formatDate(value, format, this.localeService.locale, this.timezoneService.timezone);
+  }
+
+  private formatCellValue(
+    value: unknown,
+    pipe: Column['pipe'],
+    dateFormat?: string,
+  ): string | number {
+    if (pipe === 'readableTime') {
+      return this.readableTimePipe.transform(this.toNumericValue(value));
+    }
+
+    if (pipe === 'date') {
+      return this.formatDateValue(value as Date | string | number | null | undefined, dateFormat ?? 'yyyy-MM-dd');
+    }
+
+    return this.toDisplayValue(value);
+  }
+
+  private toNumericValue(
+    value: unknown,
+  ): number {
+    return typeof value === 'number' ?
+      value :
+      Number(value ?? 0);
+  }
+
+  private toDisplayValue(
+    value: unknown,
+  ): string | number {
+    if (Array.isArray(value)) {
+      return value.every((entry: unknown) => typeof entry === 'string' || typeof entry === 'number') ?
+        value.join(',') :
+        '';
+    }
+
+    return typeof value === 'string' || typeof value === 'number' ?
+      value :
+      '';
+  }
+
+  private buildRemoveConfirmationLabel(
+    timeLog: TimeLog,
+  ): string {
+    const timeLogDate: string = formatDateInTimezone(timeLog.date, 'yyyy-MM-dd', this.localeService.locale, this.timezoneService.timezone);
+    const timeLogStart: string | null = this.formatTimePart(timeLog.startTime);
+    const timeLogEnd: string | null = this.formatTimePart(timeLog.endTime);
+
+    return `Time log "${ timeLogDate } ${ timeLogStart }-${ timeLogEnd }"`;
+  }
+
+  private formatTimePart(
+    value: Date | undefined,
+  ): string | null {
+    return value ?
+      formatDateInTimezone(value, 'HH:mm:ss', this.localeService.locale, this.timezoneService.timezone) :
+      null;
   }
 }

@@ -7,6 +7,7 @@ import { StorageService } from '@core/services/storage.service';
 import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
 
+import { defaultReportSettingsStorageValue } from '@report/constants/default-report-settings-storage-value.constant';
 import { ReportMode } from '@report/enums/report-mode.enum';
 import type { ReportSettingsStorageValue } from '@report/interfaces/report-settings-storage-value.interface';
 import type { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
@@ -108,15 +109,15 @@ export class ReportStateService {
     startDate: Date | null,
     endDate: Date | null,
   ): ReportMode {
-    if (reportMode === ReportMode.date && !date) {
-      return ReportMode.total;
-    }
+    const isInvalidMode: Record<ReportMode, boolean> = {
+      [ReportMode.total]: false,
+      [ReportMode.date]: !date,
+      [ReportMode.dateRange]: !startDate || !endDate,
+    };
 
-    if (reportMode === ReportMode.dateRange && (!startDate || !endDate)) {
-      return ReportMode.total;
-    }
-
-    return reportMode;
+    return isInvalidMode[reportMode] ?
+      ReportMode.total :
+      reportMode;
   }
 
   private registerSettingsPersistence(): void {
@@ -126,26 +127,7 @@ export class ReportStateService {
       }
 
       const state: ReportStateSnapshot = this.getStateSnapshot();
-      const timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => {
-        this.storageService.create(
-          this.settingsKey,
-          {
-            reportMode: state.reportMode,
-            tags: state.tags.map((tag: Tag) => tag.id),
-            date: state.date,
-            startDate: state.startDate,
-            endDate: state.endDate,
-            showWeekends: state.showWeekends,
-            hideUnreportedTasks: state.hideUnreportedTasks,
-          },
-          this.customStoreName,
-        )
-          .pipe(
-            take(1),
-            catchError(() => of(undefined)),
-          )
-          .subscribe();
-      }, 250);
+      const timeoutId: ReturnType<typeof setTimeout> = this.scheduleStatePersistence(state);
 
       onCleanup(() => clearTimeout(timeoutId));
     });
@@ -164,16 +146,7 @@ export class ReportStateService {
     )
       .pipe(
         take(1),
-        tap((settings: ReportSettingsStorageValue | undefined) => {
-          this.reportModeSignal.set(settings?.reportMode ?? ReportMode.total);
-          this.dateSignal.set(this.cloneDate(settings?.date));
-          this.startDateSignal.set(this.cloneDate(settings?.startDate));
-          this.endDateSignal.set(this.cloneDate(settings?.endDate));
-          this.showWeekendsSignal.set(settings?.showWeekends ?? false);
-          this.hideUnreportedTasksSignal.set(settings?.hideUnreportedTasks ?? false);
-          this.pendingPersistedTagIdsSignal.set([...(settings?.tags ?? [])]);
-          this.resolvePendingPersistedTags();
-        }),
+        tap((settings: ReportSettingsStorageValue | undefined) => this.applyPersistedSettings(settings)),
       )
       .subscribe();
   }
@@ -202,9 +175,71 @@ export class ReportStateService {
       return;
     }
 
-    this.tagsSignal.set(
+    this.completeTagHydration(
       availableTags.filter((tag: Tag) => pendingPersistedTagIds.includes(tag.id)),
     );
+  }
+
+  private scheduleStatePersistence(
+    state: ReportStateSnapshot,
+  ): ReturnType<typeof setTimeout> {
+    return setTimeout(() => {
+      this.persistStateSnapshot(state);
+    }, 250);
+  }
+
+  private persistStateSnapshot(
+    state: ReportStateSnapshot,
+  ): void {
+    this.storageService.create(
+      this.settingsKey,
+      this.toStorageValue(state),
+      this.customStoreName,
+    )
+      .pipe(
+        take(1),
+        catchError(() => of(undefined)),
+      )
+      .subscribe();
+  }
+
+  private toStorageValue(
+    state: ReportStateSnapshot,
+  ): ReportSettingsStorageValue {
+    return {
+      reportMode: state.reportMode,
+      tags: state.tags.map((tag: Tag) => tag.id),
+      date: state.date,
+      startDate: state.startDate,
+      endDate: state.endDate,
+      showWeekends: state.showWeekends,
+      hideUnreportedTasks: state.hideUnreportedTasks,
+    };
+  }
+
+  private applyPersistedSettings(
+    settings: ReportSettingsStorageValue | undefined,
+  ): void {
+    const persistedSettings: ReportSettingsStorageValue = {
+      ...defaultReportSettingsStorageValue,
+      ...settings,
+      tags: [...(settings?.tags ?? [])],
+    };
+
+    this.reportModeSignal.set(persistedSettings.reportMode);
+    this.dateSignal.set(this.cloneDate(persistedSettings.date));
+    this.startDateSignal.set(this.cloneDate(persistedSettings.startDate));
+    this.endDateSignal.set(this.cloneDate(persistedSettings.endDate));
+    this.showWeekendsSignal.set(persistedSettings.showWeekends);
+    this.hideUnreportedTasksSignal.set(persistedSettings.hideUnreportedTasks);
+    this.pendingPersistedTagIdsSignal.set(persistedSettings.tags);
+    this.resolvePendingPersistedTags();
+  }
+
+  private completeTagHydration(
+    tags: Tag[],
+  ): void {
+    this.tagsSignal.set(tags);
     this.pendingPersistedTagIdsSignal.set(null);
     this.finishHydration();
   }

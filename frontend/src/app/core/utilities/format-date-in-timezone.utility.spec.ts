@@ -28,4 +28,15 @@ describe('format-date-in-timezone.utility', () => {
   it('returns an empty string for invalid date input', () => {
     expect(formatDateInTimezone('not-a-date', 'yyyy-MM-dd', 'en-CA', 'UTC')).toBe('');
   });
+
+  it('falls back to Intl formatting when timezone formatting parts throw', () => {
+    const result = formatDateInTimezone(
+      '2026-06-02T22:00:00.000Z',
+      'yyyy-MM-dd',
+      'en-CA',
+      'Invalid/Timezone',
+    );
+
+    expect(result).toContain('2026');
+  });
 });

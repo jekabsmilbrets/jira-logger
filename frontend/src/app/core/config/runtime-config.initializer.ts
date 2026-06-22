@@ -16,14 +16,18 @@ export async function runtimeConfigInitializer(): Promise<void> {
     }
 
     const config: RuntimeConfig = await response.json();
+    const runtimeEntries: [keyof RuntimeConfig, 'apiHost' | 'apiBase'][] = [
+      ['apiHost', 'apiHost'],
+      ['apiBase', 'apiBase'],
+    ];
 
-    if (typeof config.apiHost === 'string' && config.apiHost.trim().length > 0) {
-      environment['apiHost'] = config.apiHost;
-    }
+    runtimeEntries.forEach(([configKey, environmentKey]) => {
+      const value: string | undefined = config[configKey];
 
-    if (typeof config.apiBase === 'string' && config.apiBase.trim().length > 0) {
-      environment['apiBase'] = config.apiBase;
-    }
+      if (typeof value === 'string' && value.trim().length > 0) {
+        environment[environmentKey] = value;
+      }
+    });
   } catch (error: unknown) {
     console.error(
       `Runtime API config missing or invalid at ${ runtimeConfigPath }; falling back to build-time environment values.`,

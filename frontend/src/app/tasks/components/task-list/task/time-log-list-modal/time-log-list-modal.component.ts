@@ -185,32 +185,57 @@ export class TimeLogListModalComponent {
     timeLogs.splice(indexOfTimeLog, 1);
     this.timeLogsState.set(timeLogs);
 
-    const createdTimeLogs: TimeLog[] = this.createdTimeLogs();
-    const createdTimeLogIndex: number = createdTimeLogs.findIndex(
-      (createdTimeLog: TimeLog) => createdTimeLog === timeLogModel,
-    );
-
-    if (createdTimeLogIndex >= 0) {
-      this.createdTimeLogs.update((currentCreatedTimeLogs: TimeLog[]) => {
-        const nextCreatedTimeLogs: TimeLog[] = [...currentCreatedTimeLogs];
-        nextCreatedTimeLogs.splice(createdTimeLogIndex, 1);
-
-        return nextCreatedTimeLogs;
-      });
-
+    if (this.removeCreatedTimeLog(timeLogModel)) {
       return;
     }
 
-    this.updatedTimeLogs.set(this.updatedTimeLogs().filter(
-      (updatedTimeLog: TimeLog) => updatedTimeLog.id !== timeLogModel.id,
-    ));
+    this.removeUpdatedTimeLog(timeLogModel);
 
-    if (timeLogModel.id && !this.deletedTimeLogs().some((deletedTimeLog: TimeLog) => deletedTimeLog.id === timeLogModel.id)) {
-      this.deletedTimeLogs.update((deletedTimeLogs: TimeLog[]) => [
-        ...deletedTimeLogs,
-        timeLogModel,
-      ]);
+    if (!this.shouldTrackDeletedTimeLog(timeLogModel)) {
+      return;
     }
+
+    this.deletedTimeLogs.update((deletedTimeLogs: TimeLog[]) => [
+      ...deletedTimeLogs,
+      timeLogModel,
+    ]);
+  }
+
+  private removeCreatedTimeLog(
+    timeLog: TimeLog,
+  ): boolean {
+    const createdTimeLogIndex: number = this.createdTimeLogs().findIndex(
+      (createdTimeLog: TimeLog) => createdTimeLog === timeLog,
+    );
+
+    if (createdTimeLogIndex < 0) {
+      return false;
+    }
+
+    this.createdTimeLogs.update((currentCreatedTimeLogs: TimeLog[]) => {
+      const nextCreatedTimeLogs: TimeLog[] = [...currentCreatedTimeLogs];
+      nextCreatedTimeLogs.splice(createdTimeLogIndex, 1);
+
+      return nextCreatedTimeLogs;
+    });
+
+    return true;
+  }
+
+  private removeUpdatedTimeLog(
+    timeLog: TimeLog,
+  ): void {
+    this.updatedTimeLogs.set(this.updatedTimeLogs().filter(
+      (updatedTimeLog: TimeLog) => updatedTimeLog.id !== timeLog.id,
+    ));
+  }
+
+  private shouldTrackDeletedTimeLog(
+    timeLog: TimeLog,
+  ): boolean {
+    return Boolean(timeLog.id) && !this.deletedTimeLogs().some(
+      (deletedTimeLog: TimeLog) => deletedTimeLog.id === timeLog.id,
+    );
   }
 
   protected async onAddTimeLogClick(): Promise<void> {
@@ -229,28 +254,30 @@ export class TimeLogListModalComponent {
     response: TimeLogModalResponse | undefined,
     timeLog?: TimeLog,
   ): void {
+    const responseHandlers: Record<NonNullable<TimeLogModalResponse['responseType']>, () => void> = {
+      cancel: () => undefined,
+      create: () => {
+        if (response?.responseData) {
+          this.applyUpsertTimeLogResponse(response.responseData);
+        }
+      },
+      update: () => {
+        if (response?.responseData) {
+          this.applyUpsertTimeLogResponse(response.responseData, timeLog);
+        }
+      },
+      delete: () => {
+        if (timeLog) {
+          this.onRemoveAction(timeLog);
+        }
+      },
+    };
+
     if (!response) {
       return;
     }
 
-    switch (response.responseType) {
-      case 'cancel':
-        break;
-      case 'update':
-        if (response.responseData) {
-          if (timeLog) {
-            this.onUpdateAction(timeLog, response.responseData);
-          } else {
-            this.onCreateAction(response.responseData);
-          }
-        }
-        break;
-      case 'delete':
-        if (timeLog) {
-          this.onRemoveAction(timeLog);
-        }
-        break;
-    }
+    responseHandlers[response.responseType]();
   }
 
   private findTimeLogIndex(
@@ -284,6 +311,18 @@ export class TimeLogListModalComponent {
       ...updatedTimeLogs,
       timeLog,
     ]);
+  }
+
+  private applyUpsertTimeLogResponse(
+    nextTimeLog: TimeLog,
+    sourceTimeLog?: TimeLog,
+  ): void {
+    if (sourceTimeLog) {
+      this.onUpdateAction(sourceTimeLog, nextTimeLog);
+      return;
+    }
+
+    this.onCreateAction(nextTimeLog);
   }
 
   private buildSaveOperations(): SaveOperation[] {
