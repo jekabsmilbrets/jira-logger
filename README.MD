@@ -52,9 +52,10 @@ Notes:
   - open: `https://traefik.jira-logger.io/dashboard/`
 - Frontend assets are stored in a shared Docker volume populated by `assets-init`, which is part of the default stack startup.
 - `assets-init` is the only container that writes `runtime-config.json` into the shared frontend assets volume.
+- The `.assets-version` marker now tracks the `assets-init` image version that produced the shared frontend assets.
 - On `start`, assets marker preflight rules are enforced:
   - Missing marker: interactive mode prompts to run `build`; non-interactive mode runs `build` automatically.
-  - Marker mismatch: interactive mode prompts to run `rebuild`; non-interactive mode fails fast with a rebuild command.
+  - Marker mismatch against the current `assets-init` image version: interactive mode prompts to run `rebuild`; non-interactive mode fails fast with a rebuild command.
 - Runtime logs are available by default through `docker compose logs` and `sh manager.sh -a start` attached output.
 - Persisted host logs are a debug-only path. For normal startup, leave `-l` off and use `docker compose logs`.
 - To re-enable persisted host logs for debugging, pass `-l on` to `manager.sh`.

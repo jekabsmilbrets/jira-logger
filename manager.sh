@@ -247,7 +247,7 @@ get_expected_assets_version() {
   local digest
   local commit
 
-  digest="$(docker image inspect jira-logger-php-fpm:latest --format '{{index .RepoDigests 0}}' 2>/dev/null || true)"
+  digest="$(docker image inspect jira-logger-assets-init:latest --format '{{index .RepoDigests 0}}' 2>/dev/null || true)"
   if [[ -n "$digest" ]]; then
     echo "$digest"
     return 0
@@ -275,6 +275,13 @@ run_assets_init() {
   echo "Initializing shared assets volume (${ASSETS_VOLUME_NAME}) with version: ${assets_version}"
   run_with_log "log-assets-init.log" compose_cmd build assets-init
   run_with_log "log-assets-init.log" compose_cmd run --rm -e "ASSETS_VERSION=${assets_version}" assets-init
+}
+
+compose_up_with_assets_version() {
+  local assets_version="$1"
+  shift
+
+  ASSETS_VERSION="${assets_version}" compose_cmd up "$@" --remove-orphans
 }
 
 build_images() {
@@ -419,6 +426,7 @@ dump_db_to_file() {
 upgrade_stack() {
   local dump_path
   local upgrade_background="${BACKGROUND:--d}"
+  local assets_version
 
   ensure_docker_env_file
   warn_legacy_backend_env
@@ -432,10 +440,11 @@ upgrade_stack() {
 
   build_runtime_artifacts
   prepare_db
+  assets_version="$(get_expected_assets_version)"
 
   echo "Starting upgraded stack"
   rotate_host_logs
-  compose_cmd up ${upgrade_background} --remove-orphans
+  compose_up_with_assets_version "${assets_version}" ${upgrade_background}
 
   if [[ -z "${BACKGROUND}" ]]; then
     echo "Upgrade finished. Stack started in background by default."
@@ -458,7 +467,9 @@ case "$ACTION" in
     generate_certificates
     rotate_host_logs
     preflight_assets_marker_for_start
-    compose_cmd up $BACKGROUND --remove-orphans
+    assets_version=""
+    assets_version="$(get_expected_assets_version)"
+    compose_up_with_assets_version "${assets_version}" $BACKGROUND
     ;;
   start-with-init)
     echo "Running action $ACTION"
@@ -467,7 +478,9 @@ case "$ACTION" in
     generate_certificates
     rotate_host_logs
     preflight_assets_marker_for_start
-    compose_cmd up $BACKGROUND --remove-orphans
+    assets_version=""
+    assets_version="$(get_expected_assets_version)"
+    compose_up_with_assets_version "${assets_version}" $BACKGROUND
     ;;
   down)
     echo "Running action $ACTION"
