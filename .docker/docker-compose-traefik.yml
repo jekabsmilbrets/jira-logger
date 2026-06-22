@@ -1,41 +1,8 @@
 services:
-  docker-socket-proxy:
-    container_name: "jira-logger-docker-socket-proxy"
-    image: tecnativa/docker-socket-proxy:v0.4.2
-    restart: unless-stopped
-    environment:
-      CONTAINERS: 1
-      NETWORKS: 1
-      SERVICES: 1
-      TASKS: 1
-      INFO: 1
-      PING: 1
-      VERSION: 1
-      POST: 0
-      AUTH: 0
-      SECRETS: 0
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    networks:
-      - default
-
   traefik:
     container_name: "jira-logger-traefik"
     image: traefik:v3.7.1
     restart: unless-stopped
-    labels:
-      traefik.enable: true
-      traefik.http.routers.jira-logger-traefik-dashboard.rule: Host(`${TRAEFIK_DASHBOARD_HOST:-traefik.jira-logger.io}`)
-      traefik.http.routers.jira-logger-traefik-dashboard.entrypoints: websecure
-      traefik.http.routers.jira-logger-traefik-dashboard.tls: true
-      traefik.http.routers.jira-logger-traefik-dashboard.service: api@internal
-      traefik.http.routers.jira-logger-traefik-dashboard.middlewares: jira-logger-traefik-dashboard-auth
-      traefik.http.middlewares.jira-logger-traefik-dashboard-auth.basicauth.users: ${TRAEFIK_DASHBOARD_AUTH:-admin:$$2y$$05$$OEJ1rq.qLRZo5tl/zQQ4/.x0NPgosA2ZDGklnroI4H3xInIGt9RTO}
-    environment:
-      DOCKER_API_VERSION: "1.40"
-    depends_on:
-      docker-socket-proxy:
-        condition: service_started
     ports:
       - "80:80"
       - "443:443"
@@ -48,12 +15,3 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    networks:
-      - traefik
-      - default
-
-networks:
-  # Shared external network so Traefik can route to services in OTHER compose projects.
-  # Create once with:  docker network create traefik
-  traefik:
-    external: true

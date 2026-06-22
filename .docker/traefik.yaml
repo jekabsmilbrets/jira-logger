@@ -21,13 +21,8 @@ api:
 # enable ping so the `traefik healthcheck` works
 ping: { }
 
-# auto-proxy containers if they have proper labels
-# and also use this file for dynamic config (tls)
+# use this file for dynamic config (tls + project routing)
 providers:
-  docker:
-    endpoint: tcp://docker-socket-proxy:2375
-    exposedByDefault: false
-    watch: true
   file:
     fileName: /etc/traefik/traefik.yaml
     watch: true
@@ -60,3 +55,33 @@ tls:
     default:
       sniStrict: true
       minVersion: VersionTLS12
+
+http:
+  routers:
+    jira-logger-nginx:
+      rule: Host(`jira-logger.io`)
+      entryPoints:
+        - websecure
+      tls: true
+      service: jira-logger-nginx
+
+    jira-logger-traefik-dashboard:
+      rule: Host(`traefik.jira-logger.io`)
+      entryPoints:
+        - websecure
+      tls: true
+      service: api@internal
+      middlewares:
+        - jira-logger-traefik-dashboard-auth
+
+  services:
+    jira-logger-nginx:
+      loadBalancer:
+        servers:
+          - url: http://nginx:80
+
+  middlewares:
+    jira-logger-traefik-dashboard-auth:
+      basicAuth:
+        users:
+          - "admin:$$2y$$05$$OEJ1rq.qLRZo5tl/zQQ4/.x0NPgosA2ZDGklnroI4H3xInIGt9RTO"

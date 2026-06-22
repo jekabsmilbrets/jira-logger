@@ -29,6 +29,7 @@ Notes:
    `sh manager.sh -a start -b`
    To disable Traefik:
    `sh manager.sh -a start -b -t off`
+   When Traefik is disabled, add a local host mapping such as `127.0.0.1 jira-logger.io` and open `http://jira-logger.io` or `https://jira-logger.io`.
    To enable persisted host logs for debugging:
    `sh manager.sh -a start -b -l on`
 4) Runtime containers are copy-only (no backend/frontend bind mounts), so source code changes require image rebuild + restart (`sh manager.sh -a build` then `sh manager.sh -a start`), or `sh manager.sh -a rebuild`.
@@ -44,11 +45,8 @@ Notes:
    `sh manager.sh -a upgrade`
 
 - Traefik is enabled by default. Use `-t off` to start without Traefik.
-- The `traefik` Docker network is created automatically by `manager.sh` when needed.
 - Traefik dashboard is exposed through HTTPS with basic auth:
-  - set `TRAEFIK_DASHBOARD_HOST` and `TRAEFIK_DASHBOARD_AUTH` in `./.docker/.env`
-  - generate a bcrypt auth value (`user:hash`) with:
-    - `docker run --rm httpd:2.4-alpine htpasswd -nbB admin 'change-me'`
+  - local dashboard host: `traefik.jira-logger.io`
   - add host mapping in `/etc/hosts` for local setup (example): `127.0.0.1 traefik.jira-logger.io`
   - open: `https://traefik.jira-logger.io/dashboard/`
 - Frontend assets are stored in a shared Docker volume populated by `assets-init`, which is part of the default stack startup.

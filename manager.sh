@@ -45,13 +45,6 @@ generate_certificates() {
   (cd ./.docker/certs/ && bash cert.sh jira-logger.io)
 }
 
-ensure_traefik_network() {
-  if ! docker network inspect traefik >/dev/null 2>&1; then
-    echo "Creating Docker network 'traefik'"
-    docker network create traefik >/dev/null
-  fi
-}
-
 # Default values
 ACTION=""
 BACKGROUND=""
@@ -117,6 +110,8 @@ if [[ "$TRAEFIK_MODE" == "on" ]]; then
   if [[ "${LOGGING_MODE}" == "on" ]]; then
     COMPOSE_FILES+=(./.docker/docker-compose-traefik.host-logs.yml)
   fi
+else
+  COMPOSE_FILES+=(./.docker/docker-compose.no-traefik.yml)
 fi
 
 TRAEFIK_ARGS=()
@@ -130,7 +125,6 @@ if [[ "$LOGGING_MODE" == "on" ]]; then
 fi
 
 compose_cmd() {
-  ensure_traefik_network
   ensure_docker_env_file
   COMPOSE_PROJECT_NAME="${PROJECT_NAME}" docker compose --env-file "${DOCKER_ENV_FILE}" $(printf -- '-f %s ' "${COMPOSE_FILES[@]}") "$@"
 }
