@@ -60,7 +60,8 @@
 
             <button (click)="onToggleTimeLogging()"
                     [disabled]="isViewActionDisabled()"
-                    aria-label="Start Timer"
+                    [attr.aria-label]="getTimerActionLabel()"
+                    [matTooltip]="getTimerActionLabel()"
                     class="play-pause-button"
                     color="primary"
                     mat-icon-button
@@ -71,16 +72,18 @@
 
             <button (click)="onOpenTimeLogsModal()"
                     [disabled]="isViewActionDisabled()"
-                    aria-label="View Time Log History"
+                    aria-label="View time log history"
                     color="warn"
                     mat-icon-button
+                    matTooltip="View time log history"
                     type="button">
                 <mat-icon>history</mat-icon>
             </button>
 
             <button (click)="onToggleEditMode()"
                     [disabled]="!editMode() && isLoading()"
-                    aria-label="Edit"
+                    [attr.aria-label]="getEditButtonLabel()"
+                    [matTooltip]="getEditButtonLabel()"
                     mat-icon-button
                     type="button">
                 <mat-icon>{{ getEditButtonIcon() }}</mat-icon>
@@ -88,18 +91,20 @@
 
             <button [disabled]="isSaveDisabled()"
                     [style.display]="getEditModeDisplay()"
-                    aria-label="Update"
+                    aria-label="Save task"
                     mat-icon-button
                     color="primary"
+                    matTooltip="Save task"
                     type="submit">
                 <mat-icon>save</mat-icon>
             </button>
 
             <button (click)="onRemove()"
                     [disabled]="isRemoveDisabled()"
-                    aria-label="Remove"
+                    aria-label="Remove task"
                     color="warn"
                     mat-icon-button
+                    matTooltip="Remove task"
                     type="button">
                 <mat-icon>delete</mat-icon>
             </button>

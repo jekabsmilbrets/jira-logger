@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { MatTooltip } from '@angular/material/tooltip';
 import { By } from '@angular/platform-browser';
 
 import { of } from 'rxjs';
@@ -210,10 +211,10 @@ describe('Tasks Components task.component', () => {
 
   it('renders non-edit mode controls and switches to edit mode controls', async () => {
     const { component, fixture } = await setup();
-    const getUpdateButton = (): HTMLButtonElement => fixture.debugElement.query(By.css('button[aria-label="Update"]')).nativeElement as HTMLButtonElement;
+    const getUpdateButton = (): HTMLButtonElement => fixture.debugElement.query(By.css('button[aria-label="Save task"]')).nativeElement as HTMLButtonElement;
 
     expect(fixture.debugElement.query(By.css('mat-card-header'))).toBeTruthy();
-    expect(fixture.debugElement.query(By.css('button[aria-label="Edit"] mat-icon'))?.nativeElement.textContent.trim()).toBe('edit');
+    expect(fixture.debugElement.query(By.css('button[aria-label="Edit task"] mat-icon'))?.nativeElement.textContent.trim()).toBe('edit');
     expect(getUpdateButton().style.display).toBe('none');
 
     component['onToggleEditMode']();
@@ -221,7 +222,7 @@ describe('Tasks Components task.component', () => {
 
     expect(fixture.debugElement.query(By.css('mat-card-content'))).toBeTruthy();
     expect(getUpdateButton().style.display).toBe('');
-    expect(fixture.debugElement.query(By.css('button[aria-label="Edit"] mat-icon'))?.nativeElement.textContent.trim()).toBe('cancel');
+    expect(fixture.debugElement.query(By.css('button[aria-label="Cancel editing"] mat-icon'))?.nativeElement.textContent.trim()).toBe('cancel');
   });
 
   it('renders pause icon when task is running', async () => {
@@ -231,6 +232,33 @@ describe('Tasks Components task.component', () => {
 
     const icons = fixture.debugElement.queryAll(By.css('button.play-pause-button mat-icon'));
     expect(icons[1].nativeElement.textContent.trim()).toBe('pause');
+  });
+
+  it('adds action button tooltips matching their aria labels', async () => {
+    const { fixture, component, baseTask } = await setup();
+
+    const expectButtonLabel = (selector: string, label: string): void => {
+      const buttonDebugElement = fixture.debugElement.query(By.css(selector));
+      const button: HTMLButtonElement = buttonDebugElement.nativeElement;
+      const tooltip: MatTooltip = buttonDebugElement.injector.get(MatTooltip);
+
+      expect(button.getAttribute('aria-label')).toBe(label);
+      expect(tooltip.message).toBe(label);
+    };
+
+    expectButtonLabel('button.play-pause-button', 'Start timer');
+    expectButtonLabel('button[aria-label="View time log history"]', 'View time log history');
+    expectButtonLabel('button[aria-label="Edit task"]', 'Edit task');
+    expectButtonLabel('button[aria-label="Save task"]', 'Save task');
+    expectButtonLabel('button[aria-label="Remove task"]', 'Remove task');
+
+    baseTask.lastTimeLog = buildTimeLog('2026-03-02T10:00:00.000Z');
+    fixture.detectChanges();
+    expectButtonLabel('button.play-pause-button', 'Stop timer');
+
+    component['onToggleEditMode']();
+    fixture.detectChanges();
+    expectButtonLabel('button[aria-label="Cancel editing"]', 'Cancel editing');
   });
 
   it('renders tag chips in view mode and tag options in edit mode', async () => {
@@ -258,10 +286,10 @@ describe('Tasks Components task.component', () => {
     const editSpy = vi.spyOn(component as any, 'onToggleEditMode');
     const removeSpy = vi.spyOn(component as any, 'onRemove');
 
-    fixture.debugElement.query(By.css('button[aria-label="Start Timer"]')).nativeElement.click();
-    fixture.debugElement.query(By.css('button[aria-label="View Time Log History"]')).nativeElement.click();
-    fixture.debugElement.query(By.css('button[aria-label="Remove"]')).nativeElement.click();
-    fixture.debugElement.query(By.css('button[aria-label="Edit"]')).nativeElement.click();
+    fixture.debugElement.query(By.css('button[aria-label="Start timer"]')).nativeElement.click();
+    fixture.debugElement.query(By.css('button[aria-label="View time log history"]')).nativeElement.click();
+    fixture.debugElement.query(By.css('button[aria-label="Remove task"]')).nativeElement.click();
+    fixture.debugElement.query(By.css('button[aria-label="Edit task"]')).nativeElement.click();
     fixture.detectChanges();
     await Promise.all([
       modalSpy.mock.results[0]?.value,

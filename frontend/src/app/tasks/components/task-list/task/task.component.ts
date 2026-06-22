@@ -171,10 +171,22 @@ export class TaskComponent {
       'edit';
   }
 
+  protected getEditButtonLabel(): string {
+    return this.editMode() ?
+      'Cancel editing' :
+      'Edit task';
+  }
+
   protected getTimerActionIcon(): string {
     return this.isTimeLogRunning() ?
       'pause' :
       'play_arrow';
+  }
+
+  protected getTimerActionLabel(): string {
+    return this.isTimeLogRunning() ?
+      'Stop timer' :
+      'Start timer';
   }
 
   protected onTagsChange(tags: Tag[]): void {
