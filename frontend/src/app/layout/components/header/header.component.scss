@@ -10,6 +10,15 @@
     display: flex;
     align-items: center;
     column-gap: 8px;
+    width: 100%;
+    min-width: 0;
+
+    .app-name,
+    .app-menu,
+    .time-spent,
+    .dynamic-menu {
+      flex: 0 0 auto;
+    }
 
     .time-spent {
       display: flex;
@@ -25,13 +34,22 @@
     }
 
     .active-task {
+      flex: 0 1 auto;
+      min-width: 0;
       text-overflow: ellipsis;
       white-space: nowrap;
       overflow: hidden;
     }
 
     .spacer {
-      flex: 1 1 auto;
+      flex: 1 1 8px;
+      min-width: 8px;
+    }
+
+    .dynamic-menu {
+      display: flex;
+      align-items: center;
+      min-width: 0;
     }
   }
 
