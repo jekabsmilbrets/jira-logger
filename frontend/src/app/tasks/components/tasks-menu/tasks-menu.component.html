@@ -1,29 +1,53 @@
-<form (submit)="onCreate($event)">
-    <mat-form-field>
-        <input [formField]="createTaskForm.name"
-               matInput
-               placeholder="Task name"/>
-    </mat-form-field>
+@if (!isSmallerThanDesktop()) {
+    <ng-template [ngTemplateOutlet]="menuItems"/>
+} @else {
+    <ng-template [ngTemplateOutlet]="smallScreen"/>
+}
 
-    <mat-form-field>
-        <mat-select (valueChange)="onTagsChange($event)"
-                    [compareWith]="isSameTag"
-                    [value]="createTaskFormModel().tags"
-                    multiple
-                    placeholder="Tags">
-            @for (tag of tags(); track tag.id) {
-                <mat-option [value]="tag">
-                    {{ tag.name }}
-                </mat-option>
-            }
-        </mat-select>
-    </mat-form-field>
-
-    <button [disabled]="!createTaskForm().valid() || isLoading()"
-            mat-raised-button
-            type="submit">
-        Create
+<ng-template #smallScreen>
+    <button (click)="onSmallScreenMenuToggle()"
+            aria-label="Open tasks menu"
+            mat-icon-button
+            matTooltip="Open tasks menu"
+            type="button">
+        <mat-icon>list</mat-icon>
     </button>
-</form>
+</ng-template>
+
+<ng-template #menuItems>
+    <form (submit)="onCreate($event)">
+        <mat-form-field>
+            <input [formField]="createTaskForm.name"
+                   matInput
+                   placeholder="Task name"/>
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-select (valueChange)="onTagsChange($event)"
+                        [compareWith]="isSameTag"
+                        [value]="createTaskFormModel().tags"
+                        multiple
+                        placeholder="Tags">
+                @for (tag of tags(); track tag.id) {
+                    <mat-option [value]="tag">
+                        {{ tag.name }}
+                    </mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+
+        <button [disabled]="!createTaskForm().valid() || isLoading()"
+                mat-raised-button
+                type="submit">
+            Create
+        </button>
+    </form>
+</ng-template>
 
 <tasks-settings-toggle (openSettingsDialog)="onOpenSettingsDialog()"/>
+
+<ng-template #smallScreenDialog>
+    <div class="tasks-menu-dialog">
+        <ng-template [ngTemplateOutlet]="menuItems"/>
+    </div>
+</ng-template>

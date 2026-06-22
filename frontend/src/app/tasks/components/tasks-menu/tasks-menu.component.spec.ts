@@ -1,9 +1,12 @@
+import { BreakpointObserver, type BreakpointState } from '@angular/cdk/layout';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltip } from '@angular/material/tooltip';
 import { By } from '@angular/platform-browser';
 
-import { of, throwError } from 'rxjs';
+import { BehaviorSubject, of, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Tag } from '@shared/models/tag.model';
@@ -42,6 +45,13 @@ describe('Tasks Components tasks-menu.component', () => {
   const matSnackBarMock = {
     open: vi.fn(),
   };
+  const matDialogMock = {
+    open: vi.fn(),
+  };
+  const isSmallScreen$ = new BehaviorSubject<BreakpointState>({
+    matches: false,
+    breakpoints: { '(max-width: 1300px)': false },
+  });
 
   const importRequest: TaskImportRequest = {
     tasks: [{
@@ -72,7 +82,12 @@ describe('Tasks Components tasks-menu.component', () => {
     tasksSettingsServiceMock.openDialog.mockReset();
     taskImportServiceMock.importData.mockReset();
     matSnackBarMock.open.mockReset();
+    matDialogMock.open.mockReset();
     tagsServiceMock.tags = signal<Tag[]>([]).asReadonly();
+    isSmallScreen$.next({
+      matches: false,
+      breakpoints: { '(max-width: 1300px)': false },
+    });
 
     tasksServiceMock.filteredList.mockReturnValue(of([]));
     tasksServiceMock.create.mockImplementation((task: Task) => of(task));
@@ -84,6 +99,13 @@ describe('Tasks Components tasks-menu.component', () => {
     await TestBed.configureTestingModule({
       imports: [TasksMenuComponent],
       providers: [
+        {
+          provide: BreakpointObserver,
+          useValue: {
+            observe: vi.fn().mockReturnValue(isSmallScreen$.asObservable()),
+          },
+        },
+        { provide: MatDialog, useValue: matDialogMock },
         { provide: TasksService, useValue: tasksServiceMock },
         { provide: TasksSettingsService, useValue: tasksSettingsServiceMock },
         { provide: TaskImportService, useValue: taskImportServiceMock },
@@ -223,6 +245,13 @@ describe('Tasks Components tasks-menu.component', () => {
     await TestBed.configureTestingModule({
       imports: [TasksMenuComponent],
       providers: [
+        {
+          provide: BreakpointObserver,
+          useValue: {
+            observe: vi.fn().mockReturnValue(isSmallScreen$.asObservable()),
+          },
+        },
+        { provide: MatDialog, useValue: matDialogMock },
         { provide: TasksService, useValue: tasksServiceMock },
         { provide: TasksSettingsService, useValue: tasksSettingsServiceMock },
         { provide: TaskImportService, useValue: taskImportServiceMock },
@@ -241,6 +270,51 @@ describe('Tasks Components tasks-menu.component', () => {
     const overlayText = document.body.textContent ?? '';
     expect(overlayText).toContain('Frontend');
     expect(overlayText).toContain('Backend');
+  });
+
+  it('renders inline menu items on desktop and a collapsed button on small screens', () => {
+    const fixture = TestBed.createComponent(TasksMenuComponent);
+
+    isSmallScreen$.next({
+      matches: false,
+      breakpoints: { '(max-width: 1300px)': false },
+    });
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css('form'))).toBeTruthy();
+    expect(fixture.debugElement.query(By.css('tasks-settings-toggle'))).toBeTruthy();
+    expect(fixture.debugElement.query(By.css('button[aria-label="Open tasks menu"]'))).toBeFalsy();
+
+    isSmallScreen$.next({
+      matches: true,
+      breakpoints: { '(max-width: 1300px)': true },
+    });
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css('form'))).toBeFalsy();
+    expect(fixture.debugElement.query(By.css('tasks-settings-toggle'))).toBeTruthy();
+    const collapsedButton = fixture.debugElement.query(By.css('button[aria-label="Open tasks menu"]'));
+    const tooltip = collapsedButton.injector.get(MatTooltip);
+
+    expect(collapsedButton).toBeTruthy();
+    expect(tooltip.message).toBe('Open tasks menu');
+  });
+
+  it('opens collapsed tasks menu dialog from the small-screen button', () => {
+    const fixture = TestBed.createComponent(TasksMenuComponent);
+
+    isSmallScreen$.next({
+      matches: true,
+      breakpoints: { '(max-width: 1300px)': true },
+    });
+    fixture.detectChanges();
+
+    const menuButton = fixture.debugElement.query(By.css('button[aria-label="Open tasks menu"]'));
+    menuButton.nativeElement.click();
+
+    expect(matDialogMock.open).toHaveBeenCalledTimes(1);
+    const [dialogTemplateRef] = matDialogMock.open.mock.calls[0] as [any];
+    dialogTemplateRef.createEmbeddedView({});
   });
 
   it('reuses the cached tasks-settings service promise', async () => {

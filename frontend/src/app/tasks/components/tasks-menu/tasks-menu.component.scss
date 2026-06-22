@@ -24,3 +24,16 @@
     }
   }
 }
+
+::ng-deep .tasks-menu-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+}

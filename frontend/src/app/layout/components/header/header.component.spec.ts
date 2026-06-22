@@ -69,6 +69,25 @@ describe('Layout Components header.component', () => {
     expect(activeTaskElement?.textContent?.trim()).toBe('Build report');
   });
 
+  it('renders long active task text in the shrinkable toolbar slot', () => {
+    const { fixture } = createComponentWithRequiredInputs();
+
+    fixture.componentRef.setInput('activeTask', {
+      name: 'Very long active task name that should truncate instead of pushing header actions out of view',
+    });
+    fixture.detectChanges();
+
+    const activeTaskElement: HTMLElement = fixture.nativeElement.querySelector('.active-task');
+    const dynamicMenuElement: HTMLElement = fixture.nativeElement.querySelector('.dynamic-menu');
+    const activeTaskStyle = getComputedStyle(activeTaskElement);
+
+    expect(activeTaskElement.textContent?.trim()).toContain('Very long active task name');
+    expect(activeTaskStyle.minWidth).toBe('0px');
+    expect(activeTaskStyle.overflow).toBe('hidden');
+    expect(activeTaskStyle.textOverflow).toBe('ellipsis');
+    expect(dynamicMenuElement).not.toBeNull();
+  });
+
   it('shows loading indicator only when isLoading is true', () => {
     const { fixture } = createComponentWithRequiredInputs();
 

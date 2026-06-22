@@ -9,6 +9,7 @@ import { Setting } from '@core/models/setting.model';
 import { SettingsService } from '@core/services/settings.service';
 import { StorageService } from '@core/services/storage.service';
 
+import type { Column } from '@shared/interfaces/column.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
@@ -24,6 +25,8 @@ const waitForDebounce = async () => {
   vi.advanceTimersByTime(260);
   await Promise.resolve();
 };
+
+const columnDefs: (columns: Column[]) => string[] = (columns: Column[]): string[] => columns.map((column: Column) => column.columnDef);
 
 describe('ReportService', () => {
   let service: ReportService;
@@ -431,6 +434,128 @@ describe('ReportService', () => {
     );
     expect(service.columns().some((column) => column.columnDef === 'timeLogged')).toBe(true);
     expect(service.columns().some((column) => column.columnDef === 'sync')).toBe(false);
+  });
+
+  it('inserts selected tag total columns before total time in total mode', () => {
+    const backendTag = { id: 'tag-1', name: 'Backend' } as Tag;
+    const frontendTag = { id: 'tag-2', name: 'Frontend' } as Tag;
+
+    service.setTags([
+      backendTag,
+      frontendTag,
+    ]);
+    service.setReportMode(ReportMode.total);
+
+    const columns = service.columns();
+    const defs = columnDefs(columns);
+    const backendColumn = columns.find((column: Column) => column.columnDef === 'tagTotal_tag-1');
+    const backendTask = new Task({
+      tags: [backendTag],
+      timeLogs: [],
+    } as Partial<Task>);
+    const frontendTask = new Task({
+      tags: [frontendTag],
+      timeLogs: [],
+    } as Partial<Task>);
+    backendTask.timeLogged = 60;
+    frontendTask.timeLogged = 120;
+
+    expect(defs).toContain('tagTotal_tag-1');
+    expect(defs).toContain('tagTotal_tag-2');
+    expect(defs.indexOf('tagTotal_tag-1')).toBeLessThan(defs.indexOf('timeLogged'));
+    expect(defs.indexOf('tagTotal_tag-2')).toBeLessThan(defs.indexOf('timeLogged'));
+    expect(backendColumn?.cell(backendTask)).toBe(60);
+    expect(backendColumn?.footerCell?.([
+      backendTask,
+      frontendTask,
+    ])).toBe(60);
+  });
+
+  it('does not add tag total columns unless at least two valid tags are selected', () => {
+    service.setTags([]);
+    expect(service.columns().some((column: Column) => column.columnDef.startsWith('tagTotal_'))).toBe(false);
+
+    service.setTags([{ id: 'tag-1', name: 'Backend' } as Tag]);
+    expect(service.columns().some((column: Column) => column.columnDef.startsWith('tagTotal_'))).toBe(false);
+
+    service.setTags([
+      { id: 'tag-1', name: 'Backend' } as Tag,
+      { id: 'tag-2', name: 'Frontend' } as Tag,
+    ]);
+    expect(service.columns().filter((column: Column) => column.columnDef.startsWith('tagTotal_')).length).toBe(2);
+  });
+
+  it('places date-mode tag total columns after the date column and before sync columns', () => {
+    settingsState.set([
+      new Setting({ id: 'jira-enabled', name: JiraApiSettings.enabled, value: 'true' }),
+    ]);
+    service.setTags([
+      { id: 'tag-1', name: 'Backend' } as Tag,
+      { id: 'tag-2', name: 'Frontend' } as Tag,
+    ]);
+    service.setReportMode(ReportMode.date);
+    service.setDate(new Date('2026-05-01T00:00:00.000Z'));
+
+    const defs = columnDefs(service.columns());
+    const dateColumnIndex = defs.findIndex((columnDef: string) => columnDef.startsWith('date-'));
+
+    expect(dateColumnIndex).toBeGreaterThan(-1);
+    expect(defs.indexOf('tagTotal_tag-1')).toBeGreaterThan(dateColumnIndex);
+    expect(defs.indexOf('tagTotal_tag-2')).toBeGreaterThan(dateColumnIndex);
+    expect(defs.indexOf('tagTotal_tag-1')).toBeLessThan(defs.indexOf('synced'));
+    expect(defs.indexOf('tagTotal_tag-2')).toBeLessThan(defs.indexOf('sync'));
+    expect(defs).not.toContain('timeLogged');
+  });
+
+  it('places date-range tag total columns before total time and excludes hidden weekends', () => {
+    service.setTags([
+      { id: 'tag-1', name: 'Backend' } as Tag,
+      { id: 'tag-2', name: 'Frontend' } as Tag,
+    ]);
+    service.setReportMode(ReportMode.dateRange);
+    service.setShowWeekends(false);
+    service.setStartDate(new Date('2026-05-01T00:00:00.000Z'));
+    service.setEndDate(new Date('2026-05-03T00:00:00.000Z'));
+
+    const columns = service.columns();
+    const defs = columnDefs(columns);
+    const backendColumn = columns.find((column: Column) => column.columnDef === 'tagTotal_tag-1');
+    const frontendColumn = columns.find((column: Column) => column.columnDef === 'tagTotal_tag-2');
+    const backendTask = new Task({
+      tags: [{ id: 'tag-1', name: 'Backend' } as Tag],
+      timeLogs: [
+        new TimeLog({
+          startTime: new Date('2026-05-01T10:00:00.000Z'),
+          endTime: new Date('2026-05-01T10:01:00.000Z'),
+        } as any),
+        new TimeLog({
+          startTime: new Date('2026-05-02T10:00:00.000Z'),
+          endTime: new Date('2026-05-02T10:02:00.000Z'),
+        } as any),
+      ],
+    } as Partial<Task>);
+    const frontendTask = new Task({
+      tags: [{ id: 'tag-2', name: 'Frontend' } as Tag],
+      timeLogs: [
+        new TimeLog({
+          startTime: new Date('2026-05-02T10:00:00.000Z'),
+          endTime: new Date('2026-05-02T10:02:00.000Z'),
+        } as any),
+      ],
+    } as Partial<Task>);
+
+    expect(defs.indexOf('tagTotal_tag-1')).toBeLessThan(defs.indexOf('timeLogged'));
+    expect(defs.indexOf('tagTotal_tag-2')).toBeLessThan(defs.indexOf('timeLogged'));
+    expect(backendColumn?.cell(backendTask)).toBe(60);
+    expect(backendColumn?.footerCell?.([
+      backendTask,
+      frontendTask,
+    ])).toBe(60);
+    expect(frontendColumn?.cell(frontendTask)).toBe(0);
+    expect(frontendColumn?.footerCell?.([
+      backendTask,
+      frontendTask,
+    ])).toBe(0);
   });
 
   it('persists settings changes through StorageService.create', async () => {

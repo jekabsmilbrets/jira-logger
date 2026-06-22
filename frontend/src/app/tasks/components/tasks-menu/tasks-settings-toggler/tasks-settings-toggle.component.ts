@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, output, type OutputEmitterRef } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'tasks-settings-toggle',
@@ -11,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
   imports: [
     MatButtonModule,
     MatIconModule,
+    MatTooltipModule,
   ],
 })
 export class TasksSettingsToggleComponent {

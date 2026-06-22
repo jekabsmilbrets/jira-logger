@@ -19,11 +19,10 @@ export const reportTotalColumns: Column[] = [
     ),
     hasFooter: true,
     footerCell: (tasks: Task[]) => tasks
-      .map(
-        (task: Task) => task.timeLogs.map(
-          (t) => t.timeLogged(),
-        )
-          .reduce((acc, value) => acc + value, 0))
+      .map((task: Task) => columnValue(
+        task,
+        'timeLogged',
+      ) as number)
       .reduce((acc, value) => acc + value, 0),
   },
 ];
