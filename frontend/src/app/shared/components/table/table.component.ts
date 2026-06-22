@@ -1,12 +1,5 @@
 import { SelectionModel } from '@angular/cdk/collections';
-import {
-  CdkCellDef,
-  CdkColumnDef,
-  CdkFooterCellDef,
-  CdkFooterRowDef,
-  CdkHeaderCellDef,
-  CdkHeaderRowDef,
-} from '@angular/cdk/table';
+import { CdkCellDef, CdkColumnDef, CdkFooterCellDef, CdkFooterRowDef, CdkHeaderCellDef, CdkHeaderRowDef } from '@angular/cdk/table';
 import { formatDate } from '@angular/common';
 import {
   AfterViewInit,
@@ -349,6 +342,12 @@ export class TableComponent implements AfterViewInit {
   private toDisplayValue(
     value: unknown,
   ): string | number {
+    if (Array.isArray(value)) {
+      return value.every((entry: unknown) => typeof entry === 'string' || typeof entry === 'number') ?
+        value.join(',') :
+        '';
+    }
+
     return typeof value === 'string' || typeof value === 'number' ?
       value :
       '';

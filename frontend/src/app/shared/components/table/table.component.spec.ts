@@ -238,6 +238,9 @@ describe('Shared Components table.component', () => {
       when: new Date('2026-05-01T00:00:00.000Z'),
       value: 120,
       name: 'Alpha',
+      singleTag: ['Alpha'],
+      tags: ['Alpha', 'Beta'],
+      meta: { label: 'hidden' },
     } as any;
     fixture.componentRef.setInput('data', [row]);
     fixture.detectChanges();
@@ -245,8 +248,13 @@ describe('Shared Components table.component', () => {
     expect(component['getColumnCellValue'](row, createColumn({ pipe: 'date', cell: () => row.when }))).toBeTruthy();
     expect(component['getColumnCellValue'](row, createColumn({ pipe: 'readableTime', cell: () => row.value }))).toBe('2m');
     expect(component['getColumnCellValue'](row, createColumn({ cell: () => row.name }))).toBe('Alpha');
+    expect(component['getColumnCellValue'](row, createColumn({ cell: () => row.singleTag }))).toBe('Alpha');
+    expect(component['getColumnCellValue'](row, createColumn({ cell: () => row.tags }))).toBe('Alpha,Beta');
+    expect(component['getColumnCellValue'](row, createColumn({ cell: () => row.meta }))).toBe('');
     expect(component['getFooterCellValue'](createColumn({ hasFooter: true, footerCell: () => 300, pipe: 'readableTime' }))).toBe('5m');
     expect(component['getFooterCellValue'](createColumn({ hasFooter: true, footerCell: () => 'done' }))).toBe('done');
+    expect(component['getFooterCellValue'](createColumn({ hasFooter: true, footerCell: () => row.tags }))).toBe('Alpha,Beta');
+    expect(component['getFooterCellValue'](createColumn({ hasFooter: true, footerCell: () => row.meta }))).toBe('');
   });
 
   it('reuses the cached confirmation service promise', async () => {
