@@ -273,7 +273,6 @@ get_assets_marker() {
 run_assets_init() {
   local assets_version="$1"
   echo "Initializing shared assets volume (${ASSETS_VOLUME_NAME}) with version: ${assets_version}"
-  run_with_log "log-assets-init.log" compose_cmd build assets-init
   run_with_log "log-assets-init.log" compose_cmd run --rm -e "ASSETS_VERSION=${assets_version}" assets-init
 }
 

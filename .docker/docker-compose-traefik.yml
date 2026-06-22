@@ -15,6 +15,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./traefik.yaml:/etc/traefik/traefik.yaml:ro"
       - "./certs/:/certs/:ro"
     healthcheck:
@@ -23,3 +24,12 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    networks:
+      - traefik
+      - default
+
+networks:
+  # Shared external network so Traefik can route to services in OTHER compose projects.
+  # Create once with:  docker network create traefik
+  traefik:
+    external: true

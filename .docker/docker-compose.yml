@@ -94,6 +94,15 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    labels:
+      traefik.enable: true
+      traefik.http.routers.jira-logger-nginx.rule: Host(`jira-logger.io`)
+      traefik.http.routers.jira-logger-nginx.entrypoints: websecure
+      traefik.http.routers.jira-logger-nginx.tls: true
+      traefik.http.services.jira-logger-nginx.loadbalancer.server.port: 80
+    networks:
+      - traefik
+      - default
 
   migrate:
     container_name: "jira-logger-migrate"
@@ -124,3 +133,7 @@ services:
 volumes:
   dbData:
   assetsData:
+
+networks:
+  traefik:
+    external: true

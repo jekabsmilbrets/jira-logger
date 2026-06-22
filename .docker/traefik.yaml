@@ -23,6 +23,10 @@ ping: { }
 
 # use this file for dynamic config (tls + project routing)
 providers:
+  docker:
+    endpoint: unix:///var/run/docker.sock
+    exposedByDefault: false
+    network: traefik
   file:
     fileName: /etc/traefik/traefik.yaml
     watch: true
@@ -55,18 +59,3 @@ tls:
     default:
       sniStrict: true
       minVersion: VersionTLS12
-
-http:
-  routers:
-    jira-logger-nginx:
-      rule: Host(`jira-logger.io`)
-      entryPoints:
-        - websecure
-      tls: true
-      service: jira-logger-nginx
-
-  services:
-    jira-logger-nginx:
-      loadBalancer:
-        servers:
-          - url: http://nginx:80
