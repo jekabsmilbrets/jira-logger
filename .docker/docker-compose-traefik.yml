@@ -1,22 +1,13 @@
 services:
-  docker-socket-proxy:
-    container_name: "jira-logger-docker-socket-proxy"
-    image: tecnativa/docker-socket-proxy:v0.4.2
-    restart: unless-stopped
-    environment:
-      CONTAINERS: 1
-      NETWORKS: 1
-      SERVICES: 1
-      TASKS: 1
-      INFO: 1
-      PING: 1
-      VERSION: 1
-      POST: 0
-      AUTH: 0
-      SECRETS: 0
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  nginx:
+    labels:
+      traefik.enable: true
+      traefik.http.routers.jira-logger-nginx.rule: Host(`jira-logger.io`)
+      traefik.http.routers.jira-logger-nginx.entrypoints: websecure
+      traefik.http.routers.jira-logger-nginx.tls: true
+      traefik.http.services.jira-logger-nginx.loadbalancer.server.port: 80
     networks:
+      - traefik
       - default
 
   traefik:
@@ -31,20 +22,16 @@ services:
       traefik.http.routers.jira-logger-traefik-dashboard.service: api@internal
       traefik.http.routers.jira-logger-traefik-dashboard.middlewares: jira-logger-traefik-dashboard-auth
       traefik.http.middlewares.jira-logger-traefik-dashboard-auth.basicauth.users: ${TRAEFIK_DASHBOARD_AUTH:-admin:$$2y$$05$$OEJ1rq.qLRZo5tl/zQQ4/.x0NPgosA2ZDGklnroI4H3xInIGt9RTO}
-    environment:
-      DOCKER_API_VERSION: "1.40"
-    depends_on:
-      docker-socket-proxy:
-        condition: service_started
     ports:
       - "80:80"
       - "443:443"
     volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./traefik.yaml:/etc/traefik/traefik.yaml:ro"
       - "./certs/:/certs/:ro"
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
-      interval: 10s
+      interval: 60s
       timeout: 5s
       retries: 10
       start_period: 10s

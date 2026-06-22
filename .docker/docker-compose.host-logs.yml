@@ -5,7 +5,7 @@ services:
     environment:
       - LOG_DIR=/logs
       - LOG_CAP_BYTES=52428800
-      - LOG_SCAN_INTERVAL_SEC=5
+      - LOG_SCAN_INTERVAL_SEC=30
       - LOG_FILES=log-php-fpm-error.log log-php-fpm-access.log log-php-fpm-slow.log log-symfony-main.log log-symfony-deprecation.log log-symfony-jira-api-service.log log-nginx-access.log log-nginx-error.log log-postgres.log log-traefik.log log-traefik-access.log log-assets-init.log log-migrate.log
     volumes:
       - ./../.logs/jira-logger:/logs:rw
@@ -22,6 +22,8 @@ services:
       - ./../.logs/jira-logger:/var/log/postgresql:rw
     command:
       - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
       - -c
       - logging_collector=on
       - -c
