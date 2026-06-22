@@ -13,6 +13,7 @@ import { reportTotalColumns } from '@report/constants/report-total-columns.const
 import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportStateService } from '@report/services/report-state.service';
 import { ReportTaskQueryService } from '@report/services/report-task-query.service';
+import { buildReportTagTotalColumns } from '@report/utilities/build-report-tag-total-columns.utility';
 
 @Service()
 export class ReportService {
@@ -85,7 +86,7 @@ export class ReportService {
       this.endDate(),
     );
     const columnsByMode: Record<ReportMode, () => Column[]> = {
-      [ReportMode.total]: () => [...reportTotalColumns],
+      [ReportMode.total]: () => this.buildTotalColumns(),
       [ReportMode.date]: () => this.buildDateColumns(reportMode),
       [ReportMode.dateRange]: () => this.buildRangeColumns(reportMode),
     };
@@ -100,9 +101,25 @@ export class ReportService {
     reportMode: ReportMode,
     jiraApiEnabled: boolean,
   ): Column[] {
+    const visibleDates: Date[] = this.buildVisibleDates(
+      startDate,
+      endDate,
+      showWeekends,
+      reportMode,
+    );
+
     return [
       ...reportDateRangeColumns,
       ...this.buildDateColumnsForRange(startDate, endDate, showWeekends, reportMode),
+      ...this.buildTagTotalColumns(
+        (task: Task) => this.sumValues(
+          visibleDates,
+          (date: Date) => task.calcTimeLoggedForDate(
+            date,
+            this.timezoneService.timezone,
+          ),
+        ),
+      ),
       ...this.buildTrailingColumns(startDate, reportMode, jiraApiEnabled),
     ];
   }
@@ -122,6 +139,31 @@ export class ReportService {
     }
 
     return columns;
+  }
+
+  private buildVisibleDates(
+    startDate: Date,
+    endDate: Date,
+    showWeekends: boolean,
+    reportMode: ReportMode,
+  ): Date[] {
+    const dates: Date[] = [];
+    const currentDate: Date = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      const date: Date = new Date(currentDate.getTime());
+
+      if (reportMode === ReportMode.date || !this.shouldHideWeekendColumn(
+        date,
+        showWeekends,
+      )) {
+        dates.push(date);
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return dates;
   }
 
   private buildDateColumn(
@@ -145,7 +187,7 @@ export class ReportService {
       footerCellClickType: 'readableTime',
       cell: (task: Task) => task.calcTimeLoggedForDate(currentDate, this.timezoneService.timezone),
       hasFooter: true,
-      footerCell: (tasks: Task[]) => this.sumTaskValues(tasks, (task: Task) => task.calcTimeLoggedForDate(currentDate, this.timezoneService.timezone)),
+      footerCell: (tasks: Task[]) => this.sumValues(tasks, (task: Task) => task.calcTimeLoggedForDate(currentDate, this.timezoneService.timezone)),
     };
   }
 
@@ -189,7 +231,7 @@ export class ReportService {
         footerCellClickType: 'readableTime',
         cell: (task: Task) => task.calcTimeSynced(startDate, this.timezoneService.timezone),
         hasFooter: true,
-        footerCell: (tasks: Task[]) => this.sumTaskValues(tasks, (task: Task) => task.calcTimeSynced(startDate, this.timezoneService.timezone)),
+        footerCell: (tasks: Task[]) => this.sumValues(tasks, (task: Task) => task.calcTimeSynced(startDate, this.timezoneService.timezone)),
       },
       {
         columnDef: 'sync',
@@ -219,8 +261,30 @@ export class ReportService {
       pipe: 'readableTime',
       cell: (task: Task) => task.calcTimeLogged(),
       hasFooter: true,
-      footerCell: (tasks: Task[]) => this.sumTaskValues(tasks, (task: Task) => task.calcTimeLogged()),
+      footerCell: (tasks: Task[]) => this.sumValues(tasks, (task: Task) => task.calcTimeLogged()),
     };
+  }
+
+  private buildTagTotalColumns(
+    getTaskVisibleTime: (task: Task) => number,
+  ): Column[] {
+    return buildReportTagTotalColumns(
+      this.tags(),
+      getTaskVisibleTime,
+    );
+  }
+
+  private buildTotalColumns(): Column[] {
+    const columns: Column[] = [...reportTotalColumns];
+    const timeLoggedColumnIndex: number = columns.findIndex((column: Column) => column.columnDef === 'timeLogged');
+
+    columns.splice(
+      timeLoggedColumnIndex,
+      0,
+      ...this.buildTagTotalColumns((task: Task) => task.timeLogged),
+    );
+
+    return columns;
   }
 
   private buildDateColumns(
@@ -256,11 +320,11 @@ export class ReportService {
       [...reportTotalColumns];
   }
 
-  private sumTaskValues(
-    tasks: Task[],
-    getValue: (task: Task) => number,
+  private sumValues<T>(
+    values: T[],
+    getValue: (value: T) => number,
   ): number {
-    return tasks
+    return values
       .map(getValue)
       .reduce((acc: number, value: number) => acc + value, 0);
   }
