@@ -1,4 +1,15 @@
 services:
+  nginx:
+    labels:
+      traefik.enable: true
+      traefik.http.routers.jira-logger-nginx.rule: Host(`jira-logger.io`)
+      traefik.http.routers.jira-logger-nginx.entrypoints: websecure
+      traefik.http.routers.jira-logger-nginx.tls: true
+      traefik.http.services.jira-logger-nginx.loadbalancer.server.port: 80
+    networks:
+      - traefik
+      - default
+
   traefik:
     container_name: "jira-logger-traefik"
     image: traefik:v3.7.1
