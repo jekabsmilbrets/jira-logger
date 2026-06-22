@@ -16,7 +16,7 @@ Notes:
 - `manager.sh` now runs with `./.docker/docker-compose.yml` and `./.docker/docker-compose.dev.yml` by default.
 - On a fresh checkout, `manager.sh -a start` will trigger the required build flow automatically if the shared frontend assets volume is missing.
 - Backend env variables are loaded from `./.docker/.env` via `docker-compose.yml`.
-- Host log persistence is disabled by default. Pass `-l on` to `manager.sh` if you want `./.logs/jira-logger/` file logs.
+- Host log persistence is disabled by default. Use `docker compose logs` or `sh manager.sh -a start` attached output for normal use. Pass `-l on` only when you explicitly need debug log files in `./.logs/jira-logger/`.
 - Plain Docker Compose startup is self-contained for frontend assets now: `docker compose up --build` brings up `assets-init`, populates `assetsData`, and only then starts nginx.
 
 ## Basic Usage
@@ -29,7 +29,7 @@ Notes:
    `sh manager.sh -a start -b`
    To disable Traefik:
    `sh manager.sh -a start -b -t off`
-   To enable persisted host logs:
+   To enable persisted host logs for debugging:
    `sh manager.sh -a start -b -l on`
 4) Runtime containers are copy-only (no backend/frontend bind mounts), so source code changes require image rebuild + restart (`sh manager.sh -a build` then `sh manager.sh -a start`), or `sh manager.sh -a rebuild`.
 5) To fully **rebuild** the stack (down + build, including DB prepare and seed):
@@ -57,7 +57,8 @@ Notes:
   - Missing marker: interactive mode prompts to run `build`; non-interactive mode runs `build` automatically.
   - Marker mismatch: interactive mode prompts to run `rebuild`; non-interactive mode fails fast with a rebuild command.
 - Runtime logs are available by default through `docker compose logs` and `sh manager.sh -a start` attached output.
-- To re-enable persisted host logs, pass `-l on` to `manager.sh`.
+- Persisted host logs are a debug-only path. For normal startup, leave `-l` off and use `docker compose logs`.
+- To re-enable persisted host logs for debugging, pass `-l on` to `manager.sh`.
 - When `-l on` is used, all core runtime logs are available on host in `./.logs/jira-logger/`:
   - `log-php-fpm-error.log`
   - `log-php-fpm-access.log`
@@ -76,6 +77,7 @@ Notes:
 - When `-l on` is used, migration output is appended to `log-migrate.log` during `prepare-db` and `migrate`.
 - When `-l on` is used, runtime log cap is enforced by `log-governor` container:
   - per-file hard cap: `50MB` (`52428800` bytes)
+  - scan interval: `30s`
   - behavior: keeps newest content by size-based trim when a file exceeds cap
   - applies to all `log-*.log` files listed above, including `log-assets-init.log` and `log-migrate.log`
 - When `-l on` is used, log rotation/cleanup runs on every `start`/`start-with-init`:
