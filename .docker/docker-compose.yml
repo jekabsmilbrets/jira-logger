@@ -30,6 +30,8 @@ services:
     command:
       - postgres
       - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
       - log_destination=stderr
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
