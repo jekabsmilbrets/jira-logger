@@ -13,4 +13,12 @@ describe('Shared Utils column-value.util', () => {
   it('returns empty string for missing join path', () => {
     expect(columnValue({}, 'tags', true)).toBe('');
   });
+
+  it('returns empty string when join target is not an array', () => {
+    expect(columnValue({ tags: 'a' }, 'tags', true)).toBe('');
+  });
+
+  it('returns empty string for missing nested path', () => {
+    expect(columnValue({ a: {} }, 'a.b')).toBe('');
+  });
 });

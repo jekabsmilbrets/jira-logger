@@ -8,14 +8,20 @@ export const adaptTask: (dbTask: ApiTask) => Task = (dbTask: ApiTask): Task =>
   new Task({
     id: dbTask.id,
     name: dbTask.name,
-    lastTimeLog: dbTask.lastTimeLog && adaptTimeLog(dbTask.lastTimeLog),
-    timeLogs: (dbTask.timeLogs && adaptTimeLogs(dbTask.timeLogs)) ?? [],
-    jiraWorkLogs: (dbTask.jiraWorkLogs && adaptJiraWorkLogs(dbTask.jiraWorkLogs)) ?? [],
+    ...adaptTaskRelations(dbTask),
     description: dbTask.description,
     timeLogged: dbTask.timeLogged,
-    tags: (dbTask.tags && adaptTags(dbTask.tags)) ?? [],
   });
 
 export const adaptTasks: (dbTasks: ApiTask[]) => Task[] = (dbTasks: ApiTask[]): Task[] => dbTasks.map(
   (dbTask: ApiTask) => adaptTask(dbTask),
 );
+
+const adaptTaskRelations: (dbTask: ApiTask) => Pick<Task, 'lastTimeLog' | 'timeLogs' | 'jiraWorkLogs' | 'tags'> = (
+  dbTask: ApiTask,
+) => ({
+  lastTimeLog: dbTask.lastTimeLog ? adaptTimeLog(dbTask.lastTimeLog) : undefined,
+  timeLogs: dbTask.timeLogs ? adaptTimeLogs(dbTask.timeLogs) : [],
+  jiraWorkLogs: dbTask.jiraWorkLogs ? adaptJiraWorkLogs(dbTask.jiraWorkLogs) : [],
+  tags: dbTask.tags ? adaptTags(dbTask.tags) : [],
+});

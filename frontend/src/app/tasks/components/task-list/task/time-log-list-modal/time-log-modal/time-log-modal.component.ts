@@ -40,6 +40,14 @@ import { buildTimeLogPayload } from '@tasks/utility/task-payload-builder.utility
   ],
 })
 export class TimeLogModalComponent {
+  private static readonly invalidChronologyError: {
+    kind: string;
+    message: string;
+  } = {
+    kind: 'invalidChronology',
+    message: 'End time must be later than start time.',
+  };
+
   protected readonly data: TimeLogDialogData = inject<TimeLogDialogData>(MAT_DIALOG_DATA);
   protected readonly timeLogFormModel: WritableSignal<TimeLogFormValue> = signal<TimeLogFormValue>({
     startTime: null,
@@ -48,21 +56,7 @@ export class TimeLogModalComponent {
   });
   protected readonly timeLogForm: FieldTree<TimeLogFormValue> = form(this.timeLogFormModel, (path) => {
     required(path.startTime, { message: 'Start time is required.' });
-    validate(path.endTime, ({ value, valueOf }) => {
-      const startTime: Date | null = valueOf(path.startTime);
-      const endTime: Date | null = value();
-
-      if (startTime === null || endTime === null || endTime.getTime() === 0) {
-        return null;
-      }
-
-      return endTime.getTime() > startTime.getTime() ?
-        null :
-        {
-          kind: 'invalidChronology',
-          message: 'End time must be later than start time.',
-        };
-    });
+    validate(path.endTime, ({ value, valueOf }) => this.validateEndTime(valueOf(path.startTime), value()));
   });
 
   private readonly dialogRef: MatDialogRef<TimeLogModalComponent, undefined | TimeLogModalResponse> = inject<MatDialogRef<TimeLogModalComponent, TimeLogModalResponse | undefined>>(MatDialogRef);
@@ -93,22 +87,7 @@ export class TimeLogModalComponent {
       return;
     }
 
-    const formData: TimeLogFormData = this.timeLogFormModel();
-
-    if (formData.endTime === undefined || formData.endTime?.getTime() === 0) {
-      formData.endTime = null;
-    }
-
-    formData.startTime = formData.startTime && fromWallClockDateInTimezone(
-      formData.startTime,
-      this.timezoneService.timezone,
-    );
-    formData.endTime = formData.endTime && fromWallClockDateInTimezone(
-      formData.endTime,
-      this.timezoneService.timezone,
-    );
-
-    const timeLog: TimeLog = buildTimeLogPayload(this.data.timeLog, formData);
+    const timeLog: TimeLog = buildTimeLogPayload(this.data.timeLog, this.buildSaveFormData(this.timeLogFormModel()));
 
     this.dialogRef.close({
       responseType: 'update',
@@ -120,6 +99,41 @@ export class TimeLogModalComponent {
     this.dialogRef.close({
       responseType: 'delete',
     });
+  }
+
+  private buildSaveFormData(
+    formData: TimeLogFormData,
+  ): TimeLogFormData {
+    return {
+      ...formData,
+      startTime: this.toUtcWallClockDate(formData.startTime),
+      endTime: this.toUtcWallClockDate(formData.endTime),
+    };
+  }
+
+  private validateEndTime(
+    startTime: Date | null,
+    endTime: Date | null,
+  ): typeof TimeLogModalComponent.invalidChronologyError | null {
+    if (!startTime || !endTime) {
+      return null;
+    }
+
+    if (endTime.getTime() === 0 || endTime.getTime() > startTime.getTime()) {
+      return null;
+    }
+
+    return TimeLogModalComponent.invalidChronologyError;
+  }
+
+  private toUtcWallClockDate(
+    date: Date | null | undefined,
+  ): Date | null {
+    if (date === undefined || date === null || date.getTime() === 0) {
+      return null;
+    }
+
+    return fromWallClockDateInTimezone(date, this.timezoneService.timezone);
   }
 
   protected get modalTitleDateTime(): string {

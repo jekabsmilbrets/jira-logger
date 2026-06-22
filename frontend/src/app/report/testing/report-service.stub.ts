@@ -9,6 +9,18 @@ import { Task } from '@shared/models/task.model';
 import { ReportMode } from '@report/enums/report-mode.enum';
 import type { ReportServiceStubOptions } from '@report/interfaces/report-service-stub-options.interface';
 
+const defaultReportServiceStubState: Omit<ReportServiceStubState, 'reload'> = {
+  reportMode: ReportMode.total,
+  tags: [],
+  date: null,
+  startDate: null,
+  endDate: null,
+  showWeekends: false,
+  hideUnreportedTasks: false,
+  tasks: [],
+  columns: [],
+};
+
 export class ReportServiceStub {
   public readonly reportMode: Signal<ReportMode>;
   public readonly tags: Signal<Tag[]>;
@@ -32,15 +44,21 @@ export class ReportServiceStub {
   private readonly columnsSignal: WritableSignal<Column[]>;
 
   public constructor(private readonly options: ReportServiceStubOptions = {}) {
-    this.reportModeSignal = signal<ReportMode>(options.reportMode ?? ReportMode.total);
-    this.tagsSignal = signal<Tag[]>(options.tags ?? []);
-    this.dateSignal = signal<Date | null>(options.date ?? null);
-    this.startDateSignal = signal<Date | null>(options.startDate ?? null);
-    this.endDateSignal = signal<Date | null>(options.endDate ?? null);
-    this.showWeekendsSignal = signal<boolean>(options.showWeekends ?? false);
-    this.hideUnreportedTasksSignal = signal<boolean>(options.hideUnreportedTasks ?? false);
-    this.tasksSignal = signal<Task[]>(options.tasks ?? []);
-    this.columnsSignal = signal<Column[]>(options.columns ?? []);
+    const initialState: ReportServiceStubState = {
+      ...defaultReportServiceStubState,
+      ...options,
+      reload: options.reload ?? vi.fn(),
+    };
+
+    this.reportModeSignal = signal<ReportMode>(initialState.reportMode);
+    this.tagsSignal = signal<Tag[]>(initialState.tags);
+    this.dateSignal = signal<Date | null>(initialState.date);
+    this.startDateSignal = signal<Date | null>(initialState.startDate);
+    this.endDateSignal = signal<Date | null>(initialState.endDate);
+    this.showWeekendsSignal = signal<boolean>(initialState.showWeekends);
+    this.hideUnreportedTasksSignal = signal<boolean>(initialState.hideUnreportedTasks);
+    this.tasksSignal = signal<Task[]>(initialState.tasks);
+    this.columnsSignal = signal<Column[]>(initialState.columns);
 
     this.reportMode = this.reportModeSignal.asReadonly();
     this.tags = this.tagsSignal.asReadonly();
@@ -51,7 +69,7 @@ export class ReportServiceStub {
     this.hideUnreportedTasks = this.hideUnreportedTasksSignal.asReadonly();
     this.tasks = this.tasksSignal.asReadonly();
     this.columns = this.columnsSignal.asReadonly();
-    this.reload = options.reload ?? vi.fn();
+    this.reload = initialState.reload;
   }
 
   public setReportMode(value: ReportMode): void {
@@ -88,4 +106,17 @@ export class ReportServiceStub {
     this.options.onSetHideUnreportedTasks?.(value);
     this.hideUnreportedTasksSignal.set(value);
   }
+}
+
+interface ReportServiceStubState {
+  reportMode: ReportMode;
+  tags: Tag[];
+  date: Date | null;
+  startDate: Date | null;
+  endDate: Date | null;
+  showWeekends: boolean;
+  hideUnreportedTasks: boolean;
+  tasks: Task[];
+  columns: Column[];
+  reload: ReturnType<typeof vi.fn>;
 }

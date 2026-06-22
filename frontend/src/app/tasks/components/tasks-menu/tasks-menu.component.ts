@@ -180,19 +180,33 @@ export class TasksMenuComponent {
       return report.errors.join(' ');
     }
 
+    return this.buildImportReportSegments(report).join(', ') + '.';
+  }
+
+  private buildImportReportSegments(
+    report: ImportReport,
+  ): string[] {
     const segments: string[] = [
-      `Imported ${ report.createdTaskCount } task${ report.createdTaskCount === 1 ? '' : 's' }`,
-      `${ report.createdTimeLogCount } time log${ report.createdTimeLogCount === 1 ? '' : 's' }`,
+      this.formatCountSegment(report.createdTaskCount, 'Imported', 'task'),
+      this.formatCountSegment(report.createdTimeLogCount, '', 'time log').trim(),
     ];
 
-    if (report.createdTagCount > 0) {
-      segments.push(`created ${ report.createdTagCount } tag${ report.createdTagCount === 1 ? '' : 's' }`);
-    }
-
     if (report.warnings.length > 0) {
-      segments.push(`${ report.warnings.length } warning${ report.warnings.length === 1 ? '' : 's' }`);
+      segments.push(this.formatCountSegment(report.warnings.length, '', 'warning').trim());
     }
 
-    return segments.join(', ') + '.';
+    if (report.createdTagCount > 0) {
+      segments.push(this.formatCountSegment(report.createdTagCount, 'created', 'tag'));
+    }
+
+    return segments;
+  }
+
+  private formatCountSegment(
+    count: number,
+    prefix: string,
+    noun: string,
+  ): string {
+    return `${ prefix ? `${ prefix } ` : '' }${ count } ${ noun }${ count === 1 ? '' : 's' }`;
   }
 }

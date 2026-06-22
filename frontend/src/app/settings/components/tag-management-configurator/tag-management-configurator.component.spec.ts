@@ -1,6 +1,5 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 import { of } from 'rxjs';
 
@@ -24,7 +23,6 @@ describe('Settings Components tag-management-configurator.component', () => {
     await TestBed.configureTestingModule({
       imports: [
         TagManagementConfiguratorComponent,
-        NoopAnimationsModule,
       ],
       providers: [
         { provide: AreYouSureService, useValue: areYouSureServiceMock },

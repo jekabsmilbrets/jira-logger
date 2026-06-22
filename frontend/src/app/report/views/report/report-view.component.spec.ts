@@ -10,10 +10,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TableComponent } from '@shared/components/table/table.component';
 import type { Column } from '@shared/interfaces/column.interface';
 import type { Searchable } from '@shared/interfaces/searchable.interface';
+import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
+import { reportBaseColumns } from '@report/constants/report-base-columns.constant';
 import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 import { ReportServiceStub } from '@report/testing/report-service.stub';
@@ -40,11 +42,15 @@ describe('ReportViewComponent', () => {
     };
     reportService = new ReportServiceStub({
       reportMode: ReportMode.date,
-      columns: [{
-        columnDef: 'sync',
-        header: 'Sync',
-        cell: () => undefined,
-      } as Column],
+      columns: reportBaseColumns,
+      tasks: [new Task({
+        name: 'Task With Tags',
+        description: 'Desc',
+        tags: [
+          new Tag({ name: 'Alpha' }),
+          new Tag({ name: 'Beta' }),
+        ],
+      })],
       reload: vi.fn(),
     });
 
@@ -85,6 +91,12 @@ describe('ReportViewComponent', () => {
     expect(onCellClickSpy).toHaveBeenCalled();
     expect(onFooterClickSpy).toHaveBeenCalled();
     expect(onSyncSpy).toHaveBeenCalled();
+  });
+
+  it('renders visible tag text in the report table', () => {
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Alpha,Beta');
   });
 
   it('copies readable-time cell value and shows snackbar', () => {
