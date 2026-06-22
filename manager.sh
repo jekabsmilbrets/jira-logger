@@ -45,13 +45,6 @@ generate_certificates() {
   (cd ./.docker/certs/ && bash cert.sh jira-logger.io)
 }
 
-ensure_traefik_network() {
-  if ! docker network inspect traefik >/dev/null 2>&1; then
-    echo "Creating Docker network 'traefik'"
-    docker network create traefik >/dev/null
-  fi
-}
-
 # Default values
 ACTION=""
 BACKGROUND=""
@@ -117,6 +110,8 @@ if [[ "$TRAEFIK_MODE" == "on" ]]; then
   if [[ "${LOGGING_MODE}" == "on" ]]; then
     COMPOSE_FILES+=(./.docker/docker-compose-traefik.host-logs.yml)
   fi
+else
+  COMPOSE_FILES+=(./.docker/docker-compose.no-traefik.yml)
 fi
 
 TRAEFIK_ARGS=()
@@ -130,8 +125,10 @@ if [[ "$LOGGING_MODE" == "on" ]]; then
 fi
 
 compose_cmd() {
-  ensure_traefik_network
   ensure_docker_env_file
+  if [[ "${TRAEFIK_MODE}" == "on" ]]; then
+    ensure_traefik_network
+  fi
   COMPOSE_PROJECT_NAME="${PROJECT_NAME}" docker compose --env-file "${DOCKER_ENV_FILE}" $(printf -- '-f %s ' "${COMPOSE_FILES[@]}") "$@"
 }
 
@@ -162,6 +159,15 @@ ensure_docker_env_file() {
   echo "Missing ${DOCKER_ENV_FILE}."
   echo "Create it from ${DOCKER_ENV_TEMPLATE} and fill the required values before continuing."
   exit 1
+}
+
+ensure_traefik_network() {
+  if docker network inspect traefik >/dev/null 2>&1; then
+    return 0
+  fi
+
+  echo "Creating shared Docker network 'traefik'"
+  docker network create traefik >/dev/null
 }
 
 warn_legacy_backend_env() {
@@ -253,7 +259,7 @@ get_expected_assets_version() {
   local digest
   local commit
 
-  digest="$(docker image inspect jira-logger-php-fpm:latest --format '{{index .RepoDigests 0}}' 2>/dev/null || true)"
+  digest="$(docker image inspect jira-logger-assets-init:latest --format '{{index .RepoDigests 0}}' 2>/dev/null || true)"
   if [[ -n "$digest" ]]; then
     echo "$digest"
     return 0
@@ -279,8 +285,14 @@ get_assets_marker() {
 run_assets_init() {
   local assets_version="$1"
   echo "Initializing shared assets volume (${ASSETS_VOLUME_NAME}) with version: ${assets_version}"
-  run_with_log "log-assets-init.log" compose_cmd build assets-init
   run_with_log "log-assets-init.log" compose_cmd run --rm -e "ASSETS_VERSION=${assets_version}" assets-init
+}
+
+compose_up_with_assets_version() {
+  local assets_version="$1"
+  shift
+
+  ASSETS_VERSION="${assets_version}" compose_cmd up "$@" --remove-orphans
 }
 
 build_images() {
@@ -425,6 +437,7 @@ dump_db_to_file() {
 upgrade_stack() {
   local dump_path
   local upgrade_background="${BACKGROUND:--d}"
+  local assets_version
 
   ensure_docker_env_file
   warn_legacy_backend_env
@@ -438,10 +451,11 @@ upgrade_stack() {
 
   build_runtime_artifacts
   prepare_db
+  assets_version="$(get_expected_assets_version)"
 
   echo "Starting upgraded stack"
   rotate_host_logs
-  compose_cmd up ${upgrade_background} --remove-orphans
+  compose_up_with_assets_version "${assets_version}" ${upgrade_background}
 
   if [[ -z "${BACKGROUND}" ]]; then
     echo "Upgrade finished. Stack started in background by default."
@@ -464,7 +478,9 @@ case "$ACTION" in
     generate_certificates
     rotate_host_logs
     preflight_assets_marker_for_start
-    compose_cmd up $BACKGROUND --remove-orphans
+    assets_version=""
+    assets_version="$(get_expected_assets_version)"
+    compose_up_with_assets_version "${assets_version}" $BACKGROUND
     ;;
   start-with-init)
     echo "Running action $ACTION"
@@ -473,7 +489,9 @@ case "$ACTION" in
     generate_certificates
     rotate_host_logs
     preflight_assets_marker_for_start
-    compose_cmd up $BACKGROUND --remove-orphans
+    assets_version=""
+    assets_version="$(get_expected_assets_version)"
+    compose_up_with_assets_version "${assets_version}" $BACKGROUND
     ;;
   down)
     echo "Running action $ACTION"

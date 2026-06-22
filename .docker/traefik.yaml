@@ -21,13 +21,12 @@ api:
 # enable ping so the `traefik healthcheck` works
 ping: { }
 
-# auto-proxy containers if they have proper labels
-# and also use this file for dynamic config (tls)
+# use this file for dynamic config (tls + project routing)
 providers:
   docker:
-    endpoint: tcp://docker-socket-proxy:2375
+    endpoint: unix:///var/run/docker.sock
     exposedByDefault: false
-    watch: true
+    network: traefik
   file:
     fileName: /etc/traefik/traefik.yaml
     watch: true

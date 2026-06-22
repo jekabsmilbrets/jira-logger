@@ -30,10 +30,12 @@ services:
     command:
       - postgres
       - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
       - log_destination=stderr
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 10
       start_period: 10s
@@ -62,7 +64,7 @@ services:
       - assetsData:/var/www/public/ng:ro
     healthcheck:
       test: ["CMD-SHELL", "php-fpm -t"]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 10s
@@ -81,29 +83,17 @@ services:
         condition: service_healthy
       db:
         condition: service_healthy
-    labels:
-      traefik.enable: true
-      traefik.http.routers.jira-logger-nginx.rule: Host(`jira-logger.io`)
-      traefik.http.routers.jira-logger-nginx.entrypoints: websecure
-      traefik.http.routers.jira-logger-nginx.tls: true
-      traefik.http.services.jira-logger-nginx.loadbalancer.server.port: 80
     environment:
       - API_HOST=${API_HOST:-https://jira-logger.io}
       - API_BASE=${API_BASE:-/api}
     volumes:
       - assetsData:/var/www/public/ng:ro
-    ports:
-      - "80"
     healthcheck:
       test: ["CMD-SHELL", "nginx -t"]
-      interval: 10s
+      interval: 60s
       timeout: 5s
       retries: 10
       start_period: 10s
-    networks:
-      - traefik
-      - default
-
   migrate:
     container_name: "jira-logger-migrate"
     build:
@@ -133,7 +123,3 @@ services:
 volumes:
   dbData:
   assetsData:
-
-networks:
-  traefik:
-    external: true

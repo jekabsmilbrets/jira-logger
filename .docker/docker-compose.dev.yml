@@ -9,8 +9,6 @@ services:
       - ./nginx/sites/:/etc/nginx/sites-available
       - ./nginx/conf.d/:/etc/nginx/conf.d
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    ports:
-      - "4433:443"
 
   node:
     container_name: "jira-logger-node"
