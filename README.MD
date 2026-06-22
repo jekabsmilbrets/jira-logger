@@ -16,8 +16,9 @@ Notes:
 - `manager.sh` now runs with `./.docker/docker-compose.yml` and `./.docker/docker-compose.dev.yml` by default.
 - On a fresh checkout, `manager.sh -a start` will trigger the required build flow automatically if the shared frontend assets volume is missing.
 - Backend env variables are loaded from `./.docker/.env` via `docker-compose.yml`.
+- `manager.sh` creates the shared Docker `traefik` network automatically when it is missing.
 - Host log persistence is disabled by default. Use `docker compose logs` or `sh manager.sh -a start` attached output for normal use. Pass `-l on` only when you explicitly need debug log files in `./.logs/jira-logger/`.
-- Plain Docker Compose startup is self-contained for frontend assets now: `docker compose up --build` brings up `assets-init`, populates `assetsData`, and only then starts nginx.
+- Use `manager.sh` for compose startup so the required env file, compose overlays, assets marker checks, and optional Traefik mode are applied consistently.
 
 ## Basic Usage
 

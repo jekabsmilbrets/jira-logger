@@ -126,6 +126,9 @@ fi
 
 compose_cmd() {
   ensure_docker_env_file
+  if [[ "${TRAEFIK_MODE}" == "on" ]]; then
+    ensure_traefik_network
+  fi
   COMPOSE_PROJECT_NAME="${PROJECT_NAME}" docker compose --env-file "${DOCKER_ENV_FILE}" $(printf -- '-f %s ' "${COMPOSE_FILES[@]}") "$@"
 }
 
@@ -156,6 +159,15 @@ ensure_docker_env_file() {
   echo "Missing ${DOCKER_ENV_FILE}."
   echo "Create it from ${DOCKER_ENV_TEMPLATE} and fill the required values before continuing."
   exit 1
+}
+
+ensure_traefik_network() {
+  if docker network inspect traefik >/dev/null 2>&1; then
+    return 0
+  fi
+
+  echo "Creating shared Docker network 'traefik'"
+  docker network create traefik >/dev/null
 }
 
 warn_legacy_backend_env() {
