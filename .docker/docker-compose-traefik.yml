@@ -3,6 +3,14 @@ services:
     container_name: "jira-logger-traefik"
     image: traefik:v3.7.1
     restart: unless-stopped
+    labels:
+      traefik.enable: true
+      traefik.http.routers.jira-logger-traefik-dashboard.rule: Host(`${TRAEFIK_DASHBOARD_HOST:-traefik.jira-logger.io}`)
+      traefik.http.routers.jira-logger-traefik-dashboard.entrypoints: websecure
+      traefik.http.routers.jira-logger-traefik-dashboard.tls: true
+      traefik.http.routers.jira-logger-traefik-dashboard.service: api@internal
+      traefik.http.routers.jira-logger-traefik-dashboard.middlewares: jira-logger-traefik-dashboard-auth
+      traefik.http.middlewares.jira-logger-traefik-dashboard-auth.basicauth.users: ${TRAEFIK_DASHBOARD_AUTH:-admin:$$2y$$05$$OEJ1rq.qLRZo5tl/zQQ4/.x0NPgosA2ZDGklnroI4H3xInIGt9RTO}
     ports:
       - "80:80"
       - "443:443"

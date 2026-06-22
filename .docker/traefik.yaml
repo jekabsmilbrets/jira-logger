@@ -65,23 +65,8 @@ http:
       tls: true
       service: jira-logger-nginx
 
-    jira-logger-traefik-dashboard:
-      rule: Host(`traefik.jira-logger.io`)
-      entryPoints:
-        - websecure
-      tls: true
-      service: api@internal
-      middlewares:
-        - jira-logger-traefik-dashboard-auth
-
   services:
     jira-logger-nginx:
       loadBalancer:
         servers:
           - url: http://nginx:80
-
-  middlewares:
-    jira-logger-traefik-dashboard-auth:
-      basicAuth:
-        users:
-          - "admin:$$2y$$05$$OEJ1rq.qLRZo5tl/zQQ4/.x0NPgosA2ZDGklnroI4H3xInIGt9RTO"
