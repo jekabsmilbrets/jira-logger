@@ -31,4 +31,25 @@ describe('Report Constants report-total-columns.constant', () => {
     const timeLoggedCol = reportTotalColumns.find((c) => c.columnDef === 'timeLogged');
     expect(timeLoggedCol?.footerCell?.([task])).toBe(60);
   });
+
+  it('sums displayed timeLogged values in the total footer', () => {
+    const taskA = new Task({
+      name: 'Task A',
+      timeLogs: [],
+    } as Partial<Task>);
+    const taskB = new Task({
+      name: 'Task B',
+      timeLogs: [],
+    } as Partial<Task>);
+    const timeLoggedCol = reportTotalColumns.find((c) => c.columnDef === 'timeLogged');
+    taskA.timeLogged = 60;
+    taskB.timeLogged = 120;
+
+    expect(timeLoggedCol?.cell(taskA)).toBe(60);
+    expect(timeLoggedCol?.cell(taskB)).toBe(120);
+    expect(timeLoggedCol?.footerCell?.([
+      taskA,
+      taskB,
+    ])).toBe(180);
+  });
 });

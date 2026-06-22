@@ -1,12 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, inject, injectAsync, type Signal, signal, type WritableSignal } from '@angular/core';
-import { rxResource } from '@angular/core/rxjs-interop';
+import { BreakpointObserver, type BreakpointState } from '@angular/cdk/layout';
+import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, injectAsync, type Signal, signal, type TemplateRef, viewChild,type WritableSignal } from '@angular/core';
+import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { type FieldTree, form, FormField, required, validateAsync } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatOptionModule } from '@angular/material/core';
+import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { catchError, map, of, switchMap, take } from 'rxjs';
 
@@ -38,6 +43,9 @@ import type { TasksSettingsService } from '@tasks/services/tasks-settings.servic
     MatButtonModule,
     MatInputModule,
     MatSnackBarModule,
+    MatIconModule,
+    NgTemplateOutlet,
+    MatTooltipModule,
     FormField,
   ],
 })
@@ -82,6 +90,8 @@ export class TasksMenuComponent {
     });
   });
 
+  private readonly breakpointObserver: BreakpointObserver = inject(BreakpointObserver);
+  private readonly matDialog: MatDialog = inject(MatDialog);
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
   private readonly loadTasksSettingsService: AsyncLoader<TasksSettingsService> = injectAsync(
     () => import('@tasks/services/tasks-settings.service').then((m) => m.TasksSettingsService),
@@ -91,12 +101,24 @@ export class TasksMenuComponent {
   private readonly tasksMenuFilterService: TasksMenuFilterService = inject(TasksMenuFilterService);
 
   protected readonly isLoading: Signal<boolean> = this.tasksService.isLoading;
+  protected readonly isSmallerThanDesktop: Signal<boolean>;
   protected readonly tags: Signal<Tag[]> = this.tagsService.tags;
 
+  private readonly smallerThanDesktopBreakpoint: string = '(max-width: 1300px)';
+  private readonly dialogTemplate: Signal<TemplateRef<HTMLDivElement>> = viewChild.required<TemplateRef<HTMLDivElement>>('smallScreenDialog');
   private readonly taskFilterName: Signal<string> = computed(() => this.createTaskForm.name().value().trim());
   private readonly taskFilterRefresh: Signal<Task[] | null> = this.tasksMenuFilterService.createTaskRefresh(this.taskFilterName);
 
   constructor() {
+    this.isSmallerThanDesktop = toSignal(
+      this.breakpointObserver.observe(this.smallerThanDesktopBreakpoint)
+        .pipe(
+          map(
+            (results: BreakpointState) => results.matches && results.breakpoints[this.smallerThanDesktopBreakpoint],
+          ),
+        ),
+      { initialValue: false },
+    );
     this.taskFilterRefresh();
   }
 
@@ -148,6 +170,12 @@ export class TasksMenuComponent {
 
   protected isSameTag(tag1: Tag, tag2: Tag): boolean {
     return tag1.id === tag2.id;
+  }
+
+  protected onSmallScreenMenuToggle(): void {
+    this.matDialog.open(
+      this.dialogTemplate(),
+    );
   }
 
   protected onCreate(event?: Event): void {
