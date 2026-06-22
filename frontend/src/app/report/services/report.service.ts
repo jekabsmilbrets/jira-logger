@@ -84,25 +84,164 @@ export class ReportService {
       this.startDate(),
       this.endDate(),
     );
+    const columnsByMode: Record<ReportMode, () => Column[]> = {
+      [ReportMode.total]: () => [...reportTotalColumns],
+      [ReportMode.date]: () => this.buildDateColumns(reportMode),
+      [ReportMode.dateRange]: () => this.buildRangeColumns(reportMode),
+    };
 
-    if (reportMode === ReportMode.total) {
-      return [...reportTotalColumns];
+    return columnsByMode[reportMode]();
+  }
+
+  private generateMonthColumns(
+    startDate: Date,
+    endDate: Date,
+    showWeekends: boolean,
+    reportMode: ReportMode,
+    jiraApiEnabled: boolean,
+  ): Column[] {
+    return [
+      ...reportDateRangeColumns,
+      ...this.buildDateColumnsForRange(startDate, endDate, showWeekends, reportMode),
+      ...this.buildTrailingColumns(startDate, reportMode, jiraApiEnabled),
+    ];
+  }
+
+  private buildDateColumnsForRange(
+    startDate: Date,
+    endDate: Date,
+    showWeekends: boolean,
+    reportMode: ReportMode,
+  ): Column[] {
+    const columns: Column[] = [];
+    const currentDate: Date = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      columns.push(this.buildDateColumn(new Date(currentDate.getTime()), showWeekends, reportMode));
+      currentDate.setDate(currentDate.getDate() + 1);
     }
 
+    return columns;
+  }
+
+  private buildDateColumn(
+    currentDate: Date,
+    showWeekends: boolean,
+    reportMode: ReportMode,
+  ): Column {
+    return {
+      columnDef: 'date-' + currentDate.getTime(),
+      header: formatDate(
+        currentDate,
+        'd. MMM',
+        this.localeService.locale,
+        this.timezoneService.timezone,
+      ),
+      sortable: false,
+      hidden: reportMode !== ReportMode.date && this.shouldHideWeekendColumn(currentDate, showWeekends),
+      pipe: 'readableTime',
+      isClickable: true,
+      cellClickType: 'readableTime',
+      footerCellClickType: 'readableTime',
+      cell: (task: Task) => task.calcTimeLoggedForDate(currentDate, this.timezoneService.timezone),
+      hasFooter: true,
+      footerCell: (tasks: Task[]) => this.sumTaskValues(tasks, (task: Task) => task.calcTimeLoggedForDate(currentDate, this.timezoneService.timezone)),
+    };
+  }
+
+  private shouldHideWeekendColumn(
+    currentDate: Date,
+    showWeekends: boolean,
+  ): boolean {
+    return !showWeekends && [0, 6].includes(currentDate.getDay());
+  }
+
+  private buildTrailingColumns(
+    startDate: Date,
+    reportMode: ReportMode,
+    jiraApiEnabled: boolean,
+  ): Column[] {
     if (reportMode === ReportMode.date) {
-      const date: Date | null = this.date();
-
-      return date ?
-        this.generateMonthColumns(
-          date,
-          date,
-          this.showWeekends(),
-          reportMode,
-          this.reportTaskQueryService.jiraApiEnabled(),
-        ) :
-        [...reportTotalColumns];
+      return jiraApiEnabled ?
+        this.buildDateSyncColumns(startDate) :
+        [];
     }
 
+    return [this.buildTimeLoggedColumn()];
+  }
+
+  private buildDateSyncColumns(
+    startDate: Date,
+  ): Column[] {
+    const taskSynced: (task: Task) => boolean = (task: Task) =>
+      task.calcTimeLogged() > 0 && task.calcTimeLogged() === task.calcTimeSynced(startDate, this.timezoneService.timezone);
+
+    return [
+      {
+        columnDef: 'synced',
+        header: 'Synced',
+        sortable: false,
+        stickyEnd: true,
+        excludeFromLoop: false,
+        hidden: false,
+        taskSynced,
+        pipe: 'readableTime',
+        footerCellClickType: 'readableTime',
+        cell: (task: Task) => task.calcTimeSynced(startDate, this.timezoneService.timezone),
+        hasFooter: true,
+        footerCell: (tasks: Task[]) => this.sumTaskValues(tasks, (task: Task) => task.calcTimeSynced(startDate, this.timezoneService.timezone)),
+      },
+      {
+        columnDef: 'sync',
+        header: 'Sync',
+        excludeFromLoop: false,
+        hidden: false,
+        taskSynced,
+        cell: (task: Task) => {
+          void task;
+
+          return undefined;
+        },
+      },
+    ];
+  }
+
+  private buildTimeLoggedColumn(): Column {
+    return {
+      columnDef: 'timeLogged',
+      header: 'Total Time Logged',
+      sortable: false,
+      stickyEnd: true,
+      hidden: false,
+      isClickable: true,
+      cellClickType: 'readableTime',
+      footerCellClickType: 'readableTime',
+      pipe: 'readableTime',
+      cell: (task: Task) => task.calcTimeLogged(),
+      hasFooter: true,
+      footerCell: (tasks: Task[]) => this.sumTaskValues(tasks, (task: Task) => task.calcTimeLogged()),
+    };
+  }
+
+  private buildDateColumns(
+    reportMode: ReportMode,
+  ): Column[] {
+    const date: Date | null = this.date();
+
+    return date ?
+      this.generateMonthColumns(
+        date,
+        date,
+        this.showWeekends(),
+        reportMode,
+        this.reportTaskQueryService.jiraApiEnabled(),
+      ) :
+      [...reportTotalColumns];
+  }
+
+  private buildRangeColumns(
+    reportMode: ReportMode,
+  ): Column[] {
     const startDate: Date | null = this.startDate();
     const endDate: Date | null = this.endDate();
 
@@ -117,111 +256,13 @@ export class ReportService {
       [...reportTotalColumns];
   }
 
-  private generateMonthColumns(
-    startDate: Date,
-    endDate: Date,
-    showWeekends: boolean,
-    reportMode: ReportMode,
-    jiraApiEnabled: boolean,
-  ): Column[] {
-    const modifiedMonthModelColumns: Column[] = [...reportDateRangeColumns];
-    const currentDate: Date = new Date(startDate);
-    const weekendIndexes: number[] = [0, 6];
-    const reduceFn: (acc: number, value: number) => number = (
-      acc: number,
-      value: number,
-    ) => acc + value;
-
-    while (currentDate <= endDate) {
-      const curDate: number = currentDate.getDate();
-      const currentDate2: Date = new Date(currentDate.getTime());
-      const shouldShowWeekends: boolean = showWeekends ?
-        false :
-        weekendIndexes.includes(currentDate2.getDay());
-
-      modifiedMonthModelColumns.push({
-        columnDef: 'date-' + currentDate.getTime(),
-        header: formatDate(
-          currentDate2,
-          'd. MMM',
-          this.localeService.locale,
-          this.timezoneService.timezone,
-        ),
-        sortable: false,
-        hidden: reportMode !== ReportMode.date ? shouldShowWeekends : false,
-        pipe: 'readableTime',
-        isClickable: true,
-        cellClickType: 'readableTime',
-        footerCellClickType: 'readableTime',
-        cell: (task: Task) => task.calcTimeLoggedForDate(currentDate2, this.timezoneService.timezone),
-        hasFooter: true,
-        footerCell: (tasks: Task[]) => tasks.map(
-          (task: Task) => task.calcTimeLoggedForDate(currentDate2, this.timezoneService.timezone),
-        )
-          .reduce(reduceFn, 0),
-      });
-
-      currentDate.setDate(curDate + 1);
-    }
-
-    if (reportMode !== ReportMode.date) {
-      modifiedMonthModelColumns.push({
-        columnDef: 'timeLogged',
-        header: 'Total Time Logged',
-        sortable: false,
-        stickyEnd: true,
-        hidden: false,
-        isClickable: true,
-        cellClickType: 'readableTime',
-        footerCellClickType: 'readableTime',
-        pipe: 'readableTime',
-        cell: (task: Task) => task.calcTimeLogged(),
-        hasFooter: true,
-        footerCell: (tasks: Task[]) => tasks.map(
-          (task: Task) => task.calcTimeLogged(),
-        )
-          .reduce(reduceFn, 0),
-      });
-    }
-
-    if (reportMode === ReportMode.date && jiraApiEnabled) {
-      const taskSynced: (task: Task) => boolean = (
-        task: Task,
-      ) => task.calcTimeLogged() > 0 && task.calcTimeLogged() === task.calcTimeSynced(startDate, this.timezoneService.timezone);
-
-      modifiedMonthModelColumns.push({
-        columnDef: 'synced',
-        header: 'Synced',
-        sortable: false,
-        stickyEnd: true,
-        excludeFromLoop: false,
-        hidden: false,
-        taskSynced,
-        pipe: 'readableTime',
-        footerCellClickType: 'readableTime',
-        cell: (task: Task) => task.calcTimeSynced(startDate, this.timezoneService.timezone),
-        hasFooter: true,
-        footerCell: (tasks: Task[]) => tasks.map(
-          (task: Task) => task.calcTimeSynced(startDate, this.timezoneService.timezone),
-        )
-          .reduce(reduceFn, 0),
-      });
-
-      modifiedMonthModelColumns.push({
-        columnDef: 'sync',
-        header: 'Sync',
-        excludeFromLoop: false,
-        hidden: false,
-        taskSynced,
-        cell: (task: Task) => {
-          void task;
-
-          return undefined;
-        },
-      });
-    }
-
-    return modifiedMonthModelColumns;
+  private sumTaskValues(
+    tasks: Task[],
+    getValue: (task: Task) => number,
+  ): number {
+    return tasks
+      .map(getValue)
+      .reduce((acc: number, value: number) => acc + value, 0);
   }
 
 }
