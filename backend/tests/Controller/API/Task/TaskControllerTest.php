@@ -244,4 +244,13 @@ class TaskControllerTest extends TestCase
 
         self::assertSame(204, $response->getStatusCode());
     }
+
+    public function testSyncWithJiraKeepsRouteDateAsRawString(): void
+    {
+        $method = new \ReflectionMethod(TaskController::class, 'syncWithJira');
+        $dateParameter = $method->getParameters()[1];
+
+        self::assertSame('date', $dateParameter->getName());
+        self::assertSame('string', (string) $dateParameter->getType());
+    }
 }
