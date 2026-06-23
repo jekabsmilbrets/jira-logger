@@ -11,6 +11,7 @@ use App\Exception\JiraApiServiceException;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\JiraWorkLog\JiraWorkLogService;
 use App\Service\Setting\SettingService;
+use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
 use App\Utility\TimeLog\TimeLogDuration;
 use App\Utility\TimeLog\TimeLogRange;
 use Doctrine\Common\Collections\Collection;
@@ -20,7 +21,7 @@ use JiraRestApi\Issue\Worklog;
 use JiraRestApi\JiraException;
 use Psr\Log\LoggerInterface;
 
-class JiraApiService
+class JiraApiService implements TaskJiraSyncAdapter
 {
     final public const CREATE_ERROR_MSG = 'Failed to add workLog "%s - %s Seconds" to issue "%s": %s';
     final public const UPDATE_ERROR_MSG = 'Failed to update workLog "%s [%s]" to issue "%s": %s';
@@ -262,6 +263,16 @@ class JiraApiService
         );
 
         return true;
+    }
+
+    /**
+     * @throws JiraApiServiceException
+     */
+    final public function syncTask(Task $task, string $date): bool
+    {
+        $this->init();
+
+        return $this->sync($task, $date);
     }
 
     private function resolveSyncDates(string $date): array

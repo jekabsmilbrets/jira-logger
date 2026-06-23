@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 namespace App\Dto\Task;
 
-use App\Entity\Tag\Tag;
-use App\Service\Tag\TagService;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use OpenApi\Attributes as OA;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -48,11 +44,14 @@ class TaskRequest
     ]
     private ?string $description = null;
 
+    /**
+     * @var string[]|null
+     */
     #[
         Groups(['create', 'update']),
         Assert\All(
             constraints: [
-                new Assert\Type(Tag::class),
+                new Assert\Type('string'),
             ],
             groups: ['create', 'update'],
         ),
@@ -62,12 +61,7 @@ class TaskRequest
             example: '["9dab258b-46ff-4ad7-a8a0-b9f2b6f84aa1"]',
         )
     ]
-    private ?Collection $tags = null;
-
-    public function __construct(
-        private readonly TagService $tagService,
-    ) {
-    }
+    private ?array $tags = null;
 
     final public function getName(): ?string
     {
@@ -93,34 +87,20 @@ class TaskRequest
         return $this;
     }
 
-    final public function getTags(): ?Collection
+    /**
+     * @return string[]|null
+     */
+    final public function getTagIds(): ?array
     {
         return $this->tags;
     }
 
+    /**
+     * @param string[] $tagIds
+     */
     final public function setTags(array $tagIds): self
     {
-        $tags = new ArrayCollection([]);
-
-        if (empty($tagIds)) {
-            $this->tags = $tags;
-
-            return $this;
-        }
-
-        foreach (($this->tagService->list() ?? new ArrayCollection([])) as $tag) {
-            $tagInTags = $tags->contains($tag);
-
-            if (\in_array($tag->getId(), $tagIds, true)) {
-                if (!$tagInTags) {
-                    $tags->add($tag);
-                }
-            } elseif ($tagInTags) {
-                $tags->removeElement($tag);
-            }
-        }
-
-        $this->tags = $tags;
+        $this->tags = $tagIds;
 
         return $this;
     }

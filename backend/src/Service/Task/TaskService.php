@@ -7,10 +7,16 @@ namespace App\Service\Task;
 use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
-use App\Factory\Task\TaskFactory;
-use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Repository\Task\TaskRepository;
+use App\Service\Task\Filter\TaskFilterCriteria;
+use App\Service\Task\Filter\TaskFilterCriteriaFactory;
+use App\Service\Task\Input\TaskInput;
+use App\Service\Task\Input\TaskInputFactory;
+use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
+use App\Service\Task\Sync\TaskSyncResult;
+use App\Service\Task\Write\TaskWriteResult;
 use App\Utility\TimeLog\TimeLogRange;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\Common\Collections\ArrayCollection;
 
 class TaskService
@@ -19,24 +25,31 @@ class TaskService
 
     public function __construct(
         private readonly TaskRepository $taskRepository,
-        private readonly TaskFilterDateRangeResolver $taskFilterDateRangeResolver,
+        private readonly TaskFilterCriteriaFactory $taskFilterCriteriaFactory,
+        private readonly TaskJiraSyncAdapter $taskJiraSyncAdapter,
+        private readonly TaskInputFactory $taskInputFactory,
     ) {
     }
 
     /**
+     * @param array<string, mixed>|null $filter
+     *
+     * @return Task[]
+     *
      * @throws \Exception
      */
     final public function list(?array $filter): array
     {
-        if ($filter) {
-            $tasks = new ArrayCollection($this->taskRepository->findByFilters($filter));
-            $dateRange = $this->taskFilterDateRangeResolver->resolve($filter);
+        $criteria = $this->taskFilterCriteriaFactory->create($filter);
+
+        if ($criteria->hasQueryFilters()) {
+            $tasks = new ArrayCollection($this->taskRepository->findByFilters($criteria));
 
             $tasks = $tasks->map(
-                function (Task $task) use ($dateRange) {
-                    if (null !== $dateRange) {
-                        $startDate = $dateRange['startDate'];
-                        $endDate = $dateRange['endDate'];
+                function (Task $task) use ($criteria) {
+                    if (null !== $criteria->dateRange) {
+                        $startDate = $criteria->dateRange['startDate'];
+                        $endDate = $criteria->dateRange['endDate'];
                         $timeLogs = $task->getTimeLogs();
 
                         $timeLogs = $timeLogs->filter(
@@ -77,13 +90,10 @@ class TaskService
             );
 
             $tasks = $tasks->filter(
-                function (Task $task) use ($filter) {
+                function (Task $task) use ($criteria) {
                     $visible = [true];
 
-                    if (
-                        \array_key_exists('hideUnreported', $filter) &&
-                        filter_var($filter['hideUnreported'], \FILTER_VALIDATE_BOOLEAN)
-                    ) {
+                    if ($criteria->hideUnreported) {
                         $visible[] = $task->getTimeLogs()->count() > 0;
                     }
 
@@ -92,13 +102,18 @@ class TaskService
             );
 
             $tasks = [...$tasks->toArray()];
+        } elseif ($criteria->hideUnreported) {
+            $tasks = array_values(
+                array_filter(
+                    $this->taskRepository->findAll(),
+                    static fn (Task $task): bool => $task->getTimeLogs()->count() > 0
+                )
+            );
         } else {
             $tasks = $this->taskRepository->findAll();
         }
 
-        return (
-            empty($tasks) || [] === $tasks
-        ) ? [] : $tasks;
+        return empty($tasks) ? [] : $tasks;
     }
 
     final public function show(
@@ -109,76 +124,61 @@ class TaskService
         return $task ?? null;
     }
 
-    final public function new(
-        ?TaskRequest $taskRequest = null,
-        ?Task $task = null,
-        bool $flush = true,
-    ): Task {
-        if (!$taskRequest && !$task) {
-            throw new \RuntimeException(self::NO_DATA_PROVIDED);
+    final public function create(TaskRequest $taskRequest): TaskWriteResult
+    {
+        $task = $this->applyInput($this->taskInputFactory->create($taskRequest));
+
+        try {
+            $this->taskRepository->add(
+                task: $task,
+                flush: true
+            );
+        } catch (UniqueConstraintViolationException) {
+            return TaskWriteResult::duplicate();
+        } catch (\Exception) {
+            return TaskWriteResult::failed();
         }
 
-        if ($taskRequest && !$task) {
-            $task = TaskFactory::create($taskRequest);
-        }
-
-        $this->taskRepository->add(
-            task: $task,
-            flush: $flush
-        );
-
-        return $task;
+        return TaskWriteResult::created($task);
     }
 
-    final public function edit(
-        string $id,
-        ?TaskRequest $taskRequest = null,
-        ?Task $task = null,
-        bool $flush = true,
-    ): ?Task {
-        switch (true) {
-            case !$taskRequest && !$task:
-                throw new \RuntimeException(self::NO_DATA_PROVIDED);
-            case (!$taskRequest && $task) && !$task instanceof Task:
-                return null;
-
-            case $taskRequest && !$task:
-                $task = $this->taskRepository->find($id);
-
-                if (!$task instanceof Task) {
-                    return null;
-                }
-
-                $task = TaskFactory::create(
-                    taskRequest: $taskRequest,
-                    task: $task
-                );
-                break;
-        }
-
-        if ($flush) {
-            $this->taskRepository->flush();
-        }
-
-        return $task;
-    }
-
-    final public function delete(
-        string $id,
-        bool $flush = true,
-    ): bool {
+    final public function update(string $id, TaskRequest $taskRequest): TaskWriteResult
+    {
         $task = $this->taskRepository->find($id);
 
         if (!$task instanceof Task) {
-            return false;
+            return TaskWriteResult::notFound();
         }
 
-        $this->taskRepository->remove(
-            task: $task,
-            flush: $flush
-        );
+        $task = $this->applyInput($this->taskInputFactory->create($taskRequest), $task);
 
-        return true;
+        try {
+            $this->taskRepository->flush();
+        } catch (\Exception) {
+            return TaskWriteResult::failed();
+        }
+
+        return TaskWriteResult::updated($task);
+    }
+
+    final public function remove(string $id): TaskWriteResult
+    {
+        $task = $this->taskRepository->find($id);
+
+        if (!$task instanceof Task) {
+            return TaskWriteResult::notFound();
+        }
+
+        try {
+            $this->taskRepository->remove(
+                task: $task,
+                flush: true
+            );
+        } catch (\Exception) {
+            return TaskWriteResult::failed();
+        }
+
+        return TaskWriteResult::deleted();
     }
 
     final public function findByName(string $name): bool
@@ -194,5 +194,49 @@ class TaskService
         }
 
         return true;
+    }
+
+    final public function syncWithJira(string $id, string $date): TaskSyncResult
+    {
+        $task = $this->show($id);
+
+        if (!$task instanceof Task) {
+            return TaskSyncResult::notFound();
+        }
+
+        try {
+            $synced = $this->taskJiraSyncAdapter->syncTask($task, $date);
+        } catch (\App\Exception\JiraApiServiceException $e) {
+            return TaskSyncResult::failed($e->getMessage());
+        }
+
+        return $synced ? TaskSyncResult::synced() : TaskSyncResult::conflict();
+    }
+
+    private function applyInput(TaskInput $taskInput, ?Task $task = null): Task
+    {
+        $task ??= new Task();
+
+        if (null !== $taskInput->name) {
+            $task->setName($taskInput->name);
+        }
+
+        if (null !== $taskInput->description) {
+            $task->setDescription($taskInput->description);
+        }
+
+        if (null !== $taskInput->tags) {
+            foreach ($task->getTags() as $taskTag) {
+                if (!$taskInput->tags->contains($taskTag)) {
+                    $task->removeTag($taskTag);
+                }
+            }
+
+            foreach ($taskInput->tags as $tag) {
+                $task->addTag($tag);
+            }
+        }
+
+        return $task;
     }
 }

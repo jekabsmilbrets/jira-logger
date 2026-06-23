@@ -30,6 +30,8 @@ services:
   App\Service\JiraApi\JiraApiService:
     arguments:
       $logger: '@monolog.logger.jira-api-service'
+  App\Service\Task\JiraSync\TaskJiraSyncAdapter:
+    alias: App\Service\JiraApi\JiraApiService
   App\Service\DateTime\DateInputParser:
     arguments:
       $internalTimezone: '%internal_timezone%'
