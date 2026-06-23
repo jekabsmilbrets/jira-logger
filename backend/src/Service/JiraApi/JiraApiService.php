@@ -8,6 +8,7 @@ use App\Entity\JiraWorkLog\JiraWorkLog;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Exception\JiraApiServiceException;
+use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\JiraWorkLog\JiraWorkLogService;
 use App\Service\Setting\SettingService;
 use App\Utility\TimeLog\TimeLogDuration;
@@ -41,6 +42,7 @@ class JiraApiService
         private readonly LoggerInterface $logger,
         private readonly SettingService $settingService,
         private readonly JiraWorkLogService $jiraWorkLogService,
+        private readonly TaskFilterDateRangeResolver $taskFilterDateRangeResolver,
     ) {
     }
 
@@ -213,7 +215,7 @@ class JiraApiService
      */
     final public function sync(
         Task $task,
-        \DateTime $date
+        string $date,
     ): bool {
         [$syncDate, $startDate, $endDate, $jiraStartDateTime] = $this->resolveSyncDates($date);
 
@@ -262,11 +264,16 @@ class JiraApiService
         return true;
     }
 
-    private function resolveSyncDates(\DateTime $date): array
+    private function resolveSyncDates(string $date): array
     {
-        $syncDate = (clone $date)->setTime(0, 0, 0);
-        $startDate = clone $syncDate;
-        $endDate = (clone $syncDate)->setTime(23, 59, 59);
+        $dateRange = $this->taskFilterDateRangeResolver->resolve(['date' => $date]);
+        if (null === $dateRange) {
+            throw new \InvalidArgumentException('Sync date could not be resolved.');
+        }
+
+        $syncDate = (new \DateTime($date))->setTime(0, 0, 0);
+        $startDate = $dateRange['startDate'];
+        $endDate = $dateRange['endDate'];
         $jiraStartDateTime = (clone $syncDate)->setTime(17, 0, 0);
 
         return [$syncDate, $startDate, $endDate, $jiraStartDateTime];
@@ -401,8 +408,8 @@ class JiraApiService
 
     private function calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection(
         Collection $timeLogs,
-        \DateTime $startDate,
-        \DateTime $endDate,
+        \DateTimeInterface $startDate,
+        \DateTimeInterface $endDate,
     ): array {
         return $this->collectTimeSpentSecondsNDescriptions(
             $this->filterTimeLogsInDateRange(
@@ -417,8 +424,8 @@ class JiraApiService
 
     private function filterTimeLogsInDateRange(
         Collection $timeLogs,
-        \DateTime $startDate,
-        \DateTime $endDate,
+        \DateTimeInterface $startDate,
+        \DateTimeInterface $endDate,
     ): Collection {
         return $timeLogs->filter(
             function (TimeLog $timeLog) use ($startDate, $endDate) {
@@ -432,8 +439,8 @@ class JiraApiService
 
     private function collectTimeSpentSecondsNDescriptions(
         Collection $timeLogs,
-        \DateTime $startDate,
-        \DateTime $endDate,
+        \DateTimeInterface $startDate,
+        \DateTimeInterface $endDate,
     ): array {
         $timeSpentSeconds = 0;
         $descriptions = [];

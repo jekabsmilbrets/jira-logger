@@ -623,7 +623,7 @@ class TaskController extends BaseApiController
     ]
     final public function syncWithJira(
         string $id,
-        \DateTime $date,
+        string $date,
     ): JsonResponse {
         $task = $this->taskService->show($id);
 
