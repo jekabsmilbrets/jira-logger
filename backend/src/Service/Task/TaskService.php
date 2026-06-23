@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace App\Service\Task;
 
-use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Repository\Task\TaskRepository;
 use App\Service\Task\Filter\TaskFilterCriteria;
 use App\Service\Task\Filter\TaskFilterCriteriaFactory;
 use App\Service\Task\Input\TaskInput;
-use App\Service\Task\Input\TaskInputFactory;
 use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
+use App\Service\Task\JiraSync\TaskJiraSyncException;
 use App\Service\Task\Sync\TaskSyncResult;
 use App\Service\Task\Write\TaskWriteResult;
 use App\Utility\TimeLog\TimeLogRange;
@@ -21,13 +20,12 @@ use Doctrine\Common\Collections\ArrayCollection;
 
 class TaskService
 {
-    final public const NO_DATA_PROVIDED = 'No Task Model or TaskRequest was provided';
+    final public const NO_DATA_PROVIDED = 'No Task Model or TaskInput was provided';
 
     public function __construct(
         private readonly TaskRepository $taskRepository,
         private readonly TaskFilterCriteriaFactory $taskFilterCriteriaFactory,
         private readonly TaskJiraSyncAdapter $taskJiraSyncAdapter,
-        private readonly TaskInputFactory $taskInputFactory,
     ) {
     }
 
@@ -124,9 +122,9 @@ class TaskService
         return $task ?? null;
     }
 
-    final public function create(TaskRequest $taskRequest): TaskWriteResult
+    final public function create(TaskInput $taskInput): TaskWriteResult
     {
-        $task = $this->applyInput($this->taskInputFactory->create($taskRequest));
+        $task = $this->applyInput($taskInput);
 
         try {
             $this->taskRepository->add(
@@ -142,7 +140,7 @@ class TaskService
         return TaskWriteResult::created($task);
     }
 
-    final public function update(string $id, TaskRequest $taskRequest): TaskWriteResult
+    final public function update(string $id, TaskInput $taskInput): TaskWriteResult
     {
         $task = $this->taskRepository->find($id);
 
@@ -150,7 +148,7 @@ class TaskService
             return TaskWriteResult::notFound();
         }
 
-        $task = $this->applyInput($this->taskInputFactory->create($taskRequest), $task);
+        $task = $this->applyInput($taskInput, $task);
 
         try {
             $this->taskRepository->flush();
@@ -206,7 +204,7 @@ class TaskService
 
         try {
             $synced = $this->taskJiraSyncAdapter->syncTask($task, $date);
-        } catch (\App\Exception\JiraApiServiceException $e) {
+        } catch (TaskJiraSyncException $e) {
             return TaskSyncResult::failed($e->getMessage());
         }
 

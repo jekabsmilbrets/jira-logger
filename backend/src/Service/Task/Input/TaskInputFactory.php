@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service\Task\Input;
 
-use App\Dto\Task\TaskRequest;
 use App\Entity\Tag\Tag;
 use App\Service\Tag\TagService;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -16,12 +15,15 @@ final readonly class TaskInputFactory
     ) {
     }
 
-    public function create(TaskRequest $taskRequest): TaskInput
+    /**
+     * @param string[]|null $tagIds
+     */
+    public function create(?string $name, ?string $description, ?array $tagIds): TaskInput
     {
         return new TaskInput(
-            name: $taskRequest->getName(),
-            description: $taskRequest->getDescription(),
-            tags: $this->resolveTags($taskRequest->getTagIds()),
+            name: $name,
+            description: $description,
+            tags: $this->resolveTags($tagIds),
         );
     }
 

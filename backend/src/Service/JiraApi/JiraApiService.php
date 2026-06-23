@@ -12,6 +12,7 @@ use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\JiraWorkLog\JiraWorkLogService;
 use App\Service\Setting\SettingService;
 use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
+use App\Service\Task\JiraSync\TaskJiraSyncException;
 use App\Utility\TimeLog\TimeLogDuration;
 use App\Utility\TimeLog\TimeLogRange;
 use Doctrine\Common\Collections\Collection;
@@ -266,13 +267,17 @@ class JiraApiService implements TaskJiraSyncAdapter
     }
 
     /**
-     * @throws JiraApiServiceException
+     * @throws TaskJiraSyncException
      */
     final public function syncTask(Task $task, string $date): bool
     {
-        $this->init();
+        try {
+            $this->init();
 
-        return $this->sync($task, $date);
+            return $this->sync($task, $date);
+        } catch (JiraApiServiceException $e) {
+            throw new TaskJiraSyncException(message: $e->getMessage(), code: $e->getCode(), previous: $e);
+        }
     }
 
     private function resolveSyncDates(string $date): array
