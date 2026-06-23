@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Service\JiraApi;
 
+use App\Entity\Setting\Setting;
+use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Exception\JiraApiServiceException;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
@@ -11,6 +13,8 @@ use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\JiraApi\JiraApiService;
 use App\Service\JiraWorkLog\JiraWorkLogService;
 use App\Service\Setting\SettingService;
+use App\Service\Task\JiraSync\TaskJiraSyncException;
+use App\Repository\Setting\SettingRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -122,7 +126,23 @@ class JiraApiServiceTimeRangeTest extends TestCase
         $method->invoke($service, $timeLog);
     }
 
-    private function createService(string $userTimezone = 'UTC'): JiraApiService
+    public function testSyncTaskTranslatesJiraServiceFailureToTaskSyncFailure(): void
+    {
+        $settingRepository = $this->createMock(SettingRepository::class);
+        $settingRepository
+            ->method('findOneBy')
+            ->with(['name' => JiraApiService::JIRA_ENABLED_KEY])
+            ->willReturn((new Setting())->setName(JiraApiService::JIRA_ENABLED_KEY)->setValue('false'));
+
+        $service = $this->createService(settingService: new SettingService($settingRepository));
+
+        $this->expectException(TaskJiraSyncException::class);
+        $this->expectExceptionMessage(JiraApiService::JIRA_DISABLED_MSG);
+
+        $service->syncTask((new Task())->setName('TASK-1'), '2026-06-23');
+    }
+
+    private function createService(string $userTimezone = 'UTC', ?SettingService $settingService = null): JiraApiService
     {
         $userTimezoneResolver = $this->createMock(UserTimezoneResolver::class);
         $userTimezoneResolver
@@ -131,7 +151,7 @@ class JiraApiServiceTimeRangeTest extends TestCase
 
         return new JiraApiService(
             $this->createMock(LoggerInterface::class),
-            $this->createMock(SettingService::class),
+            $settingService ?? $this->createMock(SettingService::class),
             $this->createMock(JiraWorkLogService::class),
             new TaskFilterDateRangeResolver($userTimezoneResolver),
         );

@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace App\Tests\Service\Task;
 
 use App\Entity\Task\Task;
-use App\Exception\JiraApiServiceException;
 use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
-use App\Service\Tag\TagService;
 use App\Service\Task\Filter\TaskFilterCriteriaFactory;
-use App\Service\Task\Input\TaskInputFactory;
 use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
+use App\Service\Task\JiraSync\TaskJiraSyncException;
 use App\Service\Task\Sync\TaskSyncStatus;
 use App\Service\Task\TaskService;
 use PHPUnit\Framework\TestCase;
@@ -66,7 +64,7 @@ class TaskServiceJiraSyncTest extends TestCase
         $repository = $this->createMock(TaskRepository::class);
         $repository->method('find')->willReturn($task);
         $adapter = $this->createMock(TaskJiraSyncAdapter::class);
-        $adapter->method('syncTask')->willThrowException(new JiraApiServiceException('jira failed'));
+        $adapter->method('syncTask')->willThrowException(new TaskJiraSyncException('jira failed'));
 
         $result = $this->service($repository, $adapter)->syncWithJira('task-id', '2026-06-23');
 
@@ -80,7 +78,6 @@ class TaskServiceJiraSyncTest extends TestCase
             $repository,
             new TaskFilterCriteriaFactory($this->createMock(TaskFilterDateRangeResolver::class)),
             $adapter,
-            new TaskInputFactory($this->createMock(TagService::class))
         );
     }
 }

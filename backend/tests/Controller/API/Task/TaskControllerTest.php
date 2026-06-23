@@ -32,10 +32,12 @@ class TaskControllerTest extends TestCase
         SerializerInterface $serializer,
         ?ValidatorInterface $validator = null,
         ?DateInputParser $dateInputParser = null,
+        ?TaskInputFactory $taskInputFactory = null,
     ): TaskController
     {
         $controller = new TaskController(
             $taskService,
+            $taskInputFactory ?? new TaskInputFactory($this->createMock(TagService::class)),
             $validator ?? $this->createMock(ValidatorInterface::class),
             $serializer,
             $dateInputParser ?? $this->createMock(DateInputParser::class)
@@ -55,7 +57,6 @@ class TaskControllerTest extends TestCase
             $taskRepository ?? $this->getMockBuilder(TaskRepository::class)->disableOriginalConstructor()->getMock(),
             new TaskFilterCriteriaFactory($taskFilterDateRangeResolver),
             $this->createMock(TaskJiraSyncAdapter::class),
-            new TaskInputFactory($this->createMock(TagService::class)),
         );
     }
 

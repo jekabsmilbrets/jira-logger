@@ -11,9 +11,7 @@ use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\DateTime\UserTimezoneResolver;
-use App\Service\Tag\TagService;
 use App\Service\Task\Filter\TaskFilterCriteriaFactory;
-use App\Service\Task\Input\TaskInputFactory;
 use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
 use App\Service\Task\TaskService;
 use DateTimeImmutable;
@@ -37,7 +35,6 @@ class TimeLogFactoryTest extends TestCase
                 $taskRepository,
                 new TaskFilterCriteriaFactory($dateRangeResolver),
                 $this->createMock(TaskJiraSyncAdapter::class),
-                new TaskInputFactory($this->createMock(TagService::class))
             ),
             $parser
         );

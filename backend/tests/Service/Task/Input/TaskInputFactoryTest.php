@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Service\Task\Input;
 
-use App\Dto\Task\TaskRequest;
 use App\Entity\Tag\Tag;
 use App\Repository\Tag\TagRepository;
 use App\Service\Tag\TagService;
@@ -30,12 +29,11 @@ class TaskInputFactoryTest extends TestCase
             ->with(['id' => ['22222222-2222-2222-2222-222222222222', 'missing']])
             ->willReturn([$tagB]);
 
-        $request = (new TaskRequest())
-            ->setName('Task')
-            ->setDescription('Description')
-            ->setTags(['22222222-2222-2222-2222-222222222222', 'missing']);
-
-        $input = (new TaskInputFactory(new TagService($repository)))->create($request);
+        $input = (new TaskInputFactory(new TagService($repository)))->create(
+            name: 'Task',
+            description: 'Description',
+            tagIds: ['22222222-2222-2222-2222-222222222222', 'missing'],
+        );
 
         self::assertSame('Task', $input->name);
         self::assertSame('Description', $input->description);
@@ -50,7 +48,9 @@ class TaskInputFactoryTest extends TestCase
         $repository->expects(self::never())->method('findBy');
 
         $input = (new TaskInputFactory(new TagService($repository)))->create(
-            (new TaskRequest())->setTags([])
+            name: null,
+            description: null,
+            tagIds: []
         );
 
         self::assertNotNull($input->tags);
