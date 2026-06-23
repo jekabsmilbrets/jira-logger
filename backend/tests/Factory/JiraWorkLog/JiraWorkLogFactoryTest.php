@@ -8,6 +8,11 @@ use App\Dto\JiraWorkLog\JiraWorkLogRequest;
 use App\Entity\Task\Task;
 use App\Factory\JiraWorkLog\JiraWorkLogFactory;
 use App\Repository\Task\TaskRepository;
+use App\Service\DateTime\TaskFilterDateRangeResolver;
+use App\Service\Tag\TagService;
+use App\Service\Task\Filter\TaskFilterCriteriaFactory;
+use App\Service\Task\Input\TaskInputFactory;
+use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
 use App\Service\Task\TaskService;
 use PHPUnit\Framework\TestCase;
 
@@ -19,7 +24,12 @@ class JiraWorkLogFactoryTest extends TestCase
         $repository = $this->createMock(TaskRepository::class);
         $repository->method('find')->willReturn($task);
 
-        $request = new JiraWorkLogRequest(new TaskService($repository));
+        $request = new JiraWorkLogRequest(new TaskService(
+            $repository,
+            new TaskFilterCriteriaFactory($this->createMock(TaskFilterDateRangeResolver::class)),
+            $this->createMock(TaskJiraSyncAdapter::class),
+            new TaskInputFactory($this->createMock(TagService::class))
+        ));
         $request->setDescription('note')->setTask('id-1')->setTimeSpentSeconds(120);
 
         $entity = JiraWorkLogFactory::create($request);

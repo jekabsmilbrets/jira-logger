@@ -11,6 +11,10 @@ use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\DateTime\UserTimezoneResolver;
+use App\Service\Tag\TagService;
+use App\Service\Task\Filter\TaskFilterCriteriaFactory;
+use App\Service\Task\Input\TaskInputFactory;
+use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
 use App\Service\Task\TaskService;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
@@ -28,7 +32,15 @@ class TimeLogFactoryTest extends TestCase
         $parser = new DateInputParser($resolver, 'UTC');
         $dateRangeResolver = $this->createMock(TaskFilterDateRangeResolver::class);
 
-        $request = new TimeLogRequest(new TaskService($taskRepository, $dateRangeResolver), $parser);
+        $request = new TimeLogRequest(
+            new TaskService(
+                $taskRepository,
+                new TaskFilterCriteriaFactory($dateRangeResolver),
+                $this->createMock(TaskJiraSyncAdapter::class),
+                new TaskInputFactory($this->createMock(TagService::class))
+            ),
+            $parser
+        );
         $request->setTask('id')->setStartTime('2026-05-01 10:00:00')->setEndTime('2026-05-01 11:00:00')->setDescription('work');
 
         $timeLog = TimeLogFactory::create($request);

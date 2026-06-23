@@ -9,7 +9,10 @@ use App\Dto\Task\TaskListFilterRequest;
 use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
-use App\Service\JiraApi\JiraApiService;
+use App\Service\Tag\TagService;
+use App\Service\Task\Filter\TaskFilterCriteriaFactory;
+use App\Service\Task\Input\TaskInputFactory;
+use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
 use App\Service\Task\TaskService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\ConstraintViolation;
@@ -33,7 +36,6 @@ class TaskControllerTest extends TestCase
     {
         $controller = new TaskController(
             $taskService,
-            $this->createMock(JiraApiService::class),
             $validator ?? $this->createMock(ValidatorInterface::class),
             $serializer,
             $dateInputParser ?? $this->createMock(DateInputParser::class)
@@ -47,9 +49,13 @@ class TaskControllerTest extends TestCase
         ?TaskRepository $taskRepository = null,
         ?TaskFilterDateRangeResolver $taskFilterDateRangeResolver = null,
     ): TaskService {
+        $taskFilterDateRangeResolver ??= $this->createMock(TaskFilterDateRangeResolver::class);
+
         return new TaskService(
             $taskRepository ?? $this->getMockBuilder(TaskRepository::class)->disableOriginalConstructor()->getMock(),
-            $taskFilterDateRangeResolver ?? $this->createMock(TaskFilterDateRangeResolver::class),
+            new TaskFilterCriteriaFactory($taskFilterDateRangeResolver),
+            $this->createMock(TaskJiraSyncAdapter::class),
+            new TaskInputFactory($this->createMock(TagService::class)),
         );
     }
 
