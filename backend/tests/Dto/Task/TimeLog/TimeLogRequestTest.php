@@ -5,66 +5,39 @@ declare(strict_types=1);
 namespace App\Tests\Dto\Task\TimeLog;
 
 use App\Dto\Task\TimeLog\TimeLogRequest;
-use App\Service\DateTime\DateInputParser;
-use App\Service\DateTime\UserTimezoneResolver;
-use App\Service\Task\TaskService;
 use PHPUnit\Framework\TestCase;
 
 class TimeLogRequestTest extends TestCase
 {
-    private function createRequest(string $timezone = 'Europe/Riga'): TimeLogRequest
+    public function testStartTimeStoresTransportValue(): void
     {
-        $taskService = $this->createMock(TaskService::class);
-        $timezoneResolver = $this->createMock(UserTimezoneResolver::class);
-        $timezoneResolver
-            ->method('resolveCurrentUserTimezone')
-            ->willReturn($timezone);
-
-        return new TimeLogRequest(
-            taskService: $taskService,
-            dateInputParser: new DateInputParser($timezoneResolver, 'UTC'),
-        );
-    }
-
-    public function testStartTimeNormalizesIsoDateTime(): void
-    {
-        $request = $this->createRequest();
+        $request = new TimeLogRequest();
         $request->setStartTime('2026-05-31T12:00:00Z');
 
-        self::assertSame('2026-05-31 15:00:00', $request->getStartTime());
+        self::assertSame('2026-05-31T12:00:00Z', $request->getStartTime());
     }
 
-    public function testEndTimeNormalizesUnixTimestampMilliseconds(): void
+    public function testEndTimeStoresUnixTimestampMilliseconds(): void
     {
-        $request = $this->createRequest();
+        $request = new TimeLogRequest();
         $request->setEndTime('1735689600000');
 
-        self::assertSame('2025-01-01 02:00:00', $request->getEndTime());
+        self::assertSame('1735689600000', $request->getEndTime());
     }
 
-    public function testEndTimeNormalizesUnixTimestampMillisecondsWhenNumeric(): void
+    public function testEndTimeStoresNumericInputAsString(): void
     {
-        $request = $this->createRequest();
+        $request = new TimeLogRequest();
         $request->setEndTime(1735689600000);
 
-        self::assertSame('2025-01-01 02:00:00', $request->getEndTime());
+        self::assertSame('1735689600000', $request->getEndTime());
     }
 
-    public function testStartTimeValuePreservesSubmittedInstantInUtc(): void
+    public function testTaskStoresTransportValue(): void
     {
-        $request = $this->createRequest('Europe/Vienna');
-        $request->setStartTime('1780434000000');
+        $request = new TimeLogRequest();
+        $request->setTask('5640e2d4-eff2-4f53-8e71-8cd305530f7f');
 
-        self::assertNotNull($request->getStartTimeValue());
-        self::assertSame('2026-06-02T21:00:00+00:00', $request->getStartTimeValue()?->format(\DateTimeInterface::ATOM));
-    }
-
-    public function testEndTimeValuePreservesNaiveUserWallClockAsUtcInstant(): void
-    {
-        $request = $this->createRequest('Europe/Vienna');
-        $request->setEndTime('2026-06-03 23:59:00');
-
-        self::assertNotNull($request->getEndTimeValue());
-        self::assertSame('2026-06-03T21:59:00+00:00', $request->getEndTimeValue()?->format(\DateTimeInterface::ATOM));
+        self::assertSame('5640e2d4-eff2-4f53-8e71-8cd305530f7f', $request->getTask());
     }
 }

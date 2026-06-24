@@ -8,13 +8,15 @@ use App\Entity\Setting\Setting;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Exception\JiraApiServiceException;
+use App\Repository\JiraWorkLog\JiraWorkLogRepository;
+use App\Repository\Setting\SettingRepository;
+use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\JiraApi\JiraApiService;
-use App\Service\JiraWorkLog\JiraWorkLogService;
 use App\Service\Setting\SettingService;
+use App\Service\Task\JiraSync\JiraTaskSyncService;
 use App\Service\Task\JiraSync\TaskJiraSyncException;
-use App\Repository\Setting\SettingRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -36,7 +38,7 @@ class JiraApiServiceTimeRangeTest extends TestCase
         $rangeStart = new \DateTime('2026-05-30 00:00:00');
         $rangeEnd = new \DateTime('2026-05-30 23:59:59');
 
-        $method = new \ReflectionMethod(JiraApiService::class, 'calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection');
+        $method = new \ReflectionMethod(JiraTaskSyncService::class, 'calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection');
 
         [$seconds, $descriptions] = $method->invoke(
             $service,
@@ -59,7 +61,7 @@ class JiraApiServiceTimeRangeTest extends TestCase
             ->setStartTime(new \DateTime('2026-05-29 00:00:00'))
             ->setEndTime(new \DateTime('2026-05-31 00:00:00'));
 
-        $method = new \ReflectionMethod(JiraApiService::class, 'filterTimeLogsInDateRange');
+        $method = new \ReflectionMethod(JiraTaskSyncService::class, 'filterTimeLogsInDateRange');
 
         $result = $method->invoke(
             $service,
@@ -75,7 +77,7 @@ class JiraApiServiceTimeRangeTest extends TestCase
     {
         $service = $this->createService();
 
-        $method = new \ReflectionMethod(JiraApiService::class, 'resolveSyncDates');
+        $method = new \ReflectionMethod(JiraTaskSyncService::class, 'resolveSyncDates');
         [$syncDate, $startDate, $endDate, $jiraStartDateTime] = $method->invoke($service, '2026-05-30');
 
         self::assertSame('2026-05-30 00:00:00', $syncDate->format('Y-m-d H:i:s'));
@@ -92,7 +94,7 @@ class JiraApiServiceTimeRangeTest extends TestCase
             ->setStartTime(new \DateTimeImmutable('2026-06-23T00:00:00+02:00'))
             ->setEndTime(new \DateTimeImmutable('2026-06-23T00:10:00+02:00'));
 
-        $resolveMethod = new \ReflectionMethod(JiraApiService::class, 'resolveSyncDates');
+        $resolveMethod = new \ReflectionMethod(JiraTaskSyncService::class, 'resolveSyncDates');
         [$syncDate, $startDate, $endDate, $jiraStartDateTime] = $resolveMethod->invoke($service, '2026-06-23');
 
         self::assertSame('2026-06-23', $syncDate->format('Y-m-d'));
@@ -100,7 +102,7 @@ class JiraApiServiceTimeRangeTest extends TestCase
         self::assertSame('2026-06-22T22:00:00+00:00', $startDate->format(\DateTimeInterface::ATOM));
         self::assertSame('2026-06-23T21:59:59+00:00', $endDate->format(\DateTimeInterface::ATOM));
 
-        $calculateMethod = new \ReflectionMethod(JiraApiService::class, 'calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection');
+        $calculateMethod = new \ReflectionMethod(JiraTaskSyncService::class, 'calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection');
         [$seconds] = $calculateMethod->invoke(
             $service,
             new ArrayCollection([$timeLog]),
@@ -113,7 +115,7 @@ class JiraApiServiceTimeRangeTest extends TestCase
 
     public function testCalculateSingleTimeLogSecondsRejectsValuesBelowMinimumThreshold(): void
     {
-        $service = $this->createService();
+        $service = $this->createApiService();
         $timeLog = (new TimeLog())
             ->setStartTime(new \DateTimeImmutable('2026-05-30 10:00:00'))
             ->setEndTime(new \DateTimeImmutable('2026-05-30 10:00:59'));
@@ -142,18 +144,28 @@ class JiraApiServiceTimeRangeTest extends TestCase
         $service->syncTask((new Task())->setName('TASK-1'), '2026-06-23');
     }
 
-    private function createService(string $userTimezone = 'UTC', ?SettingService $settingService = null): JiraApiService
+    private function createService(string $userTimezone = 'UTC', ?SettingService $settingService = null): JiraTaskSyncService
     {
         $userTimezoneResolver = $this->createMock(UserTimezoneResolver::class);
         $userTimezoneResolver
             ->method('resolveCurrentUserTimezone')
             ->willReturn($userTimezone);
 
+        return new JiraTaskSyncService(
+            $this->createApiService($settingService),
+            $this->createMock(JiraWorkLogRepository::class),
+            new TaskFilterDateRangeResolver(
+                $userTimezoneResolver,
+                new DateInputParser($userTimezoneResolver, 'UTC')
+            ),
+        );
+    }
+
+    private function createApiService(?SettingService $settingService = null): JiraApiService
+    {
         return new JiraApiService(
             $this->createMock(LoggerInterface::class),
             $settingService ?? $this->createMock(SettingService::class),
-            $this->createMock(JiraWorkLogService::class),
-            new TaskFilterDateRangeResolver($userTimezoneResolver),
         );
     }
 }

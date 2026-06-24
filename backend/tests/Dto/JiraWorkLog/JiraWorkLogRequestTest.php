@@ -5,45 +5,25 @@ declare(strict_types=1);
 namespace App\Tests\Dto\JiraWorkLog;
 
 use App\Dto\JiraWorkLog\JiraWorkLogRequest;
-use App\Entity\Task\Task;
-use App\Repository\Task\TaskRepository;
-use App\Service\DateTime\TaskFilterDateRangeResolver;
-use App\Service\Task\Filter\TaskFilterCriteriaFactory;
-use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
-use App\Service\Task\TaskService;
 use PHPUnit\Framework\TestCase;
 
 class JiraWorkLogRequestTest extends TestCase
 {
-    private function taskService(TaskRepository $repository): TaskService
+    public function testSetTaskStoresTransportValue(): void
     {
-        return new TaskService(
-            $repository,
-            new TaskFilterCriteriaFactory($this->createMock(TaskFilterDateRangeResolver::class)),
-            $this->createMock(TaskJiraSyncAdapter::class),
-        );
+        $request = new JiraWorkLogRequest();
+
+        $request->setTask('5640e2d4-eff2-4f53-8e71-8cd305530f7f');
+
+        self::assertSame('5640e2d4-eff2-4f53-8e71-8cd305530f7f', $request->getTask());
     }
 
-    public function testSetTaskResolvesTaskById(): void
+    public function testSetTaskRejectsNonScalarInput(): void
     {
-        $task = (new Task())->setName('T1');
-        $repository = $this->createMock(TaskRepository::class);
-        $repository->method('find')->with('id-1')->willReturn($task);
-        $request = new JiraWorkLogRequest($this->taskService($repository));
+        $request = new JiraWorkLogRequest();
 
-        $request->setTask('id-1');
+        $request->setTask([]);
 
-        self::assertSame($task, $request->getTask());
-    }
-
-    public function testSetTaskKeepsNullWhenTaskNotFound(): void
-    {
-        $repository = $this->createMock(TaskRepository::class);
-        $repository->method('find')->willReturn(null);
-        $request = new JiraWorkLogRequest($this->taskService($repository));
-
-        $request->setTask('missing');
-
-        self::assertNull($request->getTask());
+        self::assertSame('', $request->getTask());
     }
 }

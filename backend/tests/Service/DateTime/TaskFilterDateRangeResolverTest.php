@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service\DateTime;
 
+use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\DateTime\UserTimezoneResolver;
 use PHPUnit\Framework\TestCase;
@@ -17,7 +18,10 @@ class TaskFilterDateRangeResolverTest extends TestCase
             ->method('resolveCurrentUserTimezone')
             ->willReturn($timezone);
 
-        return new TaskFilterDateRangeResolver($timezoneResolver);
+        return new TaskFilterDateRangeResolver(
+            $timezoneResolver,
+            new DateInputParser($timezoneResolver, 'UTC')
+        );
     }
 
     public function testResolveReturnsNullWithoutDateFilters(): void
@@ -69,5 +73,19 @@ class TaskFilterDateRangeResolverTest extends TestCase
         self::assertSame('UTC', $range['startDate']->getTimezone()->getName());
         self::assertSame('2026-06-04 22:00:00', $range['startDate']->format('Y-m-d H:i:s'));
         self::assertSame('2026-06-06 21:59:59', $range['endDate']->format('Y-m-d H:i:s'));
+    }
+
+    public function testResolveNormalizesFlexibleRawFilterInputs(): void
+    {
+        $resolver = $this->createResolver('Europe/Riga');
+
+        $range = $resolver->resolve([
+            'startDate' => '2026-05-31T14:30:45Z',
+            'endDate' => '31/05/2026',
+        ]);
+
+        self::assertNotNull($range);
+        self::assertSame('2026-05-31 14:30:45', $range['startDate']->format('Y-m-d H:i:s'));
+        self::assertSame('2026-05-31 20:59:59', $range['endDate']->format('Y-m-d H:i:s'));
     }
 }
