@@ -4,18 +4,12 @@ declare(strict_types=1);
 
 namespace App\Dto\Task;
 
-use App\Service\DateTime\DateInputParser;
 use App\Validator\Constraints\FlexibleDate;
 use App\Validator\Constraints\FlexibleDateTime;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class TaskListFilterRequest
 {
-    public function __construct(
-        private readonly DateInputParser $dateInputParser,
-    ) {
-    }
-
     #[Assert\Type(type: 'string', groups: ['list'])]
     private ?string $tags = null;
 
@@ -65,7 +59,7 @@ class TaskListFilterRequest
 
     public function setDate(?string $date): self
     {
-        $this->date = $this->tryParseDate($date);
+        $this->date = $date;
 
         return $this;
     }
@@ -77,7 +71,7 @@ class TaskListFilterRequest
 
     public function setStartDate(?string $startDate): self
     {
-        $this->startDate = $this->tryParseRangeDate($startDate);
+        $this->startDate = $startDate;
 
         return $this;
     }
@@ -89,51 +83,9 @@ class TaskListFilterRequest
 
     public function setEndDate(?string $endDate): self
     {
-        $this->endDate = $this->tryParseRangeDate($endDate);
+        $this->endDate = $endDate;
 
         return $this;
-    }
-
-    private function tryParseDate(?string $value): ?string
-    {
-        try {
-            return $this->dateInputParser->parseDate($value);
-        } catch (\Throwable) {
-            return $value;
-        }
-    }
-
-    private function tryParseDateTime(?string $value): ?string
-    {
-        try {
-            return $this->dateInputParser->parseDateTime($value);
-        } catch (\Throwable) {
-            return $value;
-        }
-    }
-
-    private function tryParseRangeDate(?string $value): ?string
-    {
-        if ($this->looksLikeDateOnly($value)) {
-            return $this->tryParseDate($value);
-        }
-
-        return $this->tryParseDateTime($value);
-    }
-
-    private function looksLikeDateOnly(?string $value): bool
-    {
-        if (null === $value) {
-            return false;
-        }
-
-        $value = trim($value);
-
-        if ('' === $value || ctype_digit($value)) {
-            return false;
-        }
-
-        return !str_contains($value, ':') && !str_contains($value, 'T');
     }
 
     public function getHideUnreported(): ?bool
@@ -155,6 +107,9 @@ class TaskListFilterRequest
         return $this;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toFilterArray(): array
     {
         $filter = [

@@ -11,6 +11,7 @@ class TaskFilterDateRangeResolver
 {
     public function __construct(
         private readonly UserTimezoneResolver $userTimezoneResolver,
+        private readonly DateInputParser $dateInputParser,
     ) {
     }
 
@@ -27,17 +28,17 @@ class TaskFilterDateRangeResolver
 
         $timezone = new DateTimeZone($this->userTimezoneResolver->resolveCurrentUserTimezone());
         $utcTimezone = new DateTimeZone('UTC');
-        $startValue = (string) ($filter['date'] ?? $filter['startDate']);
-        $endValue = (string) ($filter['date'] ?? $filter['endDate']);
+        $startValue = $this->normalizeDateValue((string) ($filter['date'] ?? $filter['startDate']));
+        $endValue = $this->normalizeDateValue((string) ($filter['date'] ?? $filter['endDate']));
 
         $startDate = new DateTimeImmutable($startValue, $timezone);
         $endDate = new DateTimeImmutable($endValue, $timezone);
 
-        if (isset($filter['date']) || preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($filter['date'] ?? $filter['startDate'] ?? ''))) {
+        if (isset($filter['date']) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $startValue)) {
             $startDate = $startDate->setTime(0, 0, 0);
         }
 
-        if (isset($filter['date']) || preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($filter['endDate'] ?? ''))) {
+        if (isset($filter['date']) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $endValue)) {
             $endDate = $endDate->setTime(23, 59, 59);
         }
 
@@ -45,5 +46,25 @@ class TaskFilterDateRangeResolver
             'startDate' => $startDate->setTimezone($utcTimezone),
             'endDate' => $endDate->setTimezone($utcTimezone),
         ];
+    }
+
+    private function normalizeDateValue(string $value): string
+    {
+        if ($this->looksLikeDateOnly($value)) {
+            return $this->dateInputParser->parseDate($value) ?? $value;
+        }
+
+        return $this->dateInputParser->parseDateTime($value) ?? $value;
+    }
+
+    private function looksLikeDateOnly(string $value): bool
+    {
+        $value = trim($value);
+
+        if ('' === $value || ctype_digit($value)) {
+            return false;
+        }
+
+        return !str_contains($value, ':') && !str_contains($value, 'T');
     }
 }

@@ -8,7 +8,6 @@ use App\Controller\API\BaseApiController;
 use App\Dto\Task\TaskListFilterRequest;
 use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
-use App\Service\DateTime\DateInputParser;
 use App\Service\Task\Input\TaskInputFactory;
 use App\Service\Task\TaskService;
 use App\Service\Task\Sync\TaskSyncResult;
@@ -49,7 +48,6 @@ class TaskController extends BaseApiController
         private readonly TaskInputFactory $taskInputFactory,
         private readonly ValidatorInterface $validator,
         private readonly SerializerInterface $serializer,
-        private readonly DateInputParser $dateInputParser,
     ) {
     }
 
@@ -134,7 +132,7 @@ class TaskController extends BaseApiController
         Request $request,
     ): JsonResponse {
         try {
-            $filterRequest = new TaskListFilterRequest($this->dateInputParser);
+            $filterRequest = new TaskListFilterRequest();
             /** @var TaskListFilterRequest $filterRequest */
             $filterRequest = $this->serializer->denormalize(
                 data: $request->query->all(),

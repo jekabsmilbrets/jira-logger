@@ -70,7 +70,7 @@ class TagService
             $tag = TagFactory::create($tagRequest);
         }
 
-        $this->tagRepository->add(
+        $this->tagRepository->save(
             tag: $tag,
             flush: $flush
         );

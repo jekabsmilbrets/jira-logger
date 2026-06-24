@@ -127,7 +127,7 @@ class TaskService
         $task = $this->applyInput($taskInput);
 
         try {
-            $this->taskRepository->add(
+            $this->taskRepository->save(
                 task: $task,
                 flush: true
             );

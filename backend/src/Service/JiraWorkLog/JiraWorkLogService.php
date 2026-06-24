@@ -6,8 +6,10 @@ namespace App\Service\JiraWorkLog;
 
 use App\Dto\JiraWorkLog\JiraWorkLogRequest;
 use App\Entity\JiraWorkLog\JiraWorkLog;
+use App\Entity\Task\Task;
 use App\Factory\JiraWorkLog\JiraWorkLogFactory;
 use App\Repository\JiraWorkLog\JiraWorkLogRepository;
+use App\Service\Task\TaskService;
 use Doctrine\Common\Collections\ArrayCollection;
 
 class JiraWorkLogService
@@ -16,20 +18,27 @@ class JiraWorkLogService
 
     public function __construct(
         private readonly JiraWorkLogRepository $jiraWorkLogRepository,
+        private readonly ?TaskService $taskService = null,
     ) {
     }
 
+    /**
+     * @return ArrayCollection<int, JiraWorkLog>|null
+     */
     final public function list(): ?ArrayCollection
     {
         $jiraWorkLogs = $this->jiraWorkLogRepository->findAll();
 
-        if (empty($jiraWorkLogs) || [] === $jiraWorkLogs) {
+        if (empty($jiraWorkLogs)) {
             return null;
         }
 
         return new ArrayCollection($jiraWorkLogs);
     }
 
+    /**
+     * @param array<string, mixed> $criteria
+     */
     final public function findOneBy(
         array $criteria
     ): ?JiraWorkLog {
@@ -69,7 +78,10 @@ class JiraWorkLogService
         }
 
         if ($jiraWorkLogRequest && !$jiraWorkLog) {
-            $jiraWorkLog = JiraWorkLogFactory::create($jiraWorkLogRequest);
+            $jiraWorkLog = JiraWorkLogFactory::create(
+                jiraWorkLogRequest: $jiraWorkLogRequest,
+                task: $this->task((string) $jiraWorkLogRequest->getTask())
+            );
         }
 
         $this->jiraWorkLogRepository->save(
@@ -89,8 +101,6 @@ class JiraWorkLogService
         switch (true) {
             case !$jiraWorkLogRequest && !$jiraWorkLog:
                 throw new \RuntimeException(self::NO_DATA_PROVIDED);
-            case (!$jiraWorkLogRequest && $jiraWorkLog) && !$jiraWorkLog instanceof JiraWorkLog:
-                return null;
 
             case $jiraWorkLogRequest && !$jiraWorkLog:
                 $jiraWorkLog = $this->jiraWorkLogRepository->find($id);
@@ -101,6 +111,7 @@ class JiraWorkLogService
 
                 $jiraWorkLog = JiraWorkLogFactory::create(
                     jiraWorkLogRequest: $jiraWorkLogRequest,
+                    task: $this->task((string) $jiraWorkLogRequest->getTask()),
                     jiraWorkLog: $jiraWorkLog
                 );
                 break;
@@ -129,5 +140,20 @@ class JiraWorkLogService
         );
 
         return true;
+    }
+
+    private function task(string $taskId): Task
+    {
+        if (!$this->taskService instanceof TaskService) {
+            throw new \LogicException('TaskService is required for JiraWorkLog task lookup.');
+        }
+
+        $task = $this->taskService->show($taskId);
+
+        if (!$task instanceof Task) {
+            throw new \RuntimeException('Task not found');
+        }
+
+        return $task;
     }
 }
