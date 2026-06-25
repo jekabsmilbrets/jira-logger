@@ -5,33 +5,25 @@ declare(strict_types=1);
 namespace App\Tests\Dto\JiraWorkLog;
 
 use App\Dto\JiraWorkLog\JiraWorkLogRequest;
-use App\Entity\Task\Task;
-use App\Repository\Task\TaskRepository;
-use App\Service\Task\TaskService;
 use PHPUnit\Framework\TestCase;
 
 class JiraWorkLogRequestTest extends TestCase
 {
-    public function testSetTaskResolvesTaskById(): void
+    public function testSetTaskStoresTransportValue(): void
     {
-        $task = (new Task())->setName('T1');
-        $repository = $this->createMock(TaskRepository::class);
-        $repository->method('find')->with('id-1')->willReturn($task);
-        $request = new JiraWorkLogRequest(new TaskService($repository));
+        $request = new JiraWorkLogRequest();
 
-        $request->setTask('id-1');
+        $request->setTask('5640e2d4-eff2-4f53-8e71-8cd305530f7f');
 
-        self::assertSame($task, $request->getTask());
+        self::assertSame('5640e2d4-eff2-4f53-8e71-8cd305530f7f', $request->getTask());
     }
 
-    public function testSetTaskKeepsNullWhenTaskNotFound(): void
+    public function testSetTaskRejectsNonScalarInput(): void
     {
-        $repository = $this->createMock(TaskRepository::class);
-        $repository->method('find')->willReturn(null);
-        $request = new JiraWorkLogRequest(new TaskService($repository));
+        $request = new JiraWorkLogRequest();
 
-        $request->setTask('missing');
+        $request->setTask([]);
 
-        self::assertNull($request->getTask());
+        self::assertSame('', $request->getTask());
     }
 }

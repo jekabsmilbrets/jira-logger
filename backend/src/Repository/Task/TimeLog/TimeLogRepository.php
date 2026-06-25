@@ -26,11 +26,6 @@ class TimeLogRepository extends ServiceEntityRepository
         parent::__construct($registry, TimeLog::class);
     }
 
-    public function add(TimeLog $timeLog, bool $flush = false): void
-    {
-        $this->save($timeLog, $flush);
-    }
-
     final public function save(TimeLog $timeLog, bool $flush = false): void
     {
         $this->getEntityManager()->persist($timeLog);

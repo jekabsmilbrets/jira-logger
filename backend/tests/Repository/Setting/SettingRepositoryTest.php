@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 
 class SettingRepositoryTest extends TestCase
 {
-    public function testAddDelegatesToPersistAndFlushWhenRequested(): void
+    public function testSaveDelegatesToPersistAndFlushWhenRequested(): void
     {
         $entityManager = $this->createMock(EntityManagerInterface::class);
         $entityManager->expects(self::once())->method('persist');
@@ -23,6 +23,6 @@ class SettingRepositoryTest extends TestCase
             ->getMock();
         $repository->method('getEntityManager')->willReturn($entityManager);
 
-        $repository->add(new Setting(), true);
+        $repository->save(new Setting(), true);
     }
 }

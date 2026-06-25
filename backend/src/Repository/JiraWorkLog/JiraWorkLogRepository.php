@@ -25,11 +25,6 @@ class JiraWorkLogRepository extends ServiceEntityRepository
         parent::__construct($registry, JiraWorkLog::class);
     }
 
-    final public function add(JiraWorkLog $entity, bool $flush = false): void
-    {
-        $this->save($entity, $flush);
-    }
-
     final public function save(JiraWorkLog $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);
@@ -53,28 +48,4 @@ class JiraWorkLogRepository extends ServiceEntityRepository
         $this->getEntityManager()->flush();
     }
 
-//    /**
-//     * @return JiraWorkLog[] Returns an array of JiraWorkLog objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('j')
-//            ->andWhere('j.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('j.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?JiraWorkLog
-//    {
-//        return $this->createQueryBuilder('j')
-//            ->andWhere('j.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
 }

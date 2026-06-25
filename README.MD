@@ -105,14 +105,14 @@ which should be imported into your system's root certificates to allow SSL for A
 ## Project Specification
 
 ### API
-* Symfony 6.4
+* Symfony 8
 * Doctrine
 * PostgreSQL
-* PHP 8.4 / PHP-FPM
+* PHP >=8.5.4 <9.0 / PHP-FPM
 * Nginx
 
 ### FE
-* Angular 20
-* Material 20
-* Node 22.17.0
-* NPM 10.8.2
+* Angular 22
+* Material 22
+* Node >=22.22.3
+* NPM >=10.9.8

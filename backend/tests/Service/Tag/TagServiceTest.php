@@ -34,6 +34,31 @@ class TagServiceTest extends TestCase
         self::assertCount(1, $service->list());
     }
 
+    public function testFindByIdsUsesRepositoryCriteria(): void
+    {
+        $tag = (new Tag())->setName('A');
+        $repository = $this->createMock(TagRepository::class);
+        $repository
+            ->expects(self::once())
+            ->method('findBy')
+            ->with(['id' => ['tag-id']])
+            ->willReturn([$tag]);
+
+        $service = new TagService($repository);
+
+        self::assertSame($tag, $service->findByIds(['tag-id'])->first());
+    }
+
+    public function testFindByIdsDoesNotQueryForEmptyIds(): void
+    {
+        $repository = $this->createMock(TagRepository::class);
+        $repository->expects(self::never())->method('findBy');
+
+        $service = new TagService($repository);
+
+        self::assertCount(0, $service->findByIds([]));
+    }
+
     public function testNewThrowsWhenNoInputProvided(): void
     {
         $service = new TagService($this->createMock(TagRepository::class));

@@ -7,9 +7,12 @@ namespace App\Tests\Controller\API\Task;
 use App\Controller\API\Task\TaskController;
 use App\Dto\Task\TaskListFilterRequest;
 use App\Repository\Task\TaskRepository;
-use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
-use App\Service\JiraApi\JiraApiService;
+use App\Service\Tag\TagService;
+use App\Service\Task\Filter\TaskFilterCriteriaFactory;
+use App\Service\Task\Input\TaskInputFactory;
+use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
+use App\Service\Task\Projection\TaskListProjection;
 use App\Service\Task\TaskService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\ConstraintViolation;
@@ -28,15 +31,14 @@ class TaskControllerTest extends TestCase
         TaskService $taskService,
         SerializerInterface $serializer,
         ?ValidatorInterface $validator = null,
-        ?DateInputParser $dateInputParser = null,
+        ?TaskInputFactory $taskInputFactory = null,
     ): TaskController
     {
         $controller = new TaskController(
             $taskService,
-            $this->createMock(JiraApiService::class),
+            $taskInputFactory ?? new TaskInputFactory($this->createMock(TagService::class)),
             $validator ?? $this->createMock(ValidatorInterface::class),
-            $serializer,
-            $dateInputParser ?? $this->createMock(DateInputParser::class)
+            $serializer
         );
         $controller->setContainer(new Container());
 
@@ -47,9 +49,13 @@ class TaskControllerTest extends TestCase
         ?TaskRepository $taskRepository = null,
         ?TaskFilterDateRangeResolver $taskFilterDateRangeResolver = null,
     ): TaskService {
+        $taskFilterDateRangeResolver ??= $this->createMock(TaskFilterDateRangeResolver::class);
+
         return new TaskService(
             $taskRepository ?? $this->getMockBuilder(TaskRepository::class)->disableOriginalConstructor()->getMock(),
-            $taskFilterDateRangeResolver ?? $this->createMock(TaskFilterDateRangeResolver::class),
+            new TaskFilterCriteriaFactory($taskFilterDateRangeResolver),
+            $this->createMock(TaskJiraSyncAdapter::class),
+            new TaskListProjection(),
         );
     }
 
@@ -73,8 +79,7 @@ class TaskControllerTest extends TestCase
 
     public function testListReturnsValidationErrorWhenFilterValidationFails(): void
     {
-        $dateInputParser = $this->createMock(DateInputParser::class);
-        $filterRequest = new TaskListFilterRequest($dateInputParser);
+        $filterRequest = new TaskListFilterRequest();
 
         $serializer = new class($filterRequest) implements SerializerInterface, DenormalizerInterface {
             public function __construct(private readonly TaskListFilterRequest $filterRequest)
@@ -123,7 +128,7 @@ class TaskControllerTest extends TestCase
         $taskRepository->expects(self::never())->method('createQueryBuilder');
         $taskService = $this->taskServiceWith($taskRepository);
 
-        $response = $this->controllerWith($taskService, $serializer, $validator, $dateInputParser)
+        $response = $this->controllerWith($taskService, $serializer, $validator)
             ->list(new Request());
 
         self::assertSame(406, $response->getStatusCode());
@@ -131,9 +136,8 @@ class TaskControllerTest extends TestCase
 
     public function testListDoesNotRewriteTaskServiceFailuresAsBadRequest(): void
     {
-        $dateInputParser = $this->createMock(DateInputParser::class);
         $validator = $this->createMock(ValidatorInterface::class);
-        $filterRequest = (new TaskListFilterRequest($dateInputParser))->setName('backend');
+        $filterRequest = (new TaskListFilterRequest())->setName('backend');
 
         $serializer = new class($filterRequest) implements SerializerInterface, DenormalizerInterface {
             public function __construct(private readonly TaskListFilterRequest $filterRequest)
@@ -188,7 +192,7 @@ class TaskControllerTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Repository unavailable');
 
-        $this->controllerWith($taskService, $serializer, $validator, $dateInputParser)
+        $this->controllerWith($taskService, $serializer, $validator)
             ->list(new Request(['name' => 'backend']));
     }
 

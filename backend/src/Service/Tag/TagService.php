@@ -21,15 +21,32 @@ class TagService
     ) {
     }
 
+    /**
+     * @return ArrayCollection<int, Tag>|null
+     */
     final public function list(): ?ArrayCollection
     {
         $tags = $this->tagRepository->findAll();
 
-        if (empty($tags) || [] === $tags) {
+        if (empty($tags)) {
             return null;
         }
 
         return new ArrayCollection($tags);
+    }
+
+    /**
+     * @param string[] $ids
+     *
+     * @return ArrayCollection<int, Tag>
+     */
+    final public function findByIds(array $ids): ArrayCollection
+    {
+        if ([] === $ids) {
+            return new ArrayCollection([]);
+        }
+
+        return new ArrayCollection($this->tagRepository->findBy(['id' => $ids]));
     }
 
     final public function show(
@@ -53,7 +70,7 @@ class TagService
             $tag = TagFactory::create($tagRequest);
         }
 
-        $this->tagRepository->add(
+        $this->tagRepository->save(
             tag: $tag,
             flush: $flush
         );
@@ -70,8 +87,6 @@ class TagService
         switch (true) {
             case !$tagRequest && !$tag:
                 throw new \RuntimeException(self::NO_DATA_PROVIDED);
-            case (!$tagRequest && $tag) && !$tag instanceof Tag:
-                return null;
 
             case $tagRequest && !$tag:
                 $tag = $this->tagRepository->find($id);

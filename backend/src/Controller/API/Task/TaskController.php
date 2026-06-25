@@ -8,12 +8,12 @@ use App\Controller\API\BaseApiController;
 use App\Dto\Task\TaskListFilterRequest;
 use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
-use App\Exception\JiraApiServiceException;
-use App\Service\DateTime\DateInputParser;
-use App\Service\JiraApi\JiraApiService;
+use App\Service\Task\Input\TaskInputFactory;
 use App\Service\Task\TaskService;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
-use Exception;
+use App\Service\Task\Sync\TaskSyncResult;
+use App\Service\Task\Sync\TaskSyncStatus;
+use App\Service\Task\Write\TaskWriteResult;
+use App\Service\Task\Write\TaskWriteStatus;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -45,15 +45,14 @@ class TaskController extends BaseApiController
 
     public function __construct(
         private readonly TaskService $taskService,
-        private readonly JiraApiService $jiraApiService,
+        private readonly TaskInputFactory $taskInputFactory,
         private readonly ValidatorInterface $validator,
         private readonly SerializerInterface $serializer,
-        private readonly DateInputParser $dateInputParser,
     ) {
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      * @throws ExceptionInterface
      */
     #[
@@ -133,7 +132,7 @@ class TaskController extends BaseApiController
         Request $request,
     ): JsonResponse {
         try {
-            $filterRequest = new TaskListFilterRequest($this->dateInputParser);
+            $filterRequest = new TaskListFilterRequest();
             /** @var TaskListFilterRequest $filterRequest */
             $filterRequest = $this->serializer->denormalize(
                 data: $request->query->all(),
@@ -306,22 +305,13 @@ class TaskController extends BaseApiController
             return $validationError;
         }
 
-        try {
-            $task = $this->taskService->new($taskRequest);
-        } /* @noinspection PhpRedundantCatchClauseInspection */ catch (UniqueConstraintViolationException) {
-            return $this->jsonApi(
-                errors: [self::DUPLICATE_TASK_NAME],
-                status: Response::HTTP_BAD_REQUEST
-            );
-        } catch (Exception) {
-            return $this->jsonApi(
-                errors: [self::CANNOT_CREATE_TASK],
-                status: Response::HTTP_BAD_REQUEST
-            );
-        }
-
-        return $this->jsonApi(
-            $task
+        return $this->writeResultResponse(
+            result: $this->taskService->create($this->taskInputFactory->create(
+                name: $taskRequest->getName(),
+                description: $taskRequest->getDescription(),
+                tagIds: $taskRequest->getTagIds(),
+            )),
+            failureMessage: self::CANNOT_CREATE_TASK,
         );
     }
 
@@ -425,27 +415,16 @@ class TaskController extends BaseApiController
             return $validationError;
         }
 
-        try {
-            $task = $this->taskService->edit(
+        return $this->writeResultResponse(
+            result: $this->taskService->update(
                 id: $id,
-                taskRequest: $taskRequest
-            );
-        } catch (Exception) {
-            return $this->jsonApi(
-                errors: [self::CANNOT_UPDATE_TASK],
-                status: Response::HTTP_BAD_REQUEST
-            );
-        }
-
-        if (!$task instanceof Task) {
-            return $this->jsonApi(
-                errors: [self::TASK_NOT_FOUND],
-                status: Response::HTTP_NOT_FOUND
-            );
-        }
-
-        return $this->jsonApi(
-            $task
+                taskInput: $this->taskInputFactory->create(
+                    name: $taskRequest->getName(),
+                    description: $taskRequest->getDescription(),
+                    tagIds: $taskRequest->getTagIds(),
+                ),
+            ),
+            failureMessage: self::CANNOT_UPDATE_TASK,
         );
     }
 
@@ -503,29 +482,11 @@ class TaskController extends BaseApiController
     final public function delete(
         string $id
     ): JsonResponse {
-        try {
-            $status = $this->taskService->delete($id);
-        } catch (Exception) {
-            return $this->jsonApi(
-                errors: [self::CANNOT_DELETE_TASK],
-                status: Response::HTTP_BAD_REQUEST
-            );
-        }
-
-        if (!$status) {
-            return $this->jsonApi(
-                errors: [self::TASK_NOT_FOUND],
-                status: Response::HTTP_NOT_FOUND
-            );
-        }
-
-        return $this->jsonApi(
-            status: Response::HTTP_NO_CONTENT
-        );
+        return $this->deleteResultResponse($this->taskService->remove($id));
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     #[
         Route(
@@ -565,7 +526,7 @@ class TaskController extends BaseApiController
     }
 
     /**
-     * @throws Exception
+     * @throws \Exception
      */
     #[
         Route(
@@ -625,27 +586,72 @@ class TaskController extends BaseApiController
         string $id,
         string $date,
     ): JsonResponse {
-        $task = $this->taskService->show($id);
+        return $this->syncResultResponse($this->taskService->syncWithJira($id, $date));
+    }
 
-        if (!$task instanceof Task) {
+    private function writeResultResponse(TaskWriteResult $result, string $failureMessage): JsonResponse
+    {
+        if (TaskWriteStatus::Duplicate === $result->status) {
+            return $this->jsonApi(
+                errors: [self::DUPLICATE_TASK_NAME],
+                status: Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        if (TaskWriteStatus::Failed === $result->status) {
+            return $this->jsonApi(
+                errors: [$failureMessage],
+                status: Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        if (TaskWriteStatus::NotFound === $result->status) {
             return $this->jsonApi(
                 errors: [self::TASK_NOT_FOUND],
                 status: Response::HTTP_NOT_FOUND
             );
         }
 
-        try {
-            $this->jiraApiService->init();
-            $synced = $this->jiraApiService->sync($task, $date);
-        } catch (JiraApiServiceException $e) {
+        return $this->jsonApi($result->task);
+    }
+
+    private function deleteResultResponse(TaskWriteResult $result): JsonResponse
+    {
+        if (TaskWriteStatus::Failed === $result->status) {
             return $this->jsonApi(
-                errors: ['Problems syncing with JIRA!', $e->getMessage()],
+                errors: [self::CANNOT_DELETE_TASK],
+                status: Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        if (TaskWriteStatus::NotFound === $result->status) {
+            return $this->jsonApi(
+                errors: [self::TASK_NOT_FOUND],
+                status: Response::HTTP_NOT_FOUND
+            );
+        }
+
+        return $this->jsonApi(status: Response::HTTP_NO_CONTENT);
+    }
+
+    private function syncResultResponse(TaskSyncResult $result): JsonResponse
+    {
+        if (TaskSyncStatus::Failed === $result->status) {
+            return $this->jsonApi(
+                errors: ['Problems syncing with JIRA!', $result->errorMessage],
                 status: Response::HTTP_CONFLICT
             );
         }
 
+        if (TaskSyncStatus::NotFound === $result->status) {
+            return $this->jsonApi(
+                errors: [self::TASK_NOT_FOUND],
+                status: Response::HTTP_NOT_FOUND
+            );
+        }
+
         return $this->jsonApi(
-            status: !$synced ? Response::HTTP_CONFLICT : Response::HTTP_NO_CONTENT,
+            status: TaskSyncStatus::Conflict === $result->status ? Response::HTTP_CONFLICT : Response::HTTP_NO_CONTENT,
         );
     }
 }

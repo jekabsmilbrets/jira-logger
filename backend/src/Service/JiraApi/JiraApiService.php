@@ -4,16 +4,11 @@ declare(strict_types=1);
 
 namespace App\Service\JiraApi;
 
-use App\Entity\JiraWorkLog\JiraWorkLog;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Exception\JiraApiServiceException;
-use App\Service\DateTime\TaskFilterDateRangeResolver;
-use App\Service\JiraWorkLog\JiraWorkLogService;
 use App\Service\Setting\SettingService;
 use App\Utility\TimeLog\TimeLogDuration;
-use App\Utility\TimeLog\TimeLogRange;
-use Doctrine\Common\Collections\Collection;
 use JiraRestApi\Configuration\ArrayConfiguration;
 use JiraRestApi\Issue\IssueService;
 use JiraRestApi\Issue\Worklog;
@@ -36,13 +31,11 @@ class JiraApiService
 
     final public const MIN_REPORT_SECONDS = 60;
 
-    private readonly IssueService $client;
+    private IssueService $client;
 
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly SettingService $settingService,
-        private readonly JiraWorkLogService $jiraWorkLogService,
-        private readonly TaskFilterDateRangeResolver $taskFilterDateRangeResolver,
     ) {
     }
 
@@ -120,7 +113,7 @@ class JiraApiService
                 message: sprintf(
                     self::CREATE_ERROR_MSG,
                     $description,
-                    (string) ($timeSpentSeconds ?? '?'),
+                    (string) $timeSpentSeconds,
                     $issueKey,
                     $e->getMessage(),
                 )
@@ -213,75 +206,6 @@ class JiraApiService
     /**
      * @throws JiraApiServiceException
      */
-    final public function sync(
-        Task $task,
-        string $date,
-    ): bool {
-        [$syncDate, $startDate, $endDate, $jiraStartDateTime] = $this->resolveSyncDates($date);
-
-        $jiraWorkLog = $this->jiraWorkLogService->findOneBy(
-            [
-                'task' => $task,
-                'startTime' => $syncDate,
-            ]
-        );
-
-        if (!$jiraWorkLog instanceof JiraWorkLog) {
-            $jiraWorkLog = new JiraWorkLog();
-            $jiraWorkLog->setTask($task);
-        }
-
-        $timeLogs = $task->getTimeLogs();
-
-        [$timeSpentSeconds, $descriptions] = $this->calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection(
-            timeLogs: $timeLogs,
-            startDate: $startDate,
-            endDate: $endDate
-        );
-        $workLogId = $jiraWorkLog->getWorkLogId();
-
-        if (str_contains($taskName = $task->getName(), '-#-')) {
-            $descriptions = [trim(explode('-#-', $taskName)[1])];
-        }
-
-        $jiraApiWorkLog = $this->createUpdateRecreateWorkLogWithTimeSpent(
-            jiraWorkLog: $jiraWorkLog,
-            task: $task,
-            startDate: $jiraStartDateTime,
-            timeSpentSeconds: $timeSpentSeconds,
-            descriptions: $descriptions,
-        );
-
-        $jiraWorkLog->setTimeSpentSeconds($timeSpentSeconds);
-        $jiraWorkLog->setStartTime($syncDate);
-        $jiraWorkLog->setWorkLogId((string) $jiraApiWorkLog->id);
-
-        $this->createUpdateJiraWorkLog(
-            jiraWorkLog: $jiraWorkLog,
-            workLogId: $workLogId
-        );
-
-        return true;
-    }
-
-    private function resolveSyncDates(string $date): array
-    {
-        $dateRange = $this->taskFilterDateRangeResolver->resolve(['date' => $date]);
-        if (null === $dateRange) {
-            throw new \InvalidArgumentException('Sync date could not be resolved.');
-        }
-
-        $syncDate = (new \DateTime($date))->setTime(0, 0, 0);
-        $startDate = $dateRange['startDate'];
-        $endDate = $dateRange['endDate'];
-        $jiraStartDateTime = (clone $syncDate)->setTime(17, 0, 0);
-
-        return [$syncDate, $startDate, $endDate, $jiraStartDateTime];
-    }
-
-    /**
-     * @throws JiraApiServiceException
-     */
     final public function deleteWorkLog(
         Task $task,
         int $workLogId,
@@ -304,65 +228,6 @@ class JiraApiService
             );
 
             throw new JiraApiServiceException(message: $e->getMessage(), code: $e->getCode(), previous: $e);
-        }
-    }
-
-    /**
-     * @throws JiraApiServiceException
-     */
-    private function createUpdateRecreateWorkLogWithTimeSpent(
-        JiraWorkLog $jiraWorkLog,
-        Task $task,
-        \DateTime $startDate,
-        int $timeSpentSeconds,
-        array $descriptions,
-    ): Worklog {
-        $descriptionsConcatenated = implode(', ', $descriptions);
-
-        if (!empty($workLogId = $jiraWorkLog->getWorkLogId())) {
-            try {
-                $workLog = $this->updateWorkLogWithTimeSpent(
-                    task: $task,
-                    workLogId: (int) ($workLogId ?? 0),
-                    startTime: $startDate,
-                    timeSpentSeconds: $timeSpentSeconds,
-                    description: $descriptionsConcatenated,
-                );
-            } catch (JiraApiServiceException $e) {
-                $workLog = $this->createWorkLogWithTimeSpent(
-                    task: $task,
-                    startTime: $startDate,
-                    timeSpentSeconds: $timeSpentSeconds,
-                    description: $descriptionsConcatenated,
-                );
-
-                $jiraWorkLog->setWorkLogId((string) $workLog->id);
-            }
-        } else {
-            $workLog = $this->createWorkLogWithTimeSpent(
-                task: $task,
-                startTime: $startDate,
-                timeSpentSeconds: $timeSpentSeconds,
-                description: $descriptionsConcatenated,
-            );
-        }
-
-        return $workLog;
-    }
-
-    private function createUpdateJiraWorkLog(
-        JiraWorkLog $jiraWorkLog,
-        ?string $workLogId,
-    ): void {
-        if (!$workLogId) {
-            $this->jiraWorkLogService->new(
-                jiraWorkLog: $jiraWorkLog,
-            );
-        } else {
-            $this->jiraWorkLogService->edit(
-                id: $jiraWorkLog->getId(),
-                jiraWorkLog: $jiraWorkLog,
-            );
         }
     }
 
@@ -404,70 +269,6 @@ class JiraApiService
         }
 
         return $timeSpentSeconds;
-    }
-
-    private function calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection(
-        Collection $timeLogs,
-        \DateTimeInterface $startDate,
-        \DateTimeInterface $endDate,
-    ): array {
-        return $this->collectTimeSpentSecondsNDescriptions(
-            $this->filterTimeLogsInDateRange(
-                $timeLogs,
-                $startDate,
-                $endDate
-            ),
-            $startDate,
-            $endDate
-        );
-    }
-
-    private function filterTimeLogsInDateRange(
-        Collection $timeLogs,
-        \DateTimeInterface $startDate,
-        \DateTimeInterface $endDate,
-    ): Collection {
-        return $timeLogs->filter(
-            function (TimeLog $timeLog) use ($startDate, $endDate) {
-                $startTime = $timeLog->getStartTime();
-                $endTime = $timeLog->getEndTime();
-
-                return TimeLogRange::overlaps($startDate, $endDate, $startTime, $endTime);
-            }
-        );
-    }
-
-    private function collectTimeSpentSecondsNDescriptions(
-        Collection $timeLogs,
-        \DateTimeInterface $startDate,
-        \DateTimeInterface $endDate,
-    ): array {
-        $timeSpentSeconds = 0;
-        $descriptions = [];
-
-        /** @var TimeLog $timeLog */
-        foreach ($timeLogs->toArray() as $timeLog) {
-            $startTime = $timeLog->getStartTime();
-            $endTime = $timeLog->getEndTime();
-
-            if ($startTime) {
-                $timeSpentSeconds += TimeLogDuration::clippedSecondsInRange(
-                    rangeStart: $startDate,
-                    rangeEnd: $endDate,
-                    logStart: $startTime,
-                    logEnd: $endTime,
-                );
-
-                if (!empty($description = $timeLog->getDescription())) {
-                    $descriptions[] = $description;
-                }
-            }
-        }
-
-        return [
-            $timeSpentSeconds,
-            $descriptions,
-        ];
     }
 
     /**
