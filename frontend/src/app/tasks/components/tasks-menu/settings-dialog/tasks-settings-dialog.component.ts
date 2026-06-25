@@ -1,5 +1,5 @@
 import { CdkCopyToClipboard } from '@angular/cdk/clipboard';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, injectAsync, signal, type WritableSignal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, type WritableSignal } from '@angular/core';
 import { type FieldTree, form, FormField, required } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -10,13 +10,12 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
-import type { AsyncLoader } from '@shared/types/async-loader.type';
 
 import type { TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 import type { TaskSettingsFormData } from '@tasks/interfaces/task-settings-form-data.interface';
 import type { TasksSettingsDialogData } from '@tasks/interfaces/tasks-settings-dialog-data.interface';
 import type { TasksSettingsFormValue } from '@tasks/interfaces/tasks-settings-form-value.interface';
-import type { TaskBackupService } from '@tasks/services/task-backup.service';
+import { prepareTaskImportRequest, stringifyTaskBackupV2 } from '@tasks/utilities/task-backup.utility';
 
 @Component({
   selector: 'tasks-settings-dialog',
@@ -52,19 +51,16 @@ export class TasksSettingsDialogComponent {
   private readonly destroyRef: DestroyRef = inject(DestroyRef);
   private readonly dialogRef: MatDialogRef<TasksSettingsDialogComponent, undefined | TaskImportRequest> = inject<MatDialogRef<TasksSettingsDialogComponent, TaskImportRequest | undefined>>(MatDialogRef);
   private readonly tagsService: TagsService = inject(TagsService);
-  private readonly loadTaskBackupService: AsyncLoader<TaskBackupService> = injectAsync(
-    () => import('@tasks/services/task-backup.service').then((m) => m.TaskBackupService),
-  );
 
   constructor() {
-    void this.loadCurrentBackupJson();
+    this.loadCurrentBackupJson();
   }
 
   protected onClose(): void {
     this.dialogRef.close();
   }
 
-  protected async onImport(): Promise<void> {
+  protected onImport(): void {
     if (this.tasksSettingsForm().invalid()) {
       this.tasksSettingsForm().markAsTouched();
       return;
@@ -75,8 +71,7 @@ export class TasksSettingsDialogComponent {
     this.importErrorMessage.set(null);
 
     try {
-      const taskBackupService: TaskBackupService = await this.loadTaskBackupService();
-      const request: TaskImportRequest = taskBackupService.prepareTaskImportRequest(
+      const request: TaskImportRequest = prepareTaskImportRequest(
         JSON.parse(
           formData.json as string,
         ),
@@ -90,15 +85,13 @@ export class TasksSettingsDialogComponent {
     }
   }
 
-  private async loadCurrentBackupJson(): Promise<void> {
+  private loadCurrentBackupJson(): void {
     try {
-      const taskBackupService: TaskBackupService = await this.loadTaskBackupService();
-
       if (this.destroyRef.destroyed) {
         return;
       }
 
-      this.currentBackupJson.set(taskBackupService.stringifyTaskBackupV2(this.data.currentTasks));
+      this.currentBackupJson.set(stringifyTaskBackupV2(this.data.currentTasks));
     } catch (error) {
       if (this.destroyRef.destroyed || this.isDestroyedInjectorError(error)) {
         return;

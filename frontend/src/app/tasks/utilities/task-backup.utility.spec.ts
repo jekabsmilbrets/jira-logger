@@ -5,7 +5,7 @@ import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 
-import { createTaskBackupV2, prepareTaskImportRequest } from './task-backup.utility';
+import { createTaskBackupV2, prepareTaskImportRequest, stringifyTaskBackupV2 } from './task-backup.utility';
 
 describe('task-backup.utility', () => {
   afterEach(() => {
@@ -98,6 +98,21 @@ describe('task-backup.utility', () => {
         },
       }],
     });
+  });
+
+  it('stringifies canonical task backup v2', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_717_300_800_000);
+
+    const output = stringifyTaskBackupV2([
+      new Task({ name: 'Exported task', timeLogs: [], tags: [] }),
+    ]);
+
+    expect(JSON.parse(output)).toEqual({
+      version: 2,
+      exportedAt: 1_717_300_800_000,
+      tasks: [expect.objectContaining({ name: 'Exported task' })],
+    });
+    expect(output).toContain('\n  "version": 2');
   });
 
   it('parses metadata from version 2 imports and emits unsupported-metadata warnings', () => {
