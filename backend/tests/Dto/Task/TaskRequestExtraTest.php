@@ -5,42 +5,23 @@ declare(strict_types=1);
 namespace App\Tests\Dto\Task;
 
 use App\Dto\Task\TaskRequest;
-use App\Entity\Tag\Tag;
-use App\Repository\Tag\TagRepository;
-use App\Service\Tag\TagService;
-use App\Tests\Support\EntityIdSetter;
-use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
 
 class TaskRequestExtraTest extends TestCase
 {
-    use EntityIdSetter;
-
-    public function testSetTagsMapsIdsToKnownTagsOnly(): void
+    public function testSetTagsStoresRawTagIds(): void
     {
-        $tagA = (new Tag())->setName('A');
-        $tagB = (new Tag())->setName('B');
-        $this->setEntityId($tagA, '11111111-1111-1111-1111-111111111111');
-        $this->setEntityId($tagB, '22222222-2222-2222-2222-222222222222');
-
-        $repository = $this->createMock(TagRepository::class);
-        $repository->method('findAll')->willReturn([$tagA, $tagB]);
-
-        $request = new TaskRequest(new TagService($repository));
+        $request = new TaskRequest();
         $request->setTags(['22222222-2222-2222-2222-222222222222']);
 
-        self::assertCount(1, $request->getTags());
-        self::assertSame($tagB, $request->getTags()->first());
+        self::assertSame(['22222222-2222-2222-2222-222222222222'], $request->getTagIds());
     }
 
-    public function testSetTagsIgnoresEmptyArray(): void
+    public function testSetTagsPreservesEmptyArrayAsClearTagsIntent(): void
     {
-        $repository = $this->createMock(TagRepository::class);
-        $repository->method('findAll')->willReturn([]);
-
-        $request = new TaskRequest(new TagService($repository));
+        $request = new TaskRequest();
         $request->setTags([]);
 
-        self::assertNull($request->getTags());
+        self::assertSame([], $request->getTagIds());
     }
 }

@@ -9,6 +9,8 @@ use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Factory\Task\TimeLog\TimeLogFactory;
 use App\Repository\Task\TimeLog\TimeLogRepository;
+use App\Service\DateTime\DateInputParser;
+use App\Service\Task\TaskService;
 use Doctrine\DBAL\Exception;
 
 class TimeLogService
@@ -17,9 +19,14 @@ class TimeLogService
 
     public function __construct(
         private readonly TimeLogRepository $timeLogRepository,
+        private readonly TaskService $taskService,
+        private readonly DateInputParser $dateInputParser,
     ) {
     }
 
+    /**
+     * @return TimeLog[]|null
+     */
     final public function list(
         string $taskId,
     ): ?array {
@@ -29,7 +36,7 @@ class TimeLogService
             ]
         );
 
-        if (empty($timeLogs) || [] === $timeLogs) {
+        if (empty($timeLogs)) {
             return null;
         }
 
@@ -53,84 +60,42 @@ class TimeLogService
     /**
      * @throws \Exception
      */
-    final public function new(
-        ?TimeLogRequest $timeLogRequest = null,
-        ?TimeLog $timeLog = null,
+    final public function create(
+        TimeLogRequest $timeLogRequest,
         bool $flush = true,
-    ): TimeLog {
-        if (!$timeLogRequest && !$timeLog) {
-            throw new \RuntimeException(self::NO_DATA_PROVIDED);
+    ): TimeLogWriteResult {
+        $task = $this->task((string) $timeLogRequest->getTask());
+
+        if (!$task instanceof Task) {
+            return TimeLogWriteResult::notFound();
         }
 
-        if ($timeLogRequest && !$timeLog) {
-            $timeLog = TimeLogFactory::create($timeLogRequest);
+        try {
+            $timeLog = TimeLogFactory::create(
+                timeLogRequest: $timeLogRequest,
+                task: $task,
+                dateInputParser: $this->dateInputParser()
+            );
+            $this->timeLogRepository->save(
+                timeLog: $timeLog,
+                flush: $flush
+            );
+        } catch (\Exception) {
+            return TimeLogWriteResult::failed();
         }
 
-        $this->timeLogRepository->add(
-            timeLog: $timeLog,
-            flush: $flush
-        );
-
-        return $timeLog;
+        return TimeLogWriteResult::created($timeLog);
     }
 
     /**
      * @throws \Exception
      */
-    final public function edit(
+    final public function update(
         string $taskId,
         string $id,
-        ?TimeLogRequest $timeLogRequest = null,
-        ?TimeLog $timeLog = null,
+        TimeLogRequest $timeLogRequest,
         bool $flush = true,
-    ): ?TimeLog {
-        switch (true) {
-            case !$timeLogRequest && !$timeLog:
-                throw new \RuntimeException(self::NO_DATA_PROVIDED);
-            case (!$timeLogRequest && $timeLog) && !$timeLog instanceof TimeLog:
-                return null;
-
-            case $timeLogRequest && !$timeLog:
-                $timeLog = $this->timeLogRepository->findOneBy(
-                    [
-                        'id' => $id,
-                        'task' => $taskId,
-                    ]
-                );
-
-                if (!$timeLog instanceof TimeLog) {
-                    return null;
-                }
-
-                $timeLog = TimeLogFactory::create(
-                    timeLogRequest: $timeLogRequest,
-                    timeLog: $timeLog
-                );
-                break;
-
-            case $timeLogRequest && $timeLog:
-                if (!$timeLog instanceof TimeLog) {
-                    return null;
-                }
-
-                $timeLog = TimeLogFactory::create(
-                    timeLogRequest: $timeLogRequest,
-                    timeLog: $timeLog
-                );
-        }
-
-        if ($flush) {
-            $this->timeLogRepository->flush();
-        }
-
-        return $timeLog;
-    }
-
-    final public function delete(
-        string $taskId,
-        string $id,
-        bool $flush = true,
-    ): bool {
+    ): TimeLogWriteResult {
         $timeLog = $this->timeLogRepository->findOneBy(
             [
                 'id' => $id,
@@ -139,40 +104,121 @@ class TimeLogService
         );
 
         if (!$timeLog instanceof TimeLog) {
-            return false;
+            return TimeLogWriteResult::notFound();
         }
 
-        $this->timeLogRepository->remove(
-            timeLog: $timeLog,
-            flush: $flush
+        $task = $this->task((string) $timeLogRequest->getTask());
+
+        if (!$task instanceof Task) {
+            return TimeLogWriteResult::notFound();
+        }
+
+        try {
+            $timeLog = TimeLogFactory::create(
+                timeLogRequest: $timeLogRequest,
+                task: $task,
+                dateInputParser: $this->dateInputParser(),
+                timeLog: $timeLog
+            );
+
+            if ($flush) {
+                $this->timeLogRepository->flush();
+            }
+        } catch (\Exception) {
+            return TimeLogWriteResult::failed();
+        }
+
+        return TimeLogWriteResult::updated($timeLog);
+    }
+
+    final public function remove(
+        string $taskId,
+        string $id,
+        bool $flush = true,
+    ): TimeLogWriteResult {
+        $timeLog = $this->timeLogRepository->findOneBy(
+            [
+                'id' => $id,
+                'task' => $taskId,
+            ]
         );
 
-        return true;
+        if (!$timeLog instanceof TimeLog) {
+            return TimeLogWriteResult::notFound();
+        }
+
+        try {
+            $this->timeLogRepository->remove(
+                timeLog: $timeLog,
+                flush: $flush
+            );
+        } catch (\Exception) {
+            return TimeLogWriteResult::failed();
+        }
+
+        return TimeLogWriteResult::deleted();
+    }
+
+    final public function start(
+        string $taskId,
+        bool $flush = true,
+    ): TimeLogWriteResult {
+        $task = $this->task($taskId);
+
+        if (!$task instanceof Task) {
+            return TimeLogWriteResult::notFound();
+        }
+
+        try {
+            $timeLog = $this->startTaskTimeLog($task, $flush);
+        } catch (\Exception) {
+            return TimeLogWriteResult::failed();
+        }
+
+        return TimeLogWriteResult::created($timeLog);
+    }
+
+    final public function stop(
+        string $taskId,
+        bool $flush = true,
+    ): TimeLogWriteResult {
+        $task = $this->task($taskId);
+
+        if (!$task instanceof Task) {
+            return TimeLogWriteResult::notFound();
+        }
+
+        try {
+            $timeLog = $this->stopTaskTimeLog($task, $flush);
+        } catch (\Exception) {
+            return TimeLogWriteResult::failed();
+        }
+
+        return $timeLog instanceof TimeLog ? TimeLogWriteResult::updated($timeLog) : TimeLogWriteResult::failed();
     }
 
     /**
      * @throws \Exception
      */
-    final public function startTaskTimeLog(
+    private function startTaskTimeLog(
         Task $task,
         bool $flush = true,
-    ): ?TimeLog {
+    ): TimeLog {
         $this->stopAllRunningTimeLogs();
 
         $timeLog = new TimeLog();
         $timeLog->setTask($task)
             ->setStartTime(new \DateTimeImmutable());
 
-        return $this->new(
-            timeLog: $timeLog,
-            flush: $flush
-        );
+        $this->timeLogRepository->save($timeLog, $flush);
+
+        return $timeLog;
     }
 
     /**
      * @throws \Exception
      */
-    final public function stopTaskTimeLog(
+    private function stopTaskTimeLog(
         Task $task,
         bool $flush = true,
     ): ?TimeLog {
@@ -187,12 +233,11 @@ class TimeLogService
 
         $timeLog->setEndTime(new \DateTimeImmutable());
 
-        return $this->edit(
-            taskId: $task->getId(),
-            id: $timeLog->getId(),
-            timeLog: $timeLog,
-            flush: $flush
-        );
+        if ($flush) {
+            $this->timeLogRepository->flush();
+        }
+
+        return $timeLog;
     }
 
     /**
@@ -201,5 +246,15 @@ class TimeLogService
     final public function stopAllRunningTimeLogs(): int|string
     {
         return $this->timeLogRepository->stopAllRunningTimeLogs();
+    }
+
+    private function task(string $taskId): ?Task
+    {
+        return $this->taskService->show($taskId);
+    }
+
+    private function dateInputParser(): DateInputParser
+    {
+        return $this->dateInputParser;
     }
 }

@@ -7,13 +7,11 @@ namespace App\Controller\API\Task\TimeLog;
 use App\Controller\API\BaseApiController;
 use App\Controller\API\Task\TaskController;
 use App\Dto\Task\TimeLog\TimeLogRequest;
-use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
-use App\Service\DateTime\DateInputParser;
-use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
+use App\Service\Task\TimeLog\TimeLogWriteResult;
+use App\Service\Task\TimeLog\TimeLogWriteStatus;
 use OpenApi\Attributes as OA;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,7 +21,6 @@ use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Throwable;
 
 #[Route(
     path: '/api/task/{taskId}/time-log',
@@ -42,9 +39,6 @@ class TimeLogController extends BaseApiController
 
     public function __construct(
         private readonly TimeLogService $timeLogService,
-        private readonly TaskService $taskService,
-        private readonly DateInputParser $dateInputParser,
-        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -97,7 +91,7 @@ class TimeLogController extends BaseApiController
     ): JsonResponse {
         $timeLogs = $this->timeLogService->list(taskId: $taskId);
 
-        if (empty($timeLogs) || [] === $timeLogs) {
+        if (empty($timeLogs)) {
             return $this->jsonApi(
                 errors: [self::TIME_LOGS_NOT_FOUND],
                 status: Response::HTTP_NOT_FOUND
@@ -230,10 +224,7 @@ class TimeLogController extends BaseApiController
         Request $request,
     ): JsonResponse {
         try {
-            $timeLogRequest = new TimeLogRequest(
-                taskService: $this->taskService,
-                dateInputParser: $this->dateInputParser,
-            );
+            $timeLogRequest = (new TimeLogRequest())->setTask($taskId);
             $timeLogRequest = $serializer->deserialize(
                 data: $request->getContent(),
                 type: TimeLogRequest::class,
@@ -243,14 +234,7 @@ class TimeLogController extends BaseApiController
                 ]
             );
         } catch (UnexpectedValueException) {
-            return $this->jsonApi(
-                errors: [self::BAD_REQUEST],
-                status: Response::HTTP_BAD_REQUEST
-            );
-        }
-
-        if (null === $timeLogRequest->getTask()) {
-            $timeLogRequest->setTask($taskId);
+            return $this->badRequestJsonApi();
         }
 
         $errors = $validator->validate(
@@ -265,27 +249,10 @@ class TimeLogController extends BaseApiController
             );
         }
 
-        try {
-            $timeLog = $this->timeLogService->new($timeLogRequest);
-        } catch (Throwable $throwable) {
-            $this->logger->error(
-                'Failed to create time log.',
-                [
-                    'taskId' => $taskId,
-                    'requestStartTime' => $timeLogRequest->getStartTime(),
-                    'requestEndTime' => $timeLogRequest->getEndTime(),
-                    'exception' => $throwable,
-                ]
-            );
-
-            return $this->jsonApi(
-                errors: [self::CANNOT_CREATE_TIME_LOG],
-                status: Response::HTTP_BAD_REQUEST
-            );
-        }
-
-        return $this->jsonApi(
-            $timeLog
+        return $this->writeResultResponse(
+            result: $this->timeLogService->create($timeLogRequest),
+            failureMessage: self::CANNOT_CREATE_TIME_LOG,
+            notFoundMessage: TaskController::TASK_NOT_FOUND
         );
     }
 
@@ -371,10 +338,7 @@ class TimeLogController extends BaseApiController
         Request $request,
     ): JsonResponse {
         try {
-            $timeLogRequest = new TimeLogRequest(
-                taskService: $this->taskService,
-                dateInputParser: $this->dateInputParser,
-            );
+            $timeLogRequest = (new TimeLogRequest())->setTask($taskId);
             $timeLogRequest = $serializer->deserialize(
                 data: $request->getContent(),
                 type: TimeLogRequest::class,
@@ -384,10 +348,7 @@ class TimeLogController extends BaseApiController
                 ]
             );
         } catch (UnexpectedValueException) {
-            return $this->jsonApi(
-                errors: [self::BAD_REQUEST],
-                status: Response::HTTP_BAD_REQUEST
-            );
+            return $this->badRequestJsonApi();
         }
 
         $errors = $validator->validate(
@@ -395,46 +356,21 @@ class TimeLogController extends BaseApiController
             groups: ['update']
         );
 
-        if ((is_countable($errors) ? \count($errors) : 0) > 0) {
+        if (\count($errors) > 0) {
             return $this->validationErrorJsonApi(
                 constraintViolationList: $errors,
                 status: Response::HTTP_NOT_ACCEPTABLE
             );
         }
 
-        try {
-            $timeLog = $this->timeLogService->edit(
+        return $this->writeResultResponse(
+            result: $this->timeLogService->update(
                 taskId: $taskId,
                 id: $id,
                 timeLogRequest: $timeLogRequest
-            );
-        } catch (Throwable $throwable) {
-            $this->logger->error(
-                'Failed to update time log.',
-                [
-                    'taskId' => $taskId,
-                    'timeLogId' => $id,
-                    'requestStartTime' => $timeLogRequest->getStartTime(),
-                    'requestEndTime' => $timeLogRequest->getEndTime(),
-                    'exception' => $throwable,
-                ]
-            );
-
-            return $this->jsonApi(
-                errors: [self::CANNOT_UPDATE_TIME_LOG],
-                status: Response::HTTP_BAD_REQUEST
-            );
-        }
-
-        if (!$timeLog instanceof TimeLog) {
-            return $this->jsonApi(
-                errors: [self::TIME_LOG_NOT_FOUND],
-                status: Response::HTTP_NOT_FOUND
-            );
-        }
-
-        return $this->jsonApi(
-            $timeLog
+            ),
+            failureMessage: self::CANNOT_UPDATE_TIME_LOG,
+            notFoundMessage: self::TIME_LOG_NOT_FOUND
         );
     }
 
@@ -493,27 +429,11 @@ class TimeLogController extends BaseApiController
         string $taskId,
         string $id
     ): JsonResponse {
-        try {
-            $status = $this->timeLogService->delete(
+        return $this->deleteResultResponse(
+            $this->timeLogService->remove(
                 taskId: $taskId,
                 id: $id
-            );
-        } catch (Exception) {
-            return $this->jsonApi(
-                errors: [self::CANNOT_DELETE_TIME_LOG],
-                status: Response::HTTP_BAD_REQUEST
-            );
-        }
-
-        if (!$status) {
-            return $this->jsonApi(
-                errors: [self::TIME_LOG_NOT_FOUND],
-                status: Response::HTTP_NOT_FOUND
-            );
-        }
-
-        return $this->jsonApi(
-            status: Response::HTTP_NO_CONTENT
+            )
         );
     }
 
@@ -546,20 +466,7 @@ class TimeLogController extends BaseApiController
     final public function startNewTimeLog(
         string $taskId,
     ): JsonResponse {
-        $task = $this->taskService->show($taskId);
-
-        if (!$task instanceof Task) {
-            return $this->jsonApi(
-                errors: [TaskController::TASK_NOT_FOUND],
-                status: Response::HTTP_NOT_FOUND
-            );
-        }
-
-        $timeLog = $this->timeLogService->startTaskTimeLog($task);
-
-        return $this->jsonApi(
-            status: $timeLog ? Response::HTTP_NO_CONTENT : Response::HTTP_CONFLICT,
-        );
+        return $this->lifecycleResultResponse($this->timeLogService->start($taskId));
     }
 
     /**
@@ -591,26 +498,61 @@ class TimeLogController extends BaseApiController
     final public function stopExistingTimeLog(
         string $taskId,
     ): JsonResponse {
-        $task = $this->taskService->show($taskId);
+        return $this->lifecycleResultResponse($this->timeLogService->stop($taskId));
+    }
 
-        if (!$task instanceof Task) {
+    private function writeResultResponse(
+        TimeLogWriteResult $result,
+        string $failureMessage,
+        string $notFoundMessage,
+    ): JsonResponse {
+        if (TimeLogWriteStatus::Failed === $result->status) {
+            return $this->jsonApi(
+                errors: [$failureMessage],
+                status: Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        if (TimeLogWriteStatus::NotFound === $result->status) {
+            return $this->jsonApi(
+                errors: [$notFoundMessage],
+                status: Response::HTTP_NOT_FOUND
+            );
+        }
+
+        return $this->jsonApi($result->timeLog);
+    }
+
+    private function deleteResultResponse(TimeLogWriteResult $result): JsonResponse
+    {
+        if (TimeLogWriteStatus::Failed === $result->status) {
+            return $this->jsonApi(
+                errors: [self::CANNOT_DELETE_TIME_LOG],
+                status: Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        if (TimeLogWriteStatus::NotFound === $result->status) {
+            return $this->jsonApi(
+                errors: [self::TIME_LOG_NOT_FOUND],
+                status: Response::HTTP_NOT_FOUND
+            );
+        }
+
+        return $this->jsonApi(status: Response::HTTP_NO_CONTENT);
+    }
+
+    private function lifecycleResultResponse(TimeLogWriteResult $result): JsonResponse
+    {
+        if (TimeLogWriteStatus::NotFound === $result->status) {
             return $this->jsonApi(
                 errors: [TaskController::TASK_NOT_FOUND],
                 status: Response::HTTP_NOT_FOUND
             );
         }
 
-        $timeLog = $this->timeLogService->stopTaskTimeLog($task);
-
-        if (!$timeLog instanceof TimeLog) {
-            return $this->jsonApi(
-                errors: ['Problems stopping Task TimeLog!'],
-                status: Response::HTTP_CONFLICT
-            );
-        }
-
         return $this->jsonApi(
-            status: Response::HTTP_NO_CONTENT,
+            status: TimeLogWriteStatus::Failed === $result->status ? Response::HTTP_CONFLICT : Response::HTTP_NO_CONTENT,
         );
     }
 }

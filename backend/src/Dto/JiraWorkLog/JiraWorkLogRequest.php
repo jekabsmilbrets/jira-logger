@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Dto\JiraWorkLog;
 
-use App\Entity\Task\Task;
-use App\Service\Task\TaskService;
 use OpenApi\Attributes as OA;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -31,9 +29,10 @@ class JiraWorkLogRequest
         Assert\NotNull(groups: ['create', 'update']),
         Assert\NotBlank(groups: ['create', 'update']),
         Assert\Type(
-            type: Task::class,
+            type: 'string',
             groups: ['create', 'update'],
         ),
+        Assert\Uuid(groups: ['create', 'update']),
         OA\Property(
             description: 'UUID of the Task',
             type: 'uuid',
@@ -41,7 +40,7 @@ class JiraWorkLogRequest
             nullable: false
         )
     ]
-    private ?Task $task = null;
+    private ?string $task = null;
 
     #[
         Groups(['create', 'update']),
@@ -60,11 +59,6 @@ class JiraWorkLogRequest
     ]
     private ?int $timeSpentSeconds = null;
 
-    public function __construct(
-        private readonly TaskService $taskService,
-    ) {
-    }
-
     final public function getDescription(): ?string
     {
         return $this->description;
@@ -77,16 +71,20 @@ class JiraWorkLogRequest
         return $this;
     }
 
-    final public function getTask(): ?Task
+    final public function getTask(): ?string
     {
         return $this->task;
     }
 
-    final public function setTask(?string $taskId): self
+    final public function setTask(mixed $taskId): self
     {
-        if (($task = $this->taskService->show($taskId)) !== null) {
-            $this->task = $task;
+        if (!\is_scalar($taskId)) {
+            $this->task = '';
+
+            return $this;
         }
+
+        $this->task = (string) $taskId;
 
         return $this;
     }

@@ -6,11 +6,13 @@ namespace App\Factory\JiraWorkLog;
 
 use App\Dto\JiraWorkLog\JiraWorkLogRequest;
 use App\Entity\JiraWorkLog\JiraWorkLog;
+use App\Entity\Task\Task;
 
 class JiraWorkLogFactory
 {
     final public static function create(
         JiraWorkLogRequest $jiraWorkLogRequest,
+        Task $task,
         ?JiraWorkLog $jiraWorkLog = null,
     ): JiraWorkLog {
         if (null === $jiraWorkLog) {
@@ -21,9 +23,7 @@ class JiraWorkLogFactory
             $jiraWorkLog->setDescription($description);
         }
 
-        if (null !== ($task = $jiraWorkLogRequest->getTask())) {
-            $jiraWorkLog->setTask($task);
-        }
+        $jiraWorkLog->setTask($task);
 
         if (null !== ($timeSpentSeconds = $jiraWorkLogRequest->getTimeSpentSeconds())) {
             $jiraWorkLog->setTimeSpentSeconds($timeSpentSeconds);

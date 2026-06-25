@@ -8,8 +8,8 @@ use App\Controller\API\BaseApiController;
 use App\Dto\JiraWorkLog\JiraWorkLogRequest;
 use App\Entity\JiraWorkLog\JiraWorkLog;
 use App\Service\JiraWorkLog\JiraWorkLogService;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
-use Exception;
+use App\Service\JiraWorkLog\JiraWorkLogWriteResult;
+use App\Service\JiraWorkLog\JiraWorkLogWriteStatus;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -242,22 +242,9 @@ class JiraWorkLogController extends BaseApiController
             );
         }
 
-        try {
-            $jiraWorkLog = $this->jiraWorkLogService->new($jiraWorkLogRequest);
-        } /* @noinspection PhpRedundantCatchClauseInspection */ catch (UniqueConstraintViolationException) {
-            return $this->jsonApi(
-                errors: [self::DUPLICATE_JIRA_WORK_LOG_NAME],
-                status: 400
-            );
-        } catch (Exception) {
-            return $this->jsonApi(
-                errors: [self::CANNOT_CREATE_JIRA_WORK_LOG],
-                status: 400
-            );
-        }
-
-        return $this->jsonApi(
-            $jiraWorkLog
+        return $this->writeResultResponse(
+            $this->jiraWorkLogService->new($jiraWorkLogRequest),
+            self::CANNOT_CREATE_JIRA_WORK_LOG
         );
     }
 
@@ -367,27 +354,12 @@ class JiraWorkLogController extends BaseApiController
             );
         }
 
-        try {
-            $jiraWorkLog = $this->jiraWorkLogService->edit(
+        return $this->writeResultResponse(
+            $this->jiraWorkLogService->edit(
                 id: $id,
                 jiraWorkLogRequest: $jiraWorkLogRequest
-            );
-        } catch (Exception) {
-            return $this->jsonApi(
-                errors: [self::CANNOT_UPDATE_JIRA_WORK_LOG],
-                status: 400
-            );
-        }
-
-        if (!$jiraWorkLog instanceof JiraWorkLog) {
-            return $this->jsonApi(
-                errors: [self::JIRA_WORK_LOG_NOT_FOUND],
-                status: 404
-            );
-        }
-
-        return $this->jsonApi(
-            $jiraWorkLog
+            ),
+            self::CANNOT_UPDATE_JIRA_WORK_LOG
         );
     }
 
@@ -446,16 +418,16 @@ class JiraWorkLogController extends BaseApiController
         string $id
     ): JsonResponse
     {
-        try {
-            $status = $this->jiraWorkLogService->delete($id);
-        } catch (Exception) {
+        $result = $this->jiraWorkLogService->delete($id);
+
+        if (JiraWorkLogWriteStatus::Failed === $result->status) {
             return $this->jsonApi(
                 errors: [self::CANNOT_DELETE_JIRA_WORK_LOG],
                 status: 400
             );
         }
 
-        if (!$status) {
+        if (JiraWorkLogWriteStatus::NotFound === $result->status) {
             return $this->jsonApi(
                 errors: [self::JIRA_WORK_LOG_NOT_FOUND],
                 status: 404
@@ -465,5 +437,33 @@ class JiraWorkLogController extends BaseApiController
         return $this->jsonApi(
             status: 204
         );
+    }
+
+    private function writeResultResponse(
+        JiraWorkLogWriteResult $result,
+        string $failureMessage,
+    ): JsonResponse {
+        if (JiraWorkLogWriteStatus::Duplicate === $result->status) {
+            return $this->jsonApi(
+                errors: [self::DUPLICATE_JIRA_WORK_LOG_NAME],
+                status: 400
+            );
+        }
+
+        if (JiraWorkLogWriteStatus::Failed === $result->status) {
+            return $this->jsonApi(
+                errors: [$failureMessage],
+                status: 400
+            );
+        }
+
+        if (JiraWorkLogWriteStatus::NotFound === $result->status) {
+            return $this->jsonApi(
+                errors: [self::JIRA_WORK_LOG_NOT_FOUND],
+                status: 404
+            );
+        }
+
+        return $this->jsonApi($result->jiraWorkLog);
     }
 }

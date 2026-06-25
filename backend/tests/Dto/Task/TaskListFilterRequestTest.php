@@ -5,22 +5,13 @@ declare(strict_types=1);
 namespace App\Tests\Dto\Task;
 
 use App\Dto\Task\TaskListFilterRequest;
-use App\Service\DateTime\DateInputParser;
-use App\Service\DateTime\UserTimezoneResolver;
 use PHPUnit\Framework\TestCase;
 
 class TaskListFilterRequestTest extends TestCase
 {
     private function createRequest(): TaskListFilterRequest
     {
-        $timezoneResolver = $this->createMock(UserTimezoneResolver::class);
-        $timezoneResolver
-            ->method('resolveCurrentUserTimezone')
-            ->willReturn('Europe/Riga');
-
-        return new TaskListFilterRequest(
-            new DateInputParser($timezoneResolver, 'UTC')
-        );
+        return new TaskListFilterRequest();
     }
 
     public function testHideUnreportedSupportsBooleanStringTrue(): void
@@ -39,28 +30,28 @@ class TaskListFilterRequestTest extends TestCase
         self::assertFalse($request->getHideUnreported());
     }
 
-    public function testDateSupportsUnixTimestampMilliseconds(): void
+    public function testDateStoresUnixTimestampMilliseconds(): void
     {
         $request = $this->createRequest();
         $request->setDate('1735689600000');
 
-        self::assertSame('2025-01-01', $request->getDate());
+        self::assertSame('1735689600000', $request->getDate());
     }
 
-    public function testStartDateSupportsIsoDateTime(): void
+    public function testStartDateStoresIsoDateTime(): void
     {
         $request = $this->createRequest();
         $request->setStartDate('2026-05-31T14:30:45Z');
 
-        self::assertSame('2026-05-31 17:30:45', $request->getStartDate());
+        self::assertSame('2026-05-31T14:30:45Z', $request->getStartDate());
     }
 
-    public function testEndDateSupportsEuSlashDate(): void
+    public function testEndDateStoresEuSlashDate(): void
     {
         $request = $this->createRequest();
         $request->setEndDate('31/05/2026');
 
-        self::assertSame('2026-05-31', $request->getEndDate());
+        self::assertSame('31/05/2026', $request->getEndDate());
     }
 
     public function testRangeDateOnlyInputsStayDateOnly(): void

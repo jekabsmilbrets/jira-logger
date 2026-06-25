@@ -6,8 +6,17 @@ namespace App\Tests\Service\Task\TimeLog;
 
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
+use App\Repository\Task\TaskRepository;
 use App\Repository\Task\TimeLog\TimeLogRepository;
+use App\Service\DateTime\DateInputParser;
+use App\Service\DateTime\TaskFilterDateRangeResolver;
+use App\Service\Task\Filter\TaskFilterCriteriaFactory;
+use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
+use App\Service\Task\Projection\TaskListProjection;
+use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
+use App\Service\Task\TimeLog\TimeLogWriteStatus;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
 class TimeLogServiceTest extends TestCase
@@ -18,59 +27,91 @@ class TimeLogServiceTest extends TestCase
         $reflectionProperty->setValue($entity, $id);
     }
 
-    public function testStartTaskTimeLogStopsAllRunningTimeLogsGlobally(): void
+    private function serviceWithTask(TimeLogRepository $timeLogRepository, ?Task $task): TimeLogService
     {
-        $repository = $this->createMock(TimeLogRepository::class);
+        $taskRepository = $this->createMock(TaskRepository::class);
+        $taskRepository->method('find')->willReturn($task);
+
+        return new TimeLogService(
+            $timeLogRepository,
+            new TaskService(
+                $taskRepository,
+                new TaskFilterCriteriaFactory($this->createMock(TaskFilterDateRangeResolver::class)),
+                $this->createMock(TaskJiraSyncAdapter::class),
+                new TaskListProjection(),
+            ),
+            $this->createMock(DateInputParser::class),
+        );
+    }
+
+    public function testStartStopsAllRunningTimeLogsGlobally(): void
+    {
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects(self::once())->method('persist');
+        $repository = $this->getMockBuilder(TimeLogRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getEntityManager', 'stopAllRunningTimeLogs'])
+            ->getMock();
+        $repository->method('getEntityManager')->willReturn($entityManager);
         $repository->expects(self::once())
             ->method('stopAllRunningTimeLogs')
             ->willReturn(1);
-        $repository->expects(self::once())
-            ->method('add');
 
-        $service = new TimeLogService($repository);
         $task = new Task();
+        $service = $this->serviceWithTask($repository, $task);
 
-        $timeLog = $service->startTaskTimeLog($task, false);
+        $result = $service->start('task-id', false);
+        $timeLog = $result->timeLog;
 
+        self::assertSame(TimeLogWriteStatus::Created, $result->status);
         self::assertInstanceOf(TimeLog::class, $timeLog);
         self::assertSame($task, $timeLog->getTask());
         self::assertNull($timeLog->getEndTime());
         self::assertInstanceOf(\DateTimeImmutable::class, $timeLog->getStartTime());
     }
 
-    public function testStopTaskTimeLogReturnsNullWhenTaskHasNoTimeLogs(): void
+    public function testStartReturnsNotFoundWhenTaskDoesNotExist(): void
     {
-        $service = new TimeLogService($this->createMock(TimeLogRepository::class));
-        $task = new Task();
+        $service = $this->serviceWithTask($this->createMock(TimeLogRepository::class), null);
 
-        self::assertNull($service->stopTaskTimeLog($task, false));
+        self::assertSame(TimeLogWriteStatus::NotFound, $service->start('missing-task')->status);
     }
 
-    public function testStopTaskTimeLogReturnsNullWhenLastTimeLogAlreadyStopped(): void
+    public function testStopReturnsFailedWhenTaskHasNoTimeLogs(): void
     {
-        $service = new TimeLogService($this->createMock(TimeLogRepository::class));
+        $task = new Task();
+        $service = $this->serviceWithTask($this->createMock(TimeLogRepository::class), $task);
+
+        self::assertSame(TimeLogWriteStatus::Failed, $service->stop('task-id', false)->status);
+    }
+
+    public function testStopReturnsFailedWhenLastTimeLogAlreadyStopped(): void
+    {
         $task = new Task();
         $timeLog = (new TimeLog())
             ->setStartTime(new \DateTime('2026-05-30 09:00:00'))
             ->setEndTime(new \DateTime('2026-05-30 10:00:00'));
         $task->addTimeLog($timeLog);
+        $service = $this->serviceWithTask($this->createMock(TimeLogRepository::class), $task);
 
-        self::assertNull($service->stopTaskTimeLog($task, false));
+        self::assertSame(TimeLogWriteStatus::Failed, $service->stop('task-id', false)->status);
     }
 
-    public function testStopTaskTimeLogSetsImmutableEndTimeForOpenLog(): void
+    public function testStopSetsImmutableEndTimeForOpenLog(): void
     {
         $repository = $this->createMock(TimeLogRepository::class);
-        $service = new TimeLogService($repository);
         $task = new Task();
         $timeLog = (new TimeLog())
             ->setStartTime(new \DateTimeImmutable('2026-05-30 09:00:00'));
         $this->assignEntityId($task, '5640e2d4-eff2-4f53-8e71-8cd305530f7f');
         $this->assignEntityId($timeLog, 'f9d3d0b5-d71b-4758-b762-9b27c6125d20');
         $task->addTimeLog($timeLog);
+        $service = $this->serviceWithTask($repository, $task);
 
-        $updatedTimeLog = $service->stopTaskTimeLog($task, false);
+        $result = $service->stop('task-id', false);
+        $updatedTimeLog = $result->timeLog;
 
+        self::assertSame(TimeLogWriteStatus::Updated, $result->status);
         self::assertSame($timeLog, $updatedTimeLog);
         self::assertInstanceOf(\DateTimeImmutable::class, $updatedTimeLog?->getEndTime());
     }

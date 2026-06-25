@@ -10,9 +10,11 @@ use App\Repository\Task\TaskRepository;
 use App\Repository\Task\TimeLog\TimeLogRepository;
 use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
+use App\Service\Task\Filter\TaskFilterCriteriaFactory;
+use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
+use App\Service\Task\Projection\TaskListProjection;
 use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
-use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Container;
 
@@ -21,13 +23,16 @@ class TimeLogControllerTest extends TestCase
     private function controllerWith(TimeLogRepository $timeLogRepository): TimeLogController
     {
         $controller = new TimeLogController(
-            new TimeLogService($timeLogRepository),
-            new TaskService(
-                $this->createMock(TaskRepository::class),
-                $this->createMock(TaskFilterDateRangeResolver::class),
+            new TimeLogService(
+                $timeLogRepository,
+                new TaskService(
+                    $this->createMock(TaskRepository::class),
+                    new TaskFilterCriteriaFactory($this->createMock(TaskFilterDateRangeResolver::class)),
+                    $this->createMock(TaskJiraSyncAdapter::class),
+                    new TaskListProjection(),
+                ),
+                $this->createMock(DateInputParser::class),
             ),
-            $this->createMock(DateInputParser::class),
-            new NullLogger(),
         );
         $controller->setContainer(new Container());
 

@@ -25,11 +25,6 @@ class SettingRepository extends ServiceEntityRepository
         parent::__construct($registry, Setting::class);
     }
 
-    final public function add(Setting $entity, bool $flush = false): void
-    {
-        $this->save($entity, $flush);
-    }
-
     final public function save(Setting $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);
@@ -53,28 +48,4 @@ class SettingRepository extends ServiceEntityRepository
         }
     }
 
-//    /**
-//     * @return Setting[] Returns an array of Setting objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('s')
-//            ->andWhere('s.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('s.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?Setting
-//    {
-//        return $this->createQueryBuilder('s')
-//            ->andWhere('s.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
 }
