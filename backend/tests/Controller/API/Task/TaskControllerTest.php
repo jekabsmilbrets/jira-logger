@@ -12,6 +12,7 @@ use App\Service\Tag\TagService;
 use App\Service\Task\Filter\TaskFilterCriteriaFactory;
 use App\Service\Task\Input\TaskInputFactory;
 use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
+use App\Service\Task\Projection\TaskListProjection;
 use App\Service\Task\TaskService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\ConstraintViolation;
@@ -54,6 +55,7 @@ class TaskControllerTest extends TestCase
             $taskRepository ?? $this->getMockBuilder(TaskRepository::class)->disableOriginalConstructor()->getMock(),
             new TaskFilterCriteriaFactory($taskFilterDateRangeResolver),
             $this->createMock(TaskJiraSyncAdapter::class),
+            new TaskListProjection(),
         );
     }
 

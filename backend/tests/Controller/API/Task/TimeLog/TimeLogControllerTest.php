@@ -12,6 +12,7 @@ use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\Task\Filter\TaskFilterCriteriaFactory;
 use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
+use App\Service\Task\Projection\TaskListProjection;
 use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
 use PHPUnit\Framework\TestCase;
@@ -28,6 +29,7 @@ class TimeLogControllerTest extends TestCase
                     $this->createMock(TaskRepository::class),
                     new TaskFilterCriteriaFactory($this->createMock(TaskFilterDateRangeResolver::class)),
                     $this->createMock(TaskJiraSyncAdapter::class),
+                    new TaskListProjection(),
                 ),
                 $this->createMock(DateInputParser::class),
             ),

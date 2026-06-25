@@ -11,6 +11,7 @@ use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\Task\Filter\TaskFilterCriteriaFactory;
 use App\Service\Task\Input\TaskInput;
 use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
+use App\Service\Task\Projection\TaskListProjection;
 use App\Service\Task\TaskService;
 use App\Service\Task\Write\TaskWriteStatus;
 use Doctrine\DBAL\Driver\Exception as DriverException;
@@ -147,6 +148,7 @@ class TaskServiceWriteTest extends TestCase
             $repository,
             new TaskFilterCriteriaFactory($this->createMock(TaskFilterDateRangeResolver::class)),
             $this->createMock(TaskJiraSyncAdapter::class),
+            new TaskListProjection(),
         );
     }
 
