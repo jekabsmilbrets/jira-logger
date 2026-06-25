@@ -1,11 +1,13 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Service } from '@angular/core';
+import { inject, Service, type WritableSignal } from '@angular/core';
 
 import { map, type Observable } from 'rxjs';
 
 import { environment } from '@environments/environment';
 
 import type { JsonApi } from '@core/interfaces/json-api.interface';
+import type { RequestGate } from '@core/utilities/request-gate.utility';
+import { runGatedRequest } from '@core/utilities/run-gated-request.utility';
 
 import type { ApiRequestBody } from '@shared/types/api-request-body.type';
 
@@ -49,5 +51,26 @@ export class ApiRequestService {
       .pipe(
         map((response: JsonApi<TData>) => (response.data ?? null) as TData),
       );
+  }
+
+  public resourceRequest<T>(
+    resourcePath: string,
+    suffix: string,
+    requestGate: RequestGate,
+    isLoadingSignal: WritableSignal<boolean>,
+    method: 'get' | 'post' | 'patch' | 'delete' = 'get',
+    body: ApiRequestBody | null = null,
+    processError?: (error: unknown) => Observable<T>,
+  ): Observable<T> {
+    return runGatedRequest(
+      requestGate,
+      isLoadingSignal,
+      this.request<T>(
+        this.buildApiUrl(resourcePath, suffix),
+        method,
+        body,
+      ),
+      processError,
+    );
   }
 }

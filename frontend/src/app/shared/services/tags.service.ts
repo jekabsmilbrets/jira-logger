@@ -6,7 +6,6 @@ import { catchError, map, type Observable, of, switchMap, take, tap } from 'rxjs
 import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { RequestGate } from '@core/utilities/request-gate.utility';
-import { runGatedRequest } from '@core/utilities/run-gated-request.utility';
 
 import { adaptTag, adaptTags } from '@shared/adapters/api-tag.adapter';
 import type { ApiTag } from '@shared/interfaces/api/api-tag.interface';
@@ -44,10 +43,8 @@ export class TagsService implements LoadableService, MakeRequestService {
   }
 
   public list(): Observable<Tag[]> {
-    const url: string = this.apiRequestService.buildApiUrl(this.basePath);
-
     return this.makeRequest<JsonApi<ApiTag[]>>(
-      url,
+      '',
       'get',
       null,
       false,
@@ -81,14 +78,12 @@ export class TagsService implements LoadableService, MakeRequestService {
     tag: Tag,
     skipReload: boolean = false,
   ): Observable<Tag> {
-    const url: string = this.apiRequestService.buildApiUrl(this.basePath);
-
     const body: ApiRequestBody = {
       name: tag.name && tag.name.trim(),
     };
 
     return this.makeRequest<JsonApi<ApiTag>>(
-      url,
+      '',
       'post',
       body,
       true,
@@ -103,15 +98,13 @@ export class TagsService implements LoadableService, MakeRequestService {
     tag: Tag,
     skipReload: boolean = false,
   ): Observable<Tag> {
-    const url: string = this.apiRequestService.buildApiUrl(this.basePath, `/${ tag.id }`);
-
     const body: ApiRequestBody = {
       id: tag.id,
       name: tag.name && tag.name.trim(),
     };
 
     return this.makeRequest<JsonApi<ApiTag>>(
-      url,
+      `/${ tag.id }`,
       'patch',
       body,
       true,
@@ -126,10 +119,8 @@ export class TagsService implements LoadableService, MakeRequestService {
     tag: Tag,
     skipReload: boolean = false,
   ): Observable<void> {
-    const url: string = this.apiRequestService.buildApiUrl(this.basePath, `/${ tag.id }`);
-
     return this.makeRequest<void>(
-      url,
+      `/${ tag.id }`,
       'delete',
       null,
       true,
@@ -145,15 +136,16 @@ export class TagsService implements LoadableService, MakeRequestService {
     body: ApiRequestBody | null = null,
     reportError: boolean = false,
   ): Observable<T> {
-    const request$: Observable<T> = this.apiRequestService.request<T>(url, method, body);
-
-    return runGatedRequest(
+    return this.apiRequestService.resourceRequest<T>(
+      this.basePath,
+      url,
       this.requestGate,
       this.isLoadingSignal,
-      request$,
+      method,
+      body,
       reportError ?
         (error: unknown) => this.processError(error as HttpErrorResponse) as Observable<T> :
-        undefined,
+      undefined,
     );
   }
 

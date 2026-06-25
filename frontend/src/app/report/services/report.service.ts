@@ -1,5 +1,6 @@
 import { formatDate } from '@angular/common';
 import { computed, inject, Service, type Signal } from '@angular/core';
+import type { ParamMap } from '@angular/router';
 
 import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
@@ -11,6 +12,7 @@ import { Task } from '@shared/models/task.model';
 import { reportDateRangeColumns } from '@report/constants/report-date-range-columns.constant';
 import { reportTotalColumns } from '@report/constants/report-total-columns.constant';
 import { ReportMode } from '@report/enums/report-mode.enum';
+import type { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
 import { ReportStateService } from '@report/services/report-state.service';
 import { ReportTaskQueryService } from '@report/services/report-task-query.service';
 import { buildReportTagTotalColumns } from '@report/utilities/build-report-tag-total-columns.utility';
@@ -31,9 +33,65 @@ export class ReportService {
   public readonly showWeekends: Signal<boolean> = this.reportStateService.showWeekends;
   public readonly hideUnreportedTasks: Signal<boolean> = this.reportStateService.hideUnreportedTasks;
   public readonly tasks: Signal<Task[]> = this.reportTaskQueryService.tasks;
+  public readonly state: Signal<ReportStateSnapshot> = computed(() => this.reportStateService.getStateSnapshot());
 
   public reload(): void {
     this.reportTaskQueryService.reload();
+  }
+
+  public updateState(
+    patch: Partial<ReportStateSnapshot>,
+  ): void {
+    if (patch.reportMode !== undefined) {
+      this.setReportMode(patch.reportMode);
+    }
+
+    if (patch.tags !== undefined) {
+      this.setTags(patch.tags);
+    }
+
+    if (patch.date !== undefined) {
+      this.setDate(patch.date);
+    }
+
+    if (patch.startDate !== undefined) {
+      this.setStartDate(patch.startDate);
+    }
+
+    if (patch.endDate !== undefined) {
+      this.setEndDate(patch.endDate);
+    }
+
+    if (patch.showWeekends !== undefined) {
+      this.setShowWeekends(patch.showWeekends);
+    }
+
+    if (patch.hideUnreportedTasks !== undefined) {
+      this.setHideUnreportedTasks(patch.hideUnreportedTasks);
+    }
+  }
+
+  public applyRouteParams(
+    paramMap: ParamMap,
+  ): { shouldRedirect: boolean } {
+    if (paramMap.has('reportMode')) {
+      const reportMode: ReportMode = paramMap.get('reportMode') as ReportMode;
+      this.updateState({
+        reportMode: reportMode in ReportMode ? reportMode : ReportMode.total,
+      });
+    }
+
+    if (paramMap.has('date')) {
+      const date: Date = new Date(paramMap.get('date') as string);
+
+      if (isFinite(+date)) {
+        this.updateState({ date });
+
+        return { shouldRedirect: true };
+      }
+    }
+
+    return { shouldRedirect: false };
   }
 
   public setReportMode(

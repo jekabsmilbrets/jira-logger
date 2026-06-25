@@ -11,20 +11,16 @@ import type { LoadableService } from '@shared/interfaces/loadable-service.interf
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
-import { TagsService } from '@shared/services/tags.service';
-import { TasksService } from '@shared/services/tasks.service';
-import { TimeLogsService } from '@shared/services/time-logs.service';
 
 import type { ImportReport, TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 import type { ImportTaskInput } from '@tasks/interfaces/import-task-input.interface';
+import { TaskImportPersistence } from '@tasks/services/task-import-persistence.service';
 
 @Service()
 export class TaskImportService implements LoadableService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
-  private readonly tagsService: TagsService = inject(TagsService);
-  private readonly tasksService: TasksService = inject(TasksService);
-  private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
+  private readonly persistence: TaskImportPersistence = inject(TaskImportPersistence);
 
   private readonly isLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
 
@@ -79,14 +75,12 @@ export class TaskImportService implements LoadableService {
   private createMissingTags(
     tasks: ImportTaskInput[],
   ): Observable<number> {
-    const existingTagNames: Set<string> = new Set<string>(
-      this.tagsService.tags().map((tag: Tag) => tag.name.trim().toLowerCase()),
-    );
+    const existingTagNames: Set<string> = this.persistence.existingTagNames();
     const missingTagNames: string[] = [];
 
     tasks.forEach((task: ImportTaskInput) => {
       task.tags.forEach((tagName: string) => {
-        const normalizedTagName: string = tagName.trim().toLowerCase();
+        const normalizedTagName: string = this.persistence.normalizeName(tagName);
 
         if (existingTagNames.has(normalizedTagName)) {
           return;
@@ -102,13 +96,11 @@ export class TaskImportService implements LoadableService {
     }
 
     return concat(
-      ...missingTagNames.map((tagName: string) => this.tagsService.create(
-        new Tag({ name: tagName }),
-      )),
+      ...missingTagNames.map((tagName: string) => this.persistence.createTag(tagName)),
     )
       .pipe(
         toArray(),
-        map((tags: Tag[]) => tags.length),
+        map((tags: unknown[]) => tags.length),
       );
   }
 
@@ -150,7 +142,7 @@ export class TaskImportService implements LoadableService {
       timeLogs: [],
     });
 
-    return this.tasksService.create(task)
+    return this.persistence.createTask(task)
       .pipe(
         switchMap((createdTask: Task) => {
           if (input.timeLogs.length === 0) {
@@ -161,7 +153,7 @@ export class TaskImportService implements LoadableService {
           }
 
           return concat(
-            ...input.timeLogs.map((timeLogInput) => this.timeLogsService.create(
+            ...input.timeLogs.map((timeLogInput) => this.persistence.createTimeLog(
               createdTask,
               new TimeLog({
                 startTime: new Date(timeLogInput.startTime),
@@ -184,9 +176,7 @@ export class TaskImportService implements LoadableService {
   private resolveTag(
     tagName: string,
   ): Tag {
-    const existingTag: Tag | undefined = this.tagsService.tags().find(
-      (tag: Tag) => tag.name.trim().toLowerCase() === tagName.trim().toLowerCase(),
-    );
+    const existingTag: Tag | undefined = this.persistence.findTag(tagName);
 
     if (!existingTag) {
       throw new Error(`Missing tag "${ tagName }" after tag creation.`);
@@ -198,12 +188,10 @@ export class TaskImportService implements LoadableService {
   private findExistingDuplicateNames(
     tasks: ImportTaskInput[],
   ): string[] {
-    const existingTaskNames: Set<string> = new Set<string>(
-      this.tasksService.tasks().map((task: Task) => task.name.trim().toLowerCase()),
-    );
+    const existingTaskNames: Set<string> = this.persistence.existingTaskNames();
 
     return tasks
       .map((task: ImportTaskInput) => task.name)
-      .filter((taskName: string) => existingTaskNames.has(taskName.trim().toLowerCase()));
+      .filter((taskName: string) => existingTaskNames.has(this.persistence.normalizeName(taskName)));
   }
 }

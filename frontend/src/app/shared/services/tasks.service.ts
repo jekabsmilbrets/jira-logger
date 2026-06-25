@@ -8,7 +8,6 @@ import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { LocaleService } from '@core/services/locale.service';
 import { RequestGate } from '@core/utilities/request-gate.utility';
-import { runGatedRequest } from '@core/utilities/run-gated-request.utility';
 
 import { adaptTasks } from '@shared/adapters/task.adapter';
 import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
@@ -209,19 +208,16 @@ export class TasksService implements LoadableService, MakeRequestService {
     body: ApiRequestBody | null = null,
     reportError: boolean = false,
   ): Observable<T> {
-    const request$: Observable<T> = this.apiRequestService.request<T>(
-      this.apiRequestService.buildApiUrl(this.basePath, url),
-      method,
-      body,
-    );
-
-    return runGatedRequest(
+    return this.apiRequestService.resourceRequest<T>(
+      this.basePath,
+      url,
       this.requestGate,
       this.isLoadingSignal,
-      request$,
+      method,
+      body,
       reportError ?
         (error: unknown) => this.processError(error) as Observable<T> :
-        undefined,
+      undefined,
     );
   }
 

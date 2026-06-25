@@ -6,7 +6,6 @@ import { catchError, map, type Observable, of, Subject, tap, throwError } from '
 import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
 import { RequestGate } from '@core/utilities/request-gate.utility';
-import { runGatedRequest } from '@core/utilities/run-gated-request.utility';
 
 import { adaptTimeLog, adaptTimeLogs } from '@shared/adapters/time-log.adapter';
 import type { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
@@ -134,16 +133,13 @@ export class TimeLogsService implements LoadableService, MakeRequestService {
     method: 'get' | 'post' | 'patch' | 'delete' = 'get',
     body: ApiRequestBody | null = null,
   ): Observable<T> {
-    const request$: Observable<T> = this.apiRequestService.request<T>(
-      this.apiRequestService.buildApiUrl(this.basePath, url),
-      method,
-      body,
-    );
-
-    return runGatedRequest(
+    return this.apiRequestService.resourceRequest<T>(
+      this.basePath,
+      url,
       this.requestGate,
       this.isLoadingSignal,
-      request$,
+      method,
+      body,
     );
   }
 

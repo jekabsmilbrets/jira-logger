@@ -1,4 +1,3 @@
-import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { of, throwError } from 'rxjs';
@@ -8,29 +7,23 @@ import { LoaderStateService } from '@core/services/loader-state.service';
 
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
-import { TagsService } from '@shared/services/tags.service';
-import { TasksService } from '@shared/services/tasks.service';
-import { TimeLogsService } from '@shared/services/time-logs.service';
 
 import type { TaskImportRequest } from '@tasks/interfaces/import-report.interface';
+import { TaskImportPersistence } from '@tasks/services/task-import-persistence.service';
 
 import { TaskImportService } from './task-import.service';
 
 describe('Tasks Services task-import.service', () => {
   let service: TaskImportService;
 
-  const tasksServiceMock = {
-    create: vi.fn(),
-    tasks: signal<Task[]>([]).asReadonly(),
-  };
-
-  const timeLogsServiceMock = {
-    create: vi.fn(),
-  };
-
-  const tagsServiceMock = {
-    create: vi.fn(),
-    tags: signal<Tag[]>([]).asReadonly(),
+  const persistenceMock = {
+    createTag: vi.fn(),
+    createTask: vi.fn(),
+    createTimeLog: vi.fn(),
+    existingTagNames: vi.fn(() => new Set<string>()),
+    existingTaskNames: vi.fn(() => new Set<string>()),
+    findTag: vi.fn(),
+    normalizeName: vi.fn((value: string) => value.trim().toLowerCase()),
   };
 
   const loaderStateServiceMock = {
@@ -38,27 +31,23 @@ describe('Tasks Services task-import.service', () => {
   };
 
   beforeEach(() => {
-    tasksServiceMock.create.mockReset();
-    tasksServiceMock.tasks = signal<Task[]>([]).asReadonly();
-    timeLogsServiceMock.create.mockReset();
-    tagsServiceMock.create.mockReset();
-    tagsServiceMock.tags = signal<Tag[]>([]).asReadonly();
+    persistenceMock.createTag.mockReset();
+    persistenceMock.createTask.mockReset();
+    persistenceMock.createTimeLog.mockReset();
+    persistenceMock.existingTagNames.mockReset();
+    persistenceMock.existingTagNames.mockReturnValue(new Set<string>());
+    persistenceMock.existingTaskNames.mockReset();
+    persistenceMock.existingTaskNames.mockReturnValue(new Set<string>());
+    persistenceMock.findTag.mockReset();
+    persistenceMock.normalizeName.mockClear();
     loaderStateServiceMock.addLoader.mockReset();
 
     TestBed.configureTestingModule({
       providers: [
         TaskImportService,
         {
-          provide: TasksService,
-          useValue: tasksServiceMock,
-        },
-        {
-          provide: TimeLogsService,
-          useValue: timeLogsServiceMock,
-        },
-        {
-          provide: TagsService,
-          useValue: tagsServiceMock,
+          provide: TaskImportPersistence,
+          useValue: persistenceMock,
         },
         {
           provide: LoaderStateService,
@@ -82,15 +71,15 @@ describe('Tasks Services task-import.service', () => {
       warnings: [],
     };
 
-    tasksServiceMock.create.mockReturnValue(of(createdTask));
+    persistenceMock.createTask.mockReturnValue(of(createdTask));
 
     let result: unknown;
     service.importData(request).subscribe((value) => {
       result = value;
     });
 
-    expect(tasksServiceMock.create).toHaveBeenCalledTimes(1);
-    expect(timeLogsServiceMock.create).not.toHaveBeenCalled();
+    expect(persistenceMock.createTask).toHaveBeenCalledTimes(1);
+    expect(persistenceMock.createTimeLog).not.toHaveBeenCalled();
     expect(result).toEqual({
       status: 'success',
       createdTaskCount: 1,
@@ -113,15 +102,15 @@ describe('Tasks Services task-import.service', () => {
       warnings: [],
     };
 
-    tasksServiceMock.create.mockReturnValue(of(createdTask));
-    timeLogsServiceMock.create.mockReturnValue(of(undefined));
+    persistenceMock.createTask.mockReturnValue(of(createdTask));
+    persistenceMock.createTimeLog.mockReturnValue(of(undefined));
 
     let result: any;
     service.importData(request).subscribe((value) => {
       result = value;
     });
 
-    expect(timeLogsServiceMock.create).toHaveBeenCalledTimes(1);
+    expect(persistenceMock.createTimeLog).toHaveBeenCalledTimes(1);
     expect(result.createdTimeLogCount).toBe(1);
   });
 
@@ -138,20 +127,19 @@ describe('Tasks Services task-import.service', () => {
       warnings: [],
     };
 
-    tagsServiceMock.tags = signal<Tag[]>([]).asReadonly();
-    tagsServiceMock.create.mockImplementation((tag: Tag) => {
-      tagsServiceMock.tags = signal<Tag[]>([createdTag]).asReadonly();
-      return of(tag);
+    persistenceMock.createTag.mockImplementation((tagName: string) => {
+      persistenceMock.findTag.mockReturnValue(createdTag);
+      return of(new Tag({ name: tagName }));
     });
-    tasksServiceMock.create.mockReturnValue(of(createdTask));
+    persistenceMock.createTask.mockReturnValue(of(createdTask));
 
     let result: any;
     service.importData(request).subscribe((value) => {
       result = value;
     });
 
-    expect(tagsServiceMock.create).toHaveBeenCalledTimes(1);
-    expect(tasksServiceMock.create).toHaveBeenCalledTimes(1);
+    expect(persistenceMock.createTag).toHaveBeenCalledTimes(1);
+    expect(persistenceMock.createTask).toHaveBeenCalledTimes(1);
     expect(result.createdTagCount).toBe(1);
   });
 
@@ -166,9 +154,7 @@ describe('Tasks Services task-import.service', () => {
       warnings: [],
     };
 
-    tasksServiceMock.tasks = signal<Task[]>([
-      new Task({ id: 'existing', name: 'Task 1', timeLogs: [], tags: [] }),
-    ]).asReadonly();
+    persistenceMock.existingTaskNames.mockReturnValue(new Set(['task 1']));
 
     let result: any;
     service.importData(request).subscribe((value) => {
@@ -176,7 +162,7 @@ describe('Tasks Services task-import.service', () => {
     });
 
     expect(result.status).toBe('blocked');
-    expect(tasksServiceMock.create).not.toHaveBeenCalled();
+    expect(persistenceMock.createTask).not.toHaveBeenCalled();
   });
 
   it('stops loading and rethrows when task creation fails', () => {
@@ -191,7 +177,7 @@ describe('Tasks Services task-import.service', () => {
     };
     const error = new Error('import failed');
 
-    tasksServiceMock.create.mockReturnValue(throwError(() => error));
+    persistenceMock.createTask.mockReturnValue(throwError(() => error));
 
     let emittedError: unknown;
     service.importData(request).subscribe({

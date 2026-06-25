@@ -1,8 +1,11 @@
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { firstValueFrom } from 'rxjs';
+
+import { RequestGate } from '@core/utilities/request-gate.utility';
 
 import { ApiRequestService } from './api-request.service';
 
@@ -50,5 +53,25 @@ describe('Shared Services api-request.service', () => {
     const promise = firstValueFrom(service.requestData<null>('https://example.com/n'));
     http.expectOne('https://example.com/n').flush({});
     await expect(promise).resolves.toBeNull();
+  });
+
+  it('runs resource requests through the shared resource seam', async () => {
+    const isLoading = signal(false);
+    const promise = firstValueFrom(service.resourceRequest<{ ok: boolean }>(
+      'task',
+      '/1',
+      new RequestGate(),
+      isLoading,
+      'patch',
+      { name: 'A' },
+    ));
+
+    expect(isLoading()).toBe(true);
+    const req = http.expectOne((request) => request.url.includes('/task/1') && request.method === 'PATCH');
+    expect(req.request.body).toEqual({ name: 'A' });
+    req.flush({ ok: true });
+
+    await expect(promise).resolves.toEqual({ ok: true });
+    expect(isLoading()).toBe(false);
   });
 });
