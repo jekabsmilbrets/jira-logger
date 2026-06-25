@@ -14,6 +14,7 @@ import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
 import { ReportMode } from '@report/enums/report-mode.enum';
+import type { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
 import { ReportService } from '@report/services/report.service';
 
 @Component({
@@ -34,7 +35,7 @@ export class ReportViewComponent {
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
 
   protected readonly tasks: Signal<Task[]> = this.reportService.tasks;
-  protected readonly reportMode: Signal<ReportMode> = this.reportService.reportMode;
+  protected readonly state: Signal<ReportStateSnapshot> = this.reportService.state;
 
   protected readonly ReportMode: typeof ReportMode = ReportMode;
 
@@ -75,7 +76,7 @@ export class ReportViewComponent {
     row: Searchable,
   ): void {
     const task: Task = row as Task;
-    const date: Date | null = this.reportService.date();
+    const date: Date | null = this.state().date;
 
     if (!(date instanceof Date)) {
       return;

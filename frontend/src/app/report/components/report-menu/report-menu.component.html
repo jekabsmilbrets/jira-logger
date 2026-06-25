@@ -14,28 +14,28 @@
 
 <ng-template #menuItems>
     <shared-report-hide-unreported-tasks (hideUnreportedTasksChange)="onHideUnreportedTasksChange($event)"
-                                         [hideUnreportedTasks]="hideUnreportedTasks()"/>
+                                         [hideUnreportedTasks]="state().hideUnreportedTasks"/>
 
-    @if (reportMode() !== ReportMode.date) {
+    @if (state().reportMode !== ReportMode.date) {
         <shared-report-show-weekends (showWeekendsChange)="onShowWeekendsChange($event)"
-                                     [showWeekends]="showWeekends()"/>
+                                     [showWeekends]="state().showWeekends"/>
     }
 
     @if (showDatePicker()) {
         <shared-report-date-selector (dateChange)="onDateChange($event)"
                                      (endDateChange)="onEndDateChange($event)"
                                      (startDateChange)="onStartDateChange($event)"
-                                     [date]="date()"
-                                     [endDate]="endDate()"
-                                     [reportMode]="reportMode()"
-                                     [startDate]="startDate()"/>
+                                     [date]="state().date"
+                                     [endDate]="state().endDate"
+                                     [reportMode]="state().reportMode"
+                                     [startDate]="state().startDate"/>
     }
 
     <shared-report-tag-filter (tagChange)="onTagChange($event)"
-                              [tags]="tags()"/>
+                              [tags]="state().tags"/>
 
     <shared-report-mode-switcher (reportModeChange)="onReportModeChange($event)"
-                                 [reportMode]="reportMode()"/>
+                                 [reportMode]="state().reportMode"/>
 </ng-template>
 
 <ng-template #smallScreenDialog>

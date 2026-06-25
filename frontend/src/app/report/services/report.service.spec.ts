@@ -2,6 +2,7 @@ import { registerLocaleData } from '@angular/common';
 import localeLv from '@angular/common/locales/lv';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { convertToParamMap } from '@angular/router';
 
 import { of, Subject, throwError } from 'rxjs';
 
@@ -337,6 +338,36 @@ describe('ReportService', () => {
     expect(date.getTime()).toBe(dateTimestamp);
     expect(startDate.getTime()).toBe(startDateTimestamp);
     expect(endDate.getTime()).toBe(endDateTimestamp);
+  });
+
+  it('updates report state through one interface', () => {
+    const date = new Date('2026-05-30T14:20:35.000Z');
+    const tags = [{ id: 'tag-2', name: 'Frontend' } as Tag];
+
+    service.updateState({
+      reportMode: ReportMode.date,
+      tags,
+      date,
+      showWeekends: true,
+      hideUnreportedTasks: true,
+    });
+
+    expect(service.state().reportMode).toBe(ReportMode.date);
+    expect(service.state().tags).toEqual(tags);
+    expect(service.state().date?.getHours()).toBe(0);
+    expect(service.state().showWeekends).toBe(true);
+    expect(service.state().hideUnreportedTasks).toBe(true);
+  });
+
+  it('applies report route params inside the report module', () => {
+    const result = service.applyRouteParams(convertToParamMap({
+      reportMode: ReportMode.date,
+      date: '2026-05-30T12:00:00.000Z',
+    }));
+
+    expect(result).toEqual({ shouldRedirect: true });
+    expect(service.state().reportMode).toBe(ReportMode.date);
+    expect(service.state().date?.getHours()).toBe(0);
   });
 
   it('falls back to total mode when report mode is date without a date value', async () => {
