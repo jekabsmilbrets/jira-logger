@@ -28,7 +28,7 @@ final readonly class TaskFilterCriteriaFactory
         return new TaskFilterCriteria(
             tagIds: $this->tagIds($filter['tags'] ?? null),
             name: $this->name($filter['name'] ?? null),
-            dateRange: $this->taskFilterDateRangeResolver->resolve($filter),
+            dateRange: $this->taskFilterDateRangeResolver->resolveTaskFilter($filter),
             hideUnreported: $this->hideUnreported($filter['hideUnreported'] ?? null),
         );
     }

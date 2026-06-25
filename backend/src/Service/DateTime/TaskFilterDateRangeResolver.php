@@ -22,6 +22,16 @@ class TaskFilterDateRangeResolver
      */
     public function resolve(array $filter): ?array
     {
+        return $this->resolveTaskFilter($filter);
+    }
+
+    /**
+     * @param array<string, mixed> $filter
+     *
+     * @return array{startDate: DateTimeImmutable, endDate: DateTimeImmutable}|null
+     */
+    public function resolveTaskFilter(array $filter): ?array
+    {
         if (!isset($filter['date']) && !isset($filter['startDate'], $filter['endDate'])) {
             return null;
         }
@@ -45,6 +55,26 @@ class TaskFilterDateRangeResolver
         return [
             'startDate' => $startDate->setTimezone($utcTimezone),
             'endDate' => $endDate->setTimezone($utcTimezone),
+        ];
+    }
+
+    /**
+     * @return array{syncDate: \DateTime, startDate: DateTimeImmutable, endDate: DateTimeImmutable, jiraStartDateTime: \DateTime}
+     */
+    public function resolveJiraSyncDate(string $date): array
+    {
+        $dateRange = $this->resolveTaskFilter(['date' => $date]);
+        if (null === $dateRange) {
+            throw new \InvalidArgumentException('Sync date could not be resolved.');
+        }
+
+        $syncDate = (new \DateTime($date))->setTime(0, 0, 0);
+
+        return [
+            'syncDate' => $syncDate,
+            'startDate' => $dateRange['startDate'],
+            'endDate' => $dateRange['endDate'],
+            'jiraStartDateTime' => (clone $syncDate)->setTime(17, 0, 0),
         ];
     }
 

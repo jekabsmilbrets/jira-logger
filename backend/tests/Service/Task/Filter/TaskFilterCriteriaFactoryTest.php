@@ -19,7 +19,7 @@ class TaskFilterCriteriaFactoryTest extends TestCase
         $resolver = $this->createMock(TaskFilterDateRangeResolver::class);
         $resolver
             ->expects(self::once())
-            ->method('resolve')
+            ->method('resolveTaskFilter')
             ->with([
                 'tags' => '550e8400-e29b-41d4-a716-446655440000, invalid',
                 'name' => ' backend ',
@@ -45,7 +45,7 @@ class TaskFilterCriteriaFactoryTest extends TestCase
     public function testCreateEmptyFilterHasNoQueryFilters(): void
     {
         $resolver = $this->createMock(TaskFilterDateRangeResolver::class);
-        $resolver->expects(self::never())->method('resolve');
+        $resolver->expects(self::never())->method('resolveTaskFilter');
 
         $criteria = (new TaskFilterCriteriaFactory($resolver))->create(null);
 

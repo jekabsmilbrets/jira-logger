@@ -29,6 +29,7 @@ class TaskFilterDateRangeResolverTest extends TestCase
         $resolver = $this->createResolver();
 
         self::assertNull($resolver->resolve([]));
+        self::assertNull($resolver->resolveTaskFilter([]));
     }
 
     public function testResolveUsesEndOfDayForSingleDateFilter(): void
@@ -87,5 +88,25 @@ class TaskFilterDateRangeResolverTest extends TestCase
         self::assertNotNull($range);
         self::assertSame('2026-05-31 14:30:45', $range['startDate']->format('Y-m-d H:i:s'));
         self::assertSame('2026-05-31 20:59:59', $range['endDate']->format('Y-m-d H:i:s'));
+    }
+
+    public function testResolveJiraSyncDateKeepsCanonicalMidnightAndJiraAnchor(): void
+    {
+        $syncDates = $this->createResolver('UTC')->resolveJiraSyncDate('2026-05-30');
+
+        self::assertSame('2026-05-30 00:00:00', $syncDates['syncDate']->format('Y-m-d H:i:s'));
+        self::assertSame('2026-05-30 00:00:00', $syncDates['startDate']->format('Y-m-d H:i:s'));
+        self::assertSame('2026-05-30 23:59:59', $syncDates['endDate']->format('Y-m-d H:i:s'));
+        self::assertSame('2026-05-30 17:00:00', $syncDates['jiraStartDateTime']->format('Y-m-d H:i:s'));
+    }
+
+    public function testResolveJiraSyncDateUsesUserTimezoneForDateModeRange(): void
+    {
+        $syncDates = $this->createResolver('Europe/Vienna')->resolveJiraSyncDate('2026-06-23');
+
+        self::assertSame('2026-06-23', $syncDates['syncDate']->format('Y-m-d'));
+        self::assertSame('2026-06-23 17:00:00', $syncDates['jiraStartDateTime']->format('Y-m-d H:i:s'));
+        self::assertSame('2026-06-22T22:00:00+00:00', $syncDates['startDate']->format(\DateTimeInterface::ATOM));
+        self::assertSame('2026-06-23T21:59:59+00:00', $syncDates['endDate']->format(\DateTimeInterface::ATOM));
     }
 }

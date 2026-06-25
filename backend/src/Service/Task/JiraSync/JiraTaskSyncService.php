@@ -41,7 +41,11 @@ class JiraTaskSyncService implements TaskJiraSyncAdapter
      */
     final public function sync(Task $task, string $date): bool
     {
-        [$syncDate, $startDate, $endDate, $jiraStartDateTime] = $this->resolveSyncDates($date);
+        $syncDates = $this->taskFilterDateRangeResolver->resolveJiraSyncDate($date);
+        $syncDate = $syncDates['syncDate'];
+        $startDate = $syncDates['startDate'];
+        $endDate = $syncDates['endDate'];
+        $jiraStartDateTime = $syncDates['jiraStartDateTime'];
 
         $jiraWorkLog = $this->jiraWorkLogRepository->findOneBy(
             [
@@ -84,24 +88,6 @@ class JiraTaskSyncService implements TaskJiraSyncAdapter
         );
 
         return true;
-    }
-
-    /**
-     * @return array{\DateTime, \DateTimeInterface, \DateTimeInterface, \DateTime}
-     */
-    private function resolveSyncDates(string $date): array
-    {
-        $dateRange = $this->taskFilterDateRangeResolver->resolve(['date' => $date]);
-        if (null === $dateRange) {
-            throw new \InvalidArgumentException('Sync date could not be resolved.');
-        }
-
-        $syncDate = (new \DateTime($date))->setTime(0, 0, 0);
-        $startDate = $dateRange['startDate'];
-        $endDate = $dateRange['endDate'];
-        $jiraStartDateTime = (clone $syncDate)->setTime(17, 0, 0);
-
-        return [$syncDate, $startDate, $endDate, $jiraStartDateTime];
     }
 
     /**
