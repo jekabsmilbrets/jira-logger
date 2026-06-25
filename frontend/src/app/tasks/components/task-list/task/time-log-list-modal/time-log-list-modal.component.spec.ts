@@ -31,7 +31,7 @@ describe('Tasks Components time-log-list-modal.component', () => {
     timeLogs: TimeLog[],
   ): void => {
     task.timeLogs = timeLogs;
-    component['timeLogsState'].set([...timeLogs]);
+    component['transaction'].reset(timeLogs);
   };
 
   const setup = async () => {
