@@ -6,14 +6,10 @@ namespace App\Service\Task\JiraSync;
 
 use App\Entity\JiraWorkLog\JiraWorkLog;
 use App\Entity\Task\Task;
-use App\Entity\Task\TimeLog\TimeLog;
 use App\Exception\JiraApiServiceException;
 use App\Repository\JiraWorkLog\JiraWorkLogRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\JiraApi\JiraApiService;
-use App\Utility\TimeLog\TimeLogDuration;
-use App\Utility\TimeLog\TimeLogRange;
-use Doctrine\Common\Collections\Collection;
 use JiraRestApi\Issue\Worklog;
 
 class JiraTaskSyncService implements TaskJiraSyncAdapter
@@ -22,6 +18,7 @@ class JiraTaskSyncService implements TaskJiraSyncAdapter
         private readonly JiraApiService $jiraApiService,
         private readonly JiraWorkLogRepository $jiraWorkLogRepository,
         private readonly TaskFilterDateRangeResolver $taskFilterDateRangeResolver,
+        private readonly JiraSyncTimeLogAggregation $timeLogAggregation,
     ) {
     }
 
@@ -58,7 +55,7 @@ class JiraTaskSyncService implements TaskJiraSyncAdapter
             $jiraWorkLog->setTask($task);
         }
 
-        [$timeSpentSeconds, $descriptions] = $this->calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection(
+        [$timeSpentSeconds, $descriptions] = $this->timeLogAggregation->summarize(
             timeLogs: $task->getTimeLogs(),
             startDate: $startDate,
             endDate: $endDate
@@ -166,82 +163,4 @@ class JiraTaskSyncService implements TaskJiraSyncAdapter
         }
     }
 
-    /**
-     * @param Collection<int, TimeLog> $timeLogs
-     *
-     * @return array{int, string[]}
-     */
-    private function calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection(
-        Collection $timeLogs,
-        \DateTimeInterface $startDate,
-        \DateTimeInterface $endDate,
-    ): array {
-        return $this->collectTimeSpentSecondsNDescriptions(
-            $this->filterTimeLogsInDateRange(
-                $timeLogs,
-                $startDate,
-                $endDate
-            ),
-            $startDate,
-            $endDate
-        );
-    }
-
-    /**
-     * @param Collection<int, TimeLog> $timeLogs
-     *
-     * @return Collection<int, TimeLog>
-     */
-    private function filterTimeLogsInDateRange(
-        Collection $timeLogs,
-        \DateTimeInterface $startDate,
-        \DateTimeInterface $endDate,
-    ): Collection {
-        return $timeLogs->filter(
-            function (TimeLog $timeLog) use ($startDate, $endDate) {
-                $startTime = $timeLog->getStartTime();
-                $endTime = $timeLog->getEndTime();
-
-                return TimeLogRange::overlaps($startDate, $endDate, $startTime, $endTime);
-            }
-        );
-    }
-
-    /**
-     * @param Collection<int, TimeLog> $timeLogs
-     *
-     * @return array{int, string[]}
-     */
-    private function collectTimeSpentSecondsNDescriptions(
-        Collection $timeLogs,
-        \DateTimeInterface $startDate,
-        \DateTimeInterface $endDate,
-    ): array {
-        $timeSpentSeconds = 0;
-        $descriptions = [];
-
-        /** @var TimeLog $timeLog */
-        foreach ($timeLogs->toArray() as $timeLog) {
-            $startTime = $timeLog->getStartTime();
-            $endTime = $timeLog->getEndTime();
-
-            if ($startTime) {
-                $timeSpentSeconds += TimeLogDuration::clippedSecondsInRange(
-                    rangeStart: $startDate,
-                    rangeEnd: $endDate,
-                    logStart: $startTime,
-                    logEnd: $endTime,
-                );
-
-                if (!empty($description = $timeLog->getDescription())) {
-                    $descriptions[] = $description;
-                }
-            }
-        }
-
-        return [
-            $timeSpentSeconds,
-            $descriptions,
-        ];
-    }
 }

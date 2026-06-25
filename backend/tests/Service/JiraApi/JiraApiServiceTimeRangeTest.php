@@ -16,6 +16,7 @@ use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\JiraApi\JiraApiService;
 use App\Service\Setting\SettingService;
 use App\Service\Task\JiraSync\JiraTaskSyncService;
+use App\Service\Task\JiraSync\JiraSyncTimeLogAggregation;
 use App\Service\Task\JiraSync\TaskJiraSyncException;
 use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
@@ -25,7 +26,7 @@ class JiraApiServiceTimeRangeTest extends TestCase
 {
     public function testCalculateTimeSpentUsesClippedIntervalsWithoutMutatingTimeLog(): void
     {
-        $service = $this->createService();
+        $aggregation = new JiraSyncTimeLogAggregation();
 
         $start = new \DateTime('2026-05-29 10:00:00');
         $end = new \DateTime('2026-05-31 10:00:00');
@@ -38,10 +39,7 @@ class JiraApiServiceTimeRangeTest extends TestCase
         $rangeStart = new \DateTime('2026-05-30 00:00:00');
         $rangeEnd = new \DateTime('2026-05-30 23:59:59');
 
-        $method = new \ReflectionMethod(JiraTaskSyncService::class, 'calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection');
-
-        [$seconds, $descriptions] = $method->invoke(
-            $service,
+        [$seconds, $descriptions] = $aggregation->summarize(
             new ArrayCollection([$timeLog]),
             $rangeStart,
             $rangeEnd,
@@ -55,22 +53,19 @@ class JiraApiServiceTimeRangeTest extends TestCase
 
     public function testFilterIncludesTimeLogSpanningWholeRequestedRange(): void
     {
-        $service = $this->createService();
+        $aggregation = new JiraSyncTimeLogAggregation();
 
         $timeLog = (new TimeLog())
             ->setStartTime(new \DateTime('2026-05-29 00:00:00'))
             ->setEndTime(new \DateTime('2026-05-31 00:00:00'));
 
-        $method = new \ReflectionMethod(JiraTaskSyncService::class, 'filterTimeLogsInDateRange');
-
-        $result = $method->invoke(
-            $service,
+        [$seconds] = $aggregation->summarize(
             new ArrayCollection([$timeLog]),
             new \DateTime('2026-05-30 00:00:00'),
             new \DateTime('2026-05-30 23:59:59'),
         );
 
-        self::assertCount(1, $result);
+        self::assertSame(86399, $seconds);
     }
 
     public function testResolveSyncDatesKeepsCanonicalMidnightAndJiraAnchor(): void
@@ -102,9 +97,7 @@ class JiraApiServiceTimeRangeTest extends TestCase
         self::assertSame('2026-06-22T22:00:00+00:00', $startDate->format(\DateTimeInterface::ATOM));
         self::assertSame('2026-06-23T21:59:59+00:00', $endDate->format(\DateTimeInterface::ATOM));
 
-        $calculateMethod = new \ReflectionMethod(JiraTaskSyncService::class, 'calculateTimeSpentInSecondsCollectDescriptionsInTimeLogsCollection');
-        [$seconds] = $calculateMethod->invoke(
-            $service,
+        [$seconds] = (new JiraSyncTimeLogAggregation())->summarize(
             new ArrayCollection([$timeLog]),
             $startDate,
             $endDate,
@@ -158,6 +151,7 @@ class JiraApiServiceTimeRangeTest extends TestCase
                 $userTimezoneResolver,
                 new DateInputParser($userTimezoneResolver, 'UTC')
             ),
+            new JiraSyncTimeLogAggregation(),
         );
     }
 
