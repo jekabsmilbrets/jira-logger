@@ -8,6 +8,7 @@ use App\Controller\API\JiraWorkLog\JiraWorkLogController;
 use App\Entity\JiraWorkLog\JiraWorkLog;
 use App\Repository\JiraWorkLog\JiraWorkLogRepository;
 use App\Service\JiraWorkLog\JiraWorkLogService;
+use App\Service\Task\TaskService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Container;
 
@@ -15,7 +16,9 @@ class JiraWorkLogControllerTest extends TestCase
 {
     private function controllerWith(JiraWorkLogRepository $repository): JiraWorkLogController
     {
-        $controller = new JiraWorkLogController(new JiraWorkLogService($repository));
+        $controller = new JiraWorkLogController(
+            new JiraWorkLogService($repository, $this->createMock(TaskService::class))
+        );
         $controller->setContainer(new Container());
 
         return $controller;

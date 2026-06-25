@@ -11,6 +11,7 @@ use App\Factory\JiraWorkLog\JiraWorkLogFactory;
 use App\Repository\JiraWorkLog\JiraWorkLogRepository;
 use App\Service\Task\TaskService;
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
 class JiraWorkLogService
 {
@@ -18,7 +19,7 @@ class JiraWorkLogService
 
     public function __construct(
         private readonly JiraWorkLogRepository $jiraWorkLogRepository,
-        private readonly ?TaskService $taskService = null,
+        private readonly TaskService $taskService,
     ) {
     }
 
@@ -69,85 +70,85 @@ class JiraWorkLogService
     }
 
     final public function new(
-        ?JiraWorkLogRequest $jiraWorkLogRequest = null,
-        ?JiraWorkLog $jiraWorkLog = null,
+        JiraWorkLogRequest $jiraWorkLogRequest,
         bool $flush = true,
-    ): JiraWorkLog {
-        if (!$jiraWorkLogRequest && !$jiraWorkLog) {
-            throw new \RuntimeException(self::NO_DATA_PROVIDED);
-        }
-
-        if ($jiraWorkLogRequest && !$jiraWorkLog) {
+    ): JiraWorkLogWriteResult {
+        try {
             $jiraWorkLog = JiraWorkLogFactory::create(
                 jiraWorkLogRequest: $jiraWorkLogRequest,
                 task: $this->task((string) $jiraWorkLogRequest->getTask())
             );
+            $this->jiraWorkLogRepository->save(
+                entity: $jiraWorkLog,
+                flush: $flush
+            );
+        } catch (UniqueConstraintViolationException) {
+            return JiraWorkLogWriteResult::duplicate();
+        } catch (\RuntimeException) {
+            return JiraWorkLogWriteResult::notFound();
+        } catch (\Exception) {
+            return JiraWorkLogWriteResult::failed();
         }
 
-        $this->jiraWorkLogRepository->save(
-            entity: $jiraWorkLog,
-            flush: $flush
-        );
-
-        return $jiraWorkLog;
+        return JiraWorkLogWriteResult::created($jiraWorkLog);
     }
 
     final public function edit(
         string $id,
-        ?JiraWorkLogRequest $jiraWorkLogRequest = null,
-        ?JiraWorkLog $jiraWorkLog = null,
+        JiraWorkLogRequest $jiraWorkLogRequest,
         bool $flush = true,
-    ): ?JiraWorkLog {
-        switch (true) {
-            case !$jiraWorkLogRequest && !$jiraWorkLog:
-                throw new \RuntimeException(self::NO_DATA_PROVIDED);
+    ): JiraWorkLogWriteResult {
+        $jiraWorkLog = $this->jiraWorkLogRepository->find($id);
 
-            case $jiraWorkLogRequest && !$jiraWorkLog:
-                $jiraWorkLog = $this->jiraWorkLogRepository->find($id);
-
-                if (!$jiraWorkLog instanceof JiraWorkLog) {
-                    return null;
-                }
-
-                $jiraWorkLog = JiraWorkLogFactory::create(
-                    jiraWorkLogRequest: $jiraWorkLogRequest,
-                    task: $this->task((string) $jiraWorkLogRequest->getTask()),
-                    jiraWorkLog: $jiraWorkLog
-                );
-                break;
+        if (!$jiraWorkLog instanceof JiraWorkLog) {
+            return JiraWorkLogWriteResult::notFound();
         }
 
-        if ($flush) {
-            $this->jiraWorkLogRepository->flush();
+        try {
+            $jiraWorkLog = JiraWorkLogFactory::create(
+                jiraWorkLogRequest: $jiraWorkLogRequest,
+                task: $this->task((string) $jiraWorkLogRequest->getTask()),
+                jiraWorkLog: $jiraWorkLog
+            );
+
+            if ($flush) {
+                $this->jiraWorkLogRepository->flush();
+            }
+        } catch (UniqueConstraintViolationException) {
+            return JiraWorkLogWriteResult::duplicate();
+        } catch (\RuntimeException) {
+            return JiraWorkLogWriteResult::notFound();
+        } catch (\Exception) {
+            return JiraWorkLogWriteResult::failed();
         }
 
-        return $jiraWorkLog;
+        return JiraWorkLogWriteResult::updated($jiraWorkLog);
     }
 
     final public function delete(
         string $id,
         bool $flush = true,
-    ): bool {
+    ): JiraWorkLogWriteResult {
         $jiraWorkLog = $this->jiraWorkLogRepository->find($id);
 
         if (!$jiraWorkLog instanceof JiraWorkLog) {
-            return false;
+            return JiraWorkLogWriteResult::notFound();
         }
 
-        $this->jiraWorkLogRepository->remove(
-            entity: $jiraWorkLog,
-            flush: $flush
-        );
+        try {
+            $this->jiraWorkLogRepository->remove(
+                entity: $jiraWorkLog,
+                flush: $flush
+            );
+        } catch (\Exception) {
+            return JiraWorkLogWriteResult::failed();
+        }
 
-        return true;
+        return JiraWorkLogWriteResult::deleted();
     }
 
     private function task(string $taskId): Task
     {
-        if (!$this->taskService instanceof TaskService) {
-            throw new \LogicException('TaskService is required for JiraWorkLog task lookup.');
-        }
-
         $task = $this->taskService->show($taskId);
 
         if (!$task instanceof Task) {
