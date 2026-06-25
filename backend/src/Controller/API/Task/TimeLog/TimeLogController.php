@@ -91,7 +91,7 @@ class TimeLogController extends BaseApiController
     ): JsonResponse {
         $timeLogs = $this->timeLogService->list(taskId: $taskId);
 
-        if (empty($timeLogs) || [] === $timeLogs) {
+        if (empty($timeLogs)) {
             return $this->jsonApi(
                 errors: [self::TIME_LOGS_NOT_FOUND],
                 status: Response::HTTP_NOT_FOUND
@@ -224,14 +224,7 @@ class TimeLogController extends BaseApiController
         Request $request,
     ): JsonResponse {
         try {
-            $timeLogRequest = $this->timeLogService->createRequest($taskId);
-            if (!$timeLogRequest instanceof TimeLogRequest) {
-                return $this->jsonApi(
-                    errors: [TaskController::TASK_NOT_FOUND],
-                    status: Response::HTTP_NOT_FOUND
-                );
-            }
-
+            $timeLogRequest = (new TimeLogRequest())->setTask($taskId);
             $timeLogRequest = $serializer->deserialize(
                 data: $request->getContent(),
                 type: TimeLogRequest::class,
@@ -345,14 +338,7 @@ class TimeLogController extends BaseApiController
         Request $request,
     ): JsonResponse {
         try {
-            $timeLogRequest = $this->timeLogService->createRequest($taskId);
-            if (!$timeLogRequest instanceof TimeLogRequest) {
-                return $this->jsonApi(
-                    errors: [TaskController::TASK_NOT_FOUND],
-                    status: Response::HTTP_NOT_FOUND
-                );
-            }
-
+            $timeLogRequest = (new TimeLogRequest())->setTask($taskId);
             $timeLogRequest = $serializer->deserialize(
                 data: $request->getContent(),
                 type: TimeLogRequest::class,
@@ -370,7 +356,7 @@ class TimeLogController extends BaseApiController
             groups: ['update']
         );
 
-        if ((is_countable($errors) ? \count($errors) : 0) > 0) {
+        if (\count($errors) > 0) {
             return $this->validationErrorJsonApi(
                 constraintViolationList: $errors,
                 status: Response::HTTP_NOT_ACCEPTABLE

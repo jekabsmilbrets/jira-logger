@@ -19,23 +19,9 @@ class TimeLogService
 
     public function __construct(
         private readonly TimeLogRepository $timeLogRepository,
-        private readonly ?TaskService $taskService = null,
-        private readonly ?DateInputParser $dateInputParser = null,
+        private readonly TaskService $taskService,
+        private readonly DateInputParser $dateInputParser,
     ) {
-    }
-
-    final public function createRequest(string $taskId): ?TimeLogRequest
-    {
-        $task = $this->task($taskId);
-
-        if (!$task instanceof Task) {
-            return null;
-        }
-
-        $timeLogRequest = new TimeLogRequest();
-        $timeLogRequest->setTask($taskId);
-
-        return $timeLogRequest;
     }
 
     /**
@@ -264,19 +250,11 @@ class TimeLogService
 
     private function task(string $taskId): ?Task
     {
-        if (!$this->taskService instanceof TaskService) {
-            throw new \LogicException('TaskService is required for TimeLog lifecycle operations by Task id.');
-        }
-
         return $this->taskService->show($taskId);
     }
 
     private function dateInputParser(): DateInputParser
     {
-        if (!$this->dateInputParser instanceof DateInputParser) {
-            throw new \LogicException('DateInputParser is required for TimeLog lifecycle input normalization.');
-        }
-
         return $this->dateInputParser;
     }
 }

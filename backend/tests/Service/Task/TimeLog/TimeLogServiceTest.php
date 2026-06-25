@@ -8,12 +8,14 @@ use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Repository\Task\TaskRepository;
 use App\Repository\Task\TimeLog\TimeLogRepository;
+use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\Task\Filter\TaskFilterCriteriaFactory;
 use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
 use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
 use App\Service\Task\TimeLog\TimeLogWriteStatus;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
 class TimeLogServiceTest extends TestCase
@@ -35,18 +37,23 @@ class TimeLogServiceTest extends TestCase
                 $taskRepository,
                 new TaskFilterCriteriaFactory($this->createMock(TaskFilterDateRangeResolver::class)),
                 $this->createMock(TaskJiraSyncAdapter::class),
-            )
+            ),
+            $this->createMock(DateInputParser::class),
         );
     }
 
     public function testStartStopsAllRunningTimeLogsGlobally(): void
     {
-        $repository = $this->createMock(TimeLogRepository::class);
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects(self::once())->method('persist');
+        $repository = $this->getMockBuilder(TimeLogRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getEntityManager', 'stopAllRunningTimeLogs'])
+            ->getMock();
+        $repository->method('getEntityManager')->willReturn($entityManager);
         $repository->expects(self::once())
             ->method('stopAllRunningTimeLogs')
             ->willReturn(1);
-        $repository->expects(self::once())
-            ->method('add');
 
         $task = new Task();
         $service = $this->serviceWithTask($repository, $task);
