@@ -4,7 +4,7 @@ import localeLv from '@angular/common/locales/lv';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { firstValueFrom, of, throwError } from 'rxjs';
+import { catchError, firstValueFrom, of, throwError } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
@@ -19,6 +19,16 @@ describe('Shared Services tasks.service', () => {
   const apiRequestService = {
     buildApiUrl: vi.fn((base: string, suffix = '') => `https://api/${ base }${ suffix }`),
     request: vi.fn(),
+    resourceRequest: vi.fn((
+      base: string,
+      suffix: string,
+      _requestGate: unknown,
+      _isLoadingSignal: unknown,
+      method: 'get' | 'post' | 'patch' | 'delete',
+      body: unknown,
+      processError?: (error: unknown) => any,
+    ) => apiRequestService.request(apiRequestService.buildApiUrl(base, suffix), method, body)
+      .pipe(catchError((error: unknown) => processError ? processError(error) : throwError(() => error)))),
   } as any;
   const errorDialogService = {
     openDialog: vi.fn(() => of(undefined)),
@@ -27,6 +37,7 @@ describe('Shared Services tasks.service', () => {
   beforeEach(async () => {
     registerLocaleData(localeLv, 'lv-LV');
     apiRequestService.request.mockReset();
+    apiRequestService.resourceRequest.mockClear();
     apiRequestService.buildApiUrl.mockClear();
     errorDialogService.openDialog.mockReset();
     errorDialogService.openDialog.mockReturnValue(of(undefined));

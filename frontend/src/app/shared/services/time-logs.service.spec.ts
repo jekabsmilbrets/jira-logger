@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { firstValueFrom, of, throwError } from 'rxjs';
+import { catchError, firstValueFrom, of, throwError } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
@@ -16,10 +16,21 @@ describe('Shared Services time-logs.service', () => {
   const apiRequestService = {
     buildApiUrl: vi.fn((base: string, suffix = '') => `https://api/${ base }${ suffix }`),
     request: vi.fn(),
+    resourceRequest: vi.fn((
+      base: string,
+      suffix: string,
+      _requestGate: unknown,
+      _isLoadingSignal: unknown,
+      method: 'get' | 'post' | 'patch' | 'delete',
+      body: unknown,
+      processError?: (error: unknown) => any,
+    ) => apiRequestService.request(apiRequestService.buildApiUrl(base, suffix), method, body)
+      .pipe(catchError((error: unknown) => processError ? processError(error) : throwError(() => error)))),
   } as any;
 
   beforeEach(async () => {
     apiRequestService.request.mockReset();
+    apiRequestService.resourceRequest.mockClear();
     apiRequestService.buildApiUrl.mockClear();
 
     await TestBed.configureTestingModule({

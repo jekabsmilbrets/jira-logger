@@ -16,6 +16,7 @@ import { ReportTagFilterComponent } from '@shared/components/report-menu/report-
 import { Tag } from '@shared/models/tag.model';
 
 import { ReportMode } from '@report/enums/report-mode.enum';
+import type { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
 import { ReportService } from '@report/services/report.service';
 
 @Component({
@@ -36,13 +37,7 @@ import { ReportService } from '@report/services/report.service';
   ],
 })
 export class ReportMenuComponent {
-  protected readonly reportMode: Signal<ReportMode>;
-  protected readonly tags: Signal<Tag[]>;
-  protected readonly date: Signal<Date | null>;
-  protected readonly startDate: Signal<Date | null>;
-  protected readonly endDate: Signal<Date | null>;
-  protected readonly showWeekends: Signal<boolean>;
-  protected readonly hideUnreportedTasks: Signal<boolean>;
+  protected readonly state: Signal<ReportStateSnapshot>;
   protected readonly isSmallerThanDesktop: Signal<boolean>;
   protected readonly showDatePicker: Signal<boolean>;
 
@@ -57,13 +52,7 @@ export class ReportMenuComponent {
   private readonly dialogTemplate: Signal<TemplateRef<HTMLDivElement>> = viewChild.required<TemplateRef<HTMLDivElement>>('smallScreenDialog');
 
   constructor() {
-    this.reportMode = this.reportService.reportMode;
-    this.tags = this.reportService.tags;
-    this.date = this.reportService.date;
-    this.startDate = this.reportService.startDate;
-    this.endDate = this.reportService.endDate;
-    this.showWeekends = this.reportService.showWeekends;
-    this.hideUnreportedTasks = this.reportService.hideUnreportedTasks;
+    this.state = this.reportService.state;
     this.isSmallerThanDesktop = toSignal(
       this.breakpointObserver.observe(this.smallerThanDesktopBreakpoint)
         .pipe(
@@ -73,50 +62,50 @@ export class ReportMenuComponent {
         ),
       { initialValue: false },
     );
-    this.showDatePicker = computed(() => ['dateRange', 'date'].includes(this.reportMode()));
+    this.showDatePicker = computed(() => [ReportMode.dateRange, ReportMode.date].includes(this.state().reportMode));
   }
 
   // fallow-ignore-next-line code-duplication
   protected onReportModeChange(
     value: ReportMode,
   ): void {
-    this.reportService.setReportMode(value);
+    this.reportService.updateState({ reportMode: value });
   }
 
   protected onTagChange(
     value: Tag[],
   ): void {
-    this.reportService.setTags(value);
+    this.reportService.updateState({ tags: value });
   }
 
   protected onDateChange(
     date: Date | null,
   ): void {
-    this.reportService.setDate(date);
+    this.reportService.updateState({ date });
   }
 
   protected onStartDateChange(
     date: Date | null,
   ): void {
-    this.reportService.setStartDate(date);
+    this.reportService.updateState({ startDate: date });
   }
 
   protected onEndDateChange(
     date: Date | null,
   ): void {
-    this.reportService.setEndDate(date);
+    this.reportService.updateState({ endDate: date });
   }
 
   protected onShowWeekendsChange(
     showWeekends: boolean,
   ): void {
-    this.reportService.setShowWeekends(showWeekends);
+    this.reportService.updateState({ showWeekends });
   }
 
   protected onHideUnreportedTasksChange(
     hideUnreportedTasks: boolean,
   ): void {
-    this.reportService.setHideUnreportedTasks(hideUnreportedTasks);
+    this.reportService.updateState({ hideUnreportedTasks });
   }
 
   protected onSmallScreenMenuToggle(): void {

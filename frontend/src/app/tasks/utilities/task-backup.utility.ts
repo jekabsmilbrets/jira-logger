@@ -656,6 +656,16 @@ export const createTaskBackupV2: (
   tasks: tasks.map((task: Task) => toBackupTask(task)),
 });
 
+export const stringifyTaskBackupV2: (
+  tasks: Task[],
+) => string = (
+  tasks: Task[],
+): string => JSON.stringify(
+  createTaskBackupV2(tasks),
+  null,
+  2,
+);
+
 export const prepareTaskImportRequest: (
   input: unknown,
   currentTasks: Task[],
