@@ -3,7 +3,7 @@ import { firstValueFrom, of, throwError } from 'rxjs';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 
-import { TimeLogEditTransaction } from './time-log-edit-transaction';
+import { TimeLogEditTransaction } from './time-log-edit-transaction.utility';
 
 describe('TimeLogEditTransaction', () => {
   const buildTimeLog = (id: string | undefined, startIso: string): TimeLog => new TimeLog({

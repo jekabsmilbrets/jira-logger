@@ -1,16 +1,16 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import type { Signal } from '@angular/core';
 
-import { EMPTY, type Observable, of, take, catchError, finalize, map } from 'rxjs';
+import { catchError, EMPTY, finalize, map, type Observable, of, take } from 'rxjs';
 
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 
 import type { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
-import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
 import type { TimeLogPersistenceAdapter } from '@tasks/interfaces/time-log-persistence-adapter.interface';
+import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
 import type { TimeLogEditService } from '@tasks/services/time-log-edit.service';
-import { TimeLogEditTransaction } from '@tasks/services/time-log-edit-transaction';
+import { TimeLogEditTransaction } from '@tasks/utilities/time-log-edit-transaction.utility';
 
 export interface TimeLogEditSessionSaveResult {
   close: boolean;
@@ -20,7 +20,7 @@ export interface TimeLogEditSessionSaveResult {
 
 export class TimeLogEditSession {
   private readonly transaction: TimeLogEditTransaction;
-  private isSaving = false;
+  private isSaving: boolean = false;
 
   public readonly timeLogs: Signal<TimeLog[]>;
 

@@ -22,8 +22,8 @@ import type { AsyncLoader } from '@shared/types/async-loader.type';
 import { createTimeLogListColumns } from '@tasks/constants/time-log-list-columns.constant';
 import type { TimeLogListDialogData } from '@tasks/interfaces/time-log-dialog-data.interface';
 import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
-import { TimeLogEditSession, type TimeLogEditSessionSaveResult } from '@tasks/services/time-log-edit-session';
 import type { TimeLogEditService } from '@tasks/services/time-log-edit.service';
+import { TimeLogEditSession, type TimeLogEditSessionSaveResult } from '@tasks/services/time-log-edit-session';
 
 @Component({
   selector: 'tasks-time-log-list-modal',
