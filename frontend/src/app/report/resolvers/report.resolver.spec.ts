@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { convertToParamMap } from '@angular/router';
 
-import { firstValueFrom, isObservable } from 'rxjs';
+import { firstValueFrom, isObservable, of } from 'rxjs';
+
+import { TasksService } from '@shared/services/tasks.service';
 
 import { reportResolver } from '@report/resolvers/report.resolver';
 import { ReportService } from '@report/services/report.service';
@@ -9,6 +11,9 @@ import { ReportServiceStub } from '@report/testing/report-service.stub';
 
 describe('reportResolver', () => {
   let reportService: ReportServiceStub;
+  const tasksService = {
+    loadVisibleTasks: vi.fn(),
+  };
 
   const createRoute = (params: Record<string, string>) => ({
     paramMap: convertToParamMap(params),
@@ -25,10 +30,13 @@ describe('reportResolver', () => {
 
   beforeEach(() => {
     reportService = new ReportServiceStub();
+    tasksService.loadVisibleTasks.mockReset();
+    tasksService.loadVisibleTasks.mockReturnValue(of([]));
 
     TestBed.configureTestingModule({
       providers: [
         { provide: ReportService, useValue: reportService },
+        { provide: TasksService, useValue: tasksService },
       ],
     });
   });
@@ -53,6 +61,7 @@ describe('reportResolver', () => {
       type: 'route',
       paramMap: expect.any(Object),
     });
+    expect(tasksService.loadVisibleTasks).toHaveBeenCalledWith({});
     const change = reportService.applySettingsChange.mock.calls[0][0];
     expect(change.paramMap.get('date')).toBe(params.date);
     expect(change.paramMap.get('reportMode')).toBe(params.reportMode);
