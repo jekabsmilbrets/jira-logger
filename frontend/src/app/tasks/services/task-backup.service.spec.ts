@@ -267,6 +267,43 @@ describe('Tasks Services task-backup.service', () => {
     expect(result.createdTagCount).toBe(1);
   });
 
+  it('does not create a tag when another imported task maps the same tag to an existing tag', () => {
+    const request: TaskImportRequest = {
+      tasks: [
+        {
+          name: 'Task 1',
+          description: undefined,
+          timeLogs: [],
+          tags: [{ name: 'frontend' }],
+        },
+        {
+          name: 'Task 2',
+          description: undefined,
+          timeLogs: [],
+          tags: [{ name: 'Frontend', existingTagId: 'tag-1' }],
+        },
+      ],
+      warnings: [],
+    };
+
+    tasksServiceMock.create.mockImplementation((task: Task) => of(new Task({
+      id: task.name,
+      name: task.name,
+      tags: task.tags,
+      timeLogs: [],
+    })));
+
+    let result: any;
+    service.applyTaskBackup(request).subscribe((value) => {
+      result = value;
+    });
+
+    expect(tagsServiceMock.create).not.toHaveBeenCalled();
+    expect((tasksServiceMock.create.mock.calls[0]?.[0] as Task).tags).toEqual([new Tag({ id: 'tag-1', name: 'Frontend' })]);
+    expect((tasksServiceMock.create.mock.calls[1]?.[0] as Task).tags).toEqual([new Tag({ id: 'tag-1', name: 'Frontend' })]);
+    expect(result.createdTagCount).toBe(0);
+  });
+
   it('imports mixed existing and missing tag intent', () => {
     const createdTag = new Tag({ id: 'tag-2', name: 'Backend' });
     const request: TaskImportRequest = {

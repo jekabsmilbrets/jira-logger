@@ -22,11 +22,6 @@ import type { ImportTagInput, ImportTaskInput } from '@tasks/interfaces/import-t
 import { TaskBackupUnsupportedMetadataService } from '@tasks/services/task-backup-unsupported-metadata.service';
 import { normalizeBackupKey } from '@tasks/utilities/task-backup-normalization.utility';
 
-interface TaskImportExecutionPlan {
-  createdTagCount: number;
-  tagsByName: Map<string, Tag>;
-}
-
 @Service()
 export class TaskBackupService implements LoadableInitializer {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
@@ -81,7 +76,7 @@ export class TaskBackupService implements LoadableInitializer {
       .pipe(
         switchMap((release: VoidFunction) => this.createImportExecutionPlan(request.tasks)
           .pipe(
-            switchMap((executionPlan: TaskImportExecutionPlan) => this.importTasks(request.tasks, executionPlan.tagsByName)
+            switchMap((executionPlan: TaskImportExecutionPlan) => this.importTasks(request.tasks, executionPlan)
               .pipe(
                 map(({ createdTaskCount, createdTimeLogCount }) => ({
                   status: 'success',
@@ -151,35 +146,12 @@ export class TaskBackupService implements LoadableInitializer {
   private createImportExecutionPlan(
     tasks: ImportTaskInput[],
   ): Observable<TaskImportExecutionPlan> {
-    const tagsByName: Map<string, Tag> = this.existingImportTagsByName(tasks);
-    const missingTags: ImportTagInput[] = this.missingImportTags(tasks, tagsByName);
-
-    if (missingTags.length === 0) {
-      return of({
-        createdTagCount: 0,
-        tagsByName,
-      });
-    }
-
-    return concat(
-      ...missingTags.map((tag: ImportTagInput) => this.tagsService.create(new Tag({ name: tag.name }))),
-    )
-      .pipe(
-        toArray(),
-        map((createdTags: Tag[]) => {
-          createdTags.forEach((tag: Tag) => tagsByName.set(normalizeBackupKey(tag.name), tag));
-
-          return {
-            createdTagCount: createdTags.length,
-            tagsByName,
-          };
-        }),
-      );
+    return TaskImportExecutionPlan.fromTasks(tasks).createMissingTags(this.tagsService);
   }
 
   private importTasks(
     tasks: ImportTaskInput[],
-    tagsByName: Map<string, Tag>,
+    executionPlan: TaskImportExecutionPlan,
   ): Observable<{ createdTaskCount: number; createdTimeLogCount: number }> {
     if (tasks.length === 0) {
       return of({
@@ -189,7 +161,7 @@ export class TaskBackupService implements LoadableInitializer {
     }
 
     return concat(
-      ...tasks.map((task: ImportTaskInput) => this.importTask(task, tagsByName)),
+      ...tasks.map((task: ImportTaskInput) => this.importTask(task, executionPlan)),
     )
       .pipe(
         toArray(),
@@ -208,12 +180,12 @@ export class TaskBackupService implements LoadableInitializer {
 
   private importTask(
     input: ImportTaskInput,
-    tagsByName: Map<string, Tag>,
+    executionPlan: TaskImportExecutionPlan,
   ): Observable<{ createdTaskCount: number; createdTimeLogCount: number }> {
     const task: Task = new Task({
       name: input.name,
       description: input.description,
-      tags: input.tags.map((tag: ImportTagInput) => this.resolveTag(tag, tagsByName)),
+      tags: input.tags.map((tag: ImportTagInput) => executionPlan.resolveTag(tag)),
       timeLogs: [],
     });
 
@@ -248,63 +220,6 @@ export class TaskBackupService implements LoadableInitializer {
       );
   }
 
-  private resolveTag(
-    tag: ImportTagInput,
-    tagsByName: Map<string, Tag>,
-  ): Tag {
-    const existingTag: Tag | undefined = tagsByName.get(normalizeBackupKey(tag.name));
-
-    if (!existingTag) {
-      throw new Error(`Missing tag "${ tag.name }" after tag creation.`);
-    }
-
-    return existingTag;
-  }
-
-  private existingImportTagsByName(
-    tasks: ImportTaskInput[],
-  ): Map<string, Tag> {
-    const tagsByName: Map<string, Tag> = new Map<string, Tag>();
-
-    tasks.forEach((task: ImportTaskInput) => {
-      task.tags.forEach((tag: ImportTagInput) => {
-        if (!tag.existingTagId) {
-          return;
-        }
-
-        tagsByName.set(normalizeBackupKey(tag.name), new Tag({
-          id: tag.existingTagId,
-          name: tag.name,
-        }));
-      });
-    });
-
-    return tagsByName;
-  }
-
-  private missingImportTags(
-    tasks: ImportTaskInput[],
-    tagsByName: Map<string, Tag>,
-  ): ImportTagInput[] {
-    const missingTags: ImportTagInput[] = [];
-    const plannedTagNames: Set<string> = new Set<string>();
-
-    tasks.forEach((task: ImportTaskInput) => {
-      task.tags.forEach((tag: ImportTagInput) => {
-        const normalizedTagName: string = normalizeBackupKey(tag.name);
-
-        if (tagsByName.has(normalizedTagName) || plannedTagNames.has(normalizedTagName)) {
-          return;
-        }
-
-        plannedTagNames.add(normalizedTagName);
-        missingTags.push(tag);
-      });
-    });
-
-    return missingTags;
-  }
-
   private findExistingDuplicateNames(
     tasks: ImportTaskInput[],
   ): string[] {
@@ -327,5 +242,80 @@ export class TaskBackupService implements LoadableInitializer {
     noun: string,
   ): string {
     return `${ prefix ? `${ prefix } ` : '' }${ count } ${ noun }${ count === 1 ? '' : 's' }`;
+  }
+}
+
+class TaskImportExecutionPlan {
+  public static fromTasks(
+    tasks: ImportTaskInput[],
+  ): TaskImportExecutionPlan {
+    const tagsByName: Map<string, Tag> = new Map<string, Tag>();
+    const missingTags: ImportTagInput[] = [];
+    const plannedTagNames: Set<string> = new Set<string>();
+
+    tasks.forEach((task: ImportTaskInput) => {
+      task.tags.forEach((tag: ImportTagInput) => {
+        if (tag.existingTagId) {
+          tagsByName.set(normalizeBackupKey(tag.name), new Tag({
+            id: tag.existingTagId,
+            name: tag.name,
+          }));
+        }
+      });
+    });
+
+    tasks.forEach((task: ImportTaskInput) => {
+      task.tags.forEach((tag: ImportTagInput) => {
+        const normalizedTagName: string = normalizeBackupKey(tag.name);
+
+        if (tag.existingTagId || tagsByName.has(normalizedTagName) || plannedTagNames.has(normalizedTagName)) {
+          return;
+        }
+
+        plannedTagNames.add(normalizedTagName);
+        missingTags.push(tag);
+      });
+    });
+
+    return new TaskImportExecutionPlan(tagsByName, missingTags, 0);
+  }
+
+  private constructor(
+    private readonly tagsByName: Map<string, Tag>,
+    private readonly missingTags: ImportTagInput[],
+    public readonly createdTagCount: number,
+  ) {}
+
+  public createMissingTags(
+    tagsService: TagsService,
+  ): Observable<TaskImportExecutionPlan> {
+    if (this.missingTags.length === 0) {
+      return of(this);
+    }
+
+    return concat(
+      ...this.missingTags.map((tag: ImportTagInput) => tagsService.create(new Tag({ name: tag.name }))),
+    )
+      .pipe(
+        toArray(),
+        map((createdTags: Tag[]) => {
+          const tagsByName: Map<string, Tag> = new Map<string, Tag>(this.tagsByName);
+          createdTags.forEach((tag: Tag) => tagsByName.set(normalizeBackupKey(tag.name), tag));
+
+          return new TaskImportExecutionPlan(tagsByName, [], createdTags.length);
+        }),
+      );
+  }
+
+  public resolveTag(
+    tag: ImportTagInput,
+  ): Tag {
+    const existingTag: Tag | undefined = this.tagsByName.get(normalizeBackupKey(tag.name));
+
+    if (!existingTag) {
+      throw new Error(`Missing tag "${ tag.name }" after tag creation.`);
+    }
+
+    return existingTag;
   }
 }
