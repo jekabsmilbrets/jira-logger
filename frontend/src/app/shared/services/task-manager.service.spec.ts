@@ -5,13 +5,25 @@ import { BehaviorSubject } from 'rxjs';
 import { vi } from 'vitest';
 
 import { Task } from '@shared/models/task.model';
+import { TaskQueryService } from '@shared/services/task-query.service';
 import { TasksService } from '@shared/services/tasks.service';
+
+import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
 
 import { TaskManagerService } from './task-manager.service';
 
 describe('Shared Services task-manager.service', () => {
+  const reportDateCalendarServiceMock = {
+    todayReportDate: vi.fn(() => new Date('2026-01-01T00:00:00.000Z')),
+    timeLoggedForReportDate: vi.fn(() => 0),
+  };
+  const taskQueryServiceMock = {
+    query: vi.fn(() => new BehaviorSubject<Task[]>([])),
+  };
+
   beforeEach(() => {
     vi.useFakeTimers();
+    taskQueryServiceMock.query.mockReset().mockReturnValue(new BehaviorSubject<Task[]>([]));
   });
 
   afterEach(() => {
@@ -25,13 +37,15 @@ describe('Shared Services task-manager.service', () => {
     const runningTask = new Task({ id: '1', name: 'A' } as any);
 
     const tasksServiceMock = {
-      tasks: tasks.asReadonly(),
-      filteredList: vi.fn(() => new BehaviorSubject<Task[]>([runningTask])),
+      allTasks: tasks.asReadonly(),
     } as any;
+    taskQueryServiceMock.query.mockReturnValue(new BehaviorSubject<Task[]>([runningTask]));
 
     await TestBed.configureTestingModule({
       providers: [
         { provide: TasksService, useValue: tasksServiceMock },
+        { provide: TaskQueryService, useValue: taskQueryServiceMock },
+        { provide: ReportDateCalendarService, useValue: reportDateCalendarServiceMock },
       ],
     });
 
@@ -45,7 +59,7 @@ describe('Shared Services task-manager.service', () => {
     expect(service.activeTask()).toBeNull();
 
     vi.advanceTimersByTime(10010);
-    expect(tasksServiceMock.filteredList).toHaveBeenCalled();
+    expect(taskQueryServiceMock.query).toHaveBeenCalled();
   });
 
   it('returns null when no running task exists', async () => {
@@ -53,13 +67,15 @@ describe('Shared Services task-manager.service', () => {
     const runningTask = new Task({ id: '1', name: 'A' } as any);
 
     const tasksServiceMock = {
-      tasks: tasks.asReadonly(),
-      filteredList: vi.fn(() => new BehaviorSubject<Task[]>([runningTask])),
+      allTasks: tasks.asReadonly(),
     } as any;
+    taskQueryServiceMock.query.mockReturnValue(new BehaviorSubject<Task[]>([runningTask]));
 
     await TestBed.configureTestingModule({
       providers: [
         { provide: TasksService, useValue: tasksServiceMock },
+        { provide: TaskQueryService, useValue: taskQueryServiceMock },
+        { provide: ReportDateCalendarService, useValue: reportDateCalendarServiceMock },
       ],
     });
 
@@ -77,13 +93,15 @@ describe('Shared Services task-manager.service', () => {
     const tasks = signal<Task[]>([runningTask]);
 
     const tasksServiceMock = {
-      tasks: tasks.asReadonly(),
-      filteredList: vi.fn(() => new BehaviorSubject<Task[]>([runningTask])),
+      allTasks: tasks.asReadonly(),
     } as any;
+    taskQueryServiceMock.query.mockReturnValue(new BehaviorSubject<Task[]>([runningTask]));
 
     await TestBed.configureTestingModule({
       providers: [
         { provide: TasksService, useValue: tasksServiceMock },
+        { provide: TaskQueryService, useValue: taskQueryServiceMock },
+        { provide: ReportDateCalendarService, useValue: reportDateCalendarServiceMock },
       ],
     });
 
@@ -92,5 +110,30 @@ describe('Shared Services task-manager.service', () => {
 
     tasks.set([nextRunningTask]);
     expect(service.activeTask()?.id).toBe('2');
+  });
+
+  it('keeps active task from the unfiltered task state when visible tasks are filtered', async () => {
+    const runningLog = new Date('2026-01-01T10:00:00.000Z');
+    const runningTask = new Task({ id: '124', name: 'TP-124', timeLogs: [{ startTime: runningLog }] } as any);
+    runningTask.lastTimeLog = runningTask.timeLogs[0];
+    const visibleTasks = signal<Task[]>([new Task({ id: '8', name: 'TP-8', timeLogs: [] } as any)]);
+    const allTasks = signal<Task[]>([runningTask, ...visibleTasks()]);
+
+    const tasksServiceMock = {
+      allTasks: allTasks.asReadonly(),
+    } as any;
+    taskQueryServiceMock.query.mockReturnValue(new BehaviorSubject<Task[]>(visibleTasks()));
+
+    await TestBed.configureTestingModule({
+      providers: [
+        { provide: TasksService, useValue: tasksServiceMock },
+        { provide: TaskQueryService, useValue: taskQueryServiceMock },
+        { provide: ReportDateCalendarService, useValue: reportDateCalendarServiceMock },
+      ],
+    });
+
+    const service = TestBed.inject(TaskManagerService);
+
+    expect(service.activeTask()?.name).toBe('TP-124');
   });
 });
