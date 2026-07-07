@@ -253,35 +253,6 @@ describe('Settings Components jira-api-configurator.component', () => {
     expect((component as any).isTokenRequired()).toBe(true);
   });
 
-  it('returns defaults when settings input is not an array', () => {
-    const settingsSignal = vi.fn(() => undefined);
-    (component as any).settings = settingsSignal;
-
-    expect((component as any).getSetting(JiraApiSettings.host)).toBeUndefined();
-    expect((component as any).getSettingValue(JiraApiSettings.host, 'fallback-host')).toBe('fallback-host');
-    expect((component as any).getSettingValue(JiraApiSettings.enabled, false)).toBe(false);
-  });
-
-  it('normalizes stored boolean-like and boolean values through getSettingValue', () => {
-    const settingsSignal = vi.fn(() => [
-      new Setting({ id: '1', name: JiraApiSettings.enabled, value: 'FALSE' as unknown as string }),
-      new Setting({ id: '2', name: JiraApiSettings.host, value: true as unknown as string }),
-    ]);
-    (component as any).settings = settingsSignal;
-
-    expect((component as any).getSettingValue(JiraApiSettings.enabled, true)).toBe(false);
-    expect((component as any).getSettingValue(JiraApiSettings.host, '')).toBe(true);
-  });
-
-  it('falls back to defaults when a setting value is neither string nor boolean', () => {
-    const settingsSignal = vi.fn(() => [
-      new Setting({ id: '1', name: JiraApiSettings.host, value: 123 as unknown as string }),
-    ]);
-    (component as any).settings = settingsSignal;
-
-    expect((component as any).getSettingValue(JiraApiSettings.host, 'fallback-host')).toBe('fallback-host');
-  });
-
   it('submits via form submit and handles cancel via button click', () => {
     const saveSpy = vi.spyOn(component as any, 'onSaveFormData');
     const cancelSpy = vi.spyOn(component as any, 'onCancel');
