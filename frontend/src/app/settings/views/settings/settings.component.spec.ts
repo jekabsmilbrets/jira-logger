@@ -26,8 +26,7 @@ import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
 import type { TagManagementCommand } from '@settings/interfaces/tag-management-command.interface';
-import { SettingsChangeSaveService } from '@settings/services/settings-change-save.service';
-import { TagManagementSaveService } from '@settings/services/tag-management-save.service';
+import { SettingsChangeService } from '@settings/services/settings-change.service';
 import { SettingsComponent } from '@settings/views/settings/settings.component';
 
 @Component({
@@ -102,11 +101,9 @@ describe('Settings Views settings.component', () => {
   let matSnackBarMock: {
     open: ReturnType<typeof vi.fn>;
   };
-  let settingsChangeSaveServiceMock: {
-    save: ReturnType<typeof vi.fn>;
-  };
-  let tagManagementSaveServiceMock: {
-    save: ReturnType<typeof vi.fn>;
+  let settingsChangeServiceMock: {
+    saveSettings: ReturnType<typeof vi.fn>;
+    saveTag: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(async () => {
@@ -126,11 +123,9 @@ describe('Settings Views settings.component', () => {
     matSnackBarMock = {
       open: vi.fn(),
     };
-    settingsChangeSaveServiceMock = {
-      save: vi.fn(),
-    };
-    tagManagementSaveServiceMock = {
-      save: vi.fn(),
+    settingsChangeServiceMock = {
+      saveSettings: vi.fn(),
+      saveTag: vi.fn(),
     };
     tagsServiceMock = {
       tags: signal([
@@ -164,8 +159,7 @@ describe('Settings Views settings.component', () => {
           { provide: TagsService, useValue: tagsServiceMock },
           { provide: ReportService, useValue: reportService },
           { provide: MatSnackBar, useValue: matSnackBarMock },
-          { provide: SettingsChangeSaveService, useValue: settingsChangeSaveServiceMock },
-          { provide: TagManagementSaveService, useValue: tagManagementSaveServiceMock },
+          { provide: SettingsChangeService, useValue: settingsChangeServiceMock },
         ],
       })
       .overrideComponent(
@@ -241,9 +235,9 @@ describe('Settings Views settings.component', () => {
     timezoneCfg.settingsChange.emit(timezoneChangedSettings);
 
     expect(applyReportSettingsIntent).toHaveBeenCalledWith({ type: 'set-date', date });
-    expect(settingsChangeSaveServiceMock.save).toHaveBeenCalledWith(changedSettings);
-    expect(settingsChangeSaveServiceMock.save).toHaveBeenCalledWith(timezoneChangedSettings);
-    expect(tagManagementSaveServiceMock.save).toHaveBeenCalledWith(tagCreateEvent);
+    expect(settingsChangeServiceMock.saveSettings).toHaveBeenCalledWith(changedSettings);
+    expect(settingsChangeServiceMock.saveSettings).toHaveBeenCalledWith(timezoneChangedSettings);
+    expect(settingsChangeServiceMock.saveTag).toHaveBeenCalledWith(tagCreateEvent);
   });
 
   it('filters jira settings from full settings state', async () => {
@@ -285,7 +279,7 @@ describe('Settings Views settings.component', () => {
 
     (component as any).onSettingsChange(saveEvent);
 
-    expect(settingsChangeSaveServiceMock.save).toHaveBeenCalledWith(saveEvent);
+    expect(settingsChangeServiceMock.saveSettings).toHaveBeenCalledWith(saveEvent);
   });
 
   it('forwards tag management commands to the save service', () => {
@@ -306,9 +300,9 @@ describe('Settings Views settings.component', () => {
     (component as any).onTagManagementChange(updateEvent);
     (component as any).onTagManagementChange(deleteEvent);
 
-    expect(tagManagementSaveServiceMock.save).toHaveBeenCalledWith(createEvent);
-    expect(tagManagementSaveServiceMock.save).toHaveBeenCalledWith(updateEvent);
-    expect(tagManagementSaveServiceMock.save).toHaveBeenCalledWith(deleteEvent);
+    expect(settingsChangeServiceMock.saveTag).toHaveBeenCalledWith(createEvent);
+    expect(settingsChangeServiceMock.saveTag).toHaveBeenCalledWith(updateEvent);
+    expect(settingsChangeServiceMock.saveTag).toHaveBeenCalledWith(deleteEvent);
   });
 
 });
@@ -341,8 +335,7 @@ describe('Settings Views settings.component integration', () => {
           { provide: TagsService, useValue: tagsServiceMock },
           { provide: ReportService, useValue: reportService },
           { provide: MatSnackBar, useValue: { open: vi.fn() } },
-          { provide: SettingsChangeSaveService, useValue: { save: vi.fn() } },
-          { provide: TagManagementSaveService, useValue: { save: vi.fn() } },
+          { provide: SettingsChangeService, useValue: { saveSettings: vi.fn(), saveTag: vi.fn() } },
         ],
       })
       .compileComponents();
@@ -371,11 +364,9 @@ describe('Settings Views settings.component integration', () => {
       list: vi.fn(() => of([])),
     };
     const reportService = new ReportServiceStub();
-    const settingsChangeSaveServiceMock = {
-      save: vi.fn(),
-    };
-    const tagManagementSaveServiceMock = {
-      save: vi.fn(),
+    const settingsChangeServiceMock = {
+      saveSettings: vi.fn(),
+      saveTag: vi.fn(),
     };
 
     await TestBed.resetTestingModule()
@@ -387,8 +378,7 @@ describe('Settings Views settings.component integration', () => {
           { provide: TagsService, useValue: tagsServiceMock },
           { provide: ReportService, useValue: reportService },
           { provide: MatSnackBar, useValue: { open: vi.fn() } },
-          { provide: SettingsChangeSaveService, useValue: settingsChangeSaveServiceMock },
-          { provide: TagManagementSaveService, useValue: tagManagementSaveServiceMock },
+          { provide: SettingsChangeService, useValue: settingsChangeServiceMock },
         ],
       })
       .compileComponents();

@@ -22,8 +22,7 @@ import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
 import type { TagManagementCommand } from '@settings/interfaces/tag-management-command.interface';
-import { SettingsChangeSaveService } from '@settings/services/settings-change-save.service';
-import { TagManagementSaveService } from '@settings/services/tag-management-save.service';
+import { SettingsChangeService } from '@settings/services/settings-change.service';
 
 @Component({
   selector: 'settings-view',
@@ -45,8 +44,7 @@ export class SettingsComponent implements OnInit {
   private readonly settingsService: SettingsService = inject(SettingsService);
   private readonly reportService: ReportService = inject(ReportService);
   private readonly tagsService: TagsService = inject(TagsService);
-  private readonly settingsChangeSaveService: SettingsChangeSaveService = inject(SettingsChangeSaveService);
-  private readonly tagManagementSaveService: TagManagementSaveService = inject(TagManagementSaveService);
+  private readonly settingsChangeService: SettingsChangeService = inject(SettingsChangeService);
 
   protected readonly isLoading: Signal<boolean> = this.loaderStateService.isLoading;
   protected readonly settings: Signal<Setting[]> = this.settingsService.settings;
@@ -73,13 +71,13 @@ export class SettingsComponent implements OnInit {
   protected onSettingsChange(
     saveEvent: SettingsSaveEvent,
   ): void {
-    this.settingsChangeSaveService.save(saveEvent);
+    this.settingsChangeService.saveSettings(saveEvent);
   }
 
   protected onTagManagementChange(
     tagChangeEvent: TagManagementCommand,
   ): void {
-    this.tagManagementSaveService.save(tagChangeEvent);
+    this.settingsChangeService.saveTag(tagChangeEvent);
   }
 
   private filterSettings(settingNames: string[]): Setting[] {
