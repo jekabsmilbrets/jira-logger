@@ -13,10 +13,10 @@ import { MonitorService } from '@core/services/monitor.service';
 import { SettingsService } from '@core/services/settings.service';
 import { StorageService } from '@core/services/storage.service';
 
+import type { LoadableInitializer } from '@shared/interfaces/loadable-initializer.interface';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
-import type { LoadableInitializer } from '@shared/interfaces/loadable-initializer.interface';
 
 import { TaskBackupService } from '@tasks/services/task-backup.service';
 

@@ -1,8 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, type Signal } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 
-import { forkJoin, type Observable, switchMap, take } from 'rxjs';
+import { take } from 'rxjs';
 
 import { Setting } from '@core/models/setting.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
@@ -23,12 +22,8 @@ import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
 import type { TagManagementCommand } from '@settings/interfaces/tag-management-command.interface';
-
-const tagSuccessMessages: Record<TagManagementCommand['action'], string> = {
-  create: 'Successfully created tag!',
-  update: 'Successfully updated tag!',
-  delete: 'Successfully deleted tag!',
-};
+import { SettingsChangeSaveService } from '@settings/services/settings-change-save.service';
+import { TagManagementSaveService } from '@settings/services/tag-management-save.service';
 
 @Component({
   selector: 'settings-view',
@@ -50,7 +45,8 @@ export class SettingsComponent implements OnInit {
   private readonly settingsService: SettingsService = inject(SettingsService);
   private readonly reportService: ReportService = inject(ReportService);
   private readonly tagsService: TagsService = inject(TagsService);
-  private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
+  private readonly settingsChangeSaveService: SettingsChangeSaveService = inject(SettingsChangeSaveService);
+  private readonly tagManagementSaveService: TagManagementSaveService = inject(TagManagementSaveService);
 
   protected readonly isLoading: Signal<boolean> = this.loaderStateService.isLoading;
   protected readonly settings: Signal<Setting[]> = this.settingsService.settings;
@@ -77,55 +73,17 @@ export class SettingsComponent implements OnInit {
   protected onSettingsChange(
     saveEvent: SettingsSaveEvent,
   ): void {
-    forkJoin(
-      saveEvent.changedSettings.map(
-        (setting: Setting) => this.settingsService.update(setting, true),
-      ),
-    )
-      .pipe(
-        take(1),
-        switchMap(() => this.settingsService.list()),
-        take(1),
-      )
-      .subscribe({
-        next: () => this.matSnackBar.open(
-          saveEvent.successMessage,
-          undefined,
-          { duration: 5000 },
-        ),
-        error: () => undefined,
-      });
+    this.settingsChangeSaveService.save(saveEvent);
   }
 
   protected onTagManagementChange(
     tagChangeEvent: TagManagementCommand,
   ): void {
-    this.createTagRequest(tagChangeEvent)
-      .pipe(take(1))
-      .subscribe({
-        next: () => this.matSnackBar.open(
-          tagSuccessMessages[tagChangeEvent.action],
-          undefined,
-          { duration: 5000 },
-        ),
-        error: () => undefined,
-      });
+    this.tagManagementSaveService.save(tagChangeEvent);
   }
 
   private filterSettings(settingNames: string[]): Setting[] {
     return this.settings().filter((setting: Setting) => settingNames.includes(setting.name));
   }
 
-  private createTagRequest(
-    command: TagManagementCommand,
-  ): Observable<Tag | void> {
-    switch (command.action) {
-      case 'create':
-        return this.tagsService.create(command.tag);
-      case 'update':
-        return this.tagsService.update(command.tag);
-      case 'delete':
-        return this.tagsService.delete(command.tag);
-    }
-  }
 }

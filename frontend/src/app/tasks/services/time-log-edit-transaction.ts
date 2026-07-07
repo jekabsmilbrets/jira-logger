@@ -4,9 +4,8 @@ import { concatMap, from, type Observable, of, switchMap, tap, toArray } from 'r
 
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
-import type { TimeLogsService } from '@shared/services/time-logs.service';
 
-type TimeLogPersistenceAdapter = Pick<TimeLogsService, 'list' | 'create' | 'update' | 'delete'>;
+import type { TimeLogPersistenceAdapter } from '@tasks/interfaces/time-log-persistence-adapter.interface';
 
 interface TimeLogSaveOperation {
   request$: Observable<TimeLog | void>;
