@@ -24,7 +24,12 @@ export class TimezoneService {
     }
 
     try {
-      new Intl.DateTimeFormat('en-US', { timeZone: normalizedTimezone });
+      new Intl.DateTimeFormat(
+        'en-US',
+        {
+          timeZone: normalizedTimezone,
+        },
+      );
 
       return true;
     } catch {

@@ -1,18 +1,11 @@
-import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
+import { signal, type WritableSignal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
 
-import { BehaviorSubject } from 'rxjs';
+import { ResponsiveMenuService } from '@shared/services/responsive-menu.service';
 
-import { ReportDateSelectorComponent } from '@shared/components/report-menu/report-date-selector/report-date-selector.component';
-import { ReportHideUnreportedTasksComponent } from '@shared/components/report-menu/report-hide-unreported-tasks/report-hide-unreported-tasks.component';
-import { ReportModeSwitcherComponent } from '@shared/components/report-menu/report-mode-switcher/report-mode-switcher.component';
-import { ReportShowWeekendsComponent } from '@shared/components/report-menu/report-show-weekends/report-show-weekends.component';
-import { ReportTagFilterComponent } from '@shared/components/report-menu/report-tag-filter/report-tag-filter.component';
-import { Tag } from '@shared/models/tag.model';
-
-import { ReportMode } from '@report/enums/report-mode.enum';
+import { ReportSettingsControlsComponent } from '@report/components/report-settings-controls/report-settings-controls.component';
 import { ReportService } from '@report/services/report.service';
 import { ReportServiceStub } from '@report/testing/report-service.stub';
 
@@ -23,24 +16,22 @@ describe('ReportMenuComponent', () => {
   let component: ReportMenuComponent;
   let reportService: ReportServiceStub;
   let matDialog: { open: ReturnType<typeof vi.fn> };
-  const isSmallScreen$ = new BehaviorSubject<BreakpointState>({
-    matches: true,
-    breakpoints: { '(max-width: 1300px)': true },
-  });
+  let isSmallerThanDesktop: WritableSignal<boolean>;
 
   beforeEach(async () => {
     matDialog = {
       open: vi.fn(),
     };
     reportService = new ReportServiceStub();
+    isSmallerThanDesktop = signal(true);
 
     await TestBed.configureTestingModule({
       imports: [ReportMenuComponent],
       providers: [
         {
-          provide: BreakpointObserver,
+          provide: ResponsiveMenuService,
           useValue: {
-            observe: vi.fn().mockReturnValue(isSmallScreen$.asObservable()),
+            isSmallerThanDesktop: isSmallerThanDesktop.asReadonly(),
           },
         },
         { provide: MatDialog, useValue: matDialog },
@@ -50,7 +41,6 @@ describe('ReportMenuComponent', () => {
 
     fixture = TestBed.createComponent(ReportMenuComponent);
     component = fixture.componentInstance;
-    (component as any).ReportMode = ReportMode;
 
     fixture.detectChanges();
   });
@@ -62,27 +52,14 @@ describe('ReportMenuComponent', () => {
     expect(result).toBe(true);
   });
 
-  it('updates ReportService state through component handlers', () => {
+  it('updates ReportService settings through Report Settings controls intent', () => {
     const date = new Date('2026-05-30T00:00:00.000Z');
-    const startDate = new Date('2026-05-01T00:00:00.000Z');
-    const endDate = new Date('2026-05-31T00:00:00.000Z');
-    const tags = [{ id: 'tag-1', name: 'Backend' } as Tag];
+    const applySettingsIntentSpy = vi.spyOn(reportService, 'applySettingsIntent');
 
-    (component as any).onReportModeChange(ReportMode.dateRange);
-    (component as any).onTagChange(tags);
-    (component as any).onDateChange(date);
-    (component as any).onStartDateChange(startDate);
-    (component as any).onEndDateChange(endDate);
-    (component as any).onShowWeekendsChange(true);
-    (component as any).onHideUnreportedTasksChange(true);
+    (component as any).onSettingsIntent({ type: 'set-date', date });
 
-    expect(reportService.reportMode()).toBe(ReportMode.dateRange);
-    expect(reportService.tags()).toBe(tags);
-    expect(reportService.date()).toBe(date);
-    expect(reportService.startDate()).toBe(startDate);
-    expect(reportService.endDate()).toBe(endDate);
-    expect(reportService.showWeekends()).toBe(true);
-    expect(reportService.hideUnreportedTasks()).toBe(true);
+    expect(applySettingsIntentSpy).toHaveBeenCalledTimes(1);
+    expect(applySettingsIntentSpy).toHaveBeenCalledWith({ type: 'set-date', date });
   });
 
   it('opens dialog for small screen menu', () => {
@@ -93,7 +70,7 @@ describe('ReportMenuComponent', () => {
   });
 
   it('opens small-screen dialog from template button click', () => {
-    isSmallScreen$.next({ matches: true, breakpoints: { '(max-width: 1300px)': true } });
+    isSmallerThanDesktop.set(true);
     fixture.detectChanges();
 
     const button = fixture.debugElement.query(By.css('button[mat-icon-button]'));
@@ -111,87 +88,38 @@ describe('ReportMenuComponent', () => {
   });
 
   it('renders small-screen button when viewport is small and menu items when desktop', () => {
-    isSmallScreen$.next({ matches: true, breakpoints: { '(max-width: 1300px)': true } });
+    isSmallerThanDesktop.set(true);
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('button[mat-icon-button]'))).toBeTruthy();
-    expect(fixture.debugElement.query(By.css('shared-report-mode-switcher'))).toBeFalsy();
+    expect(fixture.debugElement.query(By.directive(ReportSettingsControlsComponent))).toBeFalsy();
 
-    isSmallScreen$.next({ matches: false, breakpoints: { '(max-width: 1300px)': false } });
+    isSmallerThanDesktop.set(false);
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('button[mat-icon-button]'))).toBeFalsy();
-    expect(fixture.debugElement.query(By.css('shared-report-mode-switcher'))).toBeTruthy();
-    expect(fixture.debugElement.query(By.css('shared-report-tag-filter'))).toBeTruthy();
+    expect(fixture.debugElement.query(By.directive(ReportSettingsControlsComponent))).toBeTruthy();
   });
 
-  it('toggles date selector and weekends controls by report mode in template', () => {
-    isSmallScreen$.next({ matches: false, breakpoints: { '(max-width: 1300px)': false } });
-    reportService.setReportMode(ReportMode.total);
+  it('passes compact menu settings to shared controls', () => {
+    isSmallerThanDesktop.set(false);
     fixture.detectChanges();
 
-    expect(fixture.debugElement.query(By.css('shared-report-show-weekends'))).toBeTruthy();
-    expect(fixture.debugElement.query(By.css('shared-report-date-selector'))).toBeFalsy();
-
-    reportService.setReportMode(ReportMode.date);
-    fixture.detectChanges();
-    expect(fixture.debugElement.query(By.css('shared-report-show-weekends'))).toBeFalsy();
-    expect(fixture.debugElement.query(By.css('shared-report-date-selector'))).toBeTruthy();
-
-    reportService.setReportMode(ReportMode.dateRange);
-    fixture.detectChanges();
-    expect(fixture.debugElement.query(By.css('shared-report-show-weekends'))).toBeTruthy();
-    expect(fixture.debugElement.query(By.css('shared-report-date-selector'))).toBeTruthy();
+    const controls = fixture.debugElement.query(By.directive(ReportSettingsControlsComponent)).componentInstance as ReportSettingsControlsComponent;
+    expect(controls.hideWeekendsWhenDateMode()).toBe(true);
+    expect(controls.state()).toEqual(reportService.settingsControlsState());
   });
 
-  it('shows date picker only for date and dateRange modes', () => {
-    reportService.setReportMode(ReportMode.total);
-    let result = (component as any).showDatePicker();
-    expect(result).toBe(false);
-
-    reportService.setReportMode(ReportMode.date);
-    result = (component as any).showDatePicker();
-    expect(result).toBe(true);
-
-    reportService.setReportMode(ReportMode.dateRange);
-    result = (component as any).showDatePicker();
-    expect(result).toBe(true);
-  });
-
-  it('wires desktop menu child outputs through template listeners', () => {
-    isSmallScreen$.next({ matches: false, breakpoints: { '(max-width: 1300px)': false } });
-    reportService.setReportMode(ReportMode.dateRange);
+  it('wires shared controls output through template listener', () => {
+    isSmallerThanDesktop.set(false);
     fixture.detectChanges();
 
-    const modeSpy = vi.spyOn(component as any, 'onReportModeChange');
-    const tagSpy = vi.spyOn(component as any, 'onTagChange');
-    const dateSpy = vi.spyOn(component as any, 'onDateChange');
-    const startSpy = vi.spyOn(component as any, 'onStartDateChange');
-    const endSpy = vi.spyOn(component as any, 'onEndDateChange');
-    const weekendsSpy = vi.spyOn(component as any, 'onShowWeekendsChange');
-    const hideSpy = vi.spyOn(component as any, 'onHideUnreportedTasksChange');
+    const intentSpy = vi.spyOn(component as any, 'onSettingsIntent');
     const date = new Date('2026-05-15T00:00:00.000Z');
+    const controls = fixture.debugElement.query(By.directive(ReportSettingsControlsComponent)).componentInstance as ReportSettingsControlsComponent;
 
-    const hideUnreported = fixture.debugElement.query(By.directive(ReportHideUnreportedTasksComponent)).componentInstance as any;
-    const showWeekends = fixture.debugElement.query(By.directive(ReportShowWeekendsComponent)).componentInstance as any;
-    const dateSelector = fixture.debugElement.query(By.directive(ReportDateSelectorComponent)).componentInstance as any;
-    const tagFilter = fixture.debugElement.query(By.directive(ReportTagFilterComponent)).componentInstance as any;
-    const modeSwitcher = fixture.debugElement.query(By.directive(ReportModeSwitcherComponent)).componentInstance as any;
+    controls.settingsIntent.emit({ type: 'set-date', date });
 
-    hideUnreported.hideUnreportedTasksChange.emit(true);
-    showWeekends.showWeekendsChange.emit(true);
-    dateSelector.dateChange.emit(date);
-    dateSelector.startDateChange.emit(date);
-    dateSelector.endDateChange.emit(date);
-    tagFilter.tagChange.emit([{ id: 't-1', name: 'Backend' } as Tag]);
-    modeSwitcher.reportModeChange.emit(ReportMode.date);
-
-    expect(hideSpy).toHaveBeenCalled();
-    expect(weekendsSpy).toHaveBeenCalled();
-    expect(dateSpy).toHaveBeenCalled();
-    expect(startSpy).toHaveBeenCalled();
-    expect(endSpy).toHaveBeenCalled();
-    expect(tagSpy).toHaveBeenCalled();
-    expect(modeSpy).toHaveBeenCalled();
+    expect(intentSpy).toHaveBeenCalledWith({ type: 'set-date', date });
   });
 });

@@ -1,21 +1,20 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, type Signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, type Signal } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
-
-import { catchError, type Observable, of, switchMap } from 'rxjs';
 
 import { TableComponent } from '@shared/components/table/table.component';
 import type { Column } from '@shared/interfaces/column.interface';
 import type { Searchable } from '@shared/interfaces/searchable.interface';
+import type { TableRowAction } from '@shared/interfaces/table-row-action.interface';
 import { Task } from '@shared/models/task.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
-import { TasksService } from '@shared/services/tasks.service';
-import { TimeLogsService } from '@shared/services/time-logs.service';
 
-import { ReportMode } from '@report/enums/report-mode.enum';
-import type { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
+import type { JiraWorkLogSyncOutcome } from '@tasks/interfaces/jira-work-log-sync-outcome.interface';
+import { JiraWorkLogSyncService } from '@tasks/services/jira-work-log-sync.service';
+
+import type { ReportViewState } from '@report/interfaces/report-view-state.interface';
 import { ReportService } from '@report/services/report.service';
+import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
 
 @Component({
   selector: 'report-view',
@@ -29,19 +28,13 @@ import { ReportService } from '@report/services/report.service';
 })
 export class ReportViewComponent {
   private readonly reportService: ReportService = inject(ReportService);
-  private readonly tasksService: TasksService = inject(TasksService);
-  private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
+  private readonly jiraWorkLogSyncService: JiraWorkLogSyncService = inject(JiraWorkLogSyncService);
+  private readonly reportDateCalendarService: ReportDateCalendarService = inject(ReportDateCalendarService);
   private readonly clipboard: Clipboard = inject(Clipboard);
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
 
-  protected readonly tasks: Signal<Task[]> = this.reportService.tasks;
-  protected readonly state: Signal<ReportStateSnapshot> = this.reportService.state;
-
-  protected readonly ReportMode: typeof ReportMode = ReportMode;
-
-  protected get columns(): Signal<Column[]> {
-    return this.reportService.columns;
-  }
+  protected readonly state: Signal<ReportViewState> = this.reportService.viewState;
+  protected readonly rowActions: Signal<TableRowAction[]> = computed(() => this.buildRowActions());
 
   protected onCellClick(
     [row, column]: [Searchable, Column],
@@ -52,7 +45,7 @@ export class ReportViewComponent {
 
     switch (column.cellClickType) {
       case 'readableTime': {
-        const timeLogged: number = column.cell(task);
+        const timeLogged: number = Number(column.cell(task) ?? 0);
         const readableTimePipe: ReadableTimePipe = new ReadableTimePipe();
 
         outputValue = readableTimePipe.transform(timeLogged);
@@ -63,7 +56,7 @@ export class ReportViewComponent {
       case 'string':
       case undefined:
       default:
-        outputValue = column.cell(task);
+        outputValue = String(column.cell(task) ?? '');
         message = `Copied Task "${ task.name }" field "${ column.header }" value to clipboard "${ outputValue }"!`;
         break;
     }
@@ -76,35 +69,22 @@ export class ReportViewComponent {
     row: Searchable,
   ): void {
     const task: Task = row as Task;
-    const date: Date | null = this.state().date;
+    const date: Date | null = this.state().reportDate;
 
     if (!(date instanceof Date)) {
       return;
     }
 
-    const syncDateToJiraApi$: Observable<boolean> = this.tasksService.syncDateToJiraApi(
-      task,
-      date,
-    );
+    this.jiraWorkLogSyncService.syncReportDate(task, date)
+      .subscribe({
+        next: (outcome: JiraWorkLogSyncOutcome) => {
+          this.openSnackBar(outcome.message, outcome.duration);
 
-    const syncRequest$: Observable<unknown> = task.isTimeLogRunning ?
-      this.timeLogsService.stop(task)
-        .pipe(
-          catchError(() => of(null)),
-          switchMap(() => syncDateToJiraApi$),
-          switchMap(() => this.timeLogsService.start(task)),
-        ) :
-      syncDateToJiraApi$;
-
-    syncRequest$.subscribe({
-      next: () => {
-        this.openSnackBar(`Task "${ task.name }" synced successfully!`);
-        this.reportService.reload();
-      },
-      error: (error: HttpErrorResponse) => this.openSnackBar(
-        `Task "${ task.name }" failed synced! ${ error?.error?.errors?.join(', ') }`,
-      ),
-    });
+          if (outcome.reloadReport) {
+            this.reportService.reload();
+          }
+        },
+      });
   }
 
   protected onFooterCellClicked(
@@ -138,15 +118,43 @@ export class ReportViewComponent {
 
   private openSnackBar(
     message: string,
-    duration: number = 5000,
+    duration: number | null = 5000,
   ): void {
     this.matSnackBar.open(
       message,
       undefined,
       {
-        duration,
+        duration: duration ?? undefined,
       },
     );
+  }
+
+  private buildRowActions(): TableRowAction[] {
+    if (!this.state().canSyncJiraWorkLogs) {
+      return [];
+    }
+
+    return [
+      {
+        id: 'sync',
+        columnDef: 'sync',
+        header: 'Sync',
+        icon: 'sync',
+        ariaLabel: 'Sync task to Jira',
+        color: 'warn',
+        tooltip: 'Task already synced with JIRA server!',
+        isDisabled: (row: Searchable) => this.isTaskSynced(row as Task),
+      },
+    ];
+  }
+
+  private isTaskSynced(
+    task: Task,
+  ): boolean {
+    const date: Date | null = this.state().reportDate;
+
+    return date instanceof Date &&
+      this.reportDateCalendarService.isTaskSyncedForReportDate(task, date);
   }
 
 }
