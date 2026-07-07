@@ -1,4 +1,4 @@
-export interface TaskBackupV2 {
+export interface TaskBackup {
   version: 2;
   exportedAt: number;
   tasks: TaskBackupTask[];

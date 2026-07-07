@@ -6,10 +6,15 @@ export interface ImportTimeLogInput {
   description?: string;
 }
 
+export interface ImportTagInput {
+  name: string;
+  existingTagId?: string;
+}
+
 export interface ImportTaskInput {
   name: string;
   description?: string;
-  tags: string[];
+  tags: ImportTagInput[];
   timeLogs: ImportTimeLogInput[];
   unsupportedMetadata?: TaskBackupUnsupportedMetadata;
 }

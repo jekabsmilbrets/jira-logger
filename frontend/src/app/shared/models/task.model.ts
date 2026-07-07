@@ -4,7 +4,6 @@ import { getDateParts } from '@core/utilities/get-date-parts.utility';
 import {
   fromWallClockDateInTimezone,
   getDateTimePartsInTimezone,
-  isSameCalendarDateInTimezone,
 } from '@core/utilities/timezone-date.utility';
 
 import type { Searchable } from '@shared/interfaces/searchable.interface';
@@ -163,23 +162,6 @@ export class Task extends Base implements Searchable {
         reduceFn,
         0,
       ) ?? 0;
-  }
-
-  public calcTimeSynced(startDate: Date, timezone?: string): number {
-    const date: Date = new Date(startDate.getTime());
-    date.setHours(0, 0, 0, 0);
-
-    const jiraWorkLog: JiraWorkLog | undefined = this._jiraWorkLogs.find(
-      (_jiraWorkLog: JiraWorkLog) => timezone ?
-        isSameCalendarDateInTimezone(_jiraWorkLog.startTime, date, timezone) :
-        _jiraWorkLog.startTime.getTime() === date.getTime(),
-    );
-
-    if (!jiraWorkLog) {
-      return 0;
-    }
-
-    return jiraWorkLog.timeSpentSeconds;
   }
 
   private getDayRange(date: Date, timezone?: string): [Date, Date] {

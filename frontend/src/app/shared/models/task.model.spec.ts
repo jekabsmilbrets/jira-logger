@@ -1,6 +1,5 @@
 import { fromWallClockDateInTimezone } from '@core/utilities/timezone-date.utility';
 
-import { JiraWorkLog } from './jira-work-log.model';
 import { Tag } from './tag.model';
 import { Task } from './task.model';
 import { TimeLog } from './time-log.model';
@@ -69,22 +68,7 @@ describe('Shared Models task.model', () => {
     expect(task.calcTimeLogged([])).toBe(0);
   });
 
-  it('calculates synced time for date and handles missing jira work logs', () => {
-    const task = new Task({} as any);
-    const syncedDay = new Date('2024-01-04T10:00:00.000Z');
-    syncedDay.setHours(0, 0, 0, 0);
-    task.jiraWorkLogs = [
-      new JiraWorkLog({
-        startTime: syncedDay,
-        timeSpentSeconds: 120,
-      } as any),
-    ];
-
-    expect(task.calcTimeSynced(new Date('2024-01-04T10:00:00.000Z'))).toBe(120);
-    expect(task.calcTimeSynced(new Date('2024-01-05T10:00:00.000Z'))).toBe(0);
-  });
-
-  it('groups logged and synced time using the provided timezone instead of browser local time', () => {
+  it('groups logged time using the provided timezone instead of browser local time', () => {
     const timezone = 'Europe/Vienna';
     const june2InVienna = fromWallClockDateInTimezone(new Date(2026, 5, 2, 12, 0, 0), timezone);
     const june3InVienna = fromWallClockDateInTimezone(new Date(2026, 5, 3, 12, 0, 0), timezone);
@@ -95,21 +79,16 @@ describe('Shared Models task.model', () => {
           endTime: new Date('2026-06-02T22:00:00.000Z'),
         } as any),
       ],
-      jiraWorkLogs: [
-        new JiraWorkLog({
-          startTime: new Date('2026-06-02T21:00:00.000Z'),
-          timeSpentSeconds: 1800,
-        } as any),
-      ],
     } as any);
 
     expect(task.calcTimeLoggedForDate(june2InVienna, timezone)).toBe(1800);
     expect(task.calcTimeLoggedForDate(june3InVienna, timezone)).toBe(0);
-    expect(task.calcTimeSynced(june2InVienna, timezone)).toBe(1800);
-    expect(task.calcTimeSynced(june3InVienna, timezone)).toBe(0);
   });
 
   it('splits time logs by overlap with each timezone day instead of assigning all time to the start day', () => {
+    const timezone = 'Europe/Vienna';
+    const june5InVienna = fromWallClockDateInTimezone(new Date(2026, 5, 5, 12), timezone);
+    const june6InVienna = fromWallClockDateInTimezone(new Date(2026, 5, 6, 12), timezone);
     const task = new Task({
       timeLogs: [
         new TimeLog({
@@ -123,7 +102,7 @@ describe('Shared Models task.model', () => {
       ],
     } as any);
 
-    expect(task.calcTimeLoggedForDate(new Date(2026, 5, 5), 'Europe/Vienna')).toBe(86340);
-    expect(task.calcTimeLoggedForDate(new Date(2026, 5, 6), 'Europe/Vienna')).toBe(86340);
+    expect(task.calcTimeLoggedForDate(june5InVienna, timezone)).toBe(86340);
+    expect(task.calcTimeLoggedForDate(june6InVienna, timezone)).toBe(86340);
   });
 });

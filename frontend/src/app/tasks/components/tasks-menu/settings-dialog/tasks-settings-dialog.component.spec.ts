@@ -1,12 +1,11 @@
-import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
 
 import { vi } from 'vitest';
 
-import { Tag } from '@shared/models/tag.model';
-import { TagsService } from '@shared/services/tags.service';
+import type { TaskImportRequest } from '@tasks/interfaces/import-report.interface';
+import { TaskBackupService } from '@tasks/services/task-backup.service';
 
 import { TasksSettingsDialogComponent } from './tasks-settings-dialog.component';
 
@@ -15,12 +14,19 @@ describe('Tasks Components tasks-settings-dialog.component', () => {
     close: vi.fn(),
   };
 
-  const tagsServiceMock = {
-    tags: signal<Tag[]>([]).asReadonly(),
+  const importRequest: TaskImportRequest = {
+    tasks: [],
+    warnings: [],
+  };
+  const taskBackupServiceMock = {
+    exportTasksForUser: vi.fn(() => '{ "version": 2, "tasks": [] }'),
+    parseTaskImportRequest: vi.fn(() => importRequest),
   };
 
   beforeEach(async () => {
     dialogRefMock.close.mockReset();
+    taskBackupServiceMock.exportTasksForUser.mockClear();
+    taskBackupServiceMock.parseTaskImportRequest.mockClear();
 
     await TestBed.configureTestingModule({
       imports: [TasksSettingsDialogComponent],
@@ -36,8 +42,8 @@ describe('Tasks Components tasks-settings-dialog.component', () => {
           useValue: dialogRefMock,
         },
         {
-          provide: TagsService,
-          useValue: tagsServiceMock,
+          provide: TaskBackupService,
+          useValue: taskBackupServiceMock,
         },
       ],
     }).compileComponents();
@@ -72,58 +78,15 @@ describe('Tasks Components tasks-settings-dialog.component', () => {
       onImport: () => Promise<void>;
       tasksSettingsFormModel: { set: (value: { json: string }) => void };
     };
-    const tag = new Tag({ id: '1', name: 'Frontend' });
-
-    tagsServiceMock.tags = signal([tag]).asReadonly();
-
     component.tasksSettingsFormModel.set({
-      json: JSON.stringify([
-        {
-          _name: 'Imported task',
-          _description: 'Imported',
-          _timeLogs: [],
-          _tags: [{ _id: '1' }],
-        },
-      ]),
+      json: '{"tasks":[]}',
     });
 
     await component.onImport();
 
+    expect(taskBackupServiceMock.parseTaskImportRequest).toHaveBeenCalledWith('{"tasks":[]}');
     expect(dialogRefMock.close).toHaveBeenCalledTimes(1);
-    expect(dialogRefMock.close).toHaveBeenCalledWith({
-      tasks: [
-        {
-          name: 'Imported task',
-          description: 'Imported',
-          timeLogs: [],
-          tags: ['Frontend'],
-          unsupportedMetadata: {
-            task: undefined,
-            timeLogs: undefined,
-            tags: [{ id: '1', createdAt: undefined, updatedAt: undefined }],
-            lastTimeLog: undefined,
-            jiraWorkLogs: undefined,
-            timeLogged: undefined,
-          },
-        },
-      ],
-      warnings: [
-        {
-          code: 'unsupported-metadata',
-          taskName: 'Imported task',
-          fields: ['source tag metadata'],
-          message: 'Task "Imported task" contains backup-only metadata: source tag metadata.',
-          metadata: {
-            task: undefined,
-            timeLogs: undefined,
-            tags: [{ id: '1', createdAt: undefined, updatedAt: undefined }],
-            lastTimeLog: undefined,
-            jiraWorkLogs: undefined,
-            timeLogged: undefined,
-          },
-        },
-      ],
-    });
+    expect(dialogRefMock.close).toHaveBeenCalledWith(importRequest);
   });
 
   it('shows inline error and does not close when JSON is invalid', async () => {
@@ -136,12 +99,15 @@ describe('Tasks Components tasks-settings-dialog.component', () => {
     component.tasksSettingsFormModel.set({
       json: '{invalid json}',
     });
+    taskBackupServiceMock.parseTaskImportRequest.mockImplementationOnce(() => {
+      throw new Error('Invalid task backup JSON.');
+    });
 
     await component.onImport();
     fixture.detectChanges();
 
     expect(dialogRefMock.close).not.toHaveBeenCalled();
-    expect(fixture.nativeElement.textContent).toContain('JSON');
+    expect(fixture.nativeElement.textContent).toContain('Invalid task backup JSON.');
   });
 
   it('exports canonical backup JSON in preview and clipboard binding', async () => {
@@ -153,6 +119,7 @@ describe('Tasks Components tasks-settings-dialog.component', () => {
 
     const preview = fixture.debugElement.query(By.css('pre'));
 
+    expect(taskBackupServiceMock.exportTasksForUser).toHaveBeenCalledWith([]);
     expect(preview.nativeElement.textContent).toContain('"version": 2');
     expect(component.currentBackupJson()).toContain('"tasks"');
   });
