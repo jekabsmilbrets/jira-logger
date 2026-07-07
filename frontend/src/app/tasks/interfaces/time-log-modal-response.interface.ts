@@ -1,6 +1,9 @@
 import { TimeLog } from '@shared/models/time-log.model';
 
-import type { TimeLogModalResponseType } from '@tasks/types/time-log-modal-response.type';
+export type TimeLogModalResponseType =
+  'cancel'
+  | 'update'
+  | 'delete';
 
 export interface TimeLogModalResponse {
   responseType: TimeLogModalResponseType;

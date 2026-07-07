@@ -4,7 +4,9 @@ import { concatMap, from, type Observable, of, switchMap, tap, toArray } from 'r
 
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
-import { TimeLogsService } from '@shared/services/time-logs.service';
+import type { TimeLogsService } from '@shared/services/time-logs.service';
+
+type TimeLogPersistenceAdapter = Pick<TimeLogsService, 'list' | 'create' | 'update' | 'delete'>;
 
 interface TimeLogSaveOperation {
   request$: Observable<TimeLog | void>;
@@ -114,9 +116,9 @@ export class TimeLogEditTransaction {
 
   public save(
     task: Task,
-    timeLogsService: TimeLogsService,
+    timeLogsAdapter: TimeLogPersistenceAdapter,
   ): Observable<TimeLog[]> {
-    const operations: TimeLogSaveOperation[] = this.buildSaveOperations(task, timeLogsService);
+    const operations: TimeLogSaveOperation[] = this.buildSaveOperations(task, timeLogsAdapter);
 
     if (operations.length === 0) {
       return of(this.timeLogs());
@@ -128,7 +130,7 @@ export class TimeLogEditTransaction {
           tap((result: TimeLog | void) => operation.onSuccess(result)),
         )),
         toArray(),
-        switchMap(() => timeLogsService.list(task)),
+        switchMap(() => timeLogsAdapter.list(task)),
         tap((timeLogs: TimeLog[]) => {
           this.timeLogsState.set([...timeLogs]);
           this.resetTrackedChanges();
@@ -208,11 +210,11 @@ export class TimeLogEditTransaction {
 
   private buildSaveOperations(
     task: Task,
-    timeLogsService: TimeLogsService,
+    timeLogsAdapter: TimeLogPersistenceAdapter,
   ): TimeLogSaveOperation[] {
     return [
       ...this.createdTimeLogs().map((timeLog: TimeLog) => ({
-        request$: timeLogsService.create(task, timeLog),
+        request$: timeLogsAdapter.create(task, timeLog),
         onSuccess: (result: TimeLog | void) => {
           if (result instanceof TimeLog) {
             this.replaceTimeLog(timeLog, result);
@@ -224,7 +226,7 @@ export class TimeLogEditTransaction {
         },
       })),
       ...this.updatedTimeLogs().map((timeLog: TimeLog) => ({
-        request$: timeLogsService.update(task, timeLog),
+        request$: timeLogsAdapter.update(task, timeLog),
         onSuccess: (result: TimeLog | void) => {
           if (result instanceof TimeLog) {
             this.replaceTimeLog(timeLog, result);
@@ -236,7 +238,7 @@ export class TimeLogEditTransaction {
         },
       })),
       ...this.deletedTimeLogs().map((timeLog: TimeLog) => ({
-        request$: timeLogsService.delete(task, timeLog),
+        request$: timeLogsAdapter.delete(task, timeLog),
         onSuccess: () => {
           this.deletedTimeLogs.set(this.deletedTimeLogs().filter(
             (deletedTimeLog: TimeLog) => deletedTimeLog.id !== timeLog.id,

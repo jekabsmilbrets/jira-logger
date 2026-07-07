@@ -22,14 +22,12 @@
     </mat-toolbar>
 
     <shared-shared-table (cellClicked)="onCellClick($event)"
-                         (removeAction)="onRemoveAction($event)"
+                         (rowAction)="onRemoveAction($event[0])"
                          [columns]="columns"
                          [data]="timeLogs()"
                          [enableFooter]="true"
-                         [enableRemoveAction]="true"
                          [isSelectable]="false"
-                         [stickyFooter]="true"
-                         [stickyHeader]="true"
+                         [rowActions]="rowActions"
                          sortDirection="desc"
                          sortField="startTime"/>
 </mat-dialog-content>

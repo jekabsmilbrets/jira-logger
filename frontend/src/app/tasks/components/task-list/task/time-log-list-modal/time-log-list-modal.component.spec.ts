@@ -334,7 +334,7 @@ describe('Tasks Components time-log-list-modal.component', () => {
     const table = fixture.debugElement.query(By.directive(TableComponent)).componentInstance as any;
     const timeLog = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
     table.cellClicked.emit([timeLog, { columnDef: 'startTime', header: 'Start' }]);
-    table.removeAction.emit(timeLog);
+    table.rowAction.emit([timeLog, 'remove']);
     await cellSpy.mock.results[0]?.value;
 
     expect(cellSpy).toHaveBeenCalledTimes(1);

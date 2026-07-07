@@ -10,16 +10,18 @@ import { take } from 'rxjs';
 
 import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
+import { formatDateInTimezone } from '@core/utilities/format-date-in-timezone.utility';
 
 import { TableComponent } from '@shared/components/table/table.component';
 import type { Column } from '@shared/interfaces/column.interface';
 import type { Searchable } from '@shared/interfaces/searchable.interface';
+import type { TableRowAction } from '@shared/interfaces/table-row-action.interface';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 import type { AsyncLoader } from '@shared/types/async-loader.type';
 
 import { createTimeLogListColumns } from '@tasks/constants/time-log-list-columns.constant';
-import type { TimeLogListDialogData } from '@tasks/interfaces/time-log-list-dialog-data.interface';
+import type { TimeLogListDialogData } from '@tasks/interfaces/time-log-dialog-data.interface';
 import type { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
 import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
 import type { TimeLogEditService } from '@tasks/services/time-log-edit.service';
@@ -44,6 +46,17 @@ export class TimeLogListModalComponent {
   protected readonly data: TimeLogListDialogData = inject<TimeLogListDialogData>(MAT_DIALOG_DATA);
 
   protected columns: Column[];
+  protected readonly rowActions: TableRowAction[] = [
+    {
+      id: 'remove',
+      columnDef: 'remove',
+      header: 'Remove',
+      icon: 'delete',
+      ariaLabel: 'Remove row',
+      color: 'warn',
+      confirmLabel: (row: Searchable) => this.buildRemoveConfirmationLabel(row as TimeLog),
+    },
+  ];
 
   private readonly loadTimeLogEditService: AsyncLoader<TimeLogEditService> = injectAsync(
     () => import('@tasks/services/time-log-edit.service').then((m) => m.TimeLogEditService),
@@ -107,7 +120,7 @@ export class TimeLogListModalComponent {
     timeLogEditService
       .openTimeLogDialog(timeLog as TimeLog)
       .pipe(take(1))
-      .subscribe((response: TimeLogModalResponse | undefined) => this.handleTimeLogDialogResponse(response, timeLog as TimeLog));
+      .subscribe((response: TimeLogModalResponse | undefined) => this.applyDialogResponse(response, timeLog as TimeLog));
   }
 
   protected onCreateAction(
@@ -138,49 +151,25 @@ export class TimeLogListModalComponent {
 
     timeLogEditService.openTimeLogDialog(timeLog)
       .pipe(take(1))
-      .subscribe((response: TimeLogModalResponse | undefined) => this.handleTimeLogDialogResponse(response));
+      .subscribe((response: TimeLogModalResponse | undefined) => this.applyDialogResponse(response));
   }
 
-  private handleTimeLogDialogResponse(
+  private applyDialogResponse(
     response: TimeLogModalResponse | undefined,
-    timeLog?: TimeLog,
-  ): void {
-    const responseHandlers: Record<NonNullable<TimeLogModalResponse['responseType']>, () => void> = {
-      cancel: () => undefined,
-      create: () => {
-        if (response?.responseData) {
-          this.applyUpsertTimeLogResponse(response.responseData);
-        }
-      },
-      update: () => {
-        if (response?.responseData) {
-          this.applyUpsertTimeLogResponse(response.responseData, timeLog);
-        }
-      },
-      delete: () => {
-        if (timeLog) {
-          this.onRemoveAction(timeLog);
-        }
-      },
-    };
-
-    if (!response) {
-      return;
-    }
-
-    responseHandlers[response.responseType]();
-  }
-
-  private applyUpsertTimeLogResponse(
-    nextTimeLog: TimeLog,
     sourceTimeLog?: TimeLog,
   ): void {
-    if (sourceTimeLog) {
-      this.onUpdateAction(sourceTimeLog, nextTimeLog);
-      return;
+    if (response?.responseType === 'update' && response.responseData) {
+      if (sourceTimeLog) {
+        this.transaction.update(sourceTimeLog, response.responseData);
+        return;
+      }
+
+      this.transaction.create(response.responseData);
     }
 
-    this.onCreateAction(nextTimeLog);
+    if (response?.responseType === 'delete' && sourceTimeLog) {
+      this.transaction.remove(sourceTimeLog);
+    }
   }
 
   private buildSaveErrorMessage(
@@ -202,5 +191,28 @@ export class TimeLogListModalComponent {
         duration,
       },
     );
+  }
+
+  private buildRemoveConfirmationLabel(
+    timeLog: TimeLog,
+  ): string {
+    const timeLogDate: string = formatDateInTimezone(timeLog.date, 'yyyy-MM-dd', this.localeService.locale, this.timezoneService.timezone);
+    const timeLogStart: string | null = this.formatTimePart(timeLog.startTime);
+    const timeLogEnd: string | null = this.formatTimePart(timeLog.endTime);
+
+    return `Time log "${ timeLogDate } ${ timeLogStart }-${ timeLogEnd }"`;
+  }
+
+  private formatTimePart(
+    value: Date | undefined,
+  ): string | null {
+    return value ?
+      formatDateInTimezone(
+        value,
+        'HH:mm:ss',
+        this.localeService.locale,
+        this.timezoneService.timezone,
+      ) :
+      null;
   }
 }

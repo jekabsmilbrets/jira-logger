@@ -20,21 +20,21 @@ describe('TimeLogEditTransaction', () => {
     const created = buildTimeLog(undefined, '2026-03-02T09:00:00.000Z');
     const persistedCreated = buildTimeLog('created-id', '2026-03-02T09:00:00.000Z');
     const transaction = new TimeLogEditTransaction([existing, removed]);
-    const timeLogsService = {
+    const timeLogsAdapter = {
       create: vi.fn(() => of(persistedCreated)),
       update: vi.fn(() => of(updated)),
       delete: vi.fn(() => of(undefined)),
       list: vi.fn(() => of([persistedCreated, updated])),
-    } as any;
+    };
 
     transaction.create(created);
     transaction.update(existing, updated);
     transaction.remove(removed);
 
-    await expect(firstValueFrom(transaction.save(task, timeLogsService))).resolves.toEqual([persistedCreated, updated]);
-    expect(timeLogsService.create).toHaveBeenCalledWith(task, created);
-    expect(timeLogsService.update).toHaveBeenCalledWith(task, updated);
-    expect(timeLogsService.delete).toHaveBeenCalledWith(task, removed);
+    await expect(firstValueFrom(transaction.save(task, timeLogsAdapter))).resolves.toEqual([persistedCreated, updated]);
+    expect(timeLogsAdapter.create).toHaveBeenCalledWith(task, created);
+    expect(timeLogsAdapter.update).toHaveBeenCalledWith(task, updated);
+    expect(timeLogsAdapter.delete).toHaveBeenCalledWith(task, removed);
     expect(transaction.timeLogs()).toEqual([persistedCreated, updated]);
     expect(transaction.hasChanges()).toBe(false);
   });
@@ -43,14 +43,40 @@ describe('TimeLogEditTransaction', () => {
     const task = new Task({ id: 'task-1', timeLogs: [] } as any);
     const created = buildTimeLog(undefined, '2026-03-02T09:00:00.000Z');
     const transaction = new TimeLogEditTransaction([]);
-    const timeLogsService = {
+    const timeLogsAdapter = {
       create: vi.fn(() => throwError(() => new Error('fail'))),
-    } as any;
+      update: vi.fn(),
+      delete: vi.fn(),
+      list: vi.fn(),
+    };
 
     transaction.create(created);
 
-    await expect(firstValueFrom(transaction.save(task, timeLogsService))).rejects.toThrow('fail');
+    await expect(firstValueFrom(transaction.save(task, timeLogsAdapter))).rejects.toThrow('fail');
     expect(transaction.timeLogs()).toEqual([created]);
     expect(transaction.hasChanges()).toBe(true);
+  });
+
+  it('tracks edits through the transaction seam', () => {
+    const existing = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
+    const updated = buildTimeLog('1', '2026-03-02T11:00:00.000Z');
+    const created = buildTimeLog(undefined, '2026-03-02T12:00:00.000Z');
+    const transaction = new TimeLogEditTransaction([existing]);
+
+    transaction.update(existing, updated);
+    transaction.create(created);
+    transaction.remove(updated);
+
+    expect(transaction.timeLogs()).toEqual([created]);
+    expect(transaction.hasChanges()).toBe(true);
+  });
+
+  it('adds created time logs', () => {
+    const created = buildTimeLog('new', '2026-03-02T12:00:00.000Z');
+    const transaction = new TimeLogEditTransaction([]);
+
+    transaction.create(created);
+
+    expect(transaction.timeLogs()).toEqual([created]);
   });
 });
