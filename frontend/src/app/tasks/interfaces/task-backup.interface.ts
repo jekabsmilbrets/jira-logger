@@ -1,9 +1,3 @@
-export interface TaskBackup {
-  version: 2;
-  exportedAt: number;
-  tasks: TaskBackupTask[];
-}
-
 export interface TaskBackupTask {
   name: string;
   description?: string | null;

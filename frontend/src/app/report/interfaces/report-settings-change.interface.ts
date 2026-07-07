@@ -4,10 +4,10 @@ import type { ReportSettingsIntent } from '@report/interfaces/report-settings-in
 
 export type ReportSettingsChange =
   | {
-    type: 'intent';
-    intent: ReportSettingsIntent;
-  }
+  type: 'intent';
+  intent: ReportSettingsIntent;
+}
   | {
-    type: 'route';
-    paramMap: ParamMap;
-  };
+  type: 'route';
+  paramMap: ParamMap;
+};

@@ -45,7 +45,8 @@ export class TaskImportExecutionPlan {
     private readonly tagsByName: Map<string, Tag>,
     private readonly missingTags: ImportTagInput[],
     public readonly createdTagCount: number,
-  ) {}
+  ) {
+  }
 
   public createMissingTags(
     tagsService: TagsService,

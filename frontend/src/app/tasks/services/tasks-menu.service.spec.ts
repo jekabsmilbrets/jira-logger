@@ -11,7 +11,6 @@ import { TasksService } from '@shared/services/tasks.service';
 import type { ImportReport, TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 import { TaskBackupService } from '@tasks/services/task-backup.service';
 import { TasksMenuService } from '@tasks/services/tasks-menu.service';
-import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
 
 describe('TasksMenuService', () => {
   const tasksServiceMock = {
@@ -22,9 +21,6 @@ describe('TasksMenuService', () => {
   };
   const taskBackupServiceMock = {
     applyTaskBackupForUser: vi.fn(),
-  };
-  const tasksSettingsServiceMock = {
-    openDialog: vi.fn(),
   };
 
   const importRequest: TaskImportRequest = {
@@ -55,14 +51,12 @@ describe('TasksMenuService', () => {
       message: importReport.status,
       duration: 7000,
     }));
-    tasksSettingsServiceMock.openDialog.mockReset().mockReturnValue(of(undefined));
 
     TestBed.configureTestingModule({
       providers: [
         TasksMenuService,
         { provide: TasksService, useValue: tasksServiceMock },
         { provide: TaskBackupService, useValue: taskBackupServiceMock },
-        { provide: TasksSettingsService, useValue: tasksSettingsServiceMock },
       ],
     });
   });
@@ -103,15 +97,21 @@ describe('TasksMenuService', () => {
     expect(tasksServiceMock.create).not.toHaveBeenCalled();
   });
 
-  it('applies a Task Backup report from the settings dialog', () => {
+  it('applies a Task Backup report from an import request', () => {
     const service = TestBed.inject(TasksMenuService);
     const showReport = vi.fn();
 
-    tasksSettingsServiceMock.openDialog.mockReturnValue(of(importRequest));
-
-    service.importFromSettingsDialog(tasksSettingsServiceMock as unknown as TasksSettingsService, showReport);
+    service.importTasks(importRequest, showReport);
 
     expect(taskBackupServiceMock.applyTaskBackupForUser).toHaveBeenCalledWith(importRequest);
     expect(showReport).toHaveBeenCalledWith('success', 7000);
+  });
+
+  it('does not import when there is no request', () => {
+    const service = TestBed.inject(TasksMenuService);
+
+    service.importTasks(undefined, vi.fn());
+
+    expect(taskBackupServiceMock.applyTaskBackupForUser).not.toHaveBeenCalled();
   });
 });

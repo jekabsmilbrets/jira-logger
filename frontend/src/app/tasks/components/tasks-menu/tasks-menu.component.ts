@@ -4,7 +4,6 @@ import {
   Component,
   computed,
   inject,
-  injectAsync,
   type Signal,
   signal,
   type TemplateRef,
@@ -22,17 +21,19 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
+import { take } from 'rxjs';
+
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { ResponsiveMenuService } from '@shared/services/responsive-menu.service';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
-import type { AsyncLoader } from '@shared/types/async-loader.type';
 
+import { TasksSettingsDialogComponent } from '@tasks/components/tasks-menu/settings-dialog/tasks-settings-dialog.component';
 import { TasksSettingsToggleComponent } from '@tasks/components/tasks-menu/tasks-settings-toggler/tasks-settings-toggle.component';
+import type { TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 import type { TaskFormValue } from '@tasks/interfaces/task-form-value.interface';
 import { TasksMenuService } from '@tasks/services/tasks-menu.service';
-import type { TasksSettingsService } from '@tasks/services/tasks-settings.service';
 import {
   buildDuplicateTaskNameError,
   buildEmptyTaskFormValue,
@@ -79,9 +80,6 @@ export class TasksMenuComponent {
 
   private readonly matDialog: MatDialog = inject(MatDialog);
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
-  private readonly loadTasksSettingsService: AsyncLoader<TasksSettingsService> = injectAsync(
-    () => import('@tasks/services/tasks-settings.service').then((m) => m.TasksSettingsService),
-  );
   private readonly tagsService: TagsService = inject(TagsService);
   private readonly responsiveMenuService: ResponsiveMenuService = inject(ResponsiveMenuService);
   private readonly tasksMenuService: TasksMenuService = inject(TasksMenuService);
@@ -98,13 +96,24 @@ export class TasksMenuComponent {
     this.taskFilterRefresh();
   }
 
-  protected async onOpenSettingsDialog(): Promise<void> {
-    const tasksSettingsService: TasksSettingsService = await this.loadTasksSettingsService();
-
-    this.tasksMenuService.importFromSettingsDialog(
-      tasksSettingsService,
-      (message, duration) => this.matSnackBar.open(message, undefined, { duration }),
-    );
+  protected onOpenSettingsDialog(): void {
+    this.matDialog
+      .open<TasksSettingsDialogComponent, { tasks: Task[] }, TaskImportRequest | undefined>(
+        TasksSettingsDialogComponent,
+        {
+          data: {
+            tasks: this.tasksService.allTasks(),
+          },
+        },
+      )
+      .afterClosed()
+      .pipe(take(1))
+      .subscribe((result: TaskImportRequest | undefined) => {
+        this.tasksMenuService.importTasks(
+          result,
+          (message, duration) => this.matSnackBar.open(message, undefined, { duration }),
+        );
+      });
   }
 
   protected onTagsChange(tags: Tag[]): void {

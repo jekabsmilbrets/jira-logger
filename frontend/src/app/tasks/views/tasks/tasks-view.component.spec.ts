@@ -9,7 +9,6 @@ import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TasksService } from '@shared/services/tasks.service';
 
-import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
 import { WorkLogService } from '@tasks/services/work-log.service';
 
 import { TasksViewComponent } from './tasks-view.component';
@@ -51,9 +50,9 @@ describe('Tasks Views tasks-view.component', () => {
       providers: [
         { provide: TasksService, useValue: tasksService },
         { provide: WorkLogService, useValue: workLogService },
-        { provide: TasksSettingsService, useValue: {} },
       ],
-    });
+    })
+      .compileComponents();
 
     const fixture = TestBed.createComponent(TasksViewComponent);
     const component = fixture.componentInstance;

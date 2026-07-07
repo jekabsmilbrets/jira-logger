@@ -14,9 +14,9 @@ import { ResponsiveMenuService } from '@shared/services/responsive-menu.service'
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 
+import { TasksSettingsDialogComponent } from '@tasks/components/tasks-menu/settings-dialog/tasks-settings-dialog.component';
 import type { ImportReport, TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 import { TaskBackupService } from '@tasks/services/task-backup.service';
-import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
 
 import { TasksMenuComponent } from './tasks-menu.component';
 
@@ -28,10 +28,6 @@ describe('Tasks Components tasks-menu.component', () => {
     list: vi.fn(),
     loadVisibleTasks: vi.fn(),
     taskExist: vi.fn(),
-  };
-
-  const tasksSettingsServiceMock = {
-    openDialog: vi.fn(),
   };
 
   const taskBackupServiceMock = {
@@ -76,7 +72,6 @@ describe('Tasks Components tasks-menu.component', () => {
     tasksServiceMock.loadVisibleTasks.mockReset();
     tasksServiceMock.taskExist.mockReset();
     tasksServiceMock.allTasks = signal<Task[]>([]).asReadonly();
-    tasksSettingsServiceMock.openDialog.mockReset();
     taskBackupServiceMock.applyTaskBackupForUser.mockReset();
     matSnackBarMock.open.mockReset();
     matDialogMock.open.mockReset();
@@ -87,11 +82,13 @@ describe('Tasks Components tasks-menu.component', () => {
     tasksServiceMock.list.mockReturnValue(of([]));
     tasksServiceMock.loadVisibleTasks.mockReturnValue(of([]));
     tasksServiceMock.taskExist.mockReturnValue(of(null));
-    tasksSettingsServiceMock.openDialog.mockReturnValue(of(undefined));
     taskBackupServiceMock.applyTaskBackupForUser.mockReturnValue(of({
       message: importReport.status,
       duration: 7000,
     }));
+    matDialogMock.open.mockReturnValue({
+      afterClosed: () => of(undefined),
+    });
 
     await TestBed.configureTestingModule({
       imports: [TasksMenuComponent],
@@ -104,7 +101,6 @@ describe('Tasks Components tasks-menu.component', () => {
         },
         { provide: MatDialog, useValue: matDialogMock },
         { provide: TasksService, useValue: tasksServiceMock },
-        { provide: TasksSettingsService, useValue: tasksSettingsServiceMock },
         { provide: TaskBackupService, useValue: taskBackupServiceMock },
         { provide: TagsService, useValue: tagsServiceMock },
         { provide: MatSnackBar, useValue: matSnackBarMock },
@@ -229,7 +225,11 @@ describe('Tasks Components tasks-menu.component', () => {
     settingsButton.nativeElement.click();
     await openSpy.mock.results[0]?.value;
 
-    expect(tasksSettingsServiceMock.openDialog).toHaveBeenCalledTimes(1);
+    expect(matDialogMock.open).toHaveBeenCalledWith(TasksSettingsDialogComponent, {
+      data: {
+        tasks: [],
+      },
+    });
   });
 
   it('renders tag options from tags$ in template', async () => {
@@ -250,7 +250,6 @@ describe('Tasks Components tasks-menu.component', () => {
         },
         { provide: MatDialog, useValue: matDialogMock },
         { provide: TasksService, useValue: tasksServiceMock },
-        { provide: TasksSettingsService, useValue: tasksSettingsServiceMock },
         { provide: TaskBackupService, useValue: taskBackupServiceMock },
         { provide: TagsService, useValue: tagsServiceMock },
         { provide: MatSnackBar, useValue: matSnackBarMock },
@@ -305,27 +304,17 @@ describe('Tasks Components tasks-menu.component', () => {
     dialogTemplateRef.createEmbeddedView({});
   });
 
-  it('reuses the cached tasks-settings service promise', async () => {
-    const fixture = TestBed.createComponent(TasksMenuComponent);
-    const component = fixture.componentInstance as any;
-
-    const first = component['loadTasksSettingsService']();
-    const second = component['loadTasksSettingsService']();
-
-    const [firstService, secondService] = await Promise.all([first, second]);
-    expect(firstService).toBe(secondService);
-    expect(firstService).toBe(tasksSettingsServiceMock);
-  });
-
   it('does not import when settings dialog returns undefined', async () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
     const component = fixture.componentInstance as unknown as {
-      onOpenSettingsDialog: () => Promise<void>;
+      onOpenSettingsDialog: () => void;
     };
 
-    tasksSettingsServiceMock.openDialog.mockReturnValue(of(undefined));
+    matDialogMock.open.mockReturnValue({
+      afterClosed: () => of(undefined),
+    });
 
-    await component.onOpenSettingsDialog();
+    component.onOpenSettingsDialog();
 
     expect(taskBackupServiceMock.applyTaskBackupForUser).not.toHaveBeenCalled();
     expect(tasksServiceMock.list).not.toHaveBeenCalled();
@@ -334,15 +323,16 @@ describe('Tasks Components tasks-menu.component', () => {
   it('imports tasks when settings dialog returns data', async () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
     const component = fixture.componentInstance as unknown as {
-      onOpenSettingsDialog: () => Promise<void>;
+      onOpenSettingsDialog: () => void;
     };
 
     const task = new Task({ id: '1', name: 'Existing', tags: [], timeLogs: [] });
     tasksServiceMock.allTasks = signal([task]).asReadonly();
-    tasksSettingsServiceMock.openDialog.mockReturnValue(of(importRequest));
+    matDialogMock.open.mockReturnValue({
+      afterClosed: () => of(importRequest),
+    });
 
-    await component.onOpenSettingsDialog();
-    await Promise.resolve();
+    component.onOpenSettingsDialog();
 
     expect(taskBackupServiceMock.applyTaskBackupForUser).toHaveBeenCalledWith(importRequest);
     expect(tasksServiceMock.list).not.toHaveBeenCalled();
@@ -351,17 +341,18 @@ describe('Tasks Components tasks-menu.component', () => {
   it('shows blocked import report without refreshing list', async () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
     const component = fixture.componentInstance as unknown as {
-      onOpenSettingsDialog: () => Promise<void>;
+      onOpenSettingsDialog: () => void;
     };
 
     taskBackupServiceMock.applyTaskBackupForUser.mockReturnValue(of({
       message: 'Duplicate task names detected.',
       duration: 9000,
     }));
-    tasksSettingsServiceMock.openDialog.mockReturnValue(of(importRequest));
+    matDialogMock.open.mockReturnValue({
+      afterClosed: () => of(importRequest),
+    });
 
-    await component.onOpenSettingsDialog();
-    await Promise.resolve();
+    component.onOpenSettingsDialog();
 
     expect(tasksServiceMock.list).not.toHaveBeenCalled();
   });

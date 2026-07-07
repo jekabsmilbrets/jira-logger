@@ -2,7 +2,7 @@ import { computed, inject, Injector, type ResourceRef, runInInjectionContext, Se
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { type FieldTree } from '@angular/forms/signals';
 
-import { catchError, debounceTime, of, switchMap, take } from 'rxjs';
+import { catchError, debounceTime, of, take } from 'rxjs';
 
 import type { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 import { Tag } from '@shared/models/tag.model';
@@ -12,7 +12,6 @@ import { TasksService } from '@shared/services/tasks.service';
 import type { TaskImportOutcome, TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 import type { TaskFormValue } from '@tasks/interfaces/task-form-value.interface';
 import { TaskBackupService } from '@tasks/services/task-backup.service';
-import type { TasksSettingsService } from '@tasks/services/tasks-settings.service';
 import { buildEmptyTaskFormValue, buildTaskCreatePayload, setTaskFormTags } from '@tasks/utility/task-form-intent.utility';
 
 @Service()
@@ -65,25 +64,18 @@ export class TasksMenuService {
     setTaskFormTags(form.tags(), tags);
   }
 
-  public importFromSettingsDialog(
-    tasksSettingsService: TasksSettingsService,
+  public importTasks(
+    result: TaskImportRequest | undefined,
     showReport: (message: string, duration: number) => void,
   ): void {
-    tasksSettingsService.openDialog(this.tasksService.allTasks())
-      .pipe(
-        take(1),
-        switchMap((result: TaskImportRequest | undefined) => result ?
-          this.taskBackupService.applyTaskBackupForUser(result)
-            .pipe(take(1)) :
-          of(undefined),
-        ),
-      )
-      .subscribe({
-        next: (outcome: TaskImportOutcome | undefined) => {
-          if (!outcome) {
-            return;
-          }
+    if (!result) {
+      return;
+    }
 
+    this.taskBackupService.applyTaskBackupForUser(result)
+      .pipe(take(1))
+      .subscribe({
+        next: (outcome: TaskImportOutcome) => {
           showReport(
             outcome.message,
             outcome.duration,
