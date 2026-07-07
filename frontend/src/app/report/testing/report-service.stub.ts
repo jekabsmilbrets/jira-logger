@@ -3,8 +3,8 @@ import { type Signal, signal, type WritableSignal } from '@angular/core';
 import { vi } from 'vitest';
 
 import { ReportMode } from '@report/enums/report-mode.enum';
+import type { ReportSettingsChange } from '@report/interfaces/report-settings-change.interface';
 import type { ReportSettingsControlsState } from '@report/interfaces/report-settings-controls-state.interface';
-import type { ReportSettingsIntent } from '@report/interfaces/report-settings-intent.interface';
 import type { ReportViewState } from '@report/interfaces/report-view-state.interface';
 
 const defaultSettingsControlsState: ReportSettingsControlsState = {
@@ -29,8 +29,7 @@ export class ReportServiceStub {
   public readonly settingsControlsState: Signal<ReportSettingsControlsState>;
   public readonly viewState: Signal<ReportViewState>;
   public readonly reload: ReturnType<typeof vi.fn>;
-  public readonly applyRouteParams: ReturnType<typeof vi.fn>;
-  public readonly applySettingsIntent: ReturnType<typeof vi.fn>;
+  public readonly applySettingsChange: ReturnType<typeof vi.fn>;
 
   private readonly settingsControlsStateSignal: WritableSignal<ReportSettingsControlsState>;
   private readonly viewStateSignal: WritableSignal<ReportViewState>;
@@ -47,9 +46,8 @@ export class ReportServiceStub {
     this.settingsControlsState = this.settingsControlsStateSignal.asReadonly();
     this.viewState = this.viewStateSignal.asReadonly();
     this.reload = options.reload ?? vi.fn();
-    this.applyRouteParams = options.applyRouteParams ?? vi.fn();
-    this.applySettingsIntent = vi.fn((intent: ReportSettingsIntent) => {
-      this.options.onApplySettingsIntent?.(intent);
+    this.applySettingsChange = vi.fn((change: ReportSettingsChange) => {
+      this.options.onApplySettingsChange?.(change);
     });
   }
 
@@ -72,6 +70,5 @@ interface ReportServiceStubOptions {
   settingsControlsState?: Partial<ReportSettingsControlsState>;
   viewState?: Partial<ReportViewState>;
   reload?: ReturnType<typeof vi.fn>;
-  applyRouteParams?: ReturnType<typeof vi.fn>;
-  onApplySettingsIntent?: (intent: ReportSettingsIntent) => void;
+  onApplySettingsChange?: (change: ReportSettingsChange) => void;
 }

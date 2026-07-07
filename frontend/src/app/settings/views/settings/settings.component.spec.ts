@@ -148,7 +148,11 @@ describe('Settings Views settings.component', () => {
         hideUnreportedTasks: false,
         showDatePicker: true,
       },
-      onApplySettingsIntent: applyReportSettingsIntent,
+      onApplySettingsChange: (change) => {
+        if (change.type === 'intent') {
+          applyReportSettingsIntent(change.intent);
+        }
+      },
     });
     await TestBed
       .configureTestingModule({

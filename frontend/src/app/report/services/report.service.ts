@@ -12,8 +12,8 @@ import { Task } from '@shared/models/task.model';
 import { TaskQueryService } from '@shared/services/task-query.service';
 
 import { ReportMode } from '@report/enums/report-mode.enum';
+import type { ReportSettingsChange } from '@report/interfaces/report-settings-change.interface';
 import type { ReportSettingsControlsState } from '@report/interfaces/report-settings-controls-state.interface';
-import type { ReportSettingsIntent } from '@report/interfaces/report-settings-intent.interface';
 import type { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
 import type { ReportViewState } from '@report/interfaces/report-view-state.interface';
 import { ReportColumnsService } from '@report/services/report-columns.service';
@@ -97,13 +97,20 @@ export class ReportService {
     this.reloadVersionSignal.update((value: number) => value + 1);
   }
 
-  public applySettingsIntent(
-    intent: ReportSettingsIntent,
+  public applySettingsChange(
+    change: ReportSettingsChange,
   ): void {
-    this.reportStateService.applySettingsIntent(intent);
+    switch (change.type) {
+      case 'intent':
+        this.reportStateService.applySettingsIntent(change.intent);
+        break;
+      case 'route':
+        this.applyRouteParams(change.paramMap);
+        break;
+    }
   }
 
-  public applyRouteParams(
+  private applyRouteParams(
     paramMap: ParamMap,
   ): void {
     if (!paramMap.has('reportMode')) {

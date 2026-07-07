@@ -48,8 +48,13 @@ describe('reportResolver', () => {
     const result = await runResolver(params);
 
     expect(result).toBe(true);
-    expect(reportService.applyRouteParams).toHaveBeenCalledOnce();
-    expect(reportService.applyRouteParams.mock.calls[0][0].get('date')).toBe(params.date);
-    expect(reportService.applyRouteParams.mock.calls[0][0].get('reportMode')).toBe(params.reportMode);
+    expect(reportService.applySettingsChange).toHaveBeenCalledOnce();
+    expect(reportService.applySettingsChange).toHaveBeenCalledWith({
+      type: 'route',
+      paramMap: expect.any(Object),
+    });
+    const change = reportService.applySettingsChange.mock.calls[0][0];
+    expect(change.paramMap.get('date')).toBe(params.date);
+    expect(change.paramMap.get('reportMode')).toBe(params.reportMode);
   });
 });
