@@ -1,3 +1,4 @@
+import type { ColumnValue } from '@shared/interfaces/column.interface';
 import type { JoinCallback } from '@shared/types/join-callback.type';
 import { getNestedObject } from '@shared/utilities/get-nested-object.utility';
 
@@ -17,12 +18,12 @@ const getJoinedColumnValue: (
     value.join(', ');
 };
 
-export const columnValue: (element: object, column: string, join?: boolean, joinCallback?: JoinCallback) => unknown = (
+export const columnValue: (element: object, column: string, join?: boolean, joinCallback?: JoinCallback) => ColumnValue = (
   element: object,
   column: string,
   join?: boolean,
   joinCallback?: JoinCallback,
-): unknown => {
+): ColumnValue => {
   const safeElement: Record<string, unknown> = Object(element);
   const joinedValue: unknown = safeElement[column];
 
@@ -30,5 +31,5 @@ export const columnValue: (element: object, column: string, join?: boolean, join
     return getJoinedColumnValue(joinedValue, joinCallback);
   }
 
-  return getNestedObject(safeElement, column.split('.')) ?? '';
+  return (getNestedObject(safeElement, column.split('.')) ?? '') as ColumnValue;
 };

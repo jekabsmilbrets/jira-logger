@@ -1,3 +1,3 @@
-import type { QueryParamKey } from '@shared/types/query-param-key.type';
+export type QueryParamKey = 'hideUnreported' | 'date' | 'startDate' | 'endDate' | 'tags' | 'name';
 
 export type QueryParams = Partial<Record<QueryParamKey, string>>;
