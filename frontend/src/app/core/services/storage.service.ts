@@ -1,19 +1,18 @@
 import { inject, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { UseStore } from 'idb-keyval';
+import { createStore, del, entries, get, set, setMany, type UseStore } from 'idb-keyval';
 import { catchError, finalize, from, map, Observable, of, switchMap, take, throwError } from 'rxjs';
 
 import type { DbFail } from '@core/interfaces/db-fail.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { storageIdbGateway } from '@core/services/storage-idb.gateway';
 import type { KeyValueEntry } from '@core/types/key-value-entry.type';
 import { RequestGate } from '@core/utilities/request-gate.utility';
 import { waitForTurn } from '@core/utilities/wait-for.utility';
 
-import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import type { LoadableInitializer } from '@shared/interfaces/loadable-initializer.interface';
 
 @Service()
-export class StorageService implements LoadableService {
+export class StorageService implements LoadableInitializer {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   protected stores: Map<string, UseStore> = new Map<string, UseStore>([]);
@@ -32,7 +31,7 @@ export class StorageService implements LoadableService {
     const dbName: string = `${ name }-db`;
     const storeName: string = `${ name }-store`;
 
-    return storageIdbGateway.createStore(
+    return createStore(
       dbName,
       storeName,
     );
@@ -49,54 +48,34 @@ export class StorageService implements LoadableService {
   public list(
     customStoreName?: string,
   ): Observable<KeyValueEntry[]> {
-    if (customStoreName) {
-      if (!this.stores.has(customStoreName)) {
-        throw new Error('Invalid store!');
-      }
-    }
+    this.assertValidStore(customStoreName);
 
     const request: (csn?: string) => Observable<KeyValueEntry[]> = (
       csn?: string,
     ): Observable<KeyValueEntry[]> => from(
-      storageIdbGateway.entries(
+      entries(
         this.getUseStore(csn),
       ),
     );
 
-    return waitForTurn(this.requestGate, this.isLoadingSignal)
-      .pipe(
-        switchMap((release: VoidFunction) => request(customStoreName)
-          .pipe(
-            catchError((error) => {
-              release();
-              return this.reportError(
-                error,
-                request,
-                {
-                  customStoreName,
-                },
-              );
-            }),
-            finalize(release),
-          )),
-      );
+    return this.runProtectedRequest(
+      request,
+      [customStoreName],
+      { customStoreName },
+    );
   }
 
   public read<TValue = unknown>(
     key: IDBValidKey,
     customStoreName?: string,
   ): Observable<TValue> {
-    if (customStoreName) {
-      if (!this.stores.has(customStoreName)) {
-        throw new Error('Invalid store!');
-      }
-    }
+    this.assertValidStore(customStoreName);
 
     const request: (k: IDBValidKey, csn?: string) => Observable<TValue> = (
       k: IDBValidKey,
       csn?: string,
     ): Observable<TValue> => from(
-      storageIdbGateway.get(
+      get(
         k,
         this.getUseStore(csn),
       ),
@@ -120,47 +99,33 @@ export class StorageService implements LoadableService {
     value: unknown,
     customStoreName?: string,
   ): Observable<void> {
-    if (customStoreName) {
-      if (!this.stores.has(customStoreName)) {
-        throw new Error('Invalid store!');
-      }
-    }
+    this.assertValidStore(customStoreName);
 
     const request: (k: IDBValidKey, v: unknown, csn?: string) => Observable<void> = (
       k: IDBValidKey,
       v: unknown,
       csn?: string,
     ) => from(
-      storageIdbGateway.set(
+      set(
         k,
         v,
         this.getUseStore(csn),
       ),
     );
 
-    return waitForTurn(this.requestGate, this.isLoadingSignal)
-      .pipe(
-        switchMap((release: VoidFunction) => request(
-          key,
-          value,
-          customStoreName,
-        )
-          .pipe(
-            catchError((error) => {
-              release();
-              return this.reportError(
-                error,
-                request,
-                {
-                  customStoreName,
-                  key,
-                  value,
-                },
-              );
-            }),
-            finalize(release),
-          )),
-      );
+    return this.runProtectedRequest(
+      request,
+      [
+        key,
+        value,
+        customStoreName,
+      ],
+      {
+        customStoreName,
+        key,
+        value,
+      },
+    );
   }
 
   public update(
@@ -182,11 +147,7 @@ export class StorageService implements LoadableService {
     }[],
     customStoreName?: string,
   ): Observable<void> {
-    if (customStoreName) {
-      if (!this.stores.has(customStoreName)) {
-        throw new Error('Invalid store!');
-      }
-    }
+    this.assertValidStore(customStoreName);
 
     const dataEntries: KeyValueEntry[] = data.map(
       (dataRow: {
@@ -201,50 +162,36 @@ export class StorageService implements LoadableService {
       d: KeyValueEntry[],
       csn?: string,
     ) => from(
-      storageIdbGateway.setMany(
+      setMany(
         d,
         this.getUseStore(csn),
       ),
     );
 
-    return waitForTurn(this.requestGate, this.isLoadingSignal)
-      .pipe(
-        switchMap((release: VoidFunction) => request(
-          dataEntries,
-          customStoreName,
-        )
-          .pipe(
-            catchError((error) => {
-              release();
-              return this.reportError(
-                error,
-                request,
-                {
-                  customStoreName,
-                  dataEntries,
-                },
-              );
-            }),
-            finalize(release),
-          )),
-      );
+    return this.runProtectedRequest(
+      request,
+      [
+        dataEntries,
+        customStoreName,
+      ],
+      {
+        customStoreName,
+        dataEntries,
+      },
+    );
   }
 
   public delete(
     key: IDBValidKey,
     customStoreName?: string,
   ): Observable<void> {
-    if (customStoreName) {
-      if (!this.stores.has(customStoreName)) {
-        throw new Error('Invalid store!');
-      }
-    }
+    this.assertValidStore(customStoreName);
 
     const request: (k: IDBValidKey, csn?: string) => Observable<void> = (
       k: IDBValidKey,
       csn?: string,
     ) => from(
-      storageIdbGateway.del(
+      del(
         k,
         this.getUseStore(csn),
       ),
@@ -353,6 +300,14 @@ export class StorageService implements LoadableService {
     return customStoreName ?
       (this.stores.get(customStoreName) as UseStore) :
       undefined;
+  }
+
+  private assertValidStore(
+    customStoreName?: string,
+  ): void {
+    if (customStoreName && !this.stores.has(customStoreName)) {
+      throw new Error('Invalid store!');
+    }
   }
 
   private createStores(): void {
