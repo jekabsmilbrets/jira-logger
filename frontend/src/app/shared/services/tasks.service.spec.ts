@@ -4,48 +4,49 @@ import localeLv from '@angular/common/locales/lv';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { catchError, firstValueFrom, of, throwError } from 'rxjs';
+import { firstValueFrom, of, throwError } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
 import { Task } from '@shared/models/task.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
+import { TaskQueryService } from '@shared/services/task-query.service';
+import { createResourceRequestHandleMock } from '@shared/testing/resource-request-handle.mock';
+
+import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
 
 import { TasksService } from './tasks.service';
 
 describe('Shared Services tasks.service', () => {
   let service: TasksService;
-  const apiRequestService = {
-    buildApiUrl: vi.fn((base: string, suffix = '') => `https://api/${ base }${ suffix }`),
-    request: vi.fn(),
-    resourceRequest: vi.fn((
-      base: string,
-      suffix: string,
-      _requestGate: unknown,
-      _isLoadingSignal: unknown,
-      method: 'get' | 'post' | 'patch' | 'delete',
-      body: unknown,
-      processError?: (error: unknown) => any,
-    ) => apiRequestService.request(apiRequestService.buildApiUrl(base, suffix), method, body)
-      .pipe(catchError((error: unknown) => processError ? processError(error) : throwError(() => error)))),
-  } as any;
+  const apiRequestService = createResourceRequestHandleMock();
   const errorDialogService = {
     openDialog: vi.fn(() => of(undefined)),
   } as any;
+  const reportDateCalendarService = {
+    formatJiraSyncDate: vi.fn((date: Date) => date.toISOString().slice(0, 10)),
+  };
+  const taskQueryService = {
+    query: vi.fn(),
+  };
 
   beforeEach(async () => {
     registerLocaleData(localeLv, 'lv-LV');
     apiRequestService.request.mockReset();
-    apiRequestService.resourceRequest.mockClear();
-    apiRequestService.buildApiUrl.mockClear();
+    apiRequestService.resource.mockClear();
+    apiRequestService.isLoadingSignal.set(false);
     errorDialogService.openDialog.mockReset();
     errorDialogService.openDialog.mockReturnValue(of(undefined));
+    reportDateCalendarService.formatJiraSyncDate.mockClear();
+    taskQueryService.query.mockReset().mockReturnValue(of([]));
     await TestBed.configureTestingModule({
       providers: [
         { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly(), addLoader: vi.fn() } },
         { provide: ApiRequestService, useValue: apiRequestService },
         { provide: ErrorDialogService, useValue: errorDialogService },
+        { provide: ReportDateCalendarService, useValue: reportDateCalendarService },
+        { provide: TaskQueryService, useValue: taskQueryService },
       ],
     });
     service = TestBed.inject(TasksService);
@@ -68,36 +69,45 @@ describe('Shared Services tasks.service', () => {
     expect(result[0]).toBeInstanceOf(Task);
   });
 
-  it('filteredList builds query and updates list when requested', async () => {
-    apiRequestService.request.mockReturnValueOnce(of({ data: [] }));
-    const result = await firstValueFrom(service.filteredList({ hideUnreported: true, name: 'abc' } as any, true));
+  it('exposes recent tasks by latest time log descending', async () => {
+    apiRequestService.request.mockReturnValueOnce(of({
+      data: [
+        {
+          id: 'older',
+          name: 'Older',
+          timeLogs: [],
+          lastTimeLog: { startTime: '2026-03-01T10:00:00.000Z' },
+          tags: [],
+          createdAt: '2024-01-01T00:00:00.000Z',
+        },
+        {
+          id: 'newer',
+          name: 'Newer',
+          timeLogs: [],
+          lastTimeLog: { startTime: '2026-03-02T10:00:00.000Z' },
+          tags: [],
+          createdAt: '2024-01-01T00:00:00.000Z',
+        },
+      ],
+    }));
 
-    expect(result).toEqual([]);
-    expect(apiRequestService.request).toHaveBeenCalled();
+    await firstValueFrom(service.list());
+
+    expect(service.recentTasks().map((task: Task) => task.name)).toEqual(['Newer', 'Older']);
   });
 
-  it('filteredList builds full query params for all supported filters', async () => {
-    apiRequestService.request.mockReturnValueOnce(of({ data: [] }));
-    const date = new Date(2024, 0, 1, 10, 0, 0);
-    const startDate = new Date(2024, 0, 2, 10, 0, 0);
-    const endDate = new Date(2024, 0, 3, 10, 0, 0);
+  it('loads visible tasks into task state without replacing all tasks for filtered queries', async () => {
+    const allTask = new Task({ id: 'all', name: 'All', timeLogs: [], tags: [] } as any);
+    const visibleTask = new Task({ id: 'visible', name: 'Visible', timeLogs: [], tags: [] } as any);
 
-    await firstValueFrom(service.filteredList({
-      hideUnreported: true,
-      name: 'abc',
-      tags: ['t1', 't2'],
-      date,
-      startDate,
-      endDate,
-    } as any, true));
+    taskQueryService.query.mockReturnValueOnce(of([allTask]));
+    await firstValueFrom(service.loadVisibleTasks({}));
 
-    const calledUrl = apiRequestService.buildApiUrl.mock.calls.at(-1)?.[1] as string;
-    expect(calledUrl).toContain('hideUnreported=true');
-    expect(calledUrl).toContain('name=abc');
-    expect(calledUrl).toContain('tags=t1,t2');
-    expect(calledUrl).toContain('date=2024-01-01');
-    expect(calledUrl).toContain('startDate=2024-01-02');
-    expect(calledUrl).toContain('endDate=2024-01-03');
+    taskQueryService.query.mockReturnValueOnce(of([visibleTask]));
+    await firstValueFrom(service.loadVisibleTasks({ name: 'Visible' } as any));
+
+    expect(service.tasks()).toEqual([visibleTask]);
+    expect(service.allTasks()).toEqual([allTask]);
   });
 
   it('taskExist and syncDateToJiraApi return mapped values', async () => {
@@ -148,11 +158,6 @@ describe('Shared Services tasks.service', () => {
   it('list handles 404 by returning []', async () => {
     apiRequestService.request.mockReturnValueOnce(throwError(() => ({ status: 404 })));
     await expect(firstValueFrom(service.list())).resolves.toEqual([]);
-  });
-
-  it('filteredList handles 404 by returning []', async () => {
-    apiRequestService.request.mockReturnValueOnce(throwError(() => ({ status: 404 })));
-    await expect(firstValueFrom(service.filteredList({} as any, false))).resolves.toEqual([]);
   });
 
   it('create reports error through ErrorDialogService when request fails', async () => {

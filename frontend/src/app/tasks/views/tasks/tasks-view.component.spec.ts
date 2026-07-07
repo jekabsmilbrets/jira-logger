@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
@@ -8,10 +8,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TasksService } from '@shared/services/tasks.service';
-import { TimeLogsService } from '@shared/services/time-logs.service';
 
-import { TaskUpdateAction } from '@tasks/enums/task-update-action.enum';
 import { TasksSettingsService } from '@tasks/services/tasks-settings.service';
+import { WorkLogService } from '@tasks/services/work-log.service';
 
 import { TasksViewComponent } from './tasks-view.component';
 
@@ -34,21 +33,24 @@ describe('Tasks Views tasks-view.component', () => {
     const tasksService = {
       isLoading: isLoadingState.asReadonly(),
       tasks: tasksState.asReadonly(),
+      recentTasks: computed(() => [...tasksState()].sort((a: Task, b: Task) =>
+        (b.lastTimeLogStartTime?.getTime() ?? -1) - (a.lastTimeLogStartTime?.getTime() ?? -1),
+      )),
+      allTasks: tasksState.asReadonly(),
       list: vi.fn(() => of([])),
       update: vi.fn(() => of(true)),
       delete: vi.fn(() => of(true)),
     };
 
-    const timeLogsService = {
-      start: vi.fn(() => of(true)),
-      stop: vi.fn(() => of(true)),
+    const workLogService = {
+      toggleTaskWorkLog: vi.fn(() => of([])),
     };
 
     await TestBed.configureTestingModule({
       imports: [TasksViewComponent],
       providers: [
         { provide: TasksService, useValue: tasksService },
-        { provide: TimeLogsService, useValue: timeLogsService },
+        { provide: WorkLogService, useValue: workLogService },
         { provide: TasksSettingsService, useValue: {} },
       ],
     });
@@ -62,7 +64,7 @@ describe('Tasks Views tasks-view.component', () => {
       component,
       tasksState,
       tasksService,
-      timeLogsService,
+      workLogService,
     };
   };
 
@@ -70,7 +72,7 @@ describe('Tasks Views tasks-view.component', () => {
     TestBed.resetTestingModule();
   });
 
-  it('sorts tasks by latest time log descending', async () => {
+  it('uses recent tasks from TasksService', async () => {
     const { component, tasksState } = await setup();
 
     const newer = buildTask([buildTimeLog('2026-03-02T10:00:00.000Z')]);
@@ -106,7 +108,7 @@ describe('Tasks Views tasks-view.component', () => {
 
     const taskEl = fixture.debugElement.query(By.css('tasks-task'));
     const taskCmp = taskEl.componentInstance as any;
-    taskCmp.action.emit([task, TaskUpdateAction.startWorkLog]);
+    taskCmp.action.emit(task);
     taskCmp.remove.emit(task);
     taskCmp.timeLogsSaved.emit();
     taskCmp.update.emit(task);
@@ -118,45 +120,13 @@ describe('Tasks Views tasks-view.component', () => {
     expect(onSavedSpy).toHaveBeenCalled();
   });
 
-  it('refreshes list for unknown action via default switch branch', async () => {
-    const { component, timeLogsService, tasksService } = await setup();
+  it('delegates task actions to work-log workflow', async () => {
+    const { component, workLogService } = await setup();
     const task = buildTask();
 
-    component['onAction']([task, 'unknown-action' as TaskUpdateAction]);
+    component['onAction'](task);
 
-    expect(timeLogsService.start).not.toHaveBeenCalled();
-    expect(timeLogsService.stop).not.toHaveBeenCalled();
-    expect(tasksService.list).toHaveBeenCalledOnce();
-  });
-
-  it('starts time logging and refreshes tasks on start action', async () => {
-    const { component, timeLogsService, tasksService } = await setup();
-    const task = buildTask();
-
-    component['onAction']([task, TaskUpdateAction.startWorkLog]);
-
-    expect(timeLogsService.start).toHaveBeenCalledWith(task);
-    expect(tasksService.list).toHaveBeenCalledOnce();
-  });
-
-  it('stops time logging and refreshes tasks when running', async () => {
-    const { component, timeLogsService, tasksService } = await setup();
-    const task = buildTask([buildTimeLog('2026-03-02T10:00:00.000Z')]);
-
-    component['onAction']([task, TaskUpdateAction.stopWorkLog]);
-
-    expect(timeLogsService.stop).toHaveBeenCalledWith(task);
-    expect(tasksService.list).toHaveBeenCalledOnce();
-  });
-
-  it('skips stop call when task is not running and still refreshes list', async () => {
-    const { component, timeLogsService, tasksService } = await setup();
-    const task = buildTask([buildTimeLog('2026-03-02T10:00:00.000Z', '2026-03-02T11:00:00.000Z')]);
-
-    component['onAction']([task, TaskUpdateAction.stopWorkLog]);
-
-    expect(timeLogsService.stop).not.toHaveBeenCalled();
-    expect(tasksService.list).toHaveBeenCalledOnce();
+    expect(workLogService.toggleTaskWorkLog).toHaveBeenCalledWith(task);
   });
 
   it('updates and removes tasks through TasksService', async () => {

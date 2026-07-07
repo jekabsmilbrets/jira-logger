@@ -1,118 +1,82 @@
-import { formatDate } from '@angular/common';
-import { HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { inject, injectAsync, Service, type Signal, signal, type WritableSignal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { computed, inject, injectAsync, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
 import { catchError, map, type Observable, of, switchMap, take, tap, throwError } from 'rxjs';
 
-import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { LocaleService } from '@core/services/locale.service';
-import { RequestGate } from '@core/utilities/request-gate.utility';
 
 import { adaptTasks } from '@shared/adapters/task.adapter';
 import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
-import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
-import type { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
+import type { LoadableInitializer } from '@shared/interfaces/loadable-initializer.interface';
+import type { ResourceRequestHandle } from '@shared/interfaces/resource-request-handle.interface';
 import type { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import type { ErrorDialogService } from '@shared/services/error-dialog.service';
+import { TaskQueryService } from '@shared/services/task-query.service';
 import type { ApiRequestBody } from '@shared/types/api-request-body.type';
 import type { AsyncLoader } from '@shared/types/async-loader.type';
-import type { QueryParams } from '@shared/types/query-params.type';
 import { openLoadErrorDialog } from '@shared/utilities/open-load-error-dialog.utility';
 
-type QueryParamKey = keyof QueryParams;
-type QueryParamEntry = readonly [QueryParamKey, string | undefined];
-
-const queryParamBuilders: [QueryParamKey, (filter: TaskListFilter, formatDateForQuery: (date: Date) => string) => string | undefined][] = [
-  ['hideUnreported', (filter: TaskListFilter) => filter.hideUnreported ? String(filter.hideUnreported) : undefined],
-  ['date', (filter: TaskListFilter, formatDateForQuery: (date: Date) => string) => filter.date ? formatDateForQuery(filter.date) : undefined],
-  ['startDate', (filter: TaskListFilter, formatDateForQuery: (date: Date) => string) => filter.startDate ? formatDateForQuery(filter.startDate) : undefined],
-  ['endDate', (filter: TaskListFilter, formatDateForQuery: (date: Date) => string) => filter.endDate ? formatDateForQuery(filter.endDate) : undefined],
-  ['tags', (filter: TaskListFilter) => filter.tags ? filter.tags.join(',') : undefined],
-  ['name', (filter: TaskListFilter) => filter.name],
-];
+import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
 
 @Service()
-export class TasksService implements LoadableService, MakeRequestService {
+export class TasksService implements LoadableInitializer {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
+  private readonly taskQueryService: TaskQueryService = inject(TaskQueryService);
+  private readonly taskResource: ResourceRequestHandle = this.apiRequestService.resource('task');
   private readonly loadErrorDialogService: AsyncLoader<ErrorDialogService> = injectAsync(
-    () => import('@shared/services/error-dialog.service').then((m) => m.ErrorDialogService),
+    () => import('@shared/services/error-dialog.service')
+      .then((m) => m.ErrorDialogService),
   );
-  private readonly localeService: LocaleService = inject(LocaleService);
+  private readonly reportDateCalendarService: ReportDateCalendarService = inject(ReportDateCalendarService);
 
   private readonly tasksSignal: WritableSignal<Task[]> = signal<Task[]>([]);
-  private readonly isLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
+  private readonly allTasksSignal: WritableSignal<Task[]> = signal<Task[]>([]);
 
-  public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
+  public readonly isLoading: Signal<boolean> = this.taskResource.isLoading;
   public readonly tasks: Signal<Task[]> = this.tasksSignal.asReadonly();
-
-  private readonly requestGate: RequestGate = new RequestGate();
-
-  private basePath: string = 'task';
+  public readonly recentTasks: Signal<Task[]> = computed(() => [
+      ...this.tasksSignal(),
+    ].sort(
+      (a: Task, b: Task) =>
+        (b.lastTimeLogStartTime?.getTime() ?? -1) - (a.lastTimeLogStartTime?.getTime() ?? -1),
+    ),
+  );
+  public readonly allTasks: Signal<Task[]> = this.allTasksSignal.asReadonly();
 
   public init(): void {
-    this.loaderStateService.addLoader(this.isLoading, this.constructor.name);
+    this.loaderStateService.addLoader(
+      this.isLoading,
+      this.constructor.name,
+    );
   }
 
   public list(): Observable<Task[]> {
-    return this.makeRequest<JsonApi<ApiTask[]>>(
-      '',
-      'get',
-      null,
-      false,
-    )
+    return this.taskResource.listRequest<ApiTask>()
       .pipe(
-        catchError((error: HttpErrorResponse) => {
-          if (error.status === 404) {
-            return of({ data: [] });
-          }
-
-          return this.processError(error);
+        catchError((error: HttpErrorResponse) => this.processError(error)),
+        map((tasks: ApiTask[]) => adaptTasks(tasks)),
+        tap((tasks: Task[]) => {
+          this.tasksSignal.set(tasks);
+          this.allTasksSignal.set(tasks);
         }),
-        map(
-          (response: JsonApi<ApiTask[]>) => (response.data && adaptTasks(response.data)) as Task[],
-        ),
-        tap((tasks: Task[]) => this.tasksSignal.set(tasks)),
       );
   }
 
-  public filteredList(
+  public loadVisibleTasks(
     filter: TaskListFilter,
-    updateTaskList: boolean = false,
   ): Observable<Task[]> {
-    let url: string = '';
-
-    const outputQueryParams: QueryParams = this.buildQueryParams(filter);
-
-    if (Object.keys(outputQueryParams).length > 0) {
-      url += '?' + new HttpParams({ fromObject: outputQueryParams }).toString();
-    }
-
-    return this.makeRequest<JsonApi<ApiTask[]>>(
-      url,
-      'get',
-      null,
-      false,
-    )
+    return this.taskQueryService.query(filter)
       .pipe(
-        catchError((error: HttpErrorResponse) => {
-          if (error.status === 404) {
-            return of({ data: [] });
-          }
-          return this.processError(error);
-        }),
-        map(
-          (response: JsonApi<ApiTask[]>) => (response.data && adaptTasks(response.data)) as Task[],
-        ),
-
         tap((tasks: Task[]) => {
-          if (updateTaskList) {
-            this.tasksSignal.set(tasks);
+          this.tasksSignal.set(tasks);
+
+          if (Object.keys(filter).length === 0) {
+            this.allTasksSignal.set(tasks);
           }
         }),
       );
@@ -147,11 +111,11 @@ export class TasksService implements LoadableService, MakeRequestService {
   ): Observable<void> {
     const url: string = `/${ task.id }`;
 
-    return this.makeRequest<void>(
+    return this.taskResource.request<void>(
       url,
       'delete',
       null,
-      true,
+      (error: unknown) => this.processError(error),
     )
       .pipe(
         switchMap(
@@ -166,7 +130,7 @@ export class TasksService implements LoadableService, MakeRequestService {
   ): Observable<null> {
     const url: string = `/exist/${ name }`;
 
-    return this.makeRequest<void>(
+    return this.taskResource.request<void>(
       url,
       'get',
     )
@@ -186,49 +150,16 @@ export class TasksService implements LoadableService, MakeRequestService {
     task: Task,
     date: Date,
   ): Observable<boolean> {
-    const formattedDate: string = formatDate(
-      date,
-      'yyyy-MM-dd',
-      this.localeService.locale,
-    );
+    const formattedDate: string = this.reportDateCalendarService.formatJiraSyncDate(date);
     const url: string = `/${ task.id }/${ formattedDate }`;
 
-    return this.makeRequest<void>(
+    return this.taskResource.request<void>(
       url,
       'post',
     )
       .pipe(
         map(() => true),
       );
-  }
-
-  public makeRequest<T>(
-    url: string,
-    method: 'get' | 'post' | 'patch' | 'delete' = 'get',
-    body: ApiRequestBody | null = null,
-    reportError: boolean = false,
-  ): Observable<T> {
-    return this.apiRequestService.resourceRequest<T>(
-      this.basePath,
-      url,
-      this.requestGate,
-      this.isLoadingSignal,
-      method,
-      body,
-      reportError ?
-        (error: unknown) => this.processError(error) as Observable<T> :
-      undefined,
-    );
-  }
-
-  private buildQueryParams(
-    filter: TaskListFilter,
-  ): QueryParams {
-    return Object.fromEntries(
-      queryParamBuilders
-        .map(([key, buildValue]) => [key, buildValue(filter, (date: Date) => this.formatDateForQuery(date))] as QueryParamEntry)
-        .filter((entry: QueryParamEntry) => entry[1] !== undefined) as [QueryParamKey, string][],
-    ) as QueryParams;
   }
 
   private isConflictError(
@@ -252,22 +183,11 @@ export class TasksService implements LoadableService, MakeRequestService {
       undefined;
   }
 
-  private formatDateForQuery(
-    date: Date,
-  ): string {
-    const year: string = String(date.getFullYear());
-    const month: string = String(date.getMonth() + 1).padStart(2, '0');
-    const day: string = String(date.getDate()).padStart(2, '0');
-
-    return `${ year }-${ month }-${ day }`;
-  }
-
   private processError(
     error: unknown,
   ): Observable<never> {
     return openLoadErrorDialog(
       this.loadErrorDialogService,
-      this.isLoadingSignal,
       error,
       this.tasks(),
     );
@@ -279,11 +199,11 @@ export class TasksService implements LoadableService, MakeRequestService {
     method: 'post' | 'patch',
     skipReload: boolean,
   ): Observable<Task> {
-    return this.makeRequest<JsonApi<ApiTask>>(
+    return this.taskResource.request(
       url,
       method,
       this.buildTaskRequestBody(task),
-      true,
+      (error: unknown) => this.processError(error),
     )
       .pipe(
         switchMap(() => this.reloadList(skipReload)),
