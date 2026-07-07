@@ -3,14 +3,12 @@ import { inject, injectAsync, Service, type Signal, signal, type WritableSignal 
 
 import { catchError, map, type Observable, of, switchMap, take, tap } from 'rxjs';
 
-import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { RequestGate } from '@core/utilities/request-gate.utility';
 
 import { adaptTag, adaptTags } from '@shared/adapters/api-tag.adapter';
 import type { ApiTag } from '@shared/interfaces/api/api-tag.interface';
-import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
-import type { MakeRequestService } from '@shared/interfaces/make-request-service.interface';
+import type { LoadableInitializer } from '@shared/interfaces/loadable-initializer.interface';
+import type { ResourceRequestHandle } from '@shared/interfaces/resource-request-handle.interface';
 import { Tag } from '@shared/models/tag.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import type { ErrorDialogService } from '@shared/services/error-dialog.service';
@@ -19,44 +17,38 @@ import type { AsyncLoader } from '@shared/types/async-loader.type';
 import { openLoadErrorDialog } from '@shared/utilities/open-load-error-dialog.utility';
 
 @Service()
-export class TagsService implements LoadableService, MakeRequestService {
+export class TagsService implements LoadableInitializer {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
+  private readonly tagResource: ResourceRequestHandle = this.apiRequestService.resource('tag');
   private readonly loadErrorDialogService: AsyncLoader<ErrorDialogService> = injectAsync(
     () => import('@shared/services/error-dialog.service').then((m) => m.ErrorDialogService),
   );
 
   private readonly tagsSignal: WritableSignal<Tag[]> = signal<Tag[]>([]);
-  private readonly isLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
   private readonly preloadErrorSignal: WritableSignal<boolean> = signal<boolean>(false);
 
-  public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
+  public readonly isLoading: Signal<boolean> = this.tagResource.isLoading;
   public readonly tags: Signal<Tag[]> = this.tagsSignal.asReadonly();
   public readonly preloadError: Signal<boolean> = this.preloadErrorSignal.asReadonly();
-  private readonly requestGate: RequestGate = new RequestGate();
-
-  private basePath: string = 'tag';
 
   public init(): void {
-    this.loaderStateService.addLoader(this.isLoading, this.constructor.name);
+    this.loaderStateService.addLoader(
+      this.isLoading,
+      this.constructor.name,
+    );
+
+    this.preloadForInit()
+      .pipe(take(1))
+      .subscribe();
   }
 
   public list(): Observable<Tag[]> {
-    return this.makeRequest<JsonApi<ApiTag[]>>(
-      '',
-      'get',
-      null,
-      false,
-    )
+    return this.tagResource.listRequest<ApiTag>()
       .pipe(
-        catchError((error: HttpErrorResponse) => {
-          if (error.status === 404) {
-            return of({ data: [] });
-          }
-          return this.processError(error);
-        }),
-        map((response: JsonApi<ApiTag[]>) => (response.data && adaptTags(response.data)) as Tag[]),
+        catchError((error: HttpErrorResponse) => this.processError(error)),
+        map((tags: ApiTag[]) => adaptTags(tags)),
         tap((tags: Tag[]) => this.tagsSignal.set(tags)),
       );
   }
@@ -82,14 +74,14 @@ export class TagsService implements LoadableService, MakeRequestService {
       name: tag.name && tag.name.trim(),
     };
 
-    return this.makeRequest<JsonApi<ApiTag>>(
+    return this.tagResource.dataRequest<ApiTag>(
       '',
       'post',
       body,
-      true,
+      (error: unknown) => this.processError(error as HttpErrorResponse),
     )
       .pipe(
-        map((response: JsonApi<ApiTag>) => (response.data && adaptTag(response.data)) as Tag),
+        map((tag: ApiTag) => adaptTag(tag)),
         switchMap((createdTag: Tag) => this.reloadList(createdTag, skipReload) as Observable<Tag>),
       );
   }
@@ -103,14 +95,14 @@ export class TagsService implements LoadableService, MakeRequestService {
       name: tag.name && tag.name.trim(),
     };
 
-    return this.makeRequest<JsonApi<ApiTag>>(
+    return this.tagResource.dataRequest<ApiTag>(
       `/${ tag.id }`,
       'patch',
       body,
-      true,
+      (error: unknown) => this.processError(error as HttpErrorResponse),
     )
       .pipe(
-        map((response: JsonApi<ApiTag>) => (response.data && adaptTag(response.data)) as Tag),
+        map((tag: ApiTag) => adaptTag(tag)),
         switchMap((updatedTag: Tag) => this.reloadList(updatedTag, skipReload) as Observable<Tag>),
       );
   }
@@ -119,34 +111,15 @@ export class TagsService implements LoadableService, MakeRequestService {
     tag: Tag,
     skipReload: boolean = false,
   ): Observable<void> {
-    return this.makeRequest<void>(
+    return this.tagResource.request<void>(
       `/${ tag.id }`,
       'delete',
       null,
-      true,
+      (error: unknown) => this.processError(error as HttpErrorResponse),
     )
       .pipe(
         switchMap(() => this.reloadList(undefined, skipReload) as Observable<void>),
       );
-  }
-
-  public makeRequest<T>(
-    url: string,
-    method: 'get' | 'post' | 'patch' | 'delete' = 'get',
-    body: ApiRequestBody | null = null,
-    reportError: boolean = false,
-  ): Observable<T> {
-    return this.apiRequestService.resourceRequest<T>(
-      this.basePath,
-      url,
-      this.requestGate,
-      this.isLoadingSignal,
-      method,
-      body,
-      reportError ?
-        (error: unknown) => this.processError(error as HttpErrorResponse) as Observable<T> :
-      undefined,
-    );
   }
 
   private reloadList(
@@ -169,7 +142,6 @@ export class TagsService implements LoadableService, MakeRequestService {
   ): Observable<never> {
     return openLoadErrorDialog(
       this.loadErrorDialogService,
-      this.isLoadingSignal,
       error,
       this.tags(),
     );

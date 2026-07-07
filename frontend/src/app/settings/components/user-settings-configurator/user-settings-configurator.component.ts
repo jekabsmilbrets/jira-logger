@@ -23,7 +23,7 @@ import { LocaleService } from '@core/services/locale.service';
 import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
 import type { UserSettingsFormValue } from '@settings/interfaces/user-settings-form-value.interface';
-import { findSettingByName } from '@settings/utilities/find-setting-by-name.utility';
+import { buildChangedSetting, getStringSettingValue } from '@settings/utilities/find-setting-by-name.utility';
 
 @Component({
   selector: 'settings-timezone-configurator',
@@ -91,10 +91,7 @@ export class UserSettingsConfiguratorComponent {
     event?.preventDefault?.();
 
     const formData: UserSettingsFormValue = this.userSettingsFormModel();
-    const changedSettings: Setting[] = [
-      this.buildChangedSetting(JiraUserSettings.userTimeZone, formData.timezone),
-      this.buildChangedSetting(JiraUserSettings.locale, formData.locale),
-    ].filter((setting: Setting | undefined): setting is Setting => setting !== undefined);
+    const changedSettings: Setting[] = this.changedSettings(formData);
 
     if (changedSettings.length > 0) {
       this.settingsChange.emit({
@@ -105,62 +102,19 @@ export class UserSettingsConfiguratorComponent {
   }
 
   private resetFormData(): void {
-    const configuredTimezone: string = String(this.getSettingValue(JiraUserSettings.userTimeZone, ''));
+    const formValue: UserSettingsFormValue = {
+      timezone: this.getSettingValue(JiraUserSettings.userTimeZone, ''),
+      locale: this.getSettingValue(JiraUserSettings.locale, 'lv-LV'),
+    };
 
-    if (configuredTimezone && !this.timezones.includes(configuredTimezone)) {
+    if (formValue.timezone && !this.timezones.includes(formValue.timezone)) {
       this.timezones = [
-        configuredTimezone,
+        formValue.timezone,
         ...this.timezones,
       ];
     }
 
-    this.userSettingsForm().reset({
-      timezone: configuredTimezone,
-      locale: this.getSettingValue(JiraUserSettings.locale, 'lv-LV'),
-    });
-  }
-
-  private getSetting(name: JiraUserSettings): Setting | undefined {
-    const settings: Setting[] = this.settings();
-
-    if (Array.isArray(settings)) {
-      return findSettingByName(settings, name);
-    }
-
-    return undefined;
-  }
-
-  private getSettingValue(
-    name: JiraUserSettings,
-    defaultValue: string,
-  ): string {
-    const settings: Setting[] = this.settings();
-
-    if (Array.isArray(settings)) {
-      const setting: undefined | Setting = findSettingByName(settings, name);
-
-      if (setting && typeof setting.value === 'string') {
-        return setting.value;
-      }
-    }
-
-    return defaultValue;
-  }
-
-  private buildChangedSetting(
-    name: JiraUserSettings,
-    nextValue: string,
-  ): Setting | undefined {
-    const originalSetting: Setting | undefined = this.getSetting(name);
-
-    if (!originalSetting || this.getSettingValue(name, '') === nextValue) {
-      return undefined;
-    }
-
-    return new Setting({
-      ...originalSetting,
-      value: nextValue,
-    });
+    this.userSettingsForm().reset(formValue);
   }
 
   private getSupportedTimezones(): string[] {
@@ -175,5 +129,28 @@ export class UserSettingsConfiguratorComponent {
     } catch {
       return UserSettingsConfiguratorComponent.timezoneFallback;
     }
+  }
+
+  private changedSettings(
+    formValue: UserSettingsFormValue,
+  ): Setting[] {
+    return [
+      this.buildChangedSetting(JiraUserSettings.userTimeZone, formValue.timezone),
+      this.buildChangedSetting(JiraUserSettings.locale, formValue.locale),
+    ].filter((setting: Setting | undefined): setting is Setting => setting !== undefined);
+  }
+
+  private buildChangedSetting(
+    name: JiraUserSettings,
+    nextValue: string,
+  ): Setting | undefined {
+    return buildChangedSetting(this.settings(), name, nextValue, this.getSettingValue(name, ''));
+  }
+
+  private getSettingValue(
+    name: JiraUserSettings,
+    defaultValue: string,
+  ): string {
+    return getStringSettingValue(this.settings(), name, defaultValue);
   }
 }

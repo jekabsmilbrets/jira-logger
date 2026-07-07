@@ -1,40 +1,28 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { catchError, firstValueFrom, of, throwError } from 'rxjs';
+import { firstValueFrom, of, throwError } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
 import { Tag } from '@shared/models/tag.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
+import { createResourceRequestHandleMock } from '@shared/testing/resource-request-handle.mock';
 
 import { TagsService } from './tags.service';
 
 describe('Shared Services tags.service', () => {
   let service: TagsService;
-  const apiRequestService = {
-    buildApiUrl: vi.fn((base: string, suffix = '') => `https://api/${ base }${ suffix }`),
-    request: vi.fn(),
-    resourceRequest: vi.fn((
-      base: string,
-      suffix: string,
-      _requestGate: unknown,
-      _isLoadingSignal: unknown,
-      method: 'get' | 'post' | 'patch' | 'delete',
-      body: unknown,
-      processError?: (error: unknown) => any,
-    ) => apiRequestService.request(apiRequestService.buildApiUrl(base, suffix), method, body)
-      .pipe(catchError((error: unknown) => processError ? processError(error) : throwError(() => error)))),
-  } as any;
+  const apiRequestService = createResourceRequestHandleMock();
   const errorDialogService = {
     openDialog: vi.fn(() => of(undefined)),
   } as any;
 
   beforeEach(async () => {
     apiRequestService.request.mockReset();
-    apiRequestService.resourceRequest.mockClear();
-    apiRequestService.buildApiUrl.mockClear();
+    apiRequestService.resource.mockClear();
+    apiRequestService.isLoadingSignal.set(false);
     await TestBed.configureTestingModule({
       providers: [
         { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly(), addLoader: vi.fn() } },
@@ -57,7 +45,7 @@ describe('Shared Services tags.service', () => {
     }));
     const result = await firstValueFrom(service.list());
 
-    expect(apiRequestService.buildApiUrl).toHaveBeenCalledWith('tag', '');
+    expect(apiRequestService.request).toHaveBeenCalledWith('https://api/tag', 'get', null);
     expect(result).toHaveLength(1);
     expect(result[0]).toBeInstanceOf(Tag);
     expect(result[0].isUsed).toBe(true);

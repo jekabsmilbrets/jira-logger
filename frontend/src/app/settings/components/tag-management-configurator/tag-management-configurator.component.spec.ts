@@ -62,7 +62,6 @@ describe('Settings Components tag-management-configurator.component', () => {
 
     expect(emitSpy).toHaveBeenCalledWith({
       action: 'create',
-      successMessage: 'Successfully created tag!',
       tag: expect.objectContaining({ name: 'New Tag' }),
     });
   });
@@ -80,7 +79,6 @@ describe('Settings Components tag-management-configurator.component', () => {
 
     expect(emitSpy).toHaveBeenCalledWith({
       action: 'update',
-      successMessage: 'Successfully updated tag!',
       tag: expect.objectContaining({
         id: 'tag-1',
         isUsed: false,
@@ -107,7 +105,6 @@ describe('Settings Components tag-management-configurator.component', () => {
     expect(areYouSureServiceMock.openDialog).toHaveBeenCalledWith('Backend');
     expect(emitSpy).toHaveBeenCalledWith({
       action: 'delete',
-      successMessage: 'Successfully deleted tag!',
       tag: backendTag,
     });
   });
