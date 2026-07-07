@@ -51,7 +51,8 @@ describe('Tasks Components task.component', () => {
     };
 
     const tasksService = {
-      tasks: signal([baseTask]).asReadonly(),
+      allTasks: signal([baseTask]).asReadonly(),
+      taskExist: vi.fn(() => of(null)),
     };
 
     const timeLogListService = {
@@ -123,7 +124,7 @@ describe('Tasks Components task.component', () => {
   });
 
   it('emits update payload and exits edit mode on update', async () => {
-    const { component } = await setup();
+    const { component, fixture } = await setup();
     const updateSpy = vi.spyOn(component['update'], 'emit');
 
     component['onToggleEditMode']();
@@ -133,10 +134,27 @@ describe('Tasks Components task.component', () => {
       tags: [],
     });
     component['taskForm']().markAsDirty();
+    await fixture.whenStable();
     component['onUpdate']();
 
     expect(updateSpy).toHaveBeenCalledOnce();
     expect(component['editMode']()).toBe(false);
+  });
+
+  it('keeps unchanged task names valid without duplicate lookup', async () => {
+    const { component, tasksService, fixture } = await setup();
+
+    component['onToggleEditMode']();
+    component['taskFormModel'].update((value) => ({
+      ...value,
+      name: ' Task name ',
+    }));
+    component['taskForm']().markAsDirty();
+    await fixture.whenStable();
+
+    component['onUpdate']();
+
+    expect(tasksService.taskExist).not.toHaveBeenCalled();
   });
 
   it('emits remove only when confirmation is true', async () => {
@@ -151,20 +169,13 @@ describe('Tasks Components task.component', () => {
     expect(removeSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('emits correct toggle action based on running state', async () => {
+  it('emits task when toggling work logging', async () => {
     const { component, baseTask } = await setup();
     const actionSpy = vi.spyOn(component['action'], 'emit');
 
     component['onToggleTimeLogging']();
 
-    const runningTimeLog = buildTimeLog('2026-03-02T10:00:00.000Z');
-    baseTask.lastTimeLog = runningTimeLog;
-
-    component['onToggleTimeLogging']();
-
-    expect(actionSpy).toHaveBeenCalledTimes(2);
-    expect(actionSpy.mock.calls[0][0][1]).toBe('start-work-log');
-    expect(actionSpy.mock.calls[1][0][1]).toBe('stop-work-log');
+    expect(actionSpy).toHaveBeenCalledWith(baseTask);
   });
 
   it('emits timeLogsSaved when modal reports a successful save', async () => {
