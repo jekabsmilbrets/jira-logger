@@ -1,7 +1,16 @@
-import { BreakpointObserver, type BreakpointState } from '@angular/cdk/layout';
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, injectAsync, type Signal, signal, type TemplateRef, viewChild,type WritableSignal } from '@angular/core';
-import { rxResource, toSignal } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  injectAsync,
+  type Signal,
+  signal,
+  type TemplateRef,
+  viewChild,
+  type WritableSignal,
+} from '@angular/core';
 import { type FieldTree, form, FormField, required, validateAsync } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatOptionModule } from '@angular/material/core';
@@ -13,20 +22,23 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { catchError, map, of, switchMap, take } from 'rxjs';
-
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
+import { ResponsiveMenuService } from '@shared/services/responsive-menu.service';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 import type { AsyncLoader } from '@shared/types/async-loader.type';
 
 import { TasksSettingsToggleComponent } from '@tasks/components/tasks-menu/tasks-settings-toggler/tasks-settings-toggle.component';
-import type { CreateTaskFormValue } from '@tasks/interfaces/create-task-form-value.interface';
-import type { ImportReport, TaskImportRequest } from '@tasks/interfaces/import-report.interface';
-import { TaskImportService } from '@tasks/services/task-import.service';
-import { TasksMenuFilterService } from '@tasks/services/tasks-menu-filter.service';
+import type { TaskFormValue } from '@tasks/interfaces/task-form-value.interface';
+import { TasksMenuService } from '@tasks/services/tasks-menu.service';
 import type { TasksSettingsService } from '@tasks/services/tasks-settings.service';
+import {
+  buildDuplicateTaskNameError,
+  buildEmptyTaskFormValue,
+  createDuplicateTaskNameValidator,
+  normalizeTaskNameForDuplicateCheck,
+} from '@tasks/utility/task-form-intent.utility';
 
 @Component({
   selector: 'tasks-menu',
@@ -34,7 +46,7 @@ import type { TasksSettingsService } from '@tasks/services/tasks-settings.servic
   styleUrls: ['./tasks-menu.component.scss'],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [TasksMenuFilterService],
+  providers: [TasksMenuService],
   imports: [
     MatFormFieldModule,
     MatSelectModule,
@@ -50,122 +62,53 @@ import type { TasksSettingsService } from '@tasks/services/tasks-settings.servic
   ],
 })
 export class TasksMenuComponent {
-  protected readonly createTaskFormModel: WritableSignal<CreateTaskFormValue> = signal<CreateTaskFormValue>({
-    name: '',
-    description: '',
-    tags: [],
-  });
+  protected readonly createTaskFormModel: WritableSignal<TaskFormValue> = signal<TaskFormValue>(buildEmptyTaskFormValue());
 
   private readonly tasksService: TasksService = inject(TasksService);
 
-  protected readonly createTaskForm: FieldTree<CreateTaskFormValue> = form(this.createTaskFormModel, (path) => {
+  protected readonly createTaskForm: FieldTree<TaskFormValue> = form(this.createTaskFormModel, (path) => {
     required(path.name, { message: 'Task name is required.' });
     validateAsync(path.name, {
-      params: ({ value }) => {
-        const name: string = value().trim();
-        return name ? name : undefined;
-      },
+      params: ({ value }) => normalizeTaskNameForDuplicateCheck(value()),
       debounce: 300,
-      factory: (name) => rxResource({
-        params: name,
-        stream: ({ params }) => {
-          if (!params) {
-            return of(false);
-          }
-
-          return this.tasksService.taskExist(params).pipe(
-            map(() => false),
-            catchError(() => of(true)),
-          );
-        },
-      }),
-      onSuccess: (isDuplicate) => isDuplicate ? {
-        kind: 'duplicate-task',
-        message: 'Task already exists.',
-      } : null,
-      onError: () => ({
-        kind: 'duplicate-task',
-        message: 'Task already exists.',
-      }),
+      factory: (name) => createDuplicateTaskNameValidator(name, (taskName: string) => this.tasksService.taskExist(taskName)),
+      onSuccess: (isDuplicate) => buildDuplicateTaskNameError(isDuplicate),
+      onError: () => buildDuplicateTaskNameError(true),
     });
   });
 
-  private readonly breakpointObserver: BreakpointObserver = inject(BreakpointObserver);
   private readonly matDialog: MatDialog = inject(MatDialog);
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
   private readonly loadTasksSettingsService: AsyncLoader<TasksSettingsService> = injectAsync(
     () => import('@tasks/services/tasks-settings.service').then((m) => m.TasksSettingsService),
   );
-  private readonly taskImportService: TaskImportService = inject(TaskImportService);
   private readonly tagsService: TagsService = inject(TagsService);
-  private readonly tasksMenuFilterService: TasksMenuFilterService = inject(TasksMenuFilterService);
+  private readonly responsiveMenuService: ResponsiveMenuService = inject(ResponsiveMenuService);
+  private readonly tasksMenuService: TasksMenuService = inject(TasksMenuService);
 
   protected readonly isLoading: Signal<boolean> = this.tasksService.isLoading;
-  protected readonly isSmallerThanDesktop: Signal<boolean>;
+  protected readonly isSmallerThanDesktop: Signal<boolean> = this.responsiveMenuService.isSmallerThanDesktop;
   protected readonly tags: Signal<Tag[]> = this.tagsService.tags;
 
-  private readonly smallerThanDesktopBreakpoint: string = '(max-width: 1300px)';
   private readonly dialogTemplate: Signal<TemplateRef<HTMLDivElement>> = viewChild.required<TemplateRef<HTMLDivElement>>('smallScreenDialog');
   private readonly taskFilterName: Signal<string> = computed(() => this.createTaskForm.name().value().trim());
-  private readonly taskFilterRefresh: Signal<Task[] | null> = this.tasksMenuFilterService.createTaskRefresh(this.taskFilterName);
+  private readonly taskFilterRefresh: Signal<Task[] | null> = this.tasksMenuService.createTaskRefresh(this.taskFilterName);
 
   constructor() {
-    this.isSmallerThanDesktop = toSignal(
-      this.breakpointObserver.observe(this.smallerThanDesktopBreakpoint)
-        .pipe(
-          map(
-            (results: BreakpointState) => results.matches && results.breakpoints[this.smallerThanDesktopBreakpoint],
-          ),
-        ),
-      { initialValue: false },
-    );
     this.taskFilterRefresh();
   }
 
   protected async onOpenSettingsDialog(): Promise<void> {
     const tasksSettingsService: TasksSettingsService = await this.loadTasksSettingsService();
 
-    tasksSettingsService.openDialog(this.tasksService.tasks())
-      .pipe(
-        take(1),
-        switchMap((result: TaskImportRequest | undefined) => result ?
-          this.taskImportService.importData(result)
-            .pipe(
-              take(1),
-              switchMap((report: ImportReport) => report.status === 'success' ?
-                this.tasksService.list()
-                  .pipe(
-                    take(1),
-                    map(() => report),
-                  ) :
-                of(report),
-              ),
-            ) :
-          of(undefined),
-        ),
-      )
-      .subscribe({
-        next: (report: ImportReport | undefined) => {
-          if (!report) {
-            return;
-          }
-
-          this.matSnackBar.open(
-            this.formatImportReport(report),
-            undefined,
-            {
-              duration: report.status === 'success' ? 7000 : 9000,
-            },
-          );
-        },
-      });
+    this.tasksMenuService.importFromSettingsDialog(
+      tasksSettingsService,
+      (message, duration) => this.matSnackBar.open(message, undefined, { duration }),
+    );
   }
 
   protected onTagsChange(tags: Tag[]): void {
-    const field: ReturnType<typeof this.createTaskForm.tags> = this.createTaskForm.tags();
-    field.value.set(tags);
-    field.markAsDirty();
-    field.markAsTouched({ skipDescendants: true });
+    this.tasksMenuService.updateTags(this.createTaskForm, tags);
   }
 
   protected isSameTag(tag1: Tag, tag2: Tag): boolean {
@@ -181,60 +124,6 @@ export class TasksMenuComponent {
   protected onCreate(event?: Event): void {
     event?.preventDefault?.();
 
-    if (!this.createTaskForm().valid()) {
-      this.createTaskForm().markAsTouched();
-      return;
-    }
-
-    const task: Task = new Task(this.createTaskFormModel() as Partial<Task>);
-
-    this.tasksService.create(task)
-      .pipe(take(1))
-      .subscribe(() => this.resetForm());
-  }
-
-  private resetForm(): void {
-    this.createTaskForm().reset({
-      name: '',
-      description: '',
-      tags: [],
-    });
-  }
-
-  private formatImportReport(
-    report: ImportReport,
-  ): string {
-    if (report.status === 'blocked') {
-      return report.errors.join(' ');
-    }
-
-    return this.buildImportReportSegments(report).join(', ') + '.';
-  }
-
-  private buildImportReportSegments(
-    report: ImportReport,
-  ): string[] {
-    const segments: string[] = [
-      this.formatCountSegment(report.createdTaskCount, 'Imported', 'task'),
-      this.formatCountSegment(report.createdTimeLogCount, '', 'time log').trim(),
-    ];
-
-    if (report.warnings.length > 0) {
-      segments.push(this.formatCountSegment(report.warnings.length, '', 'warning').trim());
-    }
-
-    if (report.createdTagCount > 0) {
-      segments.push(this.formatCountSegment(report.createdTagCount, 'created', 'tag'));
-    }
-
-    return segments;
-  }
-
-  private formatCountSegment(
-    count: number,
-    prefix: string,
-    noun: string,
-  ): string {
-    return `${ prefix ? `${ prefix } ` : '' }${ count } ${ noun }${ count === 1 ? '' : 's' }`;
+    this.tasksMenuService.createTask(this.createTaskForm, this.createTaskFormModel);
   }
 }
