@@ -74,6 +74,7 @@ export class TaskComponent {
   protected readonly timeLogsSaved: OutputEmitterRef<void> = output<void>();
   protected readonly taskFormModel: WritableSignal<TaskFormValue> = signal<TaskFormValue>(buildEmptyTaskFormValue());
   protected readonly editMode: WritableSignal<boolean> = signal(false);
+  protected readonly currentTime: WritableSignal<number> = signal(Date.now());
 
   private readonly loadAreYouSureService: AsyncLoader<AreYouSureService> = injectAsync(
     () => import('@shared/services/are-you-sure.service').then((m) => m.AreYouSureService),
@@ -97,6 +98,19 @@ export class TaskComponent {
       if (!this.editMode()) {
         this.taskForm().reset(buildTaskFormValue(this.task()));
       }
+    });
+
+    effect((onCleanup) => {
+      if (!this.isTimeLogRunning()) {
+        return;
+      }
+
+      const intervalId: ReturnType<typeof setInterval> = setInterval(
+        () => this.currentTime.set(Date.now()),
+        10000,
+      );
+
+      onCleanup(() => clearInterval(intervalId));
     });
   }
 
@@ -136,6 +150,16 @@ export class TaskComponent {
 
   protected getTaskDescription(): string {
     return this.task().description ?? '';
+  }
+
+  protected getTotalTimeWorked(): number {
+    if (!this.isTimeLogRunning()) {
+      return this.task().timeLogged;
+    }
+
+    this.currentTime();
+
+    return this.task().calcTimeLogged();
   }
 
   protected isViewActionDisabled(): boolean {

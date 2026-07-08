@@ -36,8 +36,7 @@ describe('Tasks Components task.component', () => {
     startTime: new Date(startIso),
   });
 
-  const setup = async () => {
-    const baseTask = buildTask();
+  const setup = async (baseTask: Task = buildTask()) => {
 
     const areYouSureService = {
       openDialog: vi.fn(() => of(true)),
@@ -88,6 +87,7 @@ describe('Tasks Components task.component', () => {
   };
 
   afterEach(() => {
+    vi.useRealTimers();
     TestBed.resetTestingModule();
   });
 
@@ -243,6 +243,28 @@ describe('Tasks Components task.component', () => {
 
     const icons = fixture.debugElement.queryAll(By.css('button.play-pause-button mat-icon'));
     expect(icons[1].nativeElement.textContent.trim()).toBe('pause');
+  });
+
+  it('renders active task total time and updates every ten seconds', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-02T10:01:00.000Z'));
+
+    const runningTimeLog = buildTimeLog('2026-03-02T10:00:00.000Z');
+    const task = buildTask();
+    task.timeLogs = [runningTimeLog];
+    task.lastTimeLog = runningTimeLog;
+
+    const { fixture } = await setup(task);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Total Time Worked: 1m');
+    expect(fixture.nativeElement.textContent).not.toContain('Total Time Worked: 1m 0s');
+
+    vi.advanceTimersByTime(10000);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Total Time Worked: 1m');
+    expect(fixture.nativeElement.textContent).not.toContain('Total Time Worked: 1m 10s');
   });
 
   it('adds action button tooltips matching their aria labels', async () => {
