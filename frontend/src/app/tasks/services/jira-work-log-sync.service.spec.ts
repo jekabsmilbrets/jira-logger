@@ -5,8 +5,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
-import { TasksService } from '@shared/services/tasks.service';
+import { ApiRequestService } from '@shared/services/api-request.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
+import { createResourceRequestHandleMock } from '@shared/testing/resource-request-handle.mock';
+
+import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
 
 import { JiraWorkLogSyncService } from './jira-work-log-sync.service';
 import { WorkLogService } from './work-log.service';
@@ -29,8 +32,10 @@ describe('JiraWorkLogSyncService', () => {
   });
 
   const setup = () => {
-    const tasksService = {
-      syncDateToJiraApi: vi.fn(() => of(true)),
+    const apiRequestService = createResourceRequestHandleMock();
+    apiRequestService.request.mockReturnValue(of(undefined));
+    const reportDateCalendarService = {
+      formatJiraSyncDate: vi.fn((date: Date) => date.toISOString().slice(0, 10)),
     };
     const timeLogsService = {
       start: vi.fn(() => of(undefined)),
@@ -41,14 +46,16 @@ describe('JiraWorkLogSyncService', () => {
       providers: [
         JiraWorkLogSyncService,
         WorkLogService,
-        { provide: TasksService, useValue: tasksService },
+        { provide: ApiRequestService, useValue: apiRequestService },
+        { provide: ReportDateCalendarService, useValue: reportDateCalendarService },
         { provide: TimeLogsService, useValue: timeLogsService },
       ],
     });
 
     return {
+      apiRequestService,
+      reportDateCalendarService,
       service: TestBed.inject(JiraWorkLogSyncService),
-      tasksService,
       timeLogsService,
     };
   };
@@ -58,13 +65,18 @@ describe('JiraWorkLogSyncService', () => {
   });
 
   it('syncs a report date without stopping a non-running task', async () => {
-    const { service, tasksService, timeLogsService } = setup();
+    const { apiRequestService, reportDateCalendarService, service, timeLogsService } = setup();
     const task = buildTask();
     const date = new Date('2026-05-30T00:00:00.000Z');
 
     const result = await firstValueFrom(service.syncReportDate(task, date));
 
-    expect(tasksService.syncDateToJiraApi).toHaveBeenCalledWith(task, date);
+    expect(reportDateCalendarService.formatJiraSyncDate).toHaveBeenCalledWith(date);
+    expect(apiRequestService.request).toHaveBeenCalledWith(
+      'https://api/task/task-1/2026-05-30',
+      'post',
+      null,
+    );
     expect(timeLogsService.stop).not.toHaveBeenCalled();
     expect(timeLogsService.start).not.toHaveBeenCalled();
     expect(result).toEqual({
@@ -75,13 +87,17 @@ describe('JiraWorkLogSyncService', () => {
   });
 
   it('returns success when syncing interrupts and continues a running task', async () => {
-    const { service, tasksService, timeLogsService } = setup();
+    const { apiRequestService, service, timeLogsService } = setup();
     const task = buildTask(buildRunningTimeLog());
     const date = new Date('2026-05-30T00:00:00.000Z');
 
     const result = await firstValueFrom(service.syncReportDate(task, date));
 
-    expect(tasksService.syncDateToJiraApi).toHaveBeenCalledWith(task, date);
+    expect(apiRequestService.request).toHaveBeenCalledWith(
+      'https://api/task/task-1/2026-05-30',
+      'post',
+      null,
+    );
     expect(timeLogsService.start).toHaveBeenCalledWith(task);
     expect(result).toEqual({
       reloadReport: true,
@@ -91,7 +107,7 @@ describe('JiraWorkLogSyncService', () => {
   });
 
   it('returns failure when stopping a running task fails', async () => {
-    const { service, tasksService, timeLogsService } = setup();
+    const { apiRequestService, service, timeLogsService } = setup();
     const error = new Error('stop failed');
     timeLogsService.stop.mockReturnValueOnce(throwError(() => error));
     const task = buildTask(buildRunningTimeLog());
@@ -99,7 +115,7 @@ describe('JiraWorkLogSyncService', () => {
 
     const result = await firstValueFrom(service.syncReportDate(task, date));
 
-    expect(tasksService.syncDateToJiraApi).not.toHaveBeenCalled();
+    expect(apiRequestService.request).not.toHaveBeenCalled();
     expect(timeLogsService.start).not.toHaveBeenCalled();
     expect(result).toEqual({
       reloadReport: false,
@@ -109,8 +125,8 @@ describe('JiraWorkLogSyncService', () => {
   });
 
   it('returns failure when sync fails after stopping a running task', async () => {
-    const { service, tasksService, timeLogsService } = setup();
-    tasksService.syncDateToJiraApi.mockReturnValueOnce(throwError(() => ({
+    const { apiRequestService, service, timeLogsService } = setup();
+    apiRequestService.request.mockReturnValueOnce(throwError(() => ({
       error: { errors: ['Bad transition'] },
     })));
     const task = buildTask(buildRunningTimeLog());
@@ -127,7 +143,7 @@ describe('JiraWorkLogSyncService', () => {
   });
 
   it('returns partial sync when restarting a running task fails after sync', async () => {
-    const { service, tasksService, timeLogsService } = setup();
+    const { apiRequestService, service, timeLogsService } = setup();
     const error = new Error('restart failed');
     timeLogsService.start.mockReturnValueOnce(throwError(() => error));
     const task = buildTask(buildRunningTimeLog());
@@ -135,7 +151,11 @@ describe('JiraWorkLogSyncService', () => {
 
     const result = await firstValueFrom(service.syncReportDate(task, date));
 
-    expect(tasksService.syncDateToJiraApi).toHaveBeenCalledWith(task, date);
+    expect(apiRequestService.request).toHaveBeenCalledWith(
+      'https://api/task/task-1/2026-05-30',
+      'post',
+      null,
+    );
     expect(result).toEqual({
       reloadReport: true,
       message: 'Synced to Jira, but Work Log could not be continued.',

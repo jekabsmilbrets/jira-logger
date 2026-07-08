@@ -2,22 +2,26 @@ import { inject, Service } from '@angular/core';
 
 import { catchError, defer, map, type Observable, of } from 'rxjs';
 
+import type { ResourceRequestHandle } from '@shared/interfaces/resource-request-handle.interface';
 import { Task } from '@shared/models/task.model';
-import { TasksService } from '@shared/services/tasks.service';
+import { ApiRequestService } from '@shared/services/api-request.service';
 
 import type { JiraWorkLogSyncOutcome } from '@tasks/interfaces/jira-work-log-sync-outcome.interface';
 import { type WorkLogInterruptionResult,WorkLogService } from '@tasks/services/work-log.service';
 
+import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
+
 @Service()
 export class JiraWorkLogSyncService {
-  private readonly tasksService: TasksService = inject(TasksService);
+  private readonly reportDateCalendarService: ReportDateCalendarService = inject(ReportDateCalendarService);
+  private readonly taskResource: ResourceRequestHandle = inject(ApiRequestService).resource('task');
   private readonly workLogService: WorkLogService = inject(WorkLogService);
 
   public syncReportDate(
     task: Task,
     date: Date,
   ): Observable<JiraWorkLogSyncOutcome> {
-    const syncDateToJiraApi$: Observable<boolean> = defer(() => this.tasksService.syncDateToJiraApi(
+    const syncDateToJiraApi$: Observable<boolean> = defer(() => this.syncDateToJiraApi(
       task,
       date,
     ));
@@ -30,6 +34,21 @@ export class JiraWorkLogSyncService {
         map((interruptionResult: WorkLogInterruptionResult<JiraWorkLogSyncOutcome>) =>
           this.applyInterruptionResult(interruptionResult)),
         catchError((error: unknown) => of(this.failedOutcome(task, error))),
+      );
+  }
+
+  private syncDateToJiraApi(
+    task: Task,
+    date: Date,
+  ): Observable<boolean> {
+    const formattedDate: string = this.reportDateCalendarService.formatJiraSyncDate(date);
+
+    return this.taskResource.request<void>(
+      `/${ task.id }/${ formattedDate }`,
+      'post',
+    )
+      .pipe(
+        map(() => true),
       );
   }
 

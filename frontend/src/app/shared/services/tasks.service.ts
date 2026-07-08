@@ -19,8 +19,6 @@ import type { ApiRequestBody } from '@shared/types/api-request-body.type';
 import type { AsyncLoader } from '@shared/types/async-loader.type';
 import { openLoadErrorDialog } from '@shared/utilities/open-load-error-dialog.utility';
 
-import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
-
 @Service()
 export class TasksService implements LoadableInitializer {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
@@ -32,7 +30,6 @@ export class TasksService implements LoadableInitializer {
     () => import('@shared/services/error-dialog.service')
       .then((m) => m.ErrorDialogService),
   );
-  private readonly reportDateCalendarService: ReportDateCalendarService = inject(ReportDateCalendarService);
 
   private readonly tasksSignal: WritableSignal<Task[]> = signal<Task[]>([]);
   private readonly allTasksSignal: WritableSignal<Task[]> = signal<Task[]>([]);
@@ -143,22 +140,6 @@ export class TasksService implements LoadableInitializer {
           return this.processError(error);
         }),
         map(() => null),
-      );
-  }
-
-  public syncDateToJiraApi(
-    task: Task,
-    date: Date,
-  ): Observable<boolean> {
-    const formattedDate: string = this.reportDateCalendarService.formatJiraSyncDate(date);
-    const url: string = `/${ task.id }/${ formattedDate }`;
-
-    return this.taskResource.request<void>(
-      url,
-      'post',
-    )
-      .pipe(
-        map(() => true),
       );
   }
 

@@ -14,8 +14,6 @@ import { ErrorDialogService } from '@shared/services/error-dialog.service';
 import { TaskQueryService } from '@shared/services/task-query.service';
 import { createResourceRequestHandleMock } from '@shared/testing/resource-request-handle.mock';
 
-import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
-
 import { TasksService } from './tasks.service';
 
 describe('Shared Services tasks.service', () => {
@@ -24,9 +22,6 @@ describe('Shared Services tasks.service', () => {
   const errorDialogService = {
     openDialog: vi.fn(() => of(undefined)),
   } as any;
-  const reportDateCalendarService = {
-    formatJiraSyncDate: vi.fn((date: Date) => date.toISOString().slice(0, 10)),
-  };
   const taskQueryService = {
     query: vi.fn(),
   };
@@ -38,14 +33,12 @@ describe('Shared Services tasks.service', () => {
     apiRequestService.isLoadingSignal.set(false);
     errorDialogService.openDialog.mockReset();
     errorDialogService.openDialog.mockReturnValue(of(undefined));
-    reportDateCalendarService.formatJiraSyncDate.mockClear();
     taskQueryService.query.mockReset().mockReturnValue(of([]));
     await TestBed.configureTestingModule({
       providers: [
         { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly(), addLoader: vi.fn() } },
         { provide: ApiRequestService, useValue: apiRequestService },
         { provide: ErrorDialogService, useValue: errorDialogService },
-        { provide: ReportDateCalendarService, useValue: reportDateCalendarService },
         { provide: TaskQueryService, useValue: taskQueryService },
       ],
     });
@@ -110,13 +103,10 @@ describe('Shared Services tasks.service', () => {
     expect(service.allTasks()).toEqual([allTask]);
   });
 
-  it('taskExist and syncDateToJiraApi return mapped values', async () => {
-    apiRequestService.request
-      .mockReturnValueOnce(of(undefined))
-      .mockReturnValueOnce(of(undefined));
+  it('taskExist returns a mapped value', async () => {
+    apiRequestService.request.mockReturnValueOnce(of(undefined));
 
     await expect(firstValueFrom(service.taskExist('abc'))).resolves.toBeNull();
-    await expect(firstValueFrom(service.syncDateToJiraApi(new Task({ id: '1' } as any), new Date('2024-01-01T00:00:00.000Z')))).resolves.toBe(true);
   });
 
   it('taskExist does not open error dialog for duplicate-name conflicts', async () => {
