@@ -9,6 +9,7 @@ import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
 import { JiraWorkLogSyncService } from './jira-work-log-sync.service';
+import { WorkLogService } from './work-log.service';
 
 describe('JiraWorkLogSyncService', () => {
   const buildTask = (timeLog?: TimeLog): Task => {
@@ -39,6 +40,7 @@ describe('JiraWorkLogSyncService', () => {
     TestBed.configureTestingModule({
       providers: [
         JiraWorkLogSyncService,
+        WorkLogService,
         { provide: TasksService, useValue: tasksService },
         { provide: TimeLogsService, useValue: timeLogsService },
       ],

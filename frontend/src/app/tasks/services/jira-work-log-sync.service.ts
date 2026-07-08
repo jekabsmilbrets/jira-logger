@@ -1,17 +1,17 @@
 import { inject, Service } from '@angular/core';
 
-import { catchError, defer, map, type Observable, of, switchMap } from 'rxjs';
+import { catchError, defer, map, type Observable, of } from 'rxjs';
 
 import { Task } from '@shared/models/task.model';
 import { TasksService } from '@shared/services/tasks.service';
-import { TimeLogsService } from '@shared/services/time-logs.service';
 
 import type { JiraWorkLogSyncOutcome } from '@tasks/interfaces/jira-work-log-sync-outcome.interface';
+import { type WorkLogInterruptionResult,WorkLogService } from '@tasks/services/work-log.service';
 
 @Service()
 export class JiraWorkLogSyncService {
   private readonly tasksService: TasksService = inject(TasksService);
-  private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
+  private readonly workLogService: WorkLogService = inject(WorkLogService);
 
   public syncReportDate(
     task: Task,
@@ -22,21 +22,13 @@ export class JiraWorkLogSyncService {
       date,
     ));
 
-    if (!task.isTimeLogRunning) {
-      return this.runSync(task, syncDateToJiraApi$);
-    }
-
-    return this.runInterruptedSync(task, syncDateToJiraApi$);
-  }
-
-  private runInterruptedSync(
-    task: Task,
-    syncDateToJiraApi$: Observable<boolean>,
-  ): Observable<JiraWorkLogSyncOutcome> {
-    return this.timeLogsService.stop(task)
+    return this.workLogService.runWithWorkLogInterruption(
+      task,
+      this.runSync(task, syncDateToJiraApi$),
+    )
       .pipe(
-        switchMap(() => this.runSync(task, syncDateToJiraApi$)),
-        switchMap((outcome: JiraWorkLogSyncOutcome) => this.continueInterruptedWorkLog(task, outcome)),
+        map((interruptionResult: WorkLogInterruptionResult<JiraWorkLogSyncOutcome>) =>
+          this.applyInterruptionResult(interruptionResult)),
         catchError((error: unknown) => of(this.failedOutcome(task, error))),
       );
   }
@@ -52,15 +44,14 @@ export class JiraWorkLogSyncService {
       );
   }
 
-  private continueInterruptedWorkLog(
-    task: Task,
-    outcome: JiraWorkLogSyncOutcome,
-  ): Observable<JiraWorkLogSyncOutcome> {
-    return this.timeLogsService.start(task)
-      .pipe(
-        map(() => outcome),
-        catchError(() => of(outcome.reloadReport ? this.partialSyncOutcome() : outcome)),
-      );
+  private applyInterruptionResult(
+    interruptionResult: WorkLogInterruptionResult<JiraWorkLogSyncOutcome>,
+  ): JiraWorkLogSyncOutcome {
+    if (interruptionResult.continued || !interruptionResult.result.reloadReport) {
+      return interruptionResult.result;
+    }
+
+    return this.partialSyncOutcome();
   }
 
   private syncedOutcome(

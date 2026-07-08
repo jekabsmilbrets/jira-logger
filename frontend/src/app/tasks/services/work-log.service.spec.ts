@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
-import { firstValueFrom, of } from 'rxjs';
+import { firstValueFrom, of, throwError } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Task } from '@shared/models/task.model';
@@ -86,6 +86,38 @@ describe('WorkLogService', () => {
 
     expect(timeLogsService.stop).not.toHaveBeenCalled();
     expect(tasksService.list).toHaveBeenCalledOnce();
+  });
+
+  it('runs work without interruption for a stopped task', async () => {
+    const { service, timeLogsService } = setup();
+    const task = buildTask();
+
+    const result = await firstValueFrom(service.runWithWorkLogInterruption(task, of('done')));
+
+    expect(timeLogsService.stop).not.toHaveBeenCalled();
+    expect(timeLogsService.start).not.toHaveBeenCalled();
+    expect(result).toEqual({ result: 'done', continued: true });
+  });
+
+  it('stops and continues a running work log around work', async () => {
+    const { service, timeLogsService } = setup();
+    const task = buildTask(buildRunningTimeLog());
+
+    const result = await firstValueFrom(service.runWithWorkLogInterruption(task, of('done')));
+
+    expect(timeLogsService.stop).toHaveBeenCalledWith(task);
+    expect(timeLogsService.start).toHaveBeenCalledWith(task);
+    expect(result).toEqual({ result: 'done', continued: true });
+  });
+
+  it('reports when a running work log cannot be continued', async () => {
+    const { service, timeLogsService } = setup();
+    timeLogsService.start.mockReturnValueOnce(throwError(() => new Error('start failed')));
+    const task = buildTask(buildRunningTimeLog());
+
+    const result = await firstValueFrom(service.runWithWorkLogInterruption(task, of('done')));
+
+    expect(result).toEqual({ result: 'done', continued: false });
   });
 
 });

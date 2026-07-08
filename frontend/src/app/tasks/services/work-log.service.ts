@@ -1,11 +1,16 @@
 import { inject, Service } from '@angular/core';
 
-import { type Observable, of, switchMap, take } from 'rxjs';
+import { catchError, map, type Observable, of, switchMap, take } from 'rxjs';
 
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
+
+export interface WorkLogInterruptionResult<T> {
+  result: T;
+  continued: boolean;
+}
 
 @Service()
 export class WorkLogService {
@@ -18,6 +23,27 @@ export class WorkLogService {
     return this.runWorkLogToggle(task)
       .pipe(
         switchMap(() => this.tasksService.list().pipe(take(1))),
+      );
+  }
+
+  public runWithWorkLogInterruption<T>(
+    task: Task,
+    work$: Observable<T>,
+  ): Observable<WorkLogInterruptionResult<T>> {
+    if (!task.isTimeLogRunning) {
+      return work$.pipe(
+        map((result: T) => ({ result, continued: true })),
+      );
+    }
+
+    return this.timeLogsService.stop(task)
+      .pipe(
+        switchMap(() => work$),
+        switchMap((result: T) => this.timeLogsService.start(task)
+          .pipe(
+            map(() => ({ result, continued: true })),
+            catchError(() => of({ result, continued: false })),
+          )),
       );
   }
 
