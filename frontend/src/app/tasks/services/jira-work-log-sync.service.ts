@@ -7,7 +7,7 @@ import { Task } from '@shared/models/task.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
 
 import type { JiraWorkLogSyncOutcome } from '@tasks/interfaces/jira-work-log-sync-outcome.interface';
-import { type WorkLogInterruptionResult,WorkLogService } from '@tasks/services/work-log.service';
+import { type WorkLogInterruptionResult, WorkLogService } from '@tasks/services/work-log.service';
 
 import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
 

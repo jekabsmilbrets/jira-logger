@@ -12,14 +12,14 @@ import type { Searchable } from '@shared/interfaces/searchable.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 
+import type { JiraWorkLogSyncOutcome } from '@tasks/interfaces/jira-work-log-sync-outcome.interface';
+import { JiraWorkLogSyncService } from '@tasks/services/jira-work-log-sync.service';
+
 import { reportBaseColumns } from '@report/constants/report-base-columns.constant';
 import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
 import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
 import { ReportServiceStub } from '@report/testing/report-service.stub';
-
-import type { JiraWorkLogSyncOutcome } from '@tasks/interfaces/jira-work-log-sync-outcome.interface';
-import { JiraWorkLogSyncService } from '@tasks/services/jira-work-log-sync.service';
 
 import { ReportViewComponent } from './report-view.component';
 
