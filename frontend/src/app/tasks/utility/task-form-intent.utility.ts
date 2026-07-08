@@ -1,5 +1,6 @@
-import type { ResourceRef, Signal } from '@angular/core';
+import type { ResourceRef, Signal, WritableSignal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { type FieldTree, form, required, validateAsync } from '@angular/forms/signals';
 
 import { catchError, map, type Observable, of } from 'rxjs';
 
@@ -82,6 +83,43 @@ export function createDuplicateTaskNameValidator(
         catchError(() => of(true)),
       );
     },
+  });
+}
+
+export function buildTaskCreateForm(
+  model: WritableSignal<TaskFormValue>,
+  checkName: TaskNameCheck,
+): FieldTree<TaskFormValue> {
+  return form(model, (path) => {
+    required(path.name, { message: 'Task name is required.' });
+    validateAsync(path.name, {
+      params: ({ value }) => normalizeTaskNameForDuplicateCheck(value()),
+      debounce: 300,
+      factory: (name) => createDuplicateTaskNameValidator(name, checkName),
+      onSuccess: (isDuplicate) => buildDuplicateTaskNameError(isDuplicate),
+      onError: () => buildDuplicateTaskNameError(true),
+    });
+  });
+}
+
+export function buildTaskEditForm(
+  model: WritableSignal<TaskFormValue>,
+  sourceTask: Signal<Task>,
+  checkName: TaskNameCheck,
+): FieldTree<TaskFormValue> {
+  return form(model, (path) => {
+    required(path.name, { message: 'Task name is required.' });
+    validateAsync(path.name, {
+      params: ({ value }) => {
+        const name: string | undefined = normalizeTaskNameForDuplicateCheck(value());
+        const sourceName: string | undefined = normalizeTaskNameForDuplicateCheck(sourceTask().name);
+
+        return name && name !== sourceName ? name : undefined;
+      },
+      factory: (name) => createDuplicateTaskNameValidator(name, checkName),
+      onSuccess: (isDuplicate) => buildDuplicateTaskNameError(isDuplicate),
+      onError: () => buildDuplicateTaskNameError(true),
+    });
   });
 }
 

@@ -13,7 +13,7 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
-import { type FieldTree, form, FormField, required, validateAsync } from '@angular/forms/signals';
+import { type FieldTree, FormField } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -37,12 +37,10 @@ import type { TaskFormValue } from '@tasks/interfaces/task-form-value.interface'
 import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
 import type { TimeLogListService } from '@tasks/services/time-log-list.service';
 import {
-  buildDuplicateTaskNameError,
   buildEmptyTaskFormValue,
+  buildTaskEditForm,
   buildTaskFormValue,
   buildTaskUpdatePayload,
-  createDuplicateTaskNameValidator,
-  normalizeTaskNameForDuplicateCheck,
   setTaskFormTags,
 } from '@tasks/utility/task-form-intent.utility';
 
@@ -87,20 +85,11 @@ export class TaskComponent {
   );
   private readonly tasksService: TasksService = inject(TasksService);
 
-  protected readonly taskForm: FieldTree<TaskFormValue> = form(this.taskFormModel, (path) => {
-    required(path.name, { message: 'Task name is required.' });
-    validateAsync(path.name, {
-      params: ({ value }) => {
-        const name: string | undefined = normalizeTaskNameForDuplicateCheck(value());
-        const sourceName: string | undefined = normalizeTaskNameForDuplicateCheck(this.task().name);
-
-        return name && name !== sourceName ? name : undefined;
-      },
-      factory: (name) => createDuplicateTaskNameValidator(name, (taskName: string) => this.tasksService.taskExist(taskName)),
-      onSuccess: (isDuplicate) => buildDuplicateTaskNameError(isDuplicate),
-      onError: () => buildDuplicateTaskNameError(true),
-    });
-  });
+  protected readonly taskForm: FieldTree<TaskFormValue> = buildTaskEditForm(
+    this.taskFormModel,
+    this.task,
+    (taskName: string) => this.tasksService.taskExist(taskName),
+  );
   protected readonly tags: Signal<Tag[]> = this.tagsService.tags;
 
   constructor() {

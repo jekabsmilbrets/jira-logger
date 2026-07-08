@@ -10,7 +10,7 @@ import {
   viewChild,
   type WritableSignal,
 } from '@angular/core';
-import { type FieldTree, form, FormField, required, validateAsync } from '@angular/forms/signals';
+import { type FieldTree, FormField } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatOptionModule } from '@angular/material/core';
 import { MatDialog } from '@angular/material/dialog';
@@ -35,10 +35,8 @@ import type { TaskImportRequest } from '@tasks/interfaces/import-report.interfac
 import type { TaskFormValue } from '@tasks/interfaces/task-form-value.interface';
 import { TasksMenuService } from '@tasks/services/tasks-menu.service';
 import {
-  buildDuplicateTaskNameError,
   buildEmptyTaskFormValue,
-  createDuplicateTaskNameValidator,
-  normalizeTaskNameForDuplicateCheck,
+  buildTaskCreateForm,
 } from '@tasks/utility/task-form-intent.utility';
 
 @Component({
@@ -67,16 +65,10 @@ export class TasksMenuComponent {
 
   private readonly tasksService: TasksService = inject(TasksService);
 
-  protected readonly createTaskForm: FieldTree<TaskFormValue> = form(this.createTaskFormModel, (path) => {
-    required(path.name, { message: 'Task name is required.' });
-    validateAsync(path.name, {
-      params: ({ value }) => normalizeTaskNameForDuplicateCheck(value()),
-      debounce: 300,
-      factory: (name) => createDuplicateTaskNameValidator(name, (taskName: string) => this.tasksService.taskExist(taskName)),
-      onSuccess: (isDuplicate) => buildDuplicateTaskNameError(isDuplicate),
-      onError: () => buildDuplicateTaskNameError(true),
-    });
-  });
+  protected readonly createTaskForm: FieldTree<TaskFormValue> = buildTaskCreateForm(
+    this.createTaskFormModel,
+    (taskName: string) => this.tasksService.taskExist(taskName),
+  );
 
   private readonly matDialog: MatDialog = inject(MatDialog);
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
