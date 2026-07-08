@@ -1,6 +1,4 @@
-import { Clipboard } from '@angular/cdk/clipboard';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { By } from '@angular/platform-browser';
 
 import { of } from 'rxjs';
@@ -12,12 +10,10 @@ import type { Searchable } from '@shared/interfaces/searchable.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 
-import { JiraWorkLogSyncService } from '@tasks/services/jira-work-log-sync.service';
-
 import { reportBaseColumns } from '@report/constants/report-base-columns.constant';
 import { ReportMode } from '@report/enums/report-mode.enum';
 import { ReportService } from '@report/services/report.service';
-import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
+import { ReportInteractionService } from '@report/services/report-interaction.service';
 import { ReportServiceStub } from '@report/testing/report-service.stub';
 
 import { ReportViewComponent } from './report-view.component';
@@ -27,23 +23,19 @@ describe('ReportViewComponent', () => {
   let component: ReportViewComponent;
   let reportService: ReportServiceStub;
 
-  let clipboard: { copy: ReturnType<typeof vi.fn> };
-  let snackBar: { open: ReturnType<typeof vi.fn> };
-  let jiraWorkLogSyncService: { syncReportDate: ReturnType<typeof vi.fn> };
-  let reportDateCalendarService: { isTaskSyncedForReportDate: ReturnType<typeof vi.fn> };
+  let reportInteractionService: {
+    copyCell: ReturnType<typeof vi.fn>;
+    copyFooter: ReturnType<typeof vi.fn>;
+    syncJiraWorkLog: ReturnType<typeof vi.fn>;
+    isJiraWorkLogSynced: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(async () => {
-    clipboard = { copy: vi.fn() };
-    snackBar = { open: vi.fn() };
-    jiraWorkLogSyncService = {
-      syncReportDate: vi.fn().mockReturnValue(of({
-        reloadReport: true,
-        message: 'Task synced',
-        duration: 5000,
-      })),
-    };
-    reportDateCalendarService = {
-      isTaskSyncedForReportDate: vi.fn(() => false),
+    reportInteractionService = {
+      copyCell: vi.fn(),
+      copyFooter: vi.fn(),
+      syncJiraWorkLog: vi.fn(() => of(undefined)),
+      isJiraWorkLogSynced: vi.fn(() => false),
     };
     reportService = new ReportServiceStub({
       settingsControlsState: {
@@ -67,10 +59,7 @@ describe('ReportViewComponent', () => {
       imports: [ReportViewComponent],
       providers: [
         { provide: ReportService, useValue: reportService },
-        { provide: JiraWorkLogSyncService, useValue: jiraWorkLogSyncService },
-        { provide: ReportDateCalendarService, useValue: reportDateCalendarService },
-        { provide: Clipboard, useValue: clipboard },
-        { provide: MatSnackBar, useValue: snackBar },
+        { provide: ReportInteractionService, useValue: reportInteractionService },
       ],
     }).compileComponents();
 
@@ -127,7 +116,7 @@ describe('ReportViewComponent', () => {
     ]);
   });
 
-  it('copies readable-time cell value and shows snackbar', () => {
+  it('delegates cell copy interactions', () => {
     const task = { name: 'Task A' } as Task;
     const column = {
       columnDef: 'timeLogged',
@@ -138,34 +127,10 @@ describe('ReportViewComponent', () => {
 
     (component as any).onCellClick([task as Searchable, column]);
 
-    expect(clipboard.copy).toHaveBeenCalledWith('1h 1m');
-    expect(snackBar.open).toHaveBeenCalledWith(
-      'Copied Task "Task A" logged time to clipboard "1h 1m"!',
-      undefined,
-      { duration: 5000 },
-    );
+    expect(reportInteractionService.copyCell).toHaveBeenCalledWith(task, column);
   });
 
-  it('copies string cell value and shows snackbar', () => {
-    const task = { name: 'Task B' } as Task;
-    const column = {
-      columnDef: 'name',
-      header: 'Name',
-      cellClickType: 'string',
-      cell: () => 'Alpha',
-    } as Column;
-
-    (component as any).onCellClick([task as Searchable, column]);
-
-    expect(clipboard.copy).toHaveBeenCalledWith('Alpha');
-    expect(snackBar.open).toHaveBeenCalledWith(
-      'Copied Task "Task B" field "Name" value to clipboard "Alpha"!',
-      undefined,
-      { duration: 5000 },
-    );
-  });
-
-  it('copies concatenated footer values and shows snackbar', () => {
+  it('delegates footer copy interactions', () => {
     const rows = [{ name: 'A' }, { name: 'B' }] as Task[];
     const column = {
       columnDef: 'name',
@@ -175,54 +140,10 @@ describe('ReportViewComponent', () => {
 
     (component as any).onFooterCellClicked([rows as Searchable[], column]);
 
-    expect(clipboard.copy).toHaveBeenCalledWith('A, B');
-    expect(snackBar.open).toHaveBeenCalledWith(
-      'Copied field "Name" value to clipboard "A, B"!',
-      undefined,
-      { duration: 5000 },
-    );
+    expect(reportInteractionService.copyFooter).toHaveBeenCalledWith(rows, column);
   });
 
-  it('copies concatenatedString footer value and shows snackbar', () => {
-    const rows = [{ name: 'A' }, { name: 'B' }] as Task[];
-    const column = {
-      columnDef: 'name',
-      header: 'Name',
-      footerCellClickType: 'concatenatedString',
-      cell: (task: Task) => task.name,
-    } as Column;
-
-    (component as any).onFooterCellClicked([rows as Searchable[], column]);
-
-    expect(clipboard.copy).toHaveBeenCalledWith('A, B');
-    expect(snackBar.open).toHaveBeenCalledWith(
-      'Copied field "Name" value to clipboard "A, B"!',
-      undefined,
-      { duration: 5000 },
-    );
-  });
-
-  it('copies readableTime footer value and shows snackbar', () => {
-    const rows = [{ name: 'A' }, { name: 'B' }] as Task[];
-    const column = {
-      columnDef: 'timeLogged',
-      header: 'Time Logged',
-      footerCellClickType: 'readableTime',
-      cell: () => 0,
-      footerCell: () => 3661,
-    } as Column;
-
-    (component as any).onFooterCellClicked([rows as Searchable[], column]);
-
-    expect(clipboard.copy).toHaveBeenCalledWith('1h 1m');
-    expect(snackBar.open).toHaveBeenCalledWith(
-      'Copied logged time to clipboard "1h 1m"!',
-      undefined,
-      { duration: 5000 },
-    );
-  });
-
-  it('syncs non-running task and reloads report on success', () => {
+  it('delegates report date sync interactions', () => {
     const task = { name: 'Task C', isTimeLogRunning: false } as Task;
     const date = new Date('2026-05-30T00:00:00.000Z');
     reportService.setViewState({
@@ -232,95 +153,7 @@ describe('ReportViewComponent', () => {
 
     (component as any).onSyncClick(task as Searchable);
 
-    expect(jiraWorkLogSyncService.syncReportDate).toHaveBeenCalledWith(task, date);
-    expect(reportService.reload).toHaveBeenCalledTimes(1);
-    expect(snackBar.open).toHaveBeenCalledWith(
-      'Task synced',
-      undefined,
-      { duration: 5000 },
-    );
-  });
-
-  it('delegates running task sync flow to work-log workflow', () => {
-    const task = { name: 'Task D', isTimeLogRunning: true } as Task;
-    const date = new Date('2026-05-30T00:00:00.000Z');
-    reportService.setViewState({
-      reportDate: date,
-      canSyncJiraWorkLogs: true,
-    });
-
-    (component as any).onSyncClick(task as Searchable);
-
-    expect(jiraWorkLogSyncService.syncReportDate).toHaveBeenCalledWith(task, date);
-  });
-
-  it('reports partial sync without auto-close when work log restart fails', () => {
-    jiraWorkLogSyncService.syncReportDate.mockReturnValueOnce(of({
-      reloadReport: true,
-      message: 'Synced to Jira, but Work Log could not be continued.',
-      duration: null,
-    }));
-    const task = { name: 'Task E', isTimeLogRunning: true } as Task;
-    const date = new Date('2026-05-30T00:00:00.000Z');
-    reportService.setViewState({
-      reportDate: date,
-      canSyncJiraWorkLogs: true,
-    });
-
-    (component as any).onSyncClick(task as Searchable);
-
-    expect(snackBar.open).toHaveBeenCalledWith(
-      'Synced to Jira, but Work Log could not be continued.',
-      undefined,
-      { duration: undefined },
-    );
-    expect(reportService.reload).toHaveBeenCalledTimes(1);
-  });
-
-  it('does not reload report when sync outcome did not change Jira-facing data', () => {
-    jiraWorkLogSyncService.syncReportDate.mockReturnValueOnce(of({
-      reloadReport: false,
-      message: 'Task synced',
-      duration: 5000,
-    }));
-    const task = { name: 'Task H', isTimeLogRunning: false } as Task;
-    const date = new Date('2026-05-30T00:00:00.000Z');
-    reportService.setViewState({
-      reportDate: date,
-      canSyncJiraWorkLogs: true,
-    });
-
-    (component as any).onSyncClick(task as Searchable);
-
-    expect(snackBar.open).toHaveBeenCalledWith(
-      'Task synced',
-      undefined,
-      { duration: 5000 },
-    );
-    expect(reportService.reload).not.toHaveBeenCalled();
-  });
-
-  it('reports sync failure details from sync outcome', () => {
-    jiraWorkLogSyncService.syncReportDate.mockReturnValueOnce(of({
-      reloadReport: false,
-      message: 'Task "Task F" failed synced! Bad transition, Time log missing',
-      duration: 5000,
-    }));
-    const task = { name: 'Task F', isTimeLogRunning: false } as Task;
-    const date = new Date('2026-05-30T00:00:00.000Z');
-    reportService.setViewState({
-      reportDate: date,
-      canSyncJiraWorkLogs: true,
-    });
-
-    (component as any).onSyncClick(task as Searchable);
-
-    expect(snackBar.open).toHaveBeenCalledWith(
-      'Task "Task F" failed synced! Bad transition, Time log missing',
-      undefined,
-      { duration: 5000 },
-    );
-    expect(reportService.reload).not.toHaveBeenCalled();
+    expect(reportInteractionService.syncJiraWorkLog).toHaveBeenCalledWith(task, date);
   });
 
   it('does nothing when syncing without a selected date', () => {
@@ -332,6 +165,6 @@ describe('ReportViewComponent', () => {
 
     (component as any).onSyncClick(task as Searchable);
 
-    expect(jiraWorkLogSyncService.syncReportDate).not.toHaveBeenCalled();
+    expect(reportInteractionService.syncJiraWorkLog).not.toHaveBeenCalled();
   });
 });
