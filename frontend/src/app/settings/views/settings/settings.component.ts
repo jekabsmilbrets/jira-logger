@@ -65,7 +65,10 @@ export class SettingsComponent implements OnInit {
   protected onReportSettingsChange(
     intent: ReportSettingsIntent,
   ): void {
-    this.reportService.applySettingsIntent(intent);
+    this.reportService.applySettingsChange({
+      type: 'settings-intent',
+      intent,
+    });
   }
 
   protected onSettingsChange(

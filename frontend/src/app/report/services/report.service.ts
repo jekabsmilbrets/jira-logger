@@ -11,8 +11,9 @@ import { Task } from '@shared/models/task.model';
 import { TaskQueryService } from '@shared/services/task-query.service';
 
 import { ReportMode } from '@report/enums/report-mode.enum';
+import type { ReportRouteSettings } from '@report/interfaces/report-route-settings.interface';
+import type { ReportSettingsChange } from '@report/interfaces/report-settings-change.interface';
 import type { ReportSettingsControlsState } from '@report/interfaces/report-settings-controls-state.interface';
-import type { ReportSettingsIntent } from '@report/interfaces/report-settings-intent.interface';
 import type { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
 import type { ReportViewState } from '@report/interfaces/report-view-state.interface';
 import { ReportColumnsService } from '@report/services/report-columns.service';
@@ -20,11 +21,6 @@ import { ReportDateCalendarService } from '@report/services/report-date-calendar
 import { ReportStateService } from '@report/services/report-state.service';
 
 import { JiraApiSettingsAdapter } from '@settings/adapters/jira-api-settings.adapter';
-
-export interface ReportRouteSettings {
-  reportMode: string | null;
-  date: string | null;
-}
 
 @Service()
 export class ReportService {
@@ -101,13 +97,20 @@ export class ReportService {
     this.reloadVersionSignal.update((value: number) => value + 1);
   }
 
-  public applySettingsIntent(
-    intent: ReportSettingsIntent,
+  public applySettingsChange(
+    change: ReportSettingsChange,
   ): void {
-    this.reportStateService.applySettingsIntent(intent);
+    switch (change.type) {
+      case 'settings-intent':
+        this.reportStateService.applySettingsIntent(change.intent);
+        break;
+      case 'route-settings':
+        this.applyRouteSettings(change.routeSettings);
+        break;
+    }
   }
 
-  public applyRouteSettings(
+  private applyRouteSettings(
     routeSettings: ReportRouteSettings,
   ): void {
     if (!routeSettings.reportMode) {

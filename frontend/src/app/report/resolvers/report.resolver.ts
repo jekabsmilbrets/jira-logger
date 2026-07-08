@@ -5,7 +5,8 @@ import { map, type Observable, take } from 'rxjs';
 
 import { TasksService } from '@shared/services/tasks.service';
 
-import { ReportService, type ReportRouteSettings } from '@report/services/report.service';
+import type { ReportRouteSettings } from '@report/interfaces/report-route-settings.interface';
+import { ReportService } from '@report/services/report.service';
 
 export const reportResolver: ResolveFn<boolean> = (route): Observable<boolean> => {
   const reportService: ReportService = inject(ReportService);
@@ -15,7 +16,10 @@ export const reportResolver: ResolveFn<boolean> = (route): Observable<boolean> =
     date: route.paramMap.get('date'),
   };
 
-  reportService.applyRouteSettings(routeSettings);
+  reportService.applySettingsChange({
+    type: 'route-settings',
+    routeSettings,
+  });
 
   return tasksService.loadVisibleTasks({})
     .pipe(

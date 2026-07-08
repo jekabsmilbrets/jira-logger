@@ -56,10 +56,13 @@ describe('reportResolver', () => {
     const result = await runResolver(params);
 
     expect(result).toBe(true);
-    expect(reportService.applyRouteSettings).toHaveBeenCalledOnce();
-    expect(reportService.applyRouteSettings).toHaveBeenCalledWith({
-      reportMode: params.reportMode,
-      date: params.date,
+    expect(reportService.applySettingsChange).toHaveBeenCalledOnce();
+    expect(reportService.applySettingsChange).toHaveBeenCalledWith({
+      type: 'route-settings',
+      routeSettings: {
+        reportMode: params.reportMode,
+        date: params.date,
+      },
     });
     expect(tasksService.loadVisibleTasks).toHaveBeenCalledWith({});
   });
