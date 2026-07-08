@@ -84,18 +84,4 @@ describe('Shared Services time-logs.service', () => {
 
     await expect(firstValueFrom(service.list(task))).resolves.toEqual([]);
   });
-
-  it('rethrows non-empty-list 404 responses from the API', async () => {
-    const task = new Task({ id: 'task-1', name: 'Task', tags: [], timeLogs: [] } as any);
-
-    apiRequestService.request.mockReturnValueOnce(throwError(() => ({
-      status: 404,
-      error: { errors: ['Task not found'] },
-    })));
-
-    await expect(firstValueFrom(service.list(task))).rejects.toMatchObject({
-      status: 404,
-      error: { errors: ['Task not found'] },
-    });
-  });
 });

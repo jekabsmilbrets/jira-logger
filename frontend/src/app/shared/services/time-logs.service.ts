@@ -1,7 +1,6 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Service, type Signal } from '@angular/core';
 
-import { catchError, map, type Observable, of, Subject, tap, throwError } from 'rxjs';
+import { map, type Observable, Subject, tap } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
@@ -47,18 +46,9 @@ export class TimeLogsService implements LoadableInitializer {
   public list(
     task: Task,
   ): Observable<TimeLog[]> {
-    return this.timeLogResource.dataRequest<ApiTimeLog[]>(this.buildTaskTimeLogSuffix(task))
+    return this.timeLogResource.listRequest<ApiTimeLog>(this.buildTaskTimeLogSuffix(task))
       .pipe(
         map((timeLogs: ApiTimeLog[]): TimeLog[] => adaptTimeLogs(timeLogs)),
-        catchError((error: HttpErrorResponse) => {
-          const errors: string[] = Array.isArray(error.error?.errors) ? error.error.errors : [];
-
-          if (error.status === 404 && errors.includes('TimeLogs not found')) {
-            return of([]);
-          }
-
-          return throwError(() => error);
-        }),
       );
   }
 
