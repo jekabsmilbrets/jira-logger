@@ -4,31 +4,27 @@ import { TestBed } from '@angular/core/testing';
 
 import { firstValueFrom, of, throwError } from 'rxjs';
 
+import { TimezoneService } from '@core/services/timezone.service';
+
 import { Task } from '@shared/models/task.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import { TaskQueryService } from '@shared/services/task-query.service';
 import { createResourceRequestHandleMock } from '@shared/testing/resource-request-handle.mock';
 
-import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
-
 describe('TaskQueryService', () => {
   let service: TaskQueryService;
   const apiRequestService = createResourceRequestHandleMock();
-  const reportDateCalendarService = {
-    formatQueryDate: vi.fn((date: Date) => date.toISOString().slice(0, 10)),
-  };
 
   beforeEach(async () => {
     registerLocaleData(localeLv, 'lv-LV');
     apiRequestService.request.mockReset();
     apiRequestService.resource.mockClear();
-    reportDateCalendarService.formatQueryDate.mockClear();
 
     await TestBed.configureTestingModule({
       providers: [
         TaskQueryService,
         { provide: ApiRequestService, useValue: apiRequestService },
-        { provide: ReportDateCalendarService, useValue: reportDateCalendarService },
+        { provide: TimezoneService, useValue: { timezone: 'UTC' } },
       ],
     });
 

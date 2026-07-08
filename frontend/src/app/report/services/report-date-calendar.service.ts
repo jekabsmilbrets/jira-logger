@@ -4,6 +4,7 @@ import { inject, Service } from '@angular/core';
 import type { TimezoneDateParts } from '@core/interfaces/timezone-date-parts.interface';
 import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
+import { formatDateInTimezone } from '@core/utilities/format-date-in-timezone.utility';
 import { fromWallClockDateInTimezone, getDateTimePartsInTimezone, toWallClockDateInTimezone } from '@core/utilities/timezone-date.utility';
 
 import { JiraWorkLog } from '@shared/models/jira-work-log.model';
@@ -54,13 +55,7 @@ export class ReportDateCalendarService {
   public formatQueryDate(
     date: Date,
   ): string {
-    const parts: TimezoneDateParts = getDateTimePartsInTimezone(date, this.timezoneService.timezone);
-
-    return [
-      String(parts.year),
-      String(parts.month).padStart(2, '0'),
-      String(parts.day).padStart(2, '0'),
-    ].join('-');
+    return formatDateInTimezone(date, 'yyyy-MM-dd', this.localeService.locale, this.timezoneService.timezone);
   }
 
   public formatJiraSyncDate(

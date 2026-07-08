@@ -3,6 +3,9 @@ import { inject, Service } from '@angular/core';
 
 import { map, type Observable } from 'rxjs';
 
+import { TimezoneService } from '@core/services/timezone.service';
+import { formatDateInTimezone } from '@core/utilities/format-date-in-timezone.utility';
+
 import { adaptTasks } from '@shared/adapters/task.adapter';
 import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import type { ResourceRequestHandle } from '@shared/interfaces/resource-request-handle.interface';
@@ -10,8 +13,6 @@ import type { TaskListFilter } from '@shared/interfaces/task-list-filter.interfa
 import { Task } from '@shared/models/task.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import type { QueryParams } from '@shared/types/query-params.type';
-
-import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
 
 type QueryParamKey = keyof QueryParams;
 type QueryParamEntry = readonly [QueryParamKey, string | undefined];
@@ -28,8 +29,8 @@ const queryParamBuilders: [QueryParamKey, (filter: TaskListFilter, formatDateFor
 @Service()
 export class TaskQueryService {
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
-  private readonly reportDateCalendarService: ReportDateCalendarService = inject(ReportDateCalendarService);
   private readonly taskResource: ResourceRequestHandle = this.apiRequestService.resource('task');
+  private readonly timezoneService: TimezoneService = inject(TimezoneService);
 
   public query(
     filter: TaskListFilter,
@@ -60,7 +61,7 @@ export class TaskQueryService {
             key,
             buildValue(
               filter,
-              (date: Date) => this.reportDateCalendarService.formatQueryDate(date),
+              (date: Date) => formatDateInTimezone(date, 'yyyy-MM-dd', 'en-US', this.timezoneService.timezone),
             ),
           ] as QueryParamEntry,
         )
