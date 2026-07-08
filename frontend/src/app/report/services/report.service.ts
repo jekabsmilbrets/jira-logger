@@ -1,6 +1,5 @@
 import { computed, inject, type ResourceRef, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import type { ParamMap } from '@angular/router';
 
 import { catchError, debounceTime, of } from 'rxjs';
 
@@ -21,6 +20,11 @@ import { ReportDateCalendarService } from '@report/services/report-date-calendar
 import { ReportStateService } from '@report/services/report-state.service';
 
 import { JiraApiSettingsAdapter } from '@settings/adapters/jira-api-settings.adapter';
+
+export interface ReportRouteSettings {
+  reportMode: string | null;
+  date: string | null;
+}
 
 @Service()
 export class ReportService {
@@ -103,17 +107,17 @@ export class ReportService {
     this.reportStateService.applySettingsIntent(intent);
   }
 
-  public applyRouteParams(
-    paramMap: ParamMap,
+  public applyRouteSettings(
+    routeSettings: ReportRouteSettings,
   ): void {
-    if (!paramMap.has('reportMode')) {
+    if (!routeSettings.reportMode) {
       return;
     }
 
-    const reportMode: ReportMode = paramMap.get('reportMode') as ReportMode;
+    const reportMode: ReportMode = routeSettings.reportMode as ReportMode;
 
     if (reportMode === ReportMode.date) {
-      this.applyDateRouteParams(paramMap);
+      this.applyDateRouteSettings(routeSettings);
       return;
     }
 
@@ -122,11 +126,11 @@ export class ReportService {
     });
   }
 
-  private applyDateRouteParams(
-    paramMap: ParamMap,
+  private applyDateRouteSettings(
+    routeSettings: ReportRouteSettings,
   ): void {
-    const date: Date | null = paramMap.has('date') ?
-      this.reportDateCalendarService.parseRouteDate(paramMap.get('date')) :
+    const date: Date | null = routeSettings.date ?
+      this.reportDateCalendarService.parseRouteDate(routeSettings.date) :
       this.reportDateCalendarService.todayReportDate();
 
     if (date) {

@@ -1,17 +1,21 @@
 import { inject } from '@angular/core';
-import { ParamMap, type ResolveFn } from '@angular/router';
+import { type ResolveFn } from '@angular/router';
 
 import { map, type Observable, take } from 'rxjs';
 
 import { TasksService } from '@shared/services/tasks.service';
 
-import { ReportService } from '@report/services/report.service';
+import { ReportService, type ReportRouteSettings } from '@report/services/report.service';
 
 export const reportResolver: ResolveFn<boolean> = (route): Observable<boolean> => {
   const reportService: ReportService = inject(ReportService);
   const tasksService: TasksService = inject(TasksService);
-  const paramMap: ParamMap = route.paramMap;
-  reportService.applyRouteParams(paramMap);
+  const routeSettings: ReportRouteSettings = {
+    reportMode: route.paramMap.get('reportMode'),
+    date: route.paramMap.get('date'),
+  };
+
+  reportService.applyRouteSettings(routeSettings);
 
   return tasksService.loadVisibleTasks({})
     .pipe(

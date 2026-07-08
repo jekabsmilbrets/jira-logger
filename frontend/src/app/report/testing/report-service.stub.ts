@@ -29,7 +29,7 @@ export class ReportServiceStub {
   public readonly settingsControlsState: Signal<ReportSettingsControlsState>;
   public readonly viewState: Signal<ReportViewState>;
   public readonly reload: ReturnType<typeof vi.fn>;
-  public readonly applyRouteParams: ReturnType<typeof vi.fn>;
+  public readonly applyRouteSettings: ReturnType<typeof vi.fn>;
   public readonly applySettingsIntent: ReturnType<typeof vi.fn>;
 
   private readonly settingsControlsStateSignal: WritableSignal<ReportSettingsControlsState>;
@@ -47,7 +47,7 @@ export class ReportServiceStub {
     this.settingsControlsState = this.settingsControlsStateSignal.asReadonly();
     this.viewState = this.viewStateSignal.asReadonly();
     this.reload = options.reload ?? vi.fn();
-    this.applyRouteParams = vi.fn();
+    this.applyRouteSettings = vi.fn();
     this.applySettingsIntent = vi.fn((intent: ReportSettingsIntent) => {
       this.options.onApplySettingsIntent?.(intent);
     });

@@ -2,7 +2,6 @@ import { registerLocaleData } from '@angular/common';
 import localeLv from '@angular/common/locales/lv';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { convertToParamMap } from '@angular/router';
 
 import { of, Subject, throwError } from 'rxjs';
 
@@ -393,12 +392,10 @@ describe('ReportService', () => {
   });
 
   it('applies report route params inside the report module', () => {
-    service.applyRouteParams(
-      convertToParamMap({
-        reportMode: ReportMode.date,
-        date: '2026-05-30',
-      }),
-    );
+    service.applyRouteSettings({
+      reportMode: ReportMode.date,
+      date: '2026-05-30',
+    });
 
     expect(service.settingsControlsState().reportMode).toBe(ReportMode.date);
     expect(service.settingsControlsState().date?.getTime()).toBe(
@@ -409,11 +406,10 @@ describe('ReportService', () => {
   it('applies today for date mode route without date param', () => {
     vi.setSystemTime(new Date('2026-05-30T12:00:00.000Z'));
 
-    service.applyRouteParams(
-      convertToParamMap({
-        reportMode: ReportMode.date,
-      }),
-    );
+    service.applyRouteSettings({
+      reportMode: ReportMode.date,
+      date: null,
+    });
 
     expect(service.settingsControlsState().reportMode).toBe(ReportMode.date);
     expect(service.settingsControlsState().date?.getTime()).toBe(
@@ -445,12 +441,10 @@ describe('ReportService', () => {
     });
 
     const localService = TestBed.inject(ReportService);
-    localService.applyRouteParams(
-      convertToParamMap({
-        reportMode: ReportMode.date,
-        date: '2021-01-01',
-      }),
-    );
+    localService.applyRouteSettings({
+      reportMode: ReportMode.date,
+      date: '2021-01-01',
+    });
 
     hydrationState$.next({
       reportMode: ReportMode.dateRange,
@@ -495,12 +489,10 @@ describe('ReportService', () => {
     });
 
     const localService = TestBed.inject(ReportService);
-    localService.applyRouteParams(
-      convertToParamMap({
-        reportMode: ReportMode.date,
-        date: 'not-a-date',
-      }),
-    );
+    localService.applyRouteSettings({
+      reportMode: ReportMode.date,
+      date: 'not-a-date',
+    });
 
     hydrationState$.next({
       reportMode: ReportMode.total,
