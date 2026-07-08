@@ -64,7 +64,7 @@ export class TimeLogListModalComponent {
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
   private readonly matSnackBar: MatSnackBar = inject(MatSnackBar);
   private readonly dialogRef: MatDialogRef<TimeLogListModalComponent, undefined | TimeLogsModalResponse> = inject<MatDialogRef<TimeLogListModalComponent, TimeLogsModalResponse | undefined>>(MatDialogRef);
-  private readonly session: TimeLogEditSession = new TimeLogEditSession(this.data.task.timeLogs);
+  private readonly session: TimeLogEditSession = new TimeLogEditSession(this.data.task, this.timeLogsService);
 
   protected readonly timeLogs: Signal<TimeLog[]> = this.session.timeLogs;
 
@@ -80,7 +80,7 @@ export class TimeLogListModalComponent {
   }
 
   protected onSave(): void {
-    this.session.save(this.data.task, this.timeLogsService)
+    this.session.save()
       .pipe(take(1))
       .subscribe((result: TimeLogEditSessionSaveResult) => {
         if (result.message) {

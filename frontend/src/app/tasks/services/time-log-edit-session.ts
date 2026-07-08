@@ -25,9 +25,10 @@ export class TimeLogEditSession {
   public readonly timeLogs: Signal<TimeLog[]>;
 
   public constructor(
-    initialTimeLogs: TimeLog[],
+    private readonly task: Task,
+    private readonly timeLogsAdapter: TimeLogPersistenceAdapter,
   ) {
-    this.transaction = new TimeLogEditTransaction(initialTimeLogs);
+    this.transaction = new TimeLogEditTransaction(task.timeLogs);
     this.timeLogs = this.transaction.timeLogs;
   }
 
@@ -61,10 +62,7 @@ export class TimeLogEditSession {
     this.transaction.remove(timeLog);
   }
 
-  public save(
-    task: Task,
-    timeLogsAdapter: TimeLogPersistenceAdapter,
-  ): Observable<TimeLogEditSessionSaveResult> {
+  public save(): Observable<TimeLogEditSessionSaveResult> {
     if (this.isSaving) {
       return EMPTY;
     }
@@ -75,7 +73,7 @@ export class TimeLogEditSession {
 
     this.isSaving = true;
 
-    return this.transaction.save(task, timeLogsAdapter)
+    return this.transaction.save(this.task, this.timeLogsAdapter)
       .pipe(
         map((timeLogs: TimeLog[]) => ({
           close: true,

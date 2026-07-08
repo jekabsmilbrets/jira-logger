@@ -18,11 +18,18 @@ describe('TimeLogEditSession', () => {
   }) as unknown as TimeLogEditService & {
     openTimeLogDialog: ReturnType<typeof vi.fn>;
   };
+  const buildAdapter = (timeLogs: TimeLog[] = []) => ({
+    create: vi.fn((_: Task, timeLog: TimeLog) => of(timeLog)),
+    update: vi.fn((_: Task, timeLog: TimeLog) => of(timeLog)),
+    delete: vi.fn(() => of(undefined)),
+    list: vi.fn(() => of(timeLogs)),
+  });
+  const buildTask = (timeLogs: TimeLog[] = []) => new Task({ id: 'task-1', timeLogs } as any);
 
   it('applies edit dialog updates, deletes, and ignored responses inside the session', () => {
     const existing = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
     const updated = buildTimeLog('1', '2026-03-02T11:00:00.000Z');
-    const session = new TimeLogEditSession([existing]);
+    const session = new TimeLogEditSession(buildTask([existing]), buildAdapter());
     const editService = buildEditService();
 
     editService.openTimeLogDialog.mockReturnValueOnce(of({
@@ -43,7 +50,7 @@ describe('TimeLogEditSession', () => {
 
   it('adds a new Time Log through the edit dialog response', () => {
     const created = buildTimeLog(undefined, '2026-03-02T12:00:00.000Z');
-    const session = new TimeLogEditSession([]);
+    const session = new TimeLogEditSession(buildTask(), buildAdapter());
     const editService = buildEditService();
 
     editService.openTimeLogDialog.mockReturnValueOnce(of({
@@ -56,13 +63,12 @@ describe('TimeLogEditSession', () => {
   });
 
   it('saves created, updated, and deleted Time Logs and returns a close response', async () => {
-    const task = new Task({ id: 'task-1', timeLogs: [] } as any);
     const existing = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
     const removed = buildTimeLog('2', '2026-03-02T11:00:00.000Z');
     const updated = buildTimeLog('1', '2026-03-02T12:00:00.000Z');
     const created = buildTimeLog(undefined, '2026-03-02T09:00:00.000Z');
     const persistedCreated = buildTimeLog('created-id', '2026-03-02T09:00:00.000Z');
-    const session = new TimeLogEditSession([existing, removed]);
+    const task = buildTask([existing, removed]);
     const editService = buildEditService();
     const timeLogsAdapter = {
       create: vi.fn(() => of(persistedCreated)),
@@ -70,6 +76,7 @@ describe('TimeLogEditSession', () => {
       delete: vi.fn(() => of(undefined)),
       list: vi.fn(() => of([persistedCreated, updated])),
     };
+    const session = new TimeLogEditSession(task, timeLogsAdapter);
 
     editService.openTimeLogDialog.mockReturnValueOnce(of({
       responseType: 'update',
@@ -83,7 +90,7 @@ describe('TimeLogEditSession', () => {
     session.edit(existing, editService);
     session.remove(removed);
 
-    await expect(firstValueFrom(session.save(task, timeLogsAdapter))).resolves.toEqual({
+    await expect(firstValueFrom(session.save())).resolves.toEqual({
       close: true,
       message: 'Time logs updated.',
       response: {
@@ -98,9 +105,7 @@ describe('TimeLogEditSession', () => {
   });
 
   it('keeps the session open with a failure message when save fails', async () => {
-    const task = new Task({ id: 'task-1', timeLogs: [] } as any);
     const created = buildTimeLog(undefined, '2026-03-02T09:00:00.000Z');
-    const session = new TimeLogEditSession([]);
     const editService = buildEditService();
     const timeLogsAdapter = {
       create: vi.fn(() => throwError(() => ({ error: { errors: ['Can not Create TimeLog'] } }))),
@@ -108,6 +113,7 @@ describe('TimeLogEditSession', () => {
       delete: vi.fn(),
       list: vi.fn(),
     };
+    const session = new TimeLogEditSession(buildTask(), timeLogsAdapter);
 
     editService.openTimeLogDialog.mockReturnValueOnce(of({
       responseType: 'update',
@@ -115,7 +121,7 @@ describe('TimeLogEditSession', () => {
     }));
     session.add(editService);
 
-    await expect(firstValueFrom(session.save(task, timeLogsAdapter))).resolves.toEqual({
+    await expect(firstValueFrom(session.save())).resolves.toEqual({
       close: false,
       message: 'Time logs update failed! Can not Create TimeLog',
     });
