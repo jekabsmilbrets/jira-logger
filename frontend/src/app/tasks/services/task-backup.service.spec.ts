@@ -411,7 +411,7 @@ describe('Tasks Services task-backup.service', () => {
     expect(loaderStateServiceMock.addLoader).toHaveBeenCalledTimes(1);
     expect(loaderStateServiceMock.addLoader).toHaveBeenCalledWith(
       service.isLoading,
-      '_TaskBackupService',
+      'TaskBackupService',
     );
   });
 

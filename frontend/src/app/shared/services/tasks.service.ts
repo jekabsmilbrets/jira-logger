@@ -48,7 +48,7 @@ export class TasksService implements LoadableInitializer {
   public init(): void {
     this.loaderStateService.addLoader(
       this.isLoading,
-      this.constructor.name,
+      'TasksService',
     );
   }
 

@@ -40,7 +40,7 @@ export class StorageService implements LoadableInitializer {
   public init(): void {
     this.loaderStateService.addLoader(
       this.isLoading,
-      this.constructor.name,
+      'StorageService',
     );
     this.createStores();
   }

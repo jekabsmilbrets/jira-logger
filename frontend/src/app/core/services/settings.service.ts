@@ -34,7 +34,7 @@ export class SettingsService implements LoadableInitializer {
   public init(): void {
     this.loaderStateService.addLoader(
       this.isLoading,
-      this.constructor.name,
+      'SettingsService',
     );
     this.list()
       .pipe(take(1))

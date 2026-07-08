@@ -37,7 +37,7 @@ export class MonitorService implements LoadableInitializer, OnDestroy {
   public init(): void {
     this.loaderStateService.addLoader(
       this.isLoading,
-      this.constructor.name,
+      'MonitorService',
     );
 
     this.subscription.add(
