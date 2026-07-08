@@ -11,10 +11,7 @@ export const reportResolver: ResolveFn<boolean> = (route): Observable<boolean> =
   const reportService: ReportService = inject(ReportService);
   const tasksService: TasksService = inject(TasksService);
   const paramMap: ParamMap = route.paramMap;
-  reportService.applySettingsChange({
-    type: 'route',
-    paramMap,
-  });
+  reportService.applyRouteParams(paramMap);
 
   return tasksService.loadVisibleTasks({})
     .pipe(

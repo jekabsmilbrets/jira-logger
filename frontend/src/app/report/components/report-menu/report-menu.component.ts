@@ -42,10 +42,7 @@ export class ReportMenuComponent {
   protected onSettingsIntent(
     intent: ReportSettingsIntent,
   ): void {
-    this.reportService.applySettingsChange({
-      type: 'intent',
-      intent,
-    });
+    this.reportService.applySettingsIntent(intent);
   }
 
   protected onSmallScreenMenuToggle(): void {

@@ -32,25 +32,25 @@ const waitForDebounce = async () => {
 
 const columnDefs: (columns: Column[]) => string[] = (columns: Column[]): string[] => columns.map((column: Column) => column.columnDef);
 const applyReportMode = (service: ReportService, reportMode: ReportMode): void => {
-  service.applySettingsChange({ type: 'intent', intent: { type: 'set-report-mode', reportMode } });
+  service.applySettingsIntent({ type: 'set-report-mode', reportMode });
 };
 const applyTags = (service: ReportService, tags: Tag[]): void => {
-  service.applySettingsChange({ type: 'intent', intent: { type: 'set-tags', tags } });
+  service.applySettingsIntent({ type: 'set-tags', tags });
 };
 const applyDate = (service: ReportService, date: Date | null): void => {
-  service.applySettingsChange({ type: 'intent', intent: { type: 'set-date', date } });
+  service.applySettingsIntent({ type: 'set-date', date });
 };
 const applyStartDate = (service: ReportService, startDate: Date | null): void => {
-  service.applySettingsChange({ type: 'intent', intent: { type: 'set-start-date', startDate } });
+  service.applySettingsIntent({ type: 'set-start-date', startDate });
 };
 const applyEndDate = (service: ReportService, endDate: Date | null): void => {
-  service.applySettingsChange({ type: 'intent', intent: { type: 'set-end-date', endDate } });
+  service.applySettingsIntent({ type: 'set-end-date', endDate });
 };
 const applyShowWeekends = (service: ReportService, showWeekends: boolean): void => {
-  service.applySettingsChange({ type: 'intent', intent: { type: 'set-show-weekends', showWeekends } });
+  service.applySettingsIntent({ type: 'set-show-weekends', showWeekends });
 };
 const applyHideUnreportedTasks = (service: ReportService, hideUnreportedTasks: boolean): void => {
-  service.applySettingsChange({ type: 'intent', intent: { type: 'set-hide-unreported-tasks', hideUnreportedTasks } });
+  service.applySettingsIntent({ type: 'set-hide-unreported-tasks', hideUnreportedTasks });
 };
 
 describe('ReportService', () => {
@@ -393,13 +393,12 @@ describe('ReportService', () => {
   });
 
   it('applies report route params inside the report module', () => {
-    service.applySettingsChange({
-      type: 'route',
-      paramMap: convertToParamMap({
+    service.applyRouteParams(
+      convertToParamMap({
         reportMode: ReportMode.date,
         date: '2026-05-30',
       }),
-    });
+    );
 
     expect(service.settingsControlsState().reportMode).toBe(ReportMode.date);
     expect(service.settingsControlsState().date?.getTime()).toBe(
@@ -410,12 +409,11 @@ describe('ReportService', () => {
   it('applies today for date mode route without date param', () => {
     vi.setSystemTime(new Date('2026-05-30T12:00:00.000Z'));
 
-    service.applySettingsChange({
-      type: 'route',
-      paramMap: convertToParamMap({
+    service.applyRouteParams(
+      convertToParamMap({
         reportMode: ReportMode.date,
       }),
-    });
+    );
 
     expect(service.settingsControlsState().reportMode).toBe(ReportMode.date);
     expect(service.settingsControlsState().date?.getTime()).toBe(
@@ -447,13 +445,12 @@ describe('ReportService', () => {
     });
 
     const localService = TestBed.inject(ReportService);
-    localService.applySettingsChange({
-      type: 'route',
-      paramMap: convertToParamMap({
+    localService.applyRouteParams(
+      convertToParamMap({
         reportMode: ReportMode.date,
         date: '2021-01-01',
       }),
-    });
+    );
 
     hydrationState$.next({
       reportMode: ReportMode.dateRange,
@@ -498,13 +495,12 @@ describe('ReportService', () => {
     });
 
     const localService = TestBed.inject(ReportService);
-    localService.applySettingsChange({
-      type: 'route',
-      paramMap: convertToParamMap({
+    localService.applyRouteParams(
+      convertToParamMap({
         reportMode: ReportMode.date,
         date: 'not-a-date',
       }),
-    });
+    );
 
     hydrationState$.next({
       reportMode: ReportMode.total,

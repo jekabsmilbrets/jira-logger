@@ -54,15 +54,12 @@ describe('ReportMenuComponent', () => {
 
   it('updates ReportService settings through Report Settings controls intent', () => {
     const date = new Date('2026-05-30T00:00:00.000Z');
-    const applySettingsChangeSpy = vi.spyOn(reportService, 'applySettingsChange');
+    const applySettingsIntentSpy = vi.spyOn(reportService, 'applySettingsIntent');
 
     (component as any).onSettingsIntent({ type: 'set-date', date });
 
-    expect(applySettingsChangeSpy).toHaveBeenCalledTimes(1);
-    expect(applySettingsChangeSpy).toHaveBeenCalledWith({
-      type: 'intent',
-      intent: { type: 'set-date', date },
-    });
+    expect(applySettingsIntentSpy).toHaveBeenCalledTimes(1);
+    expect(applySettingsIntentSpy).toHaveBeenCalledWith({ type: 'set-date', date });
   });
 
   it('opens dialog for small screen menu', () => {
