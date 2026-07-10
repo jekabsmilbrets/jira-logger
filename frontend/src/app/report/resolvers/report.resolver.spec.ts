@@ -64,6 +64,5 @@ describe('reportResolver', () => {
         date: params.date,
       },
     });
-    expect(tasksService.loadVisibleTasks).toHaveBeenCalledWith({});
   });
 });

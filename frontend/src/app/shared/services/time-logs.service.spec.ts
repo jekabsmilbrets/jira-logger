@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { firstValueFrom, of, throwError } from 'rxjs';
+import { firstValueFrom, of, take, throwError } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
@@ -72,6 +72,33 @@ describe('Shared Services time-logs.service', () => {
     expect(body.startTime).toBeUndefined();
     expect(body.endTime).toBeUndefined();
     expect(body.description).toBeUndefined();
+  });
+
+  it('emits changed task after time log updates', async () => {
+    const task = new Task({ id: 'task-1', name: 'Task', tags: [], timeLogs: [] } as any);
+    const timeLog = new TimeLog({
+      id: 'log-1',
+      startTime: new Date('2024-01-01T10:20:30.456Z'),
+    } as any);
+    const changedTask = firstValueFrom(service.timeLogChanged$.pipe(take(1)));
+
+    apiRequestService.request.mockReturnValueOnce(of({ data: { id: 'log-1', task: 'task-1' } }));
+
+    await firstValueFrom(service.update(task, timeLog));
+
+    await expect(changedTask).resolves.toBe(task);
+  });
+
+  it('emits changed task after time log delete', async () => {
+    const task = new Task({ id: 'task-1', name: 'Task', tags: [], timeLogs: [] } as any);
+    const timeLog = new TimeLog({ id: 'log-1' } as any);
+    const changedTask = firstValueFrom(service.timeLogChanged$.pipe(take(1)));
+
+    apiRequestService.request.mockReturnValueOnce(of(undefined));
+
+    await firstValueFrom(service.delete(task, timeLog));
+
+    await expect(changedTask).resolves.toBe(task);
   });
 
   it('returns an empty list when the API reports no time logs for a task', async () => {

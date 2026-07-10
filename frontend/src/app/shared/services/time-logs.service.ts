@@ -20,6 +20,7 @@ export class TimeLogsService implements LoadableInitializer {
 
   public taskStarted$: Observable<Task>;
   public taskFinished$: Observable<Task>;
+  public timeLogChanged$: Observable<Task>;
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
   private readonly timeLogResource: ResourceRequestHandle = this.apiRequestService.resource({
@@ -30,10 +31,12 @@ export class TimeLogsService implements LoadableInitializer {
 
   private taskStartedSubject: Subject<Task> = new Subject<Task>();
   private taskFinishedSubject: Subject<Task> = new Subject<Task>();
+  private timeLogChangedSubject: Subject<Task> = new Subject<Task>();
 
   constructor() {
     this.taskStarted$ = this.taskStartedSubject.asObservable();
     this.taskFinished$ = this.taskFinishedSubject.asObservable();
+    this.timeLogChanged$ = this.timeLogChangedSubject.asObservable();
   }
 
   public init(): void {
@@ -83,7 +86,10 @@ export class TimeLogsService implements LoadableInitializer {
     return this.timeLogResource.request<void>(
       this.buildTaskTimeLogSuffix(task, timeLog),
       'delete',
-    );
+    )
+      .pipe(
+        tap(() => this.timeLogChangedSubject.next(task)),
+      );
   }
 
   public start(
@@ -123,6 +129,7 @@ export class TimeLogsService implements LoadableInitializer {
     )
       .pipe(
         map((timeLog: ApiTimeLog): TimeLog => adaptTimeLog(timeLog)),
+        tap(() => this.timeLogChangedSubject.next(task)),
       );
   }
 
