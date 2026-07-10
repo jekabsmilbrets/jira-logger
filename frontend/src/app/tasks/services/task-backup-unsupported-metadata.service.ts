@@ -14,7 +14,6 @@ import type {
   TaskBackupUnsupportedMetadata,
 } from '@tasks/interfaces/task-backup.interface';
 import type { TaskBackupLegacyTaskInput, TaskBackupLegacyTimeLogInput } from '@tasks/interfaces/task-backup-legacy-input.interface';
-import type { UnsupportedMetadataParser } from '@tasks/interfaces/unsupported-metadata-parser.interface';
 import type { UnsupportedMetadataField, UnsupportedMetadataValue } from '@tasks/types/task-backup-metadata.type';
 
 export interface TaskBackupExportMetadata {
@@ -137,10 +136,24 @@ export class TaskBackupUnsupportedMetadataService {
     value: TaskBackupLegacyTaskInput,
   ): TaskBackupUnsupportedMetadata | undefined {
     if (this.isRecord(value.metadata)) {
-      return this.collectFromParsers(this.currentMetadataParsers(value.metadata));
+      return this.toUnsupportedMetadataResult({
+        task: this.toMetadataEntry(value.metadata['task'], ['id'], ['createdAt'], ['updatedAt']),
+        timeLogs: this.toMetadataEntries(value.metadata['timeLogs'], ['id'], ['createdAt'], ['updatedAt']),
+        tags: this.toMetadataEntries(value.metadata['tags'], ['id'], ['createdAt'], ['updatedAt']),
+        lastTimeLog: this.parseNullableBackupTimeLog(value.metadata['lastTimeLog']),
+        jiraWorkLogs: this.toJiraWorkLogs(value.metadata['jiraWorkLogs'], ['id'], 'metadata.jiraWorkLogs.startTime', false),
+        timeLogged: this.toOptionalLoggedTime(value.metadata['timeLogged']),
+      });
     }
 
-    return this.collectFromParsers(this.legacyMetadataParsers(value));
+    return this.toUnsupportedMetadataResult({
+      task: this.toMetadataEntry(value, ['id', '_id'], ['createdAt', '_createdAt'], ['updatedAt', '_updatedAt']),
+      timeLogs: this.toMetadataEntries(value.timeLogs ?? value._timeLogs, ['_id', 'id'], ['_createdAt'], ['_updatedAt']),
+      tags: this.toMetadataEntries(value.tags ?? value._tags, ['_id', 'id'], ['_createdAt'], ['_updatedAt']),
+      lastTimeLog: this.parseNullableBackupTimeLog(value.lastTimeLog ?? value._lastTimeLog),
+      jiraWorkLogs: this.toJiraWorkLogs(value.jiraWorkLogs ?? value._jiraWorkLogs, ['id', '_id'], 'jiraWorkLogs.startTime'),
+      timeLogged: this.toOptionalLoggedTime(value.timeLogged ?? value._timeLogged),
+    });
   }
 
   private buildWarning(
@@ -200,68 +213,6 @@ export class TaskBackupUnsupportedMetadataService {
     }
 
     return undefined;
-  }
-
-  private currentMetadataParsers(
-    metadataRecord: Record<string, unknown>,
-  ): UnsupportedMetadataParser[] {
-    return [
-      {
-        field: 'task',
-        parse: () => this.toMetadataEntry(metadataRecord['task'], ['id'], ['createdAt'], ['updatedAt']),
-      },
-      {
-        field: 'timeLogs',
-        parse: () => this.toMetadataEntries(metadataRecord['timeLogs'], ['id'], ['createdAt'], ['updatedAt']),
-      },
-      {
-        field: 'tags',
-        parse: () => this.toMetadataEntries(metadataRecord['tags'], ['id'], ['createdAt'], ['updatedAt']),
-      },
-      {
-        field: 'lastTimeLog',
-        parse: () => this.parseNullableBackupTimeLog(metadataRecord['lastTimeLog']),
-      },
-      {
-        field: 'jiraWorkLogs',
-        parse: () => this.toJiraWorkLogs(metadataRecord['jiraWorkLogs'], ['id'], 'metadata.jiraWorkLogs.startTime', false),
-      },
-      {
-        field: 'timeLogged',
-        parse: () => this.toOptionalLoggedTime(metadataRecord['timeLogged']),
-      },
-    ];
-  }
-
-  private legacyMetadataParsers(
-    value: TaskBackupLegacyTaskInput,
-  ): UnsupportedMetadataParser[] {
-    return [
-      {
-        field: 'task',
-        parse: () => this.toMetadataEntry(value, ['id', '_id'], ['createdAt', '_createdAt'], ['updatedAt', '_updatedAt']),
-      },
-      {
-        field: 'timeLogs',
-        parse: () => this.toMetadataEntries(value.timeLogs ?? value._timeLogs, ['_id', 'id'], ['_createdAt'], ['_updatedAt']),
-      },
-      {
-        field: 'tags',
-        parse: () => this.toMetadataEntries(value.tags ?? value._tags, ['_id', 'id'], ['_createdAt'], ['_updatedAt']),
-      },
-      {
-        field: 'lastTimeLog',
-        parse: () => this.parseNullableBackupTimeLog(value.lastTimeLog ?? value._lastTimeLog),
-      },
-      {
-        field: 'jiraWorkLogs',
-        parse: () => this.toJiraWorkLogs(value.jiraWorkLogs ?? value._jiraWorkLogs, ['id', '_id'], 'jiraWorkLogs.startTime'),
-      },
-      {
-        field: 'timeLogged',
-        parse: () => this.toOptionalLoggedTime(value.timeLogged ?? value._timeLogged),
-      },
-    ];
   }
 
   private normalizeTimestamp(
@@ -450,17 +401,4 @@ export class TaskBackupUnsupportedMetadataService {
       undefined;
   }
 
-  private collectFromParsers(
-    parsers: UnsupportedMetadataParser[],
-  ): TaskBackupUnsupportedMetadata | undefined {
-    const metadata: TaskBackupUnsupportedMetadata = {};
-
-    parsers.forEach((parser: UnsupportedMetadataParser) => {
-      Object.assign(metadata, {
-        [parser.field]: parser.parse(),
-      });
-    });
-
-    return this.toUnsupportedMetadataResult(metadata);
-  }
 }

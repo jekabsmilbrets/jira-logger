@@ -201,8 +201,6 @@ export class ReportColumnsService {
     values: T[],
     getValue: (value: T) => number,
   ): number {
-    return values
-      .map(getValue)
-      .reduce((acc: number, value: number) => acc + value, 0);
+    return values.reduce((sum: number, value: T) => sum + getValue(value), 0);
   }
 }
