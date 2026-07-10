@@ -80,13 +80,13 @@ describe('ReportViewComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('binds table inputs and wires table outputs through template', () => {
+  it('binds table configuration and wires table outputs through template', () => {
     fixture.detectChanges();
 
     const table = fixture.debugElement.query(By.directive(TableComponent));
     expect(table).toBeTruthy();
-    expect(table.componentInstance.enableFooter()).toBe(true);
-    expect(table.componentInstance.isSelectable()).toBe(false);
+    expect(table.componentInstance.configuration().footer).toBe(true);
+    expect(table.componentInstance.configuration().selectable).toBe(false);
 
     const onCellClickSpy = vi.spyOn(component as any, 'onCellClick');
     const onFooterClickSpy = vi.spyOn(component as any, 'onFooterCellClicked');

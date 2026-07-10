@@ -1,7 +1,7 @@
 <div class="table-container">
     <mat-table [dataSource]="dataSource"
-               [matSortActive]="sortField()"
-               [matSortDirection]="sortDirection()"
+               [matSortActive]="configuration().sort?.field ?? 'id'"
+               [matSortDirection]="configuration().sort?.direction ?? 'asc'"
                matSort
                matSortDisableClear>
         @for (column of loopColumns(); track column.columnDef) {
@@ -28,7 +28,7 @@
             </ng-container>
         }
 
-        @for (action of rowActions(); track action.columnDef) {
+        @for (action of configuration().rowActions ?? []; track action.columnDef) {
             <ng-container [cdkColumnDef]="action.columnDef">
                 <mat-header-cell *cdkHeaderCellDef>{{ action.header }}</mat-header-cell>
 

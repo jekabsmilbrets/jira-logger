@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, injectAsync, type Signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, injectAsync, type Signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,7 +11,7 @@ import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
 import { formatDateInTimezone } from '@core/utilities/format-date-in-timezone.utility';
 
-import { TableComponent } from '@shared/components/table/table.component';
+import { TableComponent, type TableConfiguration } from '@shared/components/table/table.component';
 import type { Column } from '@shared/interfaces/column.interface';
 import type { Searchable } from '@shared/interfaces/searchable.interface';
 import type { TableRowAction } from '@shared/interfaces/table-row-action.interface';
@@ -67,6 +67,17 @@ export class TimeLogListModalComponent {
   private readonly session: TimeLogEditSession = new TimeLogEditSession(this.data.task, this.timeLogsService);
 
   protected readonly timeLogs: Signal<TimeLog[]> = this.session.timeLogs;
+  protected readonly tableConfiguration: Signal<TableConfiguration> = computed(() => ({
+    columns: this.columns,
+    data: this.timeLogs(),
+    footer: true,
+    selectable: false,
+    rowActions: this.rowActions,
+    sort: {
+      direction: 'desc',
+      field: 'startTime',
+    },
+  }));
 
   constructor() {
     this.columns = createTimeLogListColumns(

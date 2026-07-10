@@ -1,10 +1,4 @@
 <shared-shared-table (cellClicked)="onCellClick($event)"
                      (footerCellClicked)="onFooterCellClicked($event)"
                      (rowAction)="onSyncClick($event[0])"
-                     [columns]="state().columns"
-                     [data]="state().tasks"
-                     [enableFooter]="true"
-                     [isSelectable]="false"
-                     [rowActions]="rowActions()"
-                     sortDirection="desc"
-                     sortField="lastTimeLogStartTime"/>
+                     [configuration]="tableConfiguration()"/>

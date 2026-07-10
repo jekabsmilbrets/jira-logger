@@ -10,7 +10,7 @@ import {
   inject,
   injectAsync,
   input,
-  InputSignal,
+  type InputSignal,
   output,
   OutputEmitterRef,
   Signal,
@@ -37,6 +37,18 @@ import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import type { AreYouSureService } from '@shared/services/are-you-sure.service';
 import type { AsyncLoader } from '@shared/types/async-loader.type';
 import { getNestedObject } from '@shared/utilities/get-nested-object.utility';
+
+export interface TableConfiguration {
+  columns: Column[];
+  data?: Searchable[] | null;
+  rowActions?: TableRowAction[];
+  selectable?: boolean;
+  footer?: boolean;
+  sort?: {
+    field?: string;
+    direction?: SortDirection;
+  };
+}
 
 @Component({
   selector: 'shared-shared-table',
@@ -65,13 +77,7 @@ export class TableComponent implements AfterViewInit {
     'select',
   ];
 
-  public readonly isSelectable: InputSignal<boolean> = input(true);
-  public readonly enableFooter: InputSignal<boolean> = input(false);
-  public readonly sortField: InputSignal<string> = input('id');
-  public readonly sortDirection: InputSignal<'' | 'asc' | 'desc'> = input<SortDirection>('asc');
-  public readonly columns: InputSignal<Column[]> = input<Column[]>([]);
-  public readonly data: InputSignal<Searchable[] | null | undefined> = input<Searchable[] | null>();
-  public readonly rowActions: InputSignal<TableRowAction[]> = input<TableRowAction[]>([]);
+  public readonly configuration: InputSignal<TableConfiguration> = input<TableConfiguration>({ columns: [] });
 
   protected readonly cellClicked: OutputEmitterRef<[Searchable, Column]> = output<[
     Searchable,
@@ -87,20 +93,20 @@ export class TableComponent implements AfterViewInit {
 
   protected readonly paginator: Signal<MatPaginator> = viewChild.required(MatPaginator);
   protected readonly displayedColumns: Signal<string[]> = computed(() => {
-    const columns: string[] = this.columns()
+    const columns: string[] = this.configuration().columns
       .filter(({ hidden }: Column) => !hidden)
       .filter(({ excludeFromLoop }: Column) => !excludeFromLoop)
       .map(({ columnDef }: Column) => columnDef);
 
-    columns.push(...this.rowActions().map((action: TableRowAction) => action.columnDef));
+    columns.push(...(this.configuration().rowActions ?? []).map((action: TableRowAction) => action.columnDef));
 
-    if (this.isSelectable()) {
+    if (this.configuration().selectable ?? true) {
       columns.unshift('select');
     }
 
     return columns;
   });
-  protected readonly loopColumns: Signal<Column[]> = computed(() => this.columns().filter((column: Column) => this.shouldDisplayColumn(column)));
+  protected readonly loopColumns: Signal<Column[]> = computed(() => this.configuration().columns.filter((column: Column) => this.shouldDisplayColumn(column)));
 
   protected selection: SelectionModel<Searchable> = new SelectionModel<Searchable>(true, []);
 
@@ -117,7 +123,7 @@ export class TableComponent implements AfterViewInit {
 
   constructor() {
     effect(() => {
-      this._data = [...(this.data() ?? [])];
+      this._data = [...(this.configuration().data ?? [])];
       this.selection.clear();
       this.dataSource.data = this._data;
     });
@@ -233,7 +239,7 @@ export class TableComponent implements AfterViewInit {
   }
 
   protected shouldShowFooter(): boolean {
-    return this.enableFooter();
+    return this.configuration().footer ?? false;
   }
 
   protected isRowActionDisabled(
@@ -252,7 +258,7 @@ export class TableComponent implements AfterViewInit {
   protected onRowClick(
     row: Searchable,
   ): void {
-    if (this.isSelectable()) {
+    if (this.configuration().selectable ?? true) {
       this.selection.toggle(row);
     }
   }

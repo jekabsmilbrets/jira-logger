@@ -23,13 +23,7 @@
 
     <shared-shared-table (cellClicked)="onCellClick($event)"
                          (rowAction)="onRemoveAction($event[0])"
-                         [columns]="columns"
-                         [data]="timeLogs()"
-                         [enableFooter]="true"
-                         [isSelectable]="false"
-                         [rowActions]="rowActions"
-                         sortDirection="desc"
-                         sortField="startTime"/>
+                         [configuration]="tableConfiguration()"/>
 </mat-dialog-content>
 
 <mat-dialog-actions>

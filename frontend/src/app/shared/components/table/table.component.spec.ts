@@ -1,6 +1,6 @@
 import { registerLocaleData } from '@angular/common';
 import localeLv from '@angular/common/locales/lv';
-import { TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { of } from 'rxjs';
@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Column } from '@shared/interfaces/column.interface';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
 
-import { TableComponent } from './table.component';
+import { TableComponent, type TableConfiguration } from './table.component';
 
 describe('Shared Components table.component', () => {
   const areYouSureService = {
@@ -23,9 +23,19 @@ describe('Shared Components table.component', () => {
     }).compileComponents();
 
     const fixture = TestBed.createComponent(TableComponent);
-    fixture.componentRef.setInput('columns', []);
+    setConfiguration(fixture, { columns: [] });
     fixture.detectChanges();
     return { fixture, component: fixture.componentInstance };
+  };
+
+  const setConfiguration = (
+    fixture: ComponentFixture<TableComponent>,
+    update: Partial<TableConfiguration>,
+  ): void => {
+    fixture.componentRef.setInput('configuration', {
+      ...fixture.componentInstance.configuration(),
+      ...update,
+    });
   };
 
   const createColumn = (overrides: Partial<Column> = {}): Column => ({
@@ -43,12 +53,12 @@ describe('Shared Components table.component', () => {
 
   it('builds displayed columns from visible/non-excluded columns with select and row actions', async () => {
     const { fixture, component } = await createComponent();
-    fixture.componentRef.setInput('columns', [
+    setConfiguration(fixture, { columns: [
       createColumn({ columnDef: 'name' }),
       createColumn({ columnDef: 'hidden', hidden: true }),
       createColumn({ columnDef: 'excluded', excludeFromLoop: true }),
-    ]);
-    fixture.componentRef.setInput('rowActions', [
+    ] });
+    setConfiguration(fixture, { rowActions: [
       {
         id: 'remove',
         columnDef: 'remove',
@@ -56,14 +66,14 @@ describe('Shared Components table.component', () => {
         icon: 'delete',
         ariaLabel: 'Remove row',
       },
-    ]);
-    fixture.componentRef.setInput('isSelectable', true);
+    ] });
+    setConfiguration(fixture, { selectable: true });
     fixture.detectChanges();
 
     expect(component['displayedColumns']()).toEqual(['select', 'name', 'remove']);
 
-    fixture.componentRef.setInput('rowActions', []);
-    fixture.componentRef.setInput('isSelectable', false);
+    setConfiguration(fixture, { rowActions: [] });
+    setConfiguration(fixture, { selectable: false });
     fixture.detectChanges();
 
     expect(component['displayedColumns']()).toEqual(['name']);
@@ -75,7 +85,7 @@ describe('Shared Components table.component', () => {
     const paginator = (component as any).paginator();
 
     const row = { nested: { value: 123 } } as any;
-    fixture.componentRef.setInput('data', [row]);
+    setConfiguration(fixture, { data: [row] });
     fixture.detectChanges();
 
     expect(component['dataSource'].data).toEqual([row]);
@@ -89,7 +99,7 @@ describe('Shared Components table.component', () => {
     const date = new Date('2026-05-31T12:00:00.000Z');
     const row = { meta: { createdAt: date } } as any;
 
-    fixture.componentRef.setInput('data', [row]);
+    setConfiguration(fixture, { data: [row] });
     fixture.detectChanges();
 
     expect(component['dataSource'].sortingDataAccessor(row, 'meta.createdAt')).toBe(date.getTime());
@@ -98,7 +108,7 @@ describe('Shared Components table.component', () => {
   it('maps null data input to empty data source', async () => {
     const { fixture, component } = await createComponent();
 
-    fixture.componentRef.setInput('data', null);
+    setConfiguration(fixture, { data: null });
     fixture.detectChanges();
 
     expect(component['dataSource'].data).toEqual([]);
@@ -107,7 +117,7 @@ describe('Shared Components table.component', () => {
   it('checks and toggles selection state', async () => {
     const { fixture, component } = await createComponent();
     const rows = [{ id: 1 } as any, { id: 2 } as any];
-    fixture.componentRef.setInput('data', rows);
+    setConfiguration(fixture, { data: rows });
     fixture.detectChanges();
 
     expect(component['isAllSelected']()).toBe(false);
@@ -162,7 +172,7 @@ describe('Shared Components table.component', () => {
     const { fixture, component } = await createComponent();
     const emitSpy = vi.spyOn(component['footerCellClicked'], 'emit');
     const rows = [{ id: 1 } as any];
-    fixture.componentRef.setInput('data', rows);
+    setConfiguration(fixture, { data: rows });
     fixture.detectChanges();
 
     component['onFooterCellClicked'](createColumn({ isClickable: false }));
@@ -285,9 +295,9 @@ describe('Shared Components table.component', () => {
       startTime: new Date('2026-05-01T10:00:00.000Z'),
       endTime: new Date('2026-05-01T11:00:00.000Z'),
     } as any;
-    fixture.componentRef.setInput('isSelectable', true);
-    fixture.componentRef.setInput('enableFooter', true);
-    fixture.componentRef.setInput('rowActions', [
+    setConfiguration(fixture, { selectable: true });
+    setConfiguration(fixture, { footer: true });
+    setConfiguration(fixture, { rowActions: [
       {
         id: 'sync',
         columnDef: 'sync',
@@ -307,8 +317,8 @@ describe('Shared Components table.component', () => {
         color: 'warn',
         confirmLabel: () => 'Remove row',
       },
-    ]);
-    fixture.componentRef.setInput('columns', [
+    ] });
+    setConfiguration(fixture, { columns: [
       {
         columnDef: 'value',
         header: 'Value',
@@ -329,8 +339,8 @@ describe('Shared Components table.component', () => {
         footerCell: () => '',
       } as any,
       { columnDef: 'plain', header: 'Plain', sortable: true, cell: () => 'abc', hasFooter: true, footerCell: () => 'x' } as any,
-    ]);
-    fixture.componentRef.setInput('data', [row]);
+    ] });
+    setConfiguration(fixture, { data: [row] });
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('mat-header-row'))).toBeTruthy();
@@ -351,11 +361,11 @@ describe('Shared Components table.component', () => {
 
   it('renders non-selectable rows when isSelectable is false', async () => {
     const { fixture, component } = await createComponent();
-    fixture.componentRef.setInput('isSelectable', false);
-    fixture.componentRef.setInput('columns', [
+    setConfiguration(fixture, { selectable: false });
+    setConfiguration(fixture, { columns: [
       { columnDef: 'plain', header: 'Plain', sortable: true, cell: () => 'abc' } as any,
-    ]);
-    fixture.componentRef.setInput('data', [{ id: '1' } as any]);
+    ] });
+    setConfiguration(fixture, { data: [{ id: '1' } as any] });
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('mat-row'))).toBeTruthy();
@@ -364,8 +374,8 @@ describe('Shared Components table.component', () => {
   it('triggers clickable cell listener via template event', async () => {
     const { fixture, component } = await createComponent();
     const cellSpy = vi.spyOn(component['cellClicked'], 'emit');
-    fixture.componentRef.setInput('enableFooter', true);
-    fixture.componentRef.setInput('columns', [
+    setConfiguration(fixture, { footer: true });
+    setConfiguration(fixture, { columns: [
       {
         columnDef: 'plain',
         header: 'Plain',
@@ -375,8 +385,8 @@ describe('Shared Components table.component', () => {
         hasFooter: true,
         footerCell: () => 'footer',
       } as any,
-    ]);
-    fixture.componentRef.setInput('data', [{ id: '1' } as any]);
+    ] });
+    setConfiguration(fixture, { data: [{ id: '1' } as any] });
     fixture.detectChanges();
 
     const clickableCell = fixture.debugElement.query(By.css('.mat-cell-clickable'));
@@ -391,11 +401,11 @@ describe('Shared Components table.component', () => {
 
   it('triggers select checkbox and selectable row click listeners via template events', async () => {
     const { fixture, component } = await createComponent();
-    fixture.componentRef.setInput('isSelectable', true);
-    fixture.componentRef.setInput('columns', [
+    setConfiguration(fixture, { selectable: true });
+    setConfiguration(fixture, { columns: [
       { columnDef: 'plain', header: 'Plain', sortable: true, cell: () => 'abc' } as any,
-    ]);
-    fixture.componentRef.setInput('data', [{ id: '1' } as any, { id: '2' } as any]);
+    ] });
+    setConfiguration(fixture, { data: [{ id: '1' } as any, { id: '2' } as any] });
     fixture.detectChanges();
 
     const checkboxes = fixture.debugElement.queryAll(By.css('mat-checkbox'));

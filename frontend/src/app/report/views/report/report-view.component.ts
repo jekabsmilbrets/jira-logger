@@ -4,7 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { map, type Observable, tap } from 'rxjs';
 
-import { TableComponent } from '@shared/components/table/table.component';
+import { TableComponent, type TableConfiguration } from '@shared/components/table/table.component';
 import type { Column } from '@shared/interfaces/column.interface';
 import type { Searchable } from '@shared/interfaces/searchable.interface';
 import type { TableRowAction } from '@shared/interfaces/table-row-action.interface';
@@ -38,6 +38,17 @@ export class ReportViewComponent {
 
   protected readonly state: Signal<ReportViewState> = this.reportService.viewState;
   protected readonly rowActions: Signal<TableRowAction[]> = computed(() => this.buildRowActions());
+  protected readonly tableConfiguration: Signal<TableConfiguration> = computed(() => ({
+    columns: this.state().columns,
+    data: this.state().tasks,
+    footer: true,
+    selectable: false,
+    rowActions: this.rowActions(),
+    sort: {
+      direction: 'desc',
+      field: 'lastTimeLogStartTime',
+    },
+  }));
 
   protected onCellClick(
     [row, column]: [Searchable, Column],
