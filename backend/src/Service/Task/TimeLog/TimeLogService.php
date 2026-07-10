@@ -10,7 +10,9 @@ use App\Entity\Task\TimeLog\TimeLog;
 use App\Factory\Task\TimeLog\TimeLogFactory;
 use App\Repository\Task\TimeLog\TimeLogRepository;
 use App\Service\DateTime\DateInputParser;
+use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\Task\TaskService;
+use App\Utility\TimeLog\TimeLogDuration;
 use Doctrine\DBAL\Exception;
 
 class TimeLogService
@@ -21,6 +23,7 @@ class TimeLogService
         private readonly TimeLogRepository $timeLogRepository,
         private readonly TaskService $taskService,
         private readonly DateInputParser $dateInputParser,
+        private readonly UserTimezoneResolver $userTimezoneResolver,
     ) {
     }
 
@@ -197,6 +200,30 @@ class TimeLogService
         return $timeLog instanceof TimeLog ? TimeLogWriteResult::updated($timeLog) : TimeLogWriteResult::failed();
     }
 
+    final public function activeTask(): ?Task
+    {
+        return $this->timeLogRepository
+            ->findActive()
+            ?->getTask();
+    }
+
+    final public function todayLoggedSeconds(?\DateTimeImmutable $now = null): int
+    {
+        [$rangeStart, $rangeEnd, $now] = $this->todayRange($now);
+        $seconds = 0;
+
+        foreach ($this->timeLogRepository->findOverlappingRange($rangeStart, $rangeEnd) as $timeLog) {
+            $seconds += TimeLogDuration::clippedSecondsInRange(
+                rangeStart: $rangeStart,
+                rangeEnd: $rangeEnd,
+                logStart: $timeLog->getStartTime(),
+                logEnd: $timeLog->getEndTime() ?? $now,
+            );
+        }
+
+        return $seconds;
+    }
+
     /**
      * @throws \Exception
      */
@@ -256,5 +283,22 @@ class TimeLogService
     private function dateInputParser(): DateInputParser
     {
         return $this->dateInputParser;
+    }
+
+    /**
+     * @return array{0: \DateTimeImmutable, 1: \DateTimeImmutable, 2: \DateTimeImmutable}
+     */
+    private function todayRange(?\DateTimeImmutable $now = null): array
+    {
+        $timezone = new \DateTimeZone($this->userTimezoneResolver->resolveCurrentUserTimezone());
+        $utcTimezone = new \DateTimeZone('UTC');
+        $now = ($now ?? new \DateTimeImmutable('now', $timezone))->setTimezone($timezone);
+        $startOfToday = $now->setTime(0, 0);
+
+        return [
+            $startOfToday->setTimezone($utcTimezone),
+            $startOfToday->modify('+1 day')->setTimezone($utcTimezone),
+            $now->setTimezone($utcTimezone),
+        ];
     }
 }
