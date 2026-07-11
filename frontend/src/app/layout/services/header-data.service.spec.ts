@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
-import { of, Subject, throwError } from 'rxjs';
+import { firstValueFrom, of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
 import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
@@ -149,5 +149,12 @@ describe('Layout Services header-data.service', () => {
     await vi.advanceTimersByTimeAsync(0);
     await TestBed.tick();
     expect(service.activeTask()?.id).toBe('4');
+  });
+
+  it('rethrows non-404 active-task errors', async () => {
+    const service = await configureService();
+    const error = new Error('active task failed');
+
+    await expect(firstValueFrom((service as any).processActiveTaskError(error))).rejects.toBe(error);
   });
 });

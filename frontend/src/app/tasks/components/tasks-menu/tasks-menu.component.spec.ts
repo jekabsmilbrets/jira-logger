@@ -301,7 +301,9 @@ describe('Tasks Components tasks-menu.component', () => {
 
     expect(matDialogMock.open).toHaveBeenCalledTimes(1);
     const [dialogTemplateRef] = matDialogMock.open.mock.calls[0] as [any];
-    dialogTemplateRef.createEmbeddedView({});
+    const view = dialogTemplateRef.createEmbeddedView({});
+    view.detectChanges();
+    expect(view.rootNodes[0].textContent).toContain('Create');
   });
 
   it('does not import when settings dialog returns undefined', async () => {
@@ -355,5 +357,17 @@ describe('Tasks Components tasks-menu.component', () => {
     component.onOpenSettingsDialog();
 
     expect(tasksServiceMock.list).not.toHaveBeenCalled();
+  });
+
+  it('updates create-form tags and compares tags by id', () => {
+    const fixture = TestBed.createComponent(TasksMenuComponent);
+    const component = fixture.componentInstance as any;
+    const selected = [new Tag({ id: 'tag-1', name: 'Frontend' })];
+
+    component.onTagsChange(selected);
+
+    expect(component.createTaskFormModel().tags).toEqual(selected);
+    expect(component.isSameTag(new Tag({ id: 'tag-1' }), new Tag({ id: 'tag-1' }))).toBe(true);
+    expect(component.isSameTag(new Tag({ id: 'tag-1' }), new Tag({ id: 'tag-2' }))).toBe(false);
   });
 });

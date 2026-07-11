@@ -1,55 +1,22 @@
+import { describe, expect, it } from 'vitest';
+
 import { Task } from '@shared/models/task.model';
-import { TimeLog } from '@shared/models/time-log.model';
 
 import { reportTotalColumns } from './report-total-columns.constant';
 
-describe('Report Constants report-total-columns.constant', () => {
-  it('exports expected column contract and computes footer totals', () => {
-    expect(reportTotalColumns.length).toBeGreaterThan(0);
+describe('reportTotalColumns', () => {
+  it('exposes a readable total-time column with row and footer values', () => {
+    const column = reportTotalColumns.find(({ columnDef }) => columnDef === 'timeLogged');
+    const firstTask = { timeLogged: 60 } as Task;
+    const secondTask = { timeLogged: 90 } as Task;
 
-    const timeLog = new TimeLog({
-      startTime: new Date('2024-01-01T10:00:00.000Z'),
-      endTime: new Date('2024-01-01T10:01:00.000Z'),
-    } as any);
-
-    const task = new Task({
-      name: 'Task A',
-      description: 'Desc',
-      tags: [{ name: 'Tag1' } as any],
-      timeLogs: [timeLog],
-    } as any);
-
-    for (const c of reportTotalColumns) {
-      if (typeof c.cell === 'function') {
-        c.cell(task);
-      }
-      if (typeof c.footerCell === 'function') {
-        c.footerCell([task]);
-      }
-    }
-
-    const timeLoggedCol = reportTotalColumns.find((c) => c.columnDef === 'timeLogged');
-    expect(timeLoggedCol?.footerCell?.([task])).toBe(60);
-  });
-
-  it('sums displayed timeLogged values in the total footer', () => {
-    const taskA = new Task({
-      name: 'Task A',
-      timeLogs: [],
-    } as Partial<Task>);
-    const taskB = new Task({
-      name: 'Task B',
-      timeLogs: [],
-    } as Partial<Task>);
-    const timeLoggedCol = reportTotalColumns.find((c) => c.columnDef === 'timeLogged');
-    taskA.timeLogged = 60;
-    taskB.timeLogged = 120;
-
-    expect(timeLoggedCol?.cell(taskA)).toBe(60);
-    expect(timeLoggedCol?.cell(taskB)).toBe(120);
-    expect(timeLoggedCol?.footerCell?.([
-      taskA,
-      taskB,
-    ])).toBe(180);
+    expect(column).toMatchObject({
+      header: 'Total Time Logged',
+      stickyEnd: true,
+      pipe: 'readableTime',
+      hasFooter: true,
+    });
+    expect(column?.cell(firstTask)).toBe(60);
+    expect(column?.footerCell?.([firstTask, secondTask])).toBe(150);
   });
 });

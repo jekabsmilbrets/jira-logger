@@ -37,4 +37,14 @@ describe('Core Services loader-state.service', () => {
     await Promise.resolve();
     expect(service.isLoading()).toBe(false);
   });
+
+  it('rejects duplicate loader names', () => {
+    TestBed.configureTestingModule({ providers: [LoaderStateService] });
+    const service = TestBed.inject(LoaderStateService);
+    const loader = signal(false).asReadonly();
+
+    service.addLoader(loader, 'duplicate');
+
+    expect(() => service.addLoader(loader, 'duplicate')).toThrow('Loader with name "duplicate" already exists.');
+  });
 });

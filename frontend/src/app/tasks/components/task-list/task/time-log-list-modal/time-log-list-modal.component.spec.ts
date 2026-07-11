@@ -276,6 +276,16 @@ describe('Tasks Components time-log-list-modal.component', () => {
     expect(endColumn?.cell(timeLog)).toBe('2026-06-03 23:59:0');
   });
 
+  it('builds remove confirmations with and without an end time', async () => {
+    const { component } = await setup();
+    const confirmLabel = component['rowActions'][0].confirmLabel as (row: TimeLog) => string;
+    const withEnd = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
+    const withoutEnd = new TimeLog({ startTime: withEnd.startTime, endTime: undefined });
+
+    expect(confirmLabel(withEnd)).toContain('-11:00:00');
+    expect(confirmLabel(withoutEnd)).toContain('-null');
+  });
+
   it('triggers toolbar button click handlers from DOM', async () => {
     const { fixture, component } = await setup();
     (component as any).columns = [];

@@ -14,7 +14,7 @@ import { ReportDateCalendarService } from '@report/services/report-date-calendar
 import { JiraWorkLogSyncService } from './jira-work-log-sync.service';
 import { WorkLogService } from './work-log.service';
 
-describe('JiraWorkLogSyncService', () => {
+describe('Tasks Service JiraWorkLogSyncService', () => {
   const buildTask = (timeLog?: TimeLog): Task => {
     const task = new Task({
       id: 'task-1',

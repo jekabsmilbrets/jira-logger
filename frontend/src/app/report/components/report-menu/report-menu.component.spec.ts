@@ -11,7 +11,7 @@ import { ReportServiceStub } from '@report/testing/report-service.stub';
 
 import { ReportMenuComponent } from './report-menu.component';
 
-describe('ReportMenuComponent', () => {
+describe('Report Component ReportMenuComponent', () => {
   let fixture: ComponentFixture<ReportMenuComponent>;
   let component: ReportMenuComponent;
   let reportService: ReportServiceStub;
@@ -81,7 +81,9 @@ describe('ReportMenuComponent', () => {
 
     expect(matDialog.open).toHaveBeenCalled();
     const [dialogTemplateRef] = matDialog.open.mock.calls.at(-1) as [any];
-    dialogTemplateRef.createEmbeddedView({});
+    const view = dialogTemplateRef.createEmbeddedView({});
+    view.detectChanges();
+    expect(view.rootNodes[0].textContent).toContain('Report');
   });
 
   it('resolves small screen dialog template signal', () => {

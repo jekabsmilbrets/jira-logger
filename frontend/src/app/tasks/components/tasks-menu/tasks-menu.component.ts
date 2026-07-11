@@ -37,7 +37,12 @@ import { TasksSettingsToggleComponent } from '@tasks/components/tasks-menu/tasks
 import type { TaskImportOutcome, TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 import type { TaskFormValue } from '@tasks/interfaces/task-form-value.interface';
 import { TaskBackupService } from '@tasks/services/task-backup.service';
-import { buildEmptyTaskFormValue, buildTaskCreateForm, buildTaskCreatePayload, setTaskFormTags } from '@tasks/utility/task-form-intent.utility';
+import {
+  buildEmptyTaskFormValue,
+  buildTaskCreateForm,
+  buildTaskCreatePayload,
+  setTaskFormTags,
+} from '@tasks/utilities/task-form-intent.utility';
 
 @Component({
   selector: 'tasks-menu',

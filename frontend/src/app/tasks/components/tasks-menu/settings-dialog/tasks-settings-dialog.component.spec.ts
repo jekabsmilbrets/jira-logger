@@ -160,4 +160,20 @@ describe('Tasks Components tasks-settings-dialog.component', () => {
 
     expect(closeSpy).toHaveBeenCalledTimes(1);
   });
+
+  it('ignores destroyed-injector export errors during construction', () => {
+    taskBackupServiceMock.exportTasksForUser.mockImplementationOnce(() => {
+      throw new Error('NG0205: Injector has already been destroyed.');
+    });
+
+    expect(() => TestBed.createComponent(TasksSettingsDialogComponent)).not.toThrow();
+  });
+
+  it('rethrows unexpected export errors during construction', () => {
+    taskBackupServiceMock.exportTasksForUser.mockImplementationOnce(() => {
+      throw new Error('backup export failed');
+    });
+
+    expect(() => TestBed.createComponent(TasksSettingsDialogComponent)).toThrow('backup export failed');
+  });
 });

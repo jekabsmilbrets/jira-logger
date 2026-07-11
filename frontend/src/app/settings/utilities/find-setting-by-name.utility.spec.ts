@@ -4,7 +4,7 @@ import { Setting } from '@core/models/setting.model';
 
 import { buildChangedSetting, findSettingByName, getBooleanLikeSettingValue, getStringSettingValue } from './find-setting-by-name.utility';
 
-describe('find-setting-by-name.utility', () => {
+describe('Settings Utility find-setting-by-name.utility', () => {
   it('returns the matching setting by name', () => {
     const timezone = new Setting({ id: '1', name: 'timezone', value: 'Europe/Vienna' });
     const locale = new Setting({ id: '2', name: 'locale', value: 'lv-LV' });
@@ -27,6 +27,7 @@ describe('find-setting-by-name.utility', () => {
     expect(getBooleanLikeSettingValue([new Setting({ name: 'enabled', value: 'true' })], 'enabled', false)).toBe(true);
     expect(getBooleanLikeSettingValue([new Setting({ name: 'enabled', value: 'FALSE' })], 'enabled', true)).toBe(false);
     expect(getBooleanLikeSettingValue([new Setting({ name: 'host', value: 'https://jira.local' })], 'host', '')).toBe('https://jira.local');
+    expect(getBooleanLikeSettingValue([new Setting({ name: 'enabled', value: 1 as any })], 'enabled', false)).toBe(false);
   });
 
   it('builds changed settings only when value changes and should persist', () => {

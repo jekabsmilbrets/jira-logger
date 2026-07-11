@@ -2,7 +2,7 @@ import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
-import { firstValueFrom, of } from 'rxjs';
+import { firstValueFrom, of, throwError } from 'rxjs';
 
 import { ApiRequestService } from './api-request.service';
 
@@ -105,6 +105,38 @@ describe('Shared Services api-request.service', () => {
     });
 
     await expect(promise).resolves.toBe('handled');
+  });
+
+  it('reuses resource state and supports object paths without a suffix', () => {
+    const first = service.resource({ resourcePath: 'task' });
+    const second = service.resource({ resourcePath: 'task' });
+
+    expect(first.isLoading).toBe(second.isLoading);
+  });
+
+  it('handles empty and non-path nested request suffixes', async () => {
+    const resource = service.resource({ resourcePath: 'task', suffix: '/time-log' });
+    const emptySuffix = firstValueFrom(resource.request());
+    http.expectOne((request) => request.url.includes('/task/time-log')).flush({ ok: true });
+    await expect(emptySuffix).resolves.toEqual({ ok: true });
+
+    const plainSuffix = firstValueFrom(resource.request('task-1'));
+    http.expectOne((request) => request.url.includes('/tasktask-1/time-log')).flush({ ok: true });
+    await expect(plainSuffix).resolves.toEqual({ ok: true });
+  });
+
+  it('maps null list data and object-shaped not-found errors to empty lists', async () => {
+    const resource = service.resource('task');
+    const nullData = firstValueFrom(resource.listRequest('/null'));
+    http.expectOne((request) => request.url.includes('/task/null')).flush({ data: null });
+    await expect(nullData).resolves.toEqual([]);
+
+    const objectNotFound = firstValueFrom(resource.listRequest('/object-error', 'get', null, () => throwError(() => ({ status: 404 }))));
+    http.expectOne((request) => request.url.includes('/task/object-error')).flush('x', {
+      status: 500,
+      statusText: 'Server Error',
+    });
+    await expect(objectNotFound).resolves.toEqual([]);
   });
 
 });

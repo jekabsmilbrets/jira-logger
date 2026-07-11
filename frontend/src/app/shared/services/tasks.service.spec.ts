@@ -8,6 +8,7 @@ import { firstValueFrom, of, throwError } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
+import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
@@ -60,6 +61,14 @@ describe('Shared Services tasks.service', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]).toBeInstanceOf(Task);
+    expect(service.recentTasks()).toEqual(result);
+  });
+
+  it('routes non-404 list failures through the error dialog', async () => {
+    apiRequestService.request.mockReturnValueOnce(throwError(() => ({ status: 500 })));
+
+    await expect(firstValueFrom(service.list())).rejects.toMatchObject({ status: 500 });
+    expect(errorDialogService.openDialog).toHaveBeenCalledTimes(1);
   });
 
   it('exposes recent tasks by latest time log descending', async () => {
@@ -87,6 +96,18 @@ describe('Shared Services tasks.service', () => {
     await firstValueFrom(service.list());
 
     expect(service.recentTasks().map((task: Task) => task.name)).toEqual(['Newer', 'Older']);
+  });
+
+  it('sorts tasks without a time log after dated recent tasks', async () => {
+    apiRequestService.request.mockReturnValueOnce(of({
+      data: [
+        { id: 'none', name: 'No log', timeLogs: [], tags: [], createdAt: '2024-01-01T00:00:00.000Z' },
+        { id: 'dated', name: 'Dated', timeLogs: [], lastTimeLog: { startTime: '2026-03-02T10:00:00.000Z' }, tags: [], createdAt: '2024-01-01T00:00:00.000Z' },
+      ],
+    }));
+
+    await firstValueFrom(service.list());
+    expect(service.recentTasks().map((task: Task) => task.name)).toEqual(['Dated', 'No log']);
   });
 
   it('loads visible tasks into task state without replacing all tasks for filtered queries', async () => {
@@ -145,6 +166,30 @@ describe('Shared Services tasks.service', () => {
     expect(apiRequestService.request).toHaveBeenCalled();
   });
 
+  it('passes task tag ids through save request bodies', async () => {
+    const task = new Task({ id: '1', name: 'Tagged', tags: [new Tag({ id: 'tag-1', name: 'Tag' })], timeLogs: [] } as any);
+    (service as any).tasksSignal.set([task]);
+    apiRequestService.request.mockReturnValueOnce(of({}));
+
+    await firstValueFrom(service.create(task, true));
+
+    expect(apiRequestService.request.mock.calls[0][2]).toEqual(expect.objectContaining({ tags: ['tag-1'] }));
+  });
+
+  it('trims task descriptions when building save request bodies', async () => {
+    apiRequestService.request.mockReturnValueOnce(of({}));
+    const task = new Task({ id: '1', name: '  T  ', description: '  description  ', tags: [], timeLogs: [] } as any);
+    (service as any).tasksSignal.set([task]);
+
+    await firstValueFrom(service.create(task, true));
+
+    expect(apiRequestService.request).toHaveBeenCalledWith(
+      expect.any(String),
+      'post',
+      expect.objectContaining({ name: 'T', description: 'description' }),
+    );
+  });
+
   it('list handles 404 by returning []', async () => {
     apiRequestService.request.mockReturnValueOnce(throwError(() => ({ status: 404 })));
     await expect(firstValueFrom(service.list())).resolves.toEqual([]);
@@ -165,5 +210,55 @@ describe('Shared Services tasks.service', () => {
     const [firstService, secondService] = await Promise.all([first, second]);
     expect(firstService).toBe(secondService);
     expect(firstService).toBe(errorDialogService);
+  });
+
+  it('registers its loader and loads unfiltered tasks into both collections', async () => {
+    service.init();
+    const task = new Task({ id: '1', name: 'Task', timeLogs: [], tags: [] } as any);
+    taskQueryService.query.mockReturnValueOnce(of([task]));
+
+    await expect(firstValueFrom(service.loadVisibleTasks({}))).resolves.toEqual([task]);
+    expect(service.allTasks()).toEqual([task]);
+    expect(service.loaderStateService.addLoader).toHaveBeenCalledWith(service.isLoading, 'TasksService');
+  });
+
+  it('supports skip-reload mutations and finds tasks by name', async () => {
+    const task = new Task({ id: undefined, name: '', description: '', tags: [], timeLogs: [] } as any);
+    const responseTask = new Task({ id: undefined, name: '', tags: [], timeLogs: [] } as any);
+    (service as any).tasksSignal.set([responseTask]);
+    apiRequestService.request.mockReturnValueOnce(of({}));
+
+    await expect(firstValueFrom(service.create(task, true))).resolves.toBe(responseTask);
+  });
+
+  it('reports missing created tasks instead of returning an undefined value', async () => {
+    const task = new Task({ id: 'missing', name: 'Missing', tags: [], timeLogs: [] } as any);
+    apiRequestService.request.mockReturnValueOnce(of({}));
+    (service as any).tasksSignal.set([]);
+
+    await expect(firstValueFrom(service.create(task, true)))
+      .rejects.toThrow('Problems creating task "Missing"!');
+  });
+
+  it('routes non-conflict existence errors through the error dialog', async () => {
+    apiRequestService.request.mockReturnValueOnce(throwError(() => ({ status: 500 })));
+
+    await expect(firstValueFrom(service.taskExist('error'))).rejects.toMatchObject({ status: 500 });
+    expect(errorDialogService.openDialog).toHaveBeenCalled();
+  });
+
+  it('routes malformed status errors through the error dialog', async () => {
+    apiRequestService.request.mockReturnValueOnce(throwError(() => ({ status: '500' })));
+
+    await expect(firstValueFrom(service.taskExist('error'))).rejects.toMatchObject({ status: '500' });
+    expect(errorDialogService.openDialog).toHaveBeenCalled();
+  });
+
+  it('routes delete request errors through the error dialog', async () => {
+    const task = new Task({ id: '1', name: 'Task', tags: [], timeLogs: [] } as any);
+    apiRequestService.request.mockReturnValueOnce(throwError(() => new Error('delete failed')));
+
+    await expect(firstValueFrom(service.delete(task))).rejects.toThrow('delete failed');
+    expect(errorDialogService.openDialog).toHaveBeenCalled();
   });
 });

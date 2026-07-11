@@ -13,7 +13,7 @@ import type { ReportSettingsControlsState } from '@report/interfaces/report-sett
 
 import { ReportSettingsControlsComponent } from './report-settings-controls.component';
 
-describe('ReportSettingsControlsComponent', () => {
+describe('Report Component ReportSettingsControlsComponent', () => {
   let fixture: ComponentFixture<ReportSettingsControlsComponent>;
   let component: ReportSettingsControlsComponent;
 

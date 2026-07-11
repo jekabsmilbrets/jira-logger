@@ -8,7 +8,7 @@ import { TimeLog } from '@shared/models/time-log.model';
 import { stringifyTaskBackup } from '@tasks/adapters/task-backup-export.adapter';
 import { TaskBackupUnsupportedMetadataService } from '@tasks/services/task-backup-unsupported-metadata.service';
 
-describe('task-backup-export.adapter', () => {
+describe('Tasks Adapters task-backup-export.adapter', () => {
   const unsupportedMetadataService = new TaskBackupUnsupportedMetadataService();
 
   afterEach(() => {

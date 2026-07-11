@@ -6,7 +6,7 @@ import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
 
 import { UserPreferencesAdapter } from './user-preferences.adapter';
 
-describe('UserPreferencesAdapter', () => {
+describe('Settings Adapter UserPreferencesAdapter', () => {
   let adapter: UserPreferencesAdapter;
 
   const settings: Setting[] = [

@@ -5,7 +5,7 @@ import { Setting } from '@core/models/setting.model';
 
 import { openLoadErrorDialog } from './open-load-error-dialog.utility';
 
-describe('open-load-error-dialog.utility', () => {
+describe('Shared Utils open-load-error-dialog.utility', () => {
   it('opens the error dialog with serialized error details and rethrows the error', async () => {
     const setting = new Setting({ id: '1', name: 'theme', value: 'dark' });
     const openDialog = vi.fn(() => of(undefined));

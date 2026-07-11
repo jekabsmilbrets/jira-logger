@@ -5,7 +5,7 @@ import { Tag } from '@shared/models/tag.model';
 import { adaptTaskImportRequest } from '@tasks/adapters/task-backup-import.adapter';
 import { TaskBackupUnsupportedMetadataService } from '@tasks/services/task-backup-unsupported-metadata.service';
 
-describe('task-backup-import.adapter', () => {
+describe('Tasks Adapters task-backup-import.adapter', () => {
   const unsupportedMetadataService = new TaskBackupUnsupportedMetadataService();
 
   it('parses version 2 import metadata and warnings', () => {
@@ -128,5 +128,27 @@ describe('task-backup-import.adapter', () => {
       { name: 'new tag' },
       { name: 'Existing', existingTagId: 'tag-1' },
     ]);
+  });
+
+  it('rejects unsupported formats and malformed task entries', () => {
+    const metadata = () => ({ timeLogs: [] });
+
+    expect(() => adaptTaskImportRequest({ version: 1 }, [], metadata)).toThrow('Unsupported task backup format.');
+    expect(() => adaptTaskImportRequest([null], [], metadata)).toThrow('Imported task must be an object.');
+    expect(() => adaptTaskImportRequest([{ tags: [], timeLogs: [] }], [], metadata))
+      .toThrow('Missing required field "name" for imported task.');
+    expect(() => adaptTaskImportRequest([{ name: 'Task', timeLogs: [] }], [], metadata))
+      .toThrow('Missing required field "tags" for imported task.');
+  });
+
+  it('validates malformed tag references and normalizes null optional text', () => {
+    const metadata = () => ({ timeLogs: [] });
+
+    expect(() => adaptTaskImportRequest([{ name: 'Task', tags: [1], timeLogs: [] }], [], metadata))
+      .toThrow('Imported tag reference must be a string or object.');
+    expect(() => adaptTaskImportRequest([{ name: 'Task', tags: [{}], timeLogs: [] }], [], metadata))
+      .toThrow('Imported tag reference must include a name when the tag does not exist locally.');
+    expect(adaptTaskImportRequest([{ name: 'Task', description: null, tags: [], timeLogs: [] }], [], metadata).tasks[0])
+      .toMatchObject({ name: 'Task', description: undefined, tags: [] });
   });
 });

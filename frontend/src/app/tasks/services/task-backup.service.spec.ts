@@ -150,6 +150,26 @@ describe('Tasks Services task-backup.service', () => {
     });
   });
 
+  it('handles an empty import without creating tasks', () => {
+    const request: TaskImportRequest = { tasks: [], warnings: [] };
+    let result: unknown;
+
+    service.applyTaskBackup(request).subscribe((value) => {
+      result = value;
+    });
+
+    expect(result).toEqual({
+      status: 'success',
+      createdTaskCount: 0,
+      createdTagCount: 0,
+      createdTimeLogCount: 0,
+      warnings: [],
+      errors: [],
+    });
+    expect(tasksServiceMock.create).not.toHaveBeenCalled();
+    expect(tasksServiceMock.list).toHaveBeenCalledTimes(1);
+  });
+
   it('imports nested time logs for created task', () => {
     const createdTask = new Task({ id: '1', name: 'Task 1', timeLogs: [], tags: [] });
     const request: TaskImportRequest = {
@@ -468,5 +488,36 @@ describe('Tasks Services task-backup.service', () => {
         duration: 9000,
       });
     });
+  });
+
+  it('formats a successful outcome with a created tag and no warnings', () => {
+    const request: TaskImportRequest = {
+      tasks: [{
+        name: 'Imported',
+        description: undefined,
+        tags: [{ name: 'Frontend' }],
+        timeLogs: [{
+          startTime: Date.parse('2026-01-01T10:00:00.000Z'),
+          endTime: undefined,
+          description: undefined,
+        }],
+      }],
+      warnings: [],
+    };
+
+    const createdTag = new Tag({ id: 'tag-1', name: 'Frontend' });
+    tagsServiceMock.create.mockReturnValue(of(createdTag));
+    tasksServiceMock.create.mockReturnValue(of(new Task({ id: 'task-1', name: 'Imported', tags: [], timeLogs: [] })));
+    timeLogsServiceMock.create.mockReturnValue(of(new TimeLog({})));
+
+    service.applyTaskBackupForUser(request).subscribe((outcome) => {
+      expect(outcome).toEqual({
+        message: 'Imported 1 task, 1 time log, created 1 tag.',
+        duration: 7000,
+      });
+    });
+
+    const createdTimeLog = timeLogsServiceMock.create.mock.calls[0]?.[1] as TimeLog;
+    expect(createdTimeLog.endTime).toBeUndefined();
   });
 });

@@ -14,7 +14,7 @@ import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 import type { TagManagementCommand } from '@settings/interfaces/tag-management-command.interface';
 import { SettingsChangeService } from '@settings/services/settings-change.service';
 
-describe('SettingsChangeService', () => {
+describe('Settings Service SettingsChangeService', () => {
   let service: SettingsChangeService;
   let settingsServiceMock: {
     update: ReturnType<typeof vi.fn>;

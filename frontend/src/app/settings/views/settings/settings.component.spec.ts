@@ -82,7 +82,7 @@ class TagManagementConfiguratorStubComponent {
 
 const applyReportSettingsIntent = vi.fn<(intent: ReportSettingsIntent) => void>();
 
-describe('Settings Views settings.component', () => {
+describe('Settings View Component SettingsComponent', () => {
   let fixture: ComponentFixture<SettingsComponent>;
   let component: SettingsComponent;
   let reportService: ReportServiceStub;

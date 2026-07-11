@@ -20,7 +20,7 @@ const waitForPersistence = async (): Promise<void> => {
   await Promise.resolve();
 };
 
-describe('ReportStateService', () => {
+describe('Report Service ReportStateService', () => {
   let service: ReportStateService;
   let storageService: { read: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> };
   let tagsState: ReturnType<typeof signal<Tag[]>>;
@@ -172,5 +172,13 @@ describe('ReportStateService', () => {
     await waitForPersistence();
 
     expect(storageService.create).toHaveBeenCalled();
+  });
+
+  it('accepts null date and tag patches as empty state', () => {
+    service.applySettingsIntent({ type: 'set-date', date: null });
+    service.applySettingsIntent({ type: 'set-tags', tags: null as any });
+
+    expect(service.snapshot().date).toBeNull();
+    expect(service.snapshot().tags).toEqual([]);
   });
 });

@@ -267,4 +267,31 @@ describe('Settings Components jira-api-configurator.component', () => {
     expect(saveSpy).toHaveBeenCalled();
     expect(cancelSpy).toHaveBeenCalled();
   });
+
+  it('renders host and token validation errors through the template', () => {
+    fixture.componentRef.setInput('settings', [
+      new Setting({ id: '1', name: JiraApiSettings.enabled, value: 'false' }),
+      new Setting({ id: '2', name: JiraApiSettings.host, value: '' }),
+    ]);
+    fixture.detectChanges();
+    (component as any).onEnabledChange(true);
+    (component as any).onSaveFormData();
+    fixture.detectChanges();
+
+    const errors = fixture.debugElement.queryAll(By.css('mat-error')).map((error) => error.nativeElement.textContent.trim());
+    expect(errors).toContain('Host is required.');
+    expect(errors).toContain('Token is required.');
+    expect(fixture.debugElement.query(By.css('mat-hint'))).toBeFalsy();
+  });
+
+  it('handles slide-toggle changes and skips a valid no-op save', () => {
+    const emitSpy = vi.spyOn((component as any).settingsChange, 'emit');
+    fixture.debugElement.query(By.css('mat-slide-toggle')).triggerEventHandler('change', { checked: false });
+    fixture.detectChanges();
+    expect((component as any).jiraApiFormModel().enabled).toBe(false);
+
+    (component as any).onCancel();
+    (component as any).onSaveFormData();
+    expect(emitSpy).not.toHaveBeenCalled();
+  });
 });

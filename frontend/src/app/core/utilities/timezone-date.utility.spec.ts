@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   fromWallClockDateInTimezone,
@@ -7,7 +7,7 @@ import {
   toWallClockDateInTimezone,
 } from './timezone-date.utility';
 
-describe('timezone-date.utility', () => {
+describe('Core Utils timezone-date.utility', () => {
   it('converts an instant into timezone wall-clock parts', () => {
     const instant = new Date('2026-06-02T22:00:00.000Z');
 
@@ -45,5 +45,33 @@ describe('timezone-date.utility', () => {
 
     expect(isSameCalendarDateInTimezone(left, right, 'Europe/Vienna')).toBe(true);
     expect(isSameCalendarDateInTimezone(left, right, 'Europe/Riga')).toBe(false);
+  });
+
+  it('falls back to local date parts for invalid timezones', () => {
+    const date = new Date(2026, 5, 3, 12, 34, 56);
+
+    expect(getDateTimePartsInTimezone(date, 'Invalid/Timezone')).toMatchObject({
+      year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate(),
+    });
+  });
+
+  it('returns the final conversion attempt when timezone iterations do not converge', () => {
+    const originalIntl = globalThis.Intl;
+    vi.stubGlobal('Intl', {
+      ...originalIntl,
+      DateTimeFormat: class {
+        constructor(..._args: unknown[]) {}
+
+        formatToParts(): Intl.DateTimeFormatPart[] {
+          return [
+            { type: 'year', value: '2000' }, { type: 'month', value: '01' }, { type: 'day', value: '01' },
+            { type: 'hour', value: '00' }, { type: 'minute', value: '00' }, { type: 'second', value: '00' },
+          ];
+        }
+      },
+    });
+
+    expect(fromWallClockDateInTimezone(new Date(2026, 5, 3, 12), 'UTC')).toBeInstanceOf(Date);
+    vi.unstubAllGlobals();
   });
 });

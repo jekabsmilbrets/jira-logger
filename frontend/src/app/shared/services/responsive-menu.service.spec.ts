@@ -5,7 +5,7 @@ import { BehaviorSubject } from 'rxjs';
 
 import { ResponsiveMenuService } from './responsive-menu.service';
 
-describe('ResponsiveMenuService', () => {
+describe('Shared Services ResponsiveMenuService', () => {
   const breakpointState$ = new BehaviorSubject<BreakpointState>({
     matches: false,
     breakpoints: { '(max-width: 1300px)': false },

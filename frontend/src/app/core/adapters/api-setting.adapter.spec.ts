@@ -23,7 +23,7 @@ describe('Core Adapters api-setting.adapter', () => {
       name: 'theme',
       value: 'dark',
       createdAt: '',
-    } as any);
+    });
 
     expect(Number.isNaN(result.createdAt.getTime())).toBe(true);
     expect(result.updatedAt).toBeUndefined();
@@ -33,7 +33,7 @@ describe('Core Adapters api-setting.adapter', () => {
     const results = adaptSettings([
       { id: '1', name: 'a', value: 'x', createdAt: '2024-01-01T00:00:00.000Z' },
       { id: '2', name: 'b', value: 'y', createdAt: '2024-01-02T00:00:00.000Z' },
-    ] as any);
+    ]);
 
     expect(results).toHaveLength(2);
     expect(results[0].name).toBe('a');

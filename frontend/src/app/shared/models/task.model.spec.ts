@@ -1,3 +1,5 @@
+import { afterEach, vi } from 'vitest';
+
 import { fromWallClockDateInTimezone } from '@core/utilities/timezone-date.utility';
 
 import { Tag } from './tag.model';
@@ -5,6 +7,9 @@ import { Task } from './task.model';
 import { TimeLog } from './time-log.model';
 
 describe('Shared Models task.model', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   it('calculates total logged time', () => {
     const t1 = new TimeLog({ startTime: new Date('2024-01-01T10:00:00.000Z'), endTime: new Date('2024-01-01T10:00:10.000Z') } as any);
     const t2 = new TimeLog({ startTime: new Date('2024-01-01T10:01:00.000Z'), endTime: new Date('2024-01-01T10:01:10.000Z') } as any);
@@ -58,6 +63,34 @@ describe('Shared Models task.model', () => {
     expect(task.lastTimeLogStartTime).toBeNull();
   });
 
+  it('handles empty setters, epoch logs, and non-existent tags', () => {
+    const epochLog = new TimeLog({ startTime: new Date(0), endTime: new Date(1_000) } as any);
+    const task = new Task({ timeLogs: [epochLog] } as any);
+
+    task.jiraWorkLogs = undefined as any;
+    task.timeLogs = undefined as any;
+    task.tags = undefined as any;
+    task.lastTimeLog = epochLog;
+    task.removeTag(new Tag({ id: 'missing', name: 'missing' } as any));
+
+    expect(task.jiraWorkLogs).toEqual([]);
+    expect(task.timeLogs).toEqual([]);
+    expect(task.tags).toEqual([]);
+    expect(task.lastTimeLogStartTime).toBeNull();
+    expect(task.calcTimeLogged([epochLog])).toBe(0);
+  });
+
+  it('returns zero for logs outside a requested day', () => {
+    const task = new Task({
+      timeLogs: [new TimeLog({
+        startTime: new Date('2024-01-03T10:00:00.000Z'),
+        endTime: new Date('2024-01-03T11:00:00.000Z'),
+      } as any)],
+    } as any);
+
+    expect(task.calcTimeLoggedForDate(new Date('2024-01-01T12:00:00.000Z'))).toBe(0);
+  });
+
   it('calculates logged time for specific date and empty collections', () => {
     const day1 = new TimeLog({ startTime: new Date('2024-01-01T10:00:00.000Z'), endTime: new Date('2024-01-01T10:00:30.000Z') } as any);
     const day2 = new TimeLog({ startTime: new Date('2024-01-02T10:00:00.000Z'), endTime: new Date('2024-01-02T10:00:10.000Z') } as any);
@@ -104,5 +137,16 @@ describe('Shared Models task.model', () => {
 
     expect(task.calcTimeLoggedForDate(june5InVienna, timezone)).toBe(86340);
     expect(task.calcTimeLoggedForDate(june6InVienna, timezone)).toBe(86340);
+  });
+
+  it('calculates running logs against the current time', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-03T10:01:00.000Z'));
+    const running = new TimeLog({ startTime: new Date('2026-06-03T10:00:00.000Z'), endTime: undefined } as any);
+    const task = new Task({ timeLogs: [running] } as any);
+    task.lastTimeLog = running;
+
+    expect(task.updateTimeLogged()).toBe(60);
+    expect(task.calcTimeLoggedForDate(new Date('2026-06-03T12:00:00.000Z'))).toBe(60);
   });
 });

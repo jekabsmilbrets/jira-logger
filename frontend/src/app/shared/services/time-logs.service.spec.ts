@@ -111,4 +111,37 @@ describe('Shared Services time-logs.service', () => {
 
     await expect(firstValueFrom(service.list(task))).resolves.toEqual([]);
   });
+
+  it('starts and stops tasks through their action suffixes', async () => {
+    const task = new Task({ id: 'task-1', name: 'Task', tags: [], timeLogs: [] } as any);
+    const startedTask = firstValueFrom(service.taskStarted$.pipe(take(1)));
+    const finishedTask = firstValueFrom(service.taskFinished$.pipe(take(1)));
+
+    apiRequestService.request.mockReturnValueOnce(of(undefined)).mockReturnValueOnce(of(undefined));
+
+    await firstValueFrom(service.start(task));
+    await firstValueFrom(service.stop(task));
+
+    expect(apiRequestService.request).toHaveBeenNthCalledWith(1, 'https://api/task/task-1/time-log/start', 'post', null);
+    expect(apiRequestService.request).toHaveBeenNthCalledWith(2, 'https://api/task/task-1/time-log/stop', 'post', null);
+    await expect(startedTask).resolves.toBe(task);
+    await expect(finishedTask).resolves.toBe(task);
+  });
+
+  it('uses the task suffix when an updated time log has no id', async () => {
+    const task = new Task({ id: 'task-1', name: 'Task', tags: [], timeLogs: [] } as any);
+    const timeLog = { startTime: undefined, endTime: undefined, description: undefined } as unknown as TimeLog;
+
+    apiRequestService.request.mockReturnValueOnce(of({ data: { id: 'log-1', task: 'task-1' } }));
+
+    await firstValueFrom(service.update(task, timeLog));
+
+    expect(apiRequestService.request.mock.calls[0]?.[0]).toBe('https://api/task/task-1/time-log');
+  });
+
+  it('registers its loading state on initialization', () => {
+    service.init();
+
+    expect(service.loaderStateService.addLoader).toHaveBeenCalledWith(service.isLoading, 'TimeLogsService');
+  });
 });

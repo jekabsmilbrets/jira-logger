@@ -132,4 +132,72 @@ describe('Settings Components tag-management-configurator.component', () => {
     expect((component as any).isCreateDisabled()).toBe(true);
     expect((component as any).isDeleteDisabled(component.tags()[0])).toBe(true);
   });
+
+  it('executes edit, input, save, cancel, create, and delete template handlers', () => {
+    const emitSpy = vi.spyOn((component as any).tagChange, 'emit');
+    const backendTag = component.tags()[0];
+
+    fixture.debugElement.query(By.css('button[aria-label="Edit tag"]')).nativeElement.click();
+    fixture.detectChanges();
+    const input = fixture.debugElement.query(By.css('input[matInput]'));
+    (input.nativeElement as HTMLInputElement).value = 'Backend Pro';
+    input.nativeElement.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    fixture.debugElement.query(By.css('button[aria-label="Save tag"]')).nativeElement.click();
+    expect(emitSpy).toHaveBeenCalledWith({ action: 'update', tag: expect.objectContaining({ name: 'Backend Pro' }) });
+
+    fixture.debugElement.query(By.css('button[aria-label="Edit tag"]')).nativeElement.click();
+    fixture.detectChanges();
+    fixture.debugElement.query(By.css('button[aria-label="Cancel editing tag"]')).nativeElement.click();
+
+    const createInput = fixture.debugElement.query(By.css('.tag-management-configurator__row--create input'));
+    (createInput.nativeElement as HTMLInputElement).value = 'New Tag';
+    createInput.nativeElement.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    fixture.debugElement.query(By.css('.tag-management-configurator__row--create button')).nativeElement.click();
+    expect(emitSpy).toHaveBeenCalledWith({ action: 'create', tag: expect.objectContaining({ name: 'New Tag' }) });
+
+    areYouSureServiceMock.openDialog.mockReturnValueOnce(of(false));
+    fixture.debugElement.query(By.css('button[aria-label="Delete tag"]')).nativeElement.click();
+    expect(emitSpy).not.toHaveBeenCalledWith({ action: 'delete', tag: backendTag });
+  });
+
+  it('enforces tag-name validation and disabled guards', () => {
+    const tag = component.tags()[0];
+
+    expect((component as any).isCreateDisabled()).toBe(true);
+    (component as any).onNewTagNameInput('ab');
+    expect((component as any).isCreateDisabled()).toBe(true);
+    (component as any).onNewTagNameInput('abc');
+    expect((component as any).isCreateDisabled()).toBe(false);
+    (component as any).onNewTagNameInput('a'.repeat(256));
+    expect((component as any).isCreateDisabled()).toBe(true);
+
+    fixture.componentRef.setInput('disabled', true);
+    fixture.detectChanges();
+    (component as any).onStartEdit(tag);
+    expect((component as any).isEditingTag(tag)).toBe(false);
+  });
+
+  it('does not emit invalid create, unchanged save, or disabled delete commands', () => {
+    const emitSpy = vi.spyOn((component as any).tagChange, 'emit');
+    const tag = component.tags()[0];
+
+    (component as any).onNewTagNameInput('ab');
+    (component as any).onCreateTag();
+    (component as any).onSaveTag(tag);
+    fixture.componentRef.setInput('disabled', true);
+    fixture.detectChanges();
+    (component as any).onDeleteTag(tag);
+
+    expect(emitSpy).not.toHaveBeenCalled();
+    expect(areYouSureServiceMock.openDialog).not.toHaveBeenCalled();
+  });
+
+  it('falls back to a tag name when there is no edited-name entry', () => {
+    const tag = component.tags()[0];
+    (component as any).editedTagNames.set({});
+
+    expect((component as any).getTagNameValue(tag)).toBe('Backend');
+  });
 });

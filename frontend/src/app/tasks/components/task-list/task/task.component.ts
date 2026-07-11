@@ -42,7 +42,7 @@ import {
   buildTaskFormValue,
   buildTaskUpdatePayload,
   setTaskFormTags,
-} from '@tasks/utility/task-form-intent.utility';
+} from '@tasks/utilities/task-form-intent.utility';
 
 @Component({
   selector: 'tasks-task',

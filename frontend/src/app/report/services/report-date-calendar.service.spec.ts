@@ -9,7 +9,7 @@ import { TimeLog } from '@shared/models/time-log.model';
 
 import { ReportDateCalendarService } from './report-date-calendar.service';
 
-describe('ReportDateCalendarService', () => {
+describe('Report Service ReportDateCalendarService', () => {
   let service: ReportDateCalendarService;
 
   beforeEach(() => {

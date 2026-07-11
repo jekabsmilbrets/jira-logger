@@ -6,7 +6,7 @@ import { TimeLog } from '@shared/models/time-log.model';
 import type { TimeLogEditService } from '@tasks/services/time-log-edit.service';
 import { TimeLogEditSession } from '@tasks/services/time-log-edit-session';
 
-describe('TimeLogEditSession', () => {
+describe('Tasks Service TimeLogEditSession', () => {
   const buildTimeLog = (id: string | undefined, startIso: string): TimeLog => new TimeLog({
     id,
     startTime: new Date(startIso),
@@ -126,5 +126,51 @@ describe('TimeLogEditSession', () => {
       message: 'Time logs update failed! Can not Create TimeLog',
     });
     expect(session.timeLogs()).toEqual([created]);
+  });
+
+  it('ignores empty dialog responses and closes unchanged sessions', async () => {
+    const existing = buildTimeLog('1', '2026-03-02T10:00:00.000Z');
+    const session = new TimeLogEditSession(buildTask([existing]), buildAdapter());
+    const editService = buildEditService();
+
+    editService.openTimeLogDialog.mockReturnValueOnce(of(undefined));
+    session.edit(existing, editService);
+
+    await expect(firstValueFrom(session.save())).resolves.toEqual({ close: true });
+  });
+
+  it('does not start a second save while the first save is active', async () => {
+    const created = buildTimeLog(undefined, '2026-03-02T09:00:00.000Z');
+    const editService = buildEditService();
+    const adapter = buildAdapter();
+    const session = new TimeLogEditSession(buildTask(), adapter);
+
+    editService.openTimeLogDialog.mockReturnValueOnce(of({ responseType: 'update', responseData: created }));
+    session.add(editService);
+    const firstSave = session.save();
+    const secondSave = session.save();
+
+    await expect(firstValueFrom(firstSave)).toBeDefined();
+    await expect(firstValueFrom(secondSave)).rejects.toThrow();
+  });
+
+  it('uses a generic message when save errors contain no error list', async () => {
+    const created = buildTimeLog(undefined, '2026-03-02T09:00:00.000Z');
+    const editService = buildEditService();
+    const adapter = {
+      create: vi.fn(() => throwError(() => ({ error: {} }))),
+      update: vi.fn(),
+      delete: vi.fn(),
+      list: vi.fn(),
+    };
+    const session = new TimeLogEditSession(buildTask(), adapter);
+
+    editService.openTimeLogDialog.mockReturnValueOnce(of({ responseType: 'update', responseData: created }));
+    session.add(editService);
+
+    await expect(firstValueFrom(session.save())).resolves.toEqual({
+      close: false,
+      message: 'Time logs update failed!',
+    });
   });
 });

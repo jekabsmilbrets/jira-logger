@@ -352,4 +352,25 @@ describe('Tasks Components task.component', () => {
 
     expect(updateSpy).toHaveBeenCalledTimes(1);
   });
+
+  it('updates selected tags through the tags-change handler', async () => {
+    const { component } = await setup();
+    const tags = [new Tag({ id: '2', name: 'Backend' })];
+
+    component['onTagsChange'](tags);
+
+    expect(component['taskFormModel']().tags).toEqual(tags);
+  });
+
+  it('marks invalid updates as touched without emitting', async () => {
+    const { component } = await setup();
+    const updateSpy = vi.spyOn(component['update'], 'emit');
+    component['taskFormModel'].update((value) => ({ ...value, name: '' }));
+
+    component['onUpdate']();
+
+    expect(component['taskForm']().touched()).toBe(true);
+    expect(component['hasNameError']()).toBe(true);
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
 });

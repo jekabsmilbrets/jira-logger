@@ -11,7 +11,7 @@ import { ApiRequestService } from '@shared/services/api-request.service';
 import { TaskQueryService } from '@shared/services/task-query.service';
 import { createResourceRequestHandleMock } from '@shared/testing/resource-request-handle.mock';
 
-describe('TaskQueryService', () => {
+describe('Shared Services TaskQueryService', () => {
   let service: TaskQueryService;
   const apiRequestService = createResourceRequestHandleMock();
 

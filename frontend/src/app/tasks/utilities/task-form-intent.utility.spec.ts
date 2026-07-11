@@ -1,11 +1,18 @@
+import { signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+
+import { of, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
   buildDuplicateTaskNameError,
   buildEmptyTaskFormValue,
+  buildTaskCreateForm,
   buildTaskCreatePayload,
+  buildTaskEditForm,
   buildTaskFormValue,
   buildTaskUpdatePayload,
+  createDuplicateTaskNameValidator,
   isDuplicateTaskName,
   normalizeTaskNameForDuplicateCheck,
   setTaskFormTags,
@@ -125,6 +132,49 @@ describe('Tasks Utils task-form-intent.util', () => {
     expect(out.description).toBe(sourceTask.description);
     expect(out.tags).toEqual(sourceTask.tags);
     expect(out.tags).not.toBe(sourceTask.tags);
+  });
+
+  it('returns a non-duplicate result when the validator has no name', () => {
+    const checkName = vi.fn();
+    const validator = TestBed.runInInjectionContext(() => createDuplicateTaskNameValidator(signal<string | undefined>(undefined), checkName));
+
+    TestBed.tick();
+    expect(validator.value()).toBeUndefined();
+    expect(checkName).not.toHaveBeenCalled();
+  });
+
+  it('checks named validator resources and treats check errors as duplicates', () => {
+    const name = signal<string | undefined>('Existing task');
+    const checkName = vi.fn(() => of(undefined));
+    const validator = TestBed.runInInjectionContext(() => createDuplicateTaskNameValidator(name, checkName));
+
+    TestBed.tick();
+    expect(checkName).toHaveBeenCalledWith('Existing task');
+    expect(validator.value()).toBe(false);
+
+    const failingValidator = TestBed.runInInjectionContext(() => createDuplicateTaskNameValidator(signal('Existing task'), () => throwError(() => new Error('duplicate'))));
+    TestBed.tick();
+    expect(failingValidator.value()).toBe(true);
+  });
+
+  it('builds create and edit forms with duplicate-check intent', async () => {
+    const createModel = signal({ name: 'New task', description: '', tags: [] as any[] });
+    const editModel = signal({ name: sourceTask.name, description: '', tags: [] as any[] });
+    const source = signal(sourceTask);
+    const checkName = vi.fn(() => of(undefined));
+
+    const createForm = TestBed.runInInjectionContext(() => buildTaskCreateForm(createModel, checkName));
+    const editForm = TestBed.runInInjectionContext(() => buildTaskEditForm(editModel, source, checkName));
+    createForm.name().value.set('Another task');
+    editForm.name().value.set('Different task');
+    vi.useFakeTimers();
+    await vi.advanceTimersByTimeAsync(301);
+    TestBed.tick();
+    vi.useRealTimers();
+
+    expect(checkName).toHaveBeenCalledWith('Another task');
+    expect(checkName).toHaveBeenCalledWith('Different task');
+    expect(checkName).not.toHaveBeenCalledWith(sourceTask.name);
   });
 
 });

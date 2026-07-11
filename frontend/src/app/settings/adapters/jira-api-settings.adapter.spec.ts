@@ -6,7 +6,7 @@ import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 
 import { JiraApiSettingsAdapter } from './jira-api-settings.adapter';
 
-describe('JiraApiSettingsAdapter', () => {
+describe('Settings Adapter JiraApiSettingsAdapter', () => {
   let adapter: JiraApiSettingsAdapter;
 
   const settings: Setting[] = [

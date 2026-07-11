@@ -76,4 +76,43 @@ describe('Shared Services tags.service', () => {
     expect(apiRequestService.request).toHaveBeenNthCalledWith(3, 'https://api/tag/1', 'patch', { id: '1', name: 'B' });
     expect(apiRequestService.request).toHaveBeenNthCalledWith(5, 'https://api/tag/1', 'delete', null);
   });
+
+  it('initializes the loader and clears preload errors after a successful list', async () => {
+    apiRequestService.request.mockReturnValueOnce(of({ data: [] }));
+
+    service.init();
+
+    expect(service.loaderStateService.addLoader).toHaveBeenCalledWith(service.isLoading, 'TagsService');
+    expect(service.preloadError()).toBe(false);
+  });
+
+  it('skips reloads after mutations when requested', async () => {
+    apiRequestService.request
+      .mockReturnValueOnce(of({ data: { id: '1', isUsed: false, name: '', createdAt: '2024-01-01T00:00:00.000Z' } }))
+      .mockReturnValueOnce(of({ data: { id: '1', isUsed: false, name: '', createdAt: '2024-01-01T00:00:00.000Z' } }))
+      .mockReturnValueOnce(of(undefined));
+
+    const tag = new Tag({ id: '1', name: '' } as any);
+
+    await firstValueFrom(service.create(tag, true));
+    await firstValueFrom(service.update(tag, true));
+    await firstValueFrom(service.delete(tag, true));
+
+    expect(apiRequestService.request).toHaveBeenCalledTimes(3);
+    expect(apiRequestService.request).toHaveBeenNthCalledWith(1, 'https://api/tag', 'post', { name: '' });
+  });
+
+  it('routes mutation failures through the error dialog', async () => {
+    const tag = new Tag({ id: '1', name: 'Tag' } as any);
+    apiRequestService.request.mockReturnValueOnce(throwError(() => new Error('create failed')));
+    await expect(firstValueFrom(service.create(tag))).rejects.toThrow('create failed');
+
+    apiRequestService.request.mockReturnValueOnce(throwError(() => new Error('update failed')));
+    await expect(firstValueFrom(service.update(tag))).rejects.toThrow('update failed');
+
+    apiRequestService.request.mockReturnValueOnce(throwError(() => new Error('delete failed')));
+    await expect(firstValueFrom(service.delete(tag))).rejects.toThrow('delete failed');
+
+    expect(errorDialogService.openDialog).toHaveBeenCalledTimes(3);
+  });
 });

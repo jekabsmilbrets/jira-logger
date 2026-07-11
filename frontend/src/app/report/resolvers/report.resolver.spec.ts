@@ -9,7 +9,7 @@ import { reportResolver } from '@report/resolvers/report.resolver';
 import { ReportService } from '@report/services/report.service';
 import { ReportServiceStub } from '@report/testing/report-service.stub';
 
-describe('reportResolver', () => {
+describe('Report Resolver reportResolver', () => {
   let reportService: ReportServiceStub;
   const tasksService = {
     loadVisibleTasks: vi.fn(),

@@ -10,7 +10,7 @@ import { TimeLogsService } from '@shared/services/time-logs.service';
 
 import { WorkLogService } from './work-log.service';
 
-describe('WorkLogService', () => {
+describe('Tasks Service WorkLogService', () => {
   const buildTask = (timeLog?: TimeLog): Task => {
     const task = new Task({
       id: 'task-1',

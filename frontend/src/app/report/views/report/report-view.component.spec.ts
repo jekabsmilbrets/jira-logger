@@ -23,7 +23,7 @@ import { ReportServiceStub } from '@report/testing/report-service.stub';
 
 import { ReportViewComponent } from './report-view.component';
 
-describe('ReportViewComponent', () => {
+describe('Report View Component ReportViewComponent', () => {
   let fixture: ComponentFixture<ReportViewComponent>;
   let component: ReportViewComponent;
   let reportService: ReportServiceStub;
@@ -166,6 +166,33 @@ describe('ReportViewComponent', () => {
     );
   });
 
+  it('copies readable-time footer values and handles missing footer cells', () => {
+    const rows = [{ name: 'A' }] as Task[];
+    const readableColumn = {
+      columnDef: 'timeLogged',
+      header: 'Time Logged',
+      footerCellClickType: 'readableTime',
+      footerCell: () => 3660,
+      cell: () => 0,
+    } as Column;
+    (component as any).onFooterCellClicked([rows as Searchable[], readableColumn]);
+    expect(clipboard.copy).toHaveBeenCalledWith('1h 1m');
+
+    const missingFooter = { ...readableColumn, footerCell: undefined } as Column;
+    (component as any).onFooterCellClicked([rows as Searchable[], missingFooter]);
+    expect(clipboard.copy).toHaveBeenCalledWith('0s');
+  });
+
+  it('copies ordinary cell values and uses the supplied snackbar duration', () => {
+    const task = { name: 'Task A' } as Task;
+    const column = { columnDef: 'name', header: 'Name', cell: () => undefined } as Column;
+    (component as any).onCellClick([task as Searchable, column]);
+
+    expect(clipboard.copy).toHaveBeenCalledWith('');
+    (component as any).openSnackBar('short', null);
+    expect(matSnackBar.open).toHaveBeenLastCalledWith('short', undefined, { duration: undefined });
+  });
+
   it('syncs report date rows and reloads report when Jira-facing data changed', () => {
     const task = { name: 'Task C', isTimeLogRunning: false } as Task;
     const date = new Date('2026-05-30T00:00:00.000Z');
@@ -183,6 +210,21 @@ describe('ReportViewComponent', () => {
       undefined,
       { duration: 5000 },
     );
+  });
+
+  it('does not reload when sync outcome says report data is unchanged', () => {
+    jiraWorkLogSyncService.syncReportDate.mockReturnValueOnce(of({
+      reloadReport: false,
+      message: 'Already synced',
+      duration: 1000,
+    } satisfies JiraWorkLogSyncOutcome));
+    const date = new Date('2026-05-30T00:00:00.000Z');
+    reportService.setViewState({ reportDate: date, canSyncJiraWorkLogs: true });
+
+    (component as any).onSyncClick({ name: 'Task D' } as Task);
+
+    expect(reportService.reload).not.toHaveBeenCalled();
+    expect(matSnackBar.open).toHaveBeenCalledWith('Already synced', undefined, { duration: 1000 });
   });
 
   it('does nothing when syncing without a selected date', () => {
@@ -210,5 +252,12 @@ describe('ReportViewComponent', () => {
 
     expect(syncAction.isDisabled(task)).toBe(true);
     expect(reportDateCalendarService.isTaskSyncedForReportDate).toHaveBeenCalledWith(task, date);
+  });
+
+  it('leaves sync enabled when report date is not a Date', () => {
+    reportService.setViewState({ reportDate: null, canSyncJiraWorkLogs: true });
+    const [syncAction] = (component as any).rowActions();
+
+    expect(syncAction.isDisabled({ name: 'Task I' } as Task)).toBe(false);
   });
 });

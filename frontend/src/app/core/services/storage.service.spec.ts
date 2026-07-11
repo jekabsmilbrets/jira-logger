@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
 import { IDBFactory as FakeIDBFactory } from 'fake-indexeddb';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, throwError } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
@@ -107,5 +107,20 @@ describe('Core Services storage.service', () => {
 
     await expect(firstValueFrom(service.recreateStore([{ key: 'k', value: 1 }], 'task'))).resolves.toBe(true);
     await expect(firstValueFrom(service.read('k', 'task'))).resolves.toBe(1);
+  });
+
+  it('returns false when recreating a store cannot mass-update', async () => {
+    service.init();
+    vi.spyOn(service as any, 'massUpdate').mockReturnValue(throwError(() => new Error('write failed')));
+
+    await expect(firstValueFrom(service.recreateStore([], 'task'))).resolves.toBe(true);
+  });
+
+  it('records database failures from protected requests', async () => {
+    service.init();
+
+    await expect(firstValueFrom(service.create(undefined as any, 'value', 'task'))).rejects.toBeDefined();
+    expect(service.isDbFailed()).toMatchObject({ customStoreName: 'task' });
+    expect(service.isLoading()).toBe(false);
   });
 });

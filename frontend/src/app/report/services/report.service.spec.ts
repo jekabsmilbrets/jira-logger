@@ -52,7 +52,7 @@ const applyHideUnreportedTasks = (service: ReportService, hideUnreportedTasks: b
   service.applySettingsChange({ type: 'settings-intent', intent: { type: 'set-hide-unreported-tasks', hideUnreportedTasks } });
 };
 
-describe('ReportService', () => {
+describe('Report Service ReportService', () => {
   let service: ReportService;
   let taskQueryService: { query: ReturnType<typeof vi.fn> };
   let storageService: { read: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> };
@@ -423,6 +423,25 @@ describe('ReportService', () => {
     );
   });
 
+  it('ignores routes without a report mode and normalizes unknown non-date modes', () => {
+    service.applySettingsChange({ type: 'route-settings', routeSettings: {} as any });
+    service.applySettingsChange({
+      type: 'route-settings',
+      routeSettings: { reportMode: 'unknown' as ReportMode, date: null },
+    });
+
+    expect(service.settingsControlsState().reportMode).toBe(ReportMode.total);
+  });
+
+  it('applies date mode without a date when the route date is invalid', () => {
+    service.applySettingsChange({
+      type: 'route-settings',
+      routeSettings: { reportMode: ReportMode.date, date: 'not-a-date' },
+    });
+
+    expect(service.settingsControlsState().reportMode).toBe(ReportMode.date);
+  });
+
   it('keeps route mode and date when delayed persisted settings hydrate', () => {
     TestBed.resetTestingModule();
 
@@ -762,6 +781,15 @@ describe('ReportService', () => {
     void service.viewState().tasks;
 
     expect(taskQueryService.query).toHaveBeenCalled();
+  });
+
+  it('returns an empty task list when the report query fails', async () => {
+    taskQueryService.query.mockReturnValueOnce(throwError(() => new Error('query failed')));
+
+    service.reload();
+    await waitForDebounce();
+
+    expect(service.viewState().tasks).toEqual([]);
   });
 
   it('exercises listenToChanges catchError fallback path', async () => {
