@@ -1,16 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject, type Signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, type Signal } from '@angular/core';
 
-import { map, type Observable, of, switchMap, take } from 'rxjs';
+import { take } from 'rxjs';
 
 import { Task } from '@shared/models/task.model';
-import { TimeLog } from '@shared/models/time-log.model';
 import { TasksService } from '@shared/services/tasks.service';
-import { TimeLogsService } from '@shared/services/time-logs.service';
 
 import { TaskComponent } from '@tasks/components/task-list/task/task.component';
-import { TaskListComponent } from '@tasks/components/task-list/task-list.component';
 import { TaskViewHeaderComponent } from '@tasks/components/task-view-header/task-view-header.component';
-import { TaskUpdateAction } from '@tasks/enums/task-update-action.enum';
+import { WorkLogService } from '@tasks/services/work-log.service';
 
 @Component({
   selector: 'tasks-view',
@@ -20,43 +17,21 @@ import { TaskUpdateAction } from '@tasks/enums/task-update-action.enum';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     TaskViewHeaderComponent,
-    TaskListComponent,
     TaskComponent,
   ],
 })
 export class TasksViewComponent {
   private readonly tasksService: TasksService = inject(TasksService);
-  private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
+  private readonly workLogService: WorkLogService = inject(WorkLogService);
 
   protected readonly isLoading: Signal<boolean> = this.tasksService.isLoading;
-  protected readonly tasks: Signal<Task[]> = computed(() => [...this.tasksService.tasks()].sort(this.taskSort));
+  protected readonly tasks: Signal<Task[]> = this.tasksService.recentTasks;
 
   protected onAction(
-    [task, action]: [Task, TaskUpdateAction],
+    task: Task,
   ): void {
-    let action$: Observable<boolean> = of(false);
-
-    switch (action) {
-      case TaskUpdateAction.startWorkLog:
-        action$ = this.startTimeLog(task);
-        break;
-
-      case TaskUpdateAction.stopWorkLog:
-        if (task.isTimeLogRunning && task.lastTimeLog instanceof TimeLog) {
-          action$ = this.stopTimeLog(task);
-        }
-        break;
-
-      default:
-        break;
-    }
-
-    action$
-      .pipe(
-        take(1),
-        switchMap(() => this.tasksService.list()),
-        take(1),
-      )
+    this.workLogService.toggleTaskWorkLog(task)
+      .pipe(take(1))
       .subscribe();
   }
 
@@ -80,41 +55,5 @@ export class TasksViewComponent {
     this.tasksService.list()
       .pipe(take(1))
       .subscribe();
-  }
-
-  private startTimeLog(
-    task: Task,
-  ): Observable<boolean> {
-    return this.timeLogsService.start(task)
-      .pipe(
-        take(1),
-        map(() => true),
-      );
-  }
-
-  private stopTimeLog(
-    task: Task,
-  ): Observable<boolean> {
-    return this.timeLogsService.stop(task)
-      .pipe(
-        take(1),
-        map(() => true),
-      );
-  }
-
-  private taskSort(
-    a: Task,
-    b: Task,
-  ): number {
-    const mapDateTime: (timeLogs: TimeLog[]) => number[] = (
-      timeLogs: TimeLog[],
-    ): number[] => timeLogs.map(
-      (l: TimeLog) => l.startTime.getTime(),
-    );
-
-    const aLastTimeLog: number = Math.max(...mapDateTime(a.timeLogs), -1);
-    const bLastTimeLog: number = Math.max(...mapDateTime(b.timeLogs), -1);
-
-    return bLastTimeLog - aLastTimeLog;
   }
 }

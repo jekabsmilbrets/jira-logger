@@ -6,14 +6,20 @@ namespace App\Tests\Controller\API\Task;
 
 use App\Controller\API\Task\TaskController;
 use App\Dto\Task\TaskListFilterRequest;
+use App\Entity\Task\Task;
+use App\Entity\Task\TimeLog\TimeLog;
 use App\Repository\Task\TaskRepository;
+use App\Repository\Task\TimeLog\TimeLogRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
+use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\Tag\TagService;
 use App\Service\Task\Filter\TaskFilterCriteriaFactory;
 use App\Service\Task\Input\TaskInputFactory;
 use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
 use App\Service\Task\Projection\TaskListProjection;
 use App\Service\Task\TaskService;
+use App\Service\Task\TimeLog\TimeLogService;
+use App\Service\DateTime\DateInputParser;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\ConstraintViolationList;
@@ -41,6 +47,9 @@ class TaskControllerTest extends TestCase
             $serializer
         );
         $controller->setContainer(new Container());
+        $timezoneResolver = $this->createMock(UserTimezoneResolver::class);
+        $timezoneResolver->method('resolveCurrentUserTimezone')->willReturn('Europe/Riga');
+        $controller->setUserTimezoneResolver($timezoneResolver);
 
         return $controller;
     }
@@ -56,6 +65,19 @@ class TaskControllerTest extends TestCase
             new TaskFilterCriteriaFactory($taskFilterDateRangeResolver),
             $this->createMock(TaskJiraSyncAdapter::class),
             new TaskListProjection(),
+        );
+    }
+
+    private function timeLogServiceWith(TimeLogRepository $timeLogRepository): TimeLogService
+    {
+        $timezoneResolver = $this->createMock(UserTimezoneResolver::class);
+        $timezoneResolver->method('resolveCurrentUserTimezone')->willReturn('Europe/Riga');
+
+        return new TimeLogService(
+            $timeLogRepository,
+            $this->taskServiceWith(),
+            $this->createMock(DateInputParser::class),
+            $timezoneResolver,
         );
     }
 
@@ -209,6 +231,62 @@ class TaskControllerTest extends TestCase
         $response = $this->controllerWith($taskService, $serializer)->show('missing');
 
         self::assertSame(404, $response->getStatusCode());
+    }
+
+    public function testActiveReturnsNotFoundWhenNoTaskIsRunning(): void
+    {
+        $repository = $this->getMockBuilder(TimeLogRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findActive'])
+            ->getMock();
+        $repository->method('findActive')->willReturn(null);
+
+        $response = $this->controllerWith(
+            $this->createMock(TaskService::class),
+            $this->createMock(SerializerInterface::class)
+        )->active($this->timeLogServiceWith($repository));
+
+        self::assertSame(404, $response->getStatusCode());
+    }
+
+    public function testActiveReturnsRunningTask(): void
+    {
+        $task = (new Task())->setName('active task');
+        $timeLog = (new TimeLog())
+            ->setTask($task)
+            ->setStartTime(new \DateTimeImmutable('2026-07-09 09:00:00', new \DateTimeZone('Europe/Riga')));
+        $repository = $this->getMockBuilder(TimeLogRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findActive'])
+            ->getMock();
+        $repository->method('findActive')->willReturn($timeLog);
+
+        $response = $this->controllerWith(
+            $this->createMock(TaskService::class),
+            $this->createMock(SerializerInterface::class)
+        )->active($this->timeLogServiceWith($repository));
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('active task', (string) $response->getContent());
+    }
+
+    public function testTodayLoggedSecondsReturnsTotalSeconds(): void
+    {
+        $timeLog = (new TimeLog())
+            ->setStartTime(new \DateTimeImmutable('-30 seconds'));
+        $repository = $this->getMockBuilder(TimeLogRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findOverlappingRange'])
+            ->getMock();
+        $repository->method('findOverlappingRange')->willReturn([$timeLog]);
+
+        $response = $this->controllerWith(
+            $this->createMock(TaskService::class),
+            $this->createMock(SerializerInterface::class)
+        )->todayLoggedSeconds($this->timeLogServiceWith($repository));
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('"totalSeconds"', (string) $response->getContent());
     }
 
     public function testTaskExistsReturnsConflictWhenNameAlreadyExists(): void

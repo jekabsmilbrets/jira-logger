@@ -47,3 +47,17 @@ db_dump.sql
 /.logs
 
 .env
+
+# Root
+/CONTEXT.md
+/docs/adr/
+.grill/
+
+# Frontend
+/frontend/CONTEXT.md
+/frontend/docs/adr/
+
+# Backend
+/backend/CONTEXT.md
+/backend/docs/adr/
+

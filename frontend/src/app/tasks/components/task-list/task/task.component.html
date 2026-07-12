@@ -55,7 +55,7 @@
             <div class="card-task-info">
                 <span>{{ getTaskDescription() }}</span>
 
-                <span>Total Time Worked: {{ task().timeLogged | readableTime }}</span>
+                <span>Total Time Worked: {{ getTotalTimeWorked() | readableTime }}</span>
             </div>
 
             <button (click)="onToggleTimeLogging()"

@@ -45,7 +45,7 @@ describe('Core Services settings.service', () => {
 
     service.init();
 
-    expect(spy).toHaveBeenCalledWith(service.isLoading, expect.stringContaining('SettingsService'));
+    expect(spy).toHaveBeenCalledWith(service.isLoading, 'SettingsService');
     http.expectOne((r) => r.url.includes('/setting')).flush({ data: [] });
   });
 

@@ -10,6 +10,7 @@ use App\Repository\Task\TaskRepository;
 use App\Repository\Task\TimeLog\TimeLogRepository;
 use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
+use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\Task\Filter\TaskFilterCriteriaFactory;
 use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
 use App\Service\Task\Projection\TaskListProjection;
@@ -41,7 +42,16 @@ class TimeLogServiceTest extends TestCase
                 new TaskListProjection(),
             ),
             $this->createMock(DateInputParser::class),
+            $this->timezoneResolver(),
         );
+    }
+
+    private function timezoneResolver(string $timezone = 'Europe/Riga'): UserTimezoneResolver
+    {
+        $resolver = $this->createMock(UserTimezoneResolver::class);
+        $resolver->method('resolveCurrentUserTimezone')->willReturn($timezone);
+
+        return $resolver;
     }
 
     public function testStartStopsAllRunningTimeLogsGlobally(): void
@@ -114,5 +124,137 @@ class TimeLogServiceTest extends TestCase
         self::assertSame(TimeLogWriteStatus::Updated, $result->status);
         self::assertSame($timeLog, $updatedTimeLog);
         self::assertInstanceOf(\DateTimeImmutable::class, $updatedTimeLog?->getEndTime());
+    }
+
+    public function testActiveTaskReturnsTaskForOpenLog(): void
+    {
+        $task = (new Task())->setName('active');
+        $timeLog = (new TimeLog())
+            ->setTask($task)
+            ->setStartTime(new \DateTimeImmutable('2026-07-09 09:00:00', new \DateTimeZone('Europe/Riga')));
+        $repository = $this->getMockBuilder(TimeLogRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findActive'])
+            ->getMock();
+        $repository->expects(self::once())
+            ->method('findActive')
+            ->willReturn($timeLog);
+
+        $service = $this->serviceWithTask($repository, null);
+
+        self::assertSame(
+            $task,
+            $service->activeTask()
+        );
+    }
+
+    public function testActiveTaskReturnsNullWhenNoOpenLog(): void
+    {
+        $repository = $this->getMockBuilder(TimeLogRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findActive'])
+            ->getMock();
+        $repository->method('findActive')->willReturn(null);
+
+        $service = $this->serviceWithTask($repository, null);
+
+        self::assertNull($service->activeTask());
+    }
+
+    public function testTodayLoggedSecondsIncludesCompletedAndActiveLogs(): void
+    {
+        $timezone = new \DateTimeZone('Europe/Riga');
+        $completed = (new TimeLog())
+            ->setStartTime(new \DateTimeImmutable('2026-07-09 09:00:00', $timezone))
+            ->setEndTime(new \DateTimeImmutable('2026-07-09 10:00:00', $timezone));
+        $active = (new TimeLog())
+            ->setStartTime(new \DateTimeImmutable('2026-07-09 11:30:00', $timezone));
+        $repository = $this->getMockBuilder(TimeLogRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findOverlappingRange'])
+            ->getMock();
+        $repository->method('findOverlappingRange')->willReturn([$completed, $active]);
+
+        $service = $this->serviceWithTask($repository, null);
+
+        self::assertSame(
+            5400,
+            $service->todayLoggedSeconds(new \DateTimeImmutable('2026-07-09 12:00:00', $timezone))
+        );
+    }
+
+    public function testTodayLoggedSecondsUsesFullDayForCompletedLogsAndNowForActiveLogs(): void
+    {
+        $timezone = new \DateTimeZone('Europe/Riga');
+        $futureCompleted = (new TimeLog())
+            ->setStartTime(new \DateTimeImmutable('2026-07-09 23:00:00', $timezone))
+            ->setEndTime(new \DateTimeImmutable('2026-07-09 23:30:00', $timezone));
+        $active = (new TimeLog())
+            ->setStartTime(new \DateTimeImmutable('2026-07-09 11:30:00', $timezone));
+        $repository = $this->getMockBuilder(TimeLogRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findOverlappingRange'])
+            ->getMock();
+        $repository->expects(self::once())
+            ->method('findOverlappingRange')
+            ->with(
+                self::callback(static fn (\DateTimeInterface $date): bool => '2026-07-08 21:00:00+00:00' === $date->format('Y-m-d H:i:sP')),
+                self::callback(static fn (\DateTimeInterface $date): bool => '2026-07-09 21:00:00+00:00' === $date->format('Y-m-d H:i:sP')),
+            )
+            ->willReturn([$futureCompleted, $active]);
+
+        $service = $this->serviceWithTask($repository, null);
+
+        self::assertSame(
+            3600,
+            $service->todayLoggedSeconds(new \DateTimeImmutable('2026-07-09 12:00:00', $timezone))
+        );
+    }
+
+    public function testTodayLoggedSecondsClipsLogCrossingMidnight(): void
+    {
+        $timezone = new \DateTimeZone('Europe/Riga');
+        $timeLog = (new TimeLog())
+            ->setStartTime(new \DateTimeImmutable('2026-07-08 23:30:00', $timezone))
+            ->setEndTime(new \DateTimeImmutable('2026-07-09 00:30:00', $timezone));
+        $repository = $this->getMockBuilder(TimeLogRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findOverlappingRange'])
+            ->getMock();
+        $repository->method('findOverlappingRange')->willReturn([$timeLog]);
+
+        $service = $this->serviceWithTask($repository, null);
+
+        self::assertSame(
+            1800,
+            $service->todayLoggedSeconds(new \DateTimeImmutable('2026-07-09 12:00:00', $timezone))
+        );
+    }
+
+    public function testTodayLoggedSecondsCountsFullNormalAndDstDays(): void
+    {
+        $timezone = new \DateTimeZone('Europe/Riga');
+
+        foreach ([
+            ['2026-07-09', 86400],
+            ['2026-03-29', 82800],
+            ['2026-10-25', 90000],
+        ] as [$date, $expectedSeconds]) {
+            $timeLog = (new TimeLog())
+                ->setStartTime(new \DateTimeImmutable("$date 00:00:00", $timezone))
+                ->setEndTime((new \DateTimeImmutable("$date 00:00:00", $timezone))->modify('+1 day'));
+            $repository = $this->getMockBuilder(TimeLogRepository::class)
+                ->disableOriginalConstructor()
+                ->onlyMethods(['findOverlappingRange'])
+                ->getMock();
+            $repository->method('findOverlappingRange')->willReturn([$timeLog]);
+
+            self::assertSame(
+                $expectedSeconds,
+                $this->serviceWithTask($repository, null)->todayLoggedSeconds(
+                    new \DateTimeImmutable("$date 12:00:00", $timezone)
+                )
+            );
+        }
     }
 }

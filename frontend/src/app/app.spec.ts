@@ -4,7 +4,7 @@ import { provideRouter, RouterOutlet } from '@angular/router';
 
 import { App } from './app';
 
-describe('App.spec.ts app', () => {
+describe('Component App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],

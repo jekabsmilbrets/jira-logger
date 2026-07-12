@@ -1,14 +1,15 @@
 import { registerLocaleData } from '@angular/common';
 import localeLv from '@angular/common/locales/lv';
-import { TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { of } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Column } from '../../interfaces/column.interface';
-import { AreYouSureService } from '../../services/are-you-sure.service';
-import { TableComponent } from './table.component';
+import type { Column } from '@shared/interfaces/column.interface';
+import { AreYouSureService } from '@shared/services/are-you-sure.service';
+
+import { TableComponent, type TableConfiguration } from './table.component';
 
 describe('Shared Components table.component', () => {
   const areYouSureService = {
@@ -22,9 +23,19 @@ describe('Shared Components table.component', () => {
     }).compileComponents();
 
     const fixture = TestBed.createComponent(TableComponent);
-    fixture.componentRef.setInput('columns', []);
+    setConfiguration(fixture, { columns: [] });
     fixture.detectChanges();
     return { fixture, component: fixture.componentInstance };
+  };
+
+  const setConfiguration = (
+    fixture: ComponentFixture<TableComponent>,
+    update: Partial<TableConfiguration>,
+  ): void => {
+    fixture.componentRef.setInput('configuration', {
+      ...fixture.componentInstance.configuration(),
+      ...update,
+    });
   };
 
   const createColumn = (overrides: Partial<Column> = {}): Column => ({
@@ -40,27 +51,36 @@ describe('Shared Components table.component', () => {
     areYouSureService.openDialog.mockReturnValue(of(false));
   });
 
-  it('builds displayed columns from visible/non-excluded columns with select/remove actions', async () => {
+  it('builds displayed columns from visible/non-excluded columns with select and row actions', async () => {
     const { fixture, component } = await createComponent();
-    fixture.componentRef.setInput('columns', [
-      createColumn({ columnDef: 'name' }),
-      createColumn({ columnDef: 'sync' }),
-      createColumn({ columnDef: 'hidden', hidden: true }),
-      createColumn({ columnDef: 'excluded', excludeFromLoop: true }),
-    ]);
-    fixture.componentRef.setInput('enableRemoveAction', true);
-    fixture.componentRef.setInput('enableSyncAction', true);
-    fixture.componentRef.setInput('isSelectable', true);
+    setConfiguration(fixture, {
+      columns: [
+        createColumn({ columnDef: 'name' }),
+        createColumn({ columnDef: 'hidden', hidden: true }),
+        createColumn({ columnDef: 'excluded', excludeFromLoop: true }),
+      ],
+    });
+    setConfiguration(fixture, {
+      rowActions: [
+        {
+          id: 'remove',
+          columnDef: 'remove',
+          header: 'Remove',
+          icon: 'delete',
+          ariaLabel: 'Remove row',
+        },
+      ],
+    });
+    setConfiguration(fixture, { selectable: true });
     fixture.detectChanges();
 
-    expect(component['displayedColumns']()).toEqual(['select', 'name', 'sync', 'remove']);
+    expect(component['displayedColumns']()).toEqual(['select', 'name', 'remove']);
 
-    fixture.componentRef.setInput('enableRemoveAction', false);
-    fixture.componentRef.setInput('enableSyncAction', false);
-    fixture.componentRef.setInput('isSelectable', false);
+    setConfiguration(fixture, { rowActions: [] });
+    setConfiguration(fixture, { selectable: false });
     fixture.detectChanges();
 
-    expect(component['displayedColumns']()).toEqual(['name', 'sync']);
+    expect(component['displayedColumns']()).toEqual(['name']);
   });
 
   it('wires real sort/paginator and nested sorting accessor in ngAfterViewInit', async () => {
@@ -69,7 +89,7 @@ describe('Shared Components table.component', () => {
     const paginator = (component as any).paginator();
 
     const row = { nested: { value: 123 } } as any;
-    fixture.componentRef.setInput('data', [row]);
+    setConfiguration(fixture, { data: [row] });
     fixture.detectChanges();
 
     expect(component['dataSource'].data).toEqual([row]);
@@ -83,16 +103,33 @@ describe('Shared Components table.component', () => {
     const date = new Date('2026-05-31T12:00:00.000Z');
     const row = { meta: { createdAt: date } } as any;
 
-    fixture.componentRef.setInput('data', [row]);
+    setConfiguration(fixture, { data: [row] });
     fixture.detectChanges();
 
     expect(component['dataSource'].sortingDataAccessor(row, 'meta.createdAt')).toBe(date.getTime());
+    expect(component['dataSource'].sortingDataAccessor({ meta: { createdAt: {} } } as any, 'meta.createdAt')).toBe('');
+  });
+
+  it('formats cell and footer values across supported pipes and value shapes', async () => {
+    const { component } = await createComponent();
+    const row = { value: 120 } as any;
+
+    expect(component['getColumnCellValue'](row, createColumn({ cell: () => 120, pipe: 'readableTime' }))).toBe('2m');
+    expect(component['getColumnCellValue'](row, createColumn({ cell: () => '2026-01-02', pipe: 'date' }))).toContain('2026');
+    expect(component['getColumnCellValue'](row, createColumn({ cell: () => ['a', 2] }))).toBe('a,2');
+    expect(component['getColumnCellValue'](row, createColumn({ cell: (() => [{ value: 1 }]) as any }))).toBe('');
+    expect(component['getFooterCellValue'](createColumn({ hasFooter: true, footerCell: () => 60, pipe: 'readableTime' }))).toBe('1m');
+    expect(component['getFooterCellValue'](createColumn({ hasFooter: false, footerCell: () => 'ignored' }))).toBe('');
+    expect(component['formatDateValue'](null)).toBe('');
+    expect(component['formatDateValue']('2026-01-02')).toContain('2026');
+    expect(component['getColumnCellValue'](row, createColumn({ cell: () => '120', pipe: 'readableTime' }))).toBe('2m');
+    expect(component['getColumnCellValue'](row, createColumn({ cell: () => null, pipe: 'readableTime' }))).toBe('0s');
   });
 
   it('maps null data input to empty data source', async () => {
     const { fixture, component } = await createComponent();
 
-    fixture.componentRef.setInput('data', null);
+    setConfiguration(fixture, { data: null });
     fixture.detectChanges();
 
     expect(component['dataSource'].data).toEqual([]);
@@ -101,7 +138,7 @@ describe('Shared Components table.component', () => {
   it('checks and toggles selection state', async () => {
     const { fixture, component } = await createComponent();
     const rows = [{ id: 1 } as any, { id: 2 } as any];
-    fixture.componentRef.setInput('data', rows);
+    setConfiguration(fixture, { data: rows });
     fixture.detectChanges();
 
     expect(component['isAllSelected']()).toBe(false);
@@ -115,6 +152,17 @@ describe('Shared Components table.component', () => {
     expect(component['isAllSelected']()).toBe(false);
   });
 
+  it('does not toggle a row click when selection is disabled', async () => {
+    const { fixture, component } = await createComponent();
+    const row = { id: 1 } as any;
+    setConfiguration(fixture, { selectable: false, data: [row] });
+    fixture.detectChanges();
+
+    component['onRowClick'](row);
+
+    expect(component['selection'].selected).toEqual([]);
+  });
+
   it('shouldDisplayColumn hides internal or excluded columns', async () => {
     const { component } = await createComponent();
 
@@ -122,24 +170,21 @@ describe('Shared Components table.component', () => {
     expect(component['shouldDisplayColumn'](createColumn({ hidden: true }))).toBe(false);
     expect(component['shouldDisplayColumn'](createColumn({ excludeFromLoop: true }))).toBe(false);
     expect(component['shouldDisplayColumn'](createColumn({ columnDef: 'select' }))).toBe(false);
-    expect(component['shouldDisplayColumn'](createColumn({ columnDef: 'remove' }))).toBe(false);
-    expect(component['shouldDisplayColumn'](createColumn({ columnDef: 'sync' }))).toBe(false);
   });
 
-  it('computes sync/footer helper states from the column definition', async () => {
+  it('computes row action disabled and footer helper states', async () => {
     const { component } = await createComponent();
-    const syncColumn = createColumn({
+    const rowAction = {
+      id: 'sync',
       columnDef: 'sync',
-      taskSynced: () => true,
-      isClickable: true,
-      disableFooterClick: false,
-      hidden: false,
-      excludeFromLoop: false,
-    });
+      header: 'Sync',
+      icon: 'sync',
+      ariaLabel: 'Sync row',
+      isDisabled: () => true,
+    };
 
-    expect(component['shouldShowSyncColumn'](syncColumn)).toBe(true);
-    expect(component['isSyncDisabled']({} as any, syncColumn)).toBe(true);
-    expect(component['isFooterClickable'](syncColumn)).toBe(true);
+    expect(component['isRowActionDisabled']({} as any, rowAction)).toBe(true);
+    expect(component['isFooterClickable'](createColumn({ isClickable: true, disableFooterClick: false }))).toBe(true);
     expect(component['shouldShowFooter']()).toBe(false);
   });
 
@@ -159,7 +204,7 @@ describe('Shared Components table.component', () => {
     const { fixture, component } = await createComponent();
     const emitSpy = vi.spyOn(component['footerCellClicked'], 'emit');
     const rows = [{ id: 1 } as any];
-    fixture.componentRef.setInput('data', rows);
+    setConfiguration(fixture, { data: rows });
     fixture.detectChanges();
 
     component['onFooterCellClicked'](createColumn({ isClickable: false }));
@@ -170,91 +215,104 @@ describe('Shared Components table.component', () => {
     expect(emitSpy).toHaveBeenCalledWith([rows, expect.objectContaining({ isClickable: true })]);
   });
 
-  it('opens confirmation dialog and emits remove action only when confirmed', async () => {
+  it('opens confirmation dialog and emits row action only when confirmed', async () => {
     const { component } = await createComponent();
-    const emitSpy = vi.spyOn(component['removeAction'], 'emit');
+    const emitSpy = vi.spyOn(component['rowAction'], 'emit');
     const timeLog = {
       date: new Date('2024-01-01T10:30:00.000Z'),
       startTime: new Date('2024-01-01T10:30:00.000Z'),
       endTime: new Date('2024-01-01T11:00:00.000Z'),
     } as any;
+    const action = {
+      id: 'remove',
+      columnDef: 'remove',
+      header: 'Remove',
+      icon: 'delete',
+      ariaLabel: 'Remove row',
+      confirmLabel: () => 'Time log "2024-01-01 10:30:00-11:00:00"',
+    };
 
     areYouSureService.openDialog.mockReturnValueOnce(of(false));
-    await component['onRemoveAction'](timeLog);
+    await component['onRowAction'](timeLog, action);
     expect(emitSpy).not.toHaveBeenCalled();
 
     areYouSureService.openDialog.mockReturnValueOnce(of(true));
-    await component['onRemoveAction'](timeLog);
+    await component['onRowAction'](timeLog, action);
 
     expect(areYouSureService.openDialog).toHaveBeenCalledTimes(2);
     expect(areYouSureService.openDialog.mock.calls[1][0]).toContain('Time log "');
     expect(emitSpy).toHaveBeenCalledTimes(1);
-    expect(emitSpy).toHaveBeenCalledWith(timeLog);
+    expect(emitSpy).toHaveBeenCalledWith([timeLog, 'remove']);
   });
 
-  it('does not emit remove action when confirmation dialog stream is missing', async () => {
+  it('does not emit row action when confirmation dialog stream is missing', async () => {
     const { component } = await createComponent();
-    const emitSpy = vi.spyOn(component['removeAction'], 'emit');
+    const emitSpy = vi.spyOn(component['rowAction'], 'emit');
     const timeLog = {
       date: new Date('2024-01-01T10:30:00.000Z'),
       startTime: new Date('2024-01-01T10:30:00.000Z'),
       endTime: undefined,
     } as any;
+    const action = {
+      id: 'remove',
+      columnDef: 'remove',
+      header: 'Remove',
+      icon: 'delete',
+      ariaLabel: 'Remove row',
+      confirmLabel: () => 'Remove row',
+    };
 
     areYouSureService.openDialog.mockReturnValueOnce(undefined);
-    await component['onRemoveAction'](timeLog);
+    await component['onRowAction'](timeLog, action);
 
     expect(areYouSureService.openDialog).toHaveBeenCalledTimes(1);
     expect(emitSpy).not.toHaveBeenCalled();
   });
 
-  it('returns early on remove action when row is null', async () => {
+  it('uses an empty confirmation message when confirmRowAction is invoked without a label', async () => {
     const { component } = await createComponent();
-    const emitSpy = vi.spyOn(component['removeAction'], 'emit');
+    areYouSureService.openDialog.mockReturnValueOnce(of(false));
 
-    await component['onRemoveAction'](null as any);
+    await component['confirmRowAction']({ id: 1 } as any, {
+      id: 'remove', columnDef: 'remove', header: 'Remove', icon: 'delete', ariaLabel: 'Remove row',
+    });
+
+    expect(areYouSureService.openDialog).toHaveBeenCalledWith('');
+  });
+
+  it('emits unconfirmed row action directly', async () => {
+    const { component } = await createComponent();
+    const emitSpy = vi.spyOn(component['rowAction'], 'emit');
+    const action = {
+      id: 'sync',
+      columnDef: 'sync',
+      header: 'Sync',
+      icon: 'sync',
+      ariaLabel: 'Sync row',
+    };
+    const row = { id: 1 } as any;
+
+    component['onRowAction'](row, action);
 
     expect(areYouSureService.openDialog).not.toHaveBeenCalled();
-    expect(emitSpy).not.toHaveBeenCalled();
+    expect(emitSpy).toHaveBeenCalledWith([row, 'sync']);
   });
 
-  it('formats remove confirmation when startTime is missing', async () => {
+  it('does not emit disabled row action', async () => {
     const { component } = await createComponent();
-    const rowWithoutStartTime = {
-      date: new Date('2026-05-01T00:00:00.000Z'),
-      endTime: undefined,
-    } as any;
+    const emitSpy = vi.spyOn(component['rowAction'], 'emit');
+    const action = {
+      id: 'sync',
+      columnDef: 'sync',
+      header: 'Sync',
+      icon: 'sync',
+      ariaLabel: 'Sync row',
+      isDisabled: () => true,
+    };
 
-    areYouSureService.openDialog.mockReturnValueOnce(undefined);
-    await component['onRemoveAction'](rowWithoutStartTime);
+    component['onRowAction']({ id: 1 } as any, action);
 
-    expect(areYouSureService.openDialog).toHaveBeenCalledTimes(1);
-    expect(areYouSureService.openDialog.mock.calls[0][0]).toContain('null-null');
-  });
-
-  it('formats cell and footer values through helper methods', async () => {
-    const { fixture, component } = await createComponent();
-    const row = {
-      when: new Date('2026-05-01T00:00:00.000Z'),
-      value: 120,
-      name: 'Alpha',
-      singleTag: ['Alpha'],
-      tags: ['Alpha', 'Beta'],
-      meta: { label: 'hidden' },
-    } as any;
-    fixture.componentRef.setInput('data', [row]);
-    fixture.detectChanges();
-
-    expect(component['getColumnCellValue'](row, createColumn({ pipe: 'date', cell: () => row.when }))).toBeTruthy();
-    expect(component['getColumnCellValue'](row, createColumn({ pipe: 'readableTime', cell: () => row.value }))).toBe('2m');
-    expect(component['getColumnCellValue'](row, createColumn({ cell: () => row.name }))).toBe('Alpha');
-    expect(component['getColumnCellValue'](row, createColumn({ cell: () => row.singleTag }))).toBe('Alpha');
-    expect(component['getColumnCellValue'](row, createColumn({ cell: () => row.tags }))).toBe('Alpha,Beta');
-    expect(component['getColumnCellValue'](row, createColumn({ cell: () => row.meta }))).toBe('');
-    expect(component['getFooterCellValue'](createColumn({ hasFooter: true, footerCell: () => 300, pipe: 'readableTime' }))).toBe('5m');
-    expect(component['getFooterCellValue'](createColumn({ hasFooter: true, footerCell: () => 'done' }))).toBe('done');
-    expect(component['getFooterCellValue'](createColumn({ hasFooter: true, footerCell: () => row.tags }))).toBe('Alpha,Beta');
-    expect(component['getFooterCellValue'](createColumn({ hasFooter: true, footerCell: () => row.meta }))).toBe('');
+    expect(emitSpy).not.toHaveBeenCalled();
   });
 
   it('reuses the cached confirmation service promise', async () => {
@@ -268,21 +326,10 @@ describe('Shared Components table.component', () => {
     expect(firstService).toBe(areYouSureService);
   });
 
-  it('emits sync action with provided row cast as task', async () => {
-    const { component } = await createComponent();
-    const emitSpy = vi.spyOn(component['syncAction'], 'emit');
-    const task = { id: 'task-1', name: 'Task' } as any;
-
-    component['onSyncAction'](task);
-
-    expect(emitSpy).toHaveBeenCalledTimes(1);
-    expect(emitSpy).toHaveBeenCalledWith(task);
-  });
-
-  it('renders switch-pipe cell branches and sync/remove/select columns in template', async () => {
+  it('renders switch-pipe cell branches and row action/select columns in template', async () => {
     const { fixture, component } = await createComponent();
-    const removeSpy = vi.spyOn(component as any, 'onRemoveAction');
-    const syncEmitSpy = vi.spyOn(component['syncAction'], 'emit');
+    const actionSpy = vi.spyOn(component as any, 'onRowAction');
+    const rowActionEmitSpy = vi.spyOn(component['rowAction'], 'emit');
     const row = {
       id: '1',
       value: 120,
@@ -291,41 +338,56 @@ describe('Shared Components table.component', () => {
       startTime: new Date('2026-05-01T10:00:00.000Z'),
       endTime: new Date('2026-05-01T11:00:00.000Z'),
     } as any;
-    fixture.componentRef.setInput('isSelectable', true);
-    fixture.componentRef.setInput('enableRemoveAction', true);
-    fixture.componentRef.setInput('enableFooter', true);
-    fixture.componentRef.setInput('columns', [
-      {
-        columnDef: 'value',
-        header: 'Value',
-        sortable: true,
-        pipe: 'readableTime',
-        isClickable: true,
-        cell: () => 120,
-        hasFooter: true,
-        footerCell: () => 120,
-      } as any,
-      {
-        columnDef: 'when',
-        header: 'When',
-        sortable: true,
-        pipe: 'date',
-        cell: () => row.when,
-        hasFooter: true,
-        footerCell: () => '',
-      } as any,
-      { columnDef: 'plain', header: 'Plain', sortable: true, cell: () => 'abc', hasFooter: true, footerCell: () => 'x' } as any,
-      {
-        columnDef: 'sync',
-        header: 'Sync',
-        sortable: false,
-        hidden: false,
-        excludeFromLoop: false,
-        taskSynced: () => false,
-        cell: () => undefined,
-      } as any,
-    ]);
-    fixture.componentRef.setInput('data', [row]);
+    setConfiguration(fixture, { selectable: true });
+    setConfiguration(fixture, { footer: true });
+    setConfiguration(fixture, {
+      rowActions: [
+        {
+          id: 'sync',
+          columnDef: 'sync',
+          header: 'Sync',
+          icon: 'sync',
+          ariaLabel: 'Sync task to Jira',
+          color: 'warn',
+          tooltip: 'Task already synced with JIRA server!',
+          isDisabled: () => false,
+        },
+        {
+          id: 'remove',
+          columnDef: 'remove',
+          header: 'Remove',
+          icon: 'delete',
+          ariaLabel: 'Remove row',
+          color: 'warn',
+          confirmLabel: () => 'Remove row',
+        },
+      ],
+    });
+    setConfiguration(fixture, {
+      columns: [
+        {
+          columnDef: 'value',
+          header: 'Value',
+          sortable: true,
+          pipe: 'readableTime',
+          isClickable: true,
+          cell: () => 120,
+          hasFooter: true,
+          footerCell: () => 120,
+        } as any,
+        {
+          columnDef: 'when',
+          header: 'When',
+          sortable: true,
+          pipe: 'date',
+          cell: () => row.when,
+          hasFooter: true,
+          footerCell: () => '',
+        } as any,
+        { columnDef: 'plain', header: 'Plain', sortable: true, cell: () => 'abc', hasFooter: true, footerCell: () => 'x' } as any,
+      ],
+    });
+    setConfiguration(fixture, { data: [row] });
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('mat-header-row'))).toBeTruthy();
@@ -336,21 +398,23 @@ describe('Shared Components table.component', () => {
 
     fixture.debugElement.query(By.css('button[aria-label="Sync task to Jira"]')).nativeElement.click();
     fixture.detectChanges();
-    expect(syncEmitSpy).toHaveBeenCalledTimes(1);
+    expect(rowActionEmitSpy).toHaveBeenCalledWith([row, 'sync']);
 
     fixture.debugElement.query(By.css('button[aria-label="Remove row"]')).nativeElement.click();
     fixture.detectChanges();
-    await removeSpy.mock.results[0]?.value;
+    await actionSpy.mock.results.find((result) => result.value instanceof Promise)?.value;
     expect(areYouSureService.openDialog).toHaveBeenCalled();
   });
 
   it('renders non-selectable rows when isSelectable is false', async () => {
     const { fixture, component } = await createComponent();
-    fixture.componentRef.setInput('isSelectable', false);
-    fixture.componentRef.setInput('columns', [
-      { columnDef: 'plain', header: 'Plain', sortable: true, cell: () => 'abc' } as any,
-    ]);
-    fixture.componentRef.setInput('data', [{ id: '1' } as any]);
+    setConfiguration(fixture, { selectable: false });
+    setConfiguration(fixture, {
+      columns: [
+        { columnDef: 'plain', header: 'Plain', sortable: true, cell: () => 'abc' } as any,
+      ],
+    });
+    setConfiguration(fixture, { data: [{ id: '1' } as any] });
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.css('mat-row'))).toBeTruthy();
@@ -359,19 +423,21 @@ describe('Shared Components table.component', () => {
   it('triggers clickable cell listener via template event', async () => {
     const { fixture, component } = await createComponent();
     const cellSpy = vi.spyOn(component['cellClicked'], 'emit');
-    fixture.componentRef.setInput('enableFooter', true);
-    fixture.componentRef.setInput('columns', [
-      {
-        columnDef: 'plain',
-        header: 'Plain',
-        sortable: true,
-        isClickable: true,
-        cell: () => 'value',
-        hasFooter: true,
-        footerCell: () => 'footer',
-      } as any,
-    ]);
-    fixture.componentRef.setInput('data', [{ id: '1' } as any]);
+    setConfiguration(fixture, { footer: true });
+    setConfiguration(fixture, {
+      columns: [
+        {
+          columnDef: 'plain',
+          header: 'Plain',
+          sortable: true,
+          isClickable: true,
+          cell: () => 'value',
+          hasFooter: true,
+          footerCell: () => 'footer',
+        } as any,
+      ],
+    });
+    setConfiguration(fixture, { data: [{ id: '1' } as any] });
     fixture.detectChanges();
 
     const clickableCell = fixture.debugElement.query(By.css('.mat-cell-clickable'));
@@ -386,11 +452,13 @@ describe('Shared Components table.component', () => {
 
   it('triggers select checkbox and selectable row click listeners via template events', async () => {
     const { fixture, component } = await createComponent();
-    fixture.componentRef.setInput('isSelectable', true);
-    fixture.componentRef.setInput('columns', [
-      { columnDef: 'plain', header: 'Plain', sortable: true, cell: () => 'abc' } as any,
-    ]);
-    fixture.componentRef.setInput('data', [{ id: '1' } as any, { id: '2' } as any]);
+    setConfiguration(fixture, { selectable: true });
+    setConfiguration(fixture, {
+      columns: [
+        { columnDef: 'plain', header: 'Plain', sortable: true, cell: () => 'abc' } as any,
+      ],
+    });
+    setConfiguration(fixture, { data: [{ id: '1' } as any, { id: '2' } as any] });
     fixture.detectChanges();
 
     const checkboxes = fixture.debugElement.queryAll(By.css('mat-checkbox'));

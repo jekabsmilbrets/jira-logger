@@ -32,7 +32,8 @@ describe('Tasks Components time-log-modal.component', () => {
         { provide: MatDialogRef, useValue: dialogRef },
         { provide: TimezoneService, useValue: { timezone: 'Europe/Vienna' } },
       ],
-    });
+    })
+      .compileComponents();
 
     const fixture = TestBed.createComponent(TimeLogModalComponent);
     fixture.detectChanges();
@@ -53,6 +54,17 @@ describe('Tasks Components time-log-modal.component', () => {
 
     expect(component['timeLogFormModel']().description).toBe('desc');
     expect(component['timeLogFormModel']().startTime).toBeInstanceOf(Date);
+  });
+
+  it('initializes optional end time and description when absent', async () => {
+    const { component } = await setup(new TimeLog({
+      startTime: new Date('2026-03-02T10:00:00.000Z'),
+      endTime: undefined,
+      description: undefined,
+    }));
+
+    expect(component['timeLogFormModel']().endTime).toBeNull();
+    expect(component['timeLogFormModel']().description).toBe('');
   });
 
   it('closes with cancel response', async () => {
@@ -148,6 +160,22 @@ describe('Tasks Components time-log-modal.component', () => {
       description: 'desc',
     });
     expect(component['timeLogForm'].endTime().getError('invalidChronology')).toBeUndefined();
+  });
+
+  it('does not close when save validation fails', async () => {
+    const { component, dialogRef } = await setup();
+    component['timeLogFormModel'].set({ startTime: null, endTime: null, description: '' });
+
+    component['onSave']();
+
+    expect(dialogRef.close).not.toHaveBeenCalled();
+  });
+
+  it('falls back to locale formatting when the configured timezone is invalid', async () => {
+    const { component } = await setup();
+    (component as any).timezoneService = { timezone: 'Invalid/Timezone' };
+
+    expect(component['modalTitleDateTime']).toContain('2026');
   });
 
   it('triggers title/action button handlers from DOM', async () => {

@@ -10,6 +10,7 @@ use App\Repository\Task\TaskRepository;
 use App\Repository\Task\TimeLog\TimeLogRepository;
 use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
+use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\Task\Filter\TaskFilterCriteriaFactory;
 use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
 use App\Service\Task\Projection\TaskListProjection;
@@ -32,6 +33,7 @@ class TimeLogControllerTest extends TestCase
                     new TaskListProjection(),
                 ),
                 $this->createMock(DateInputParser::class),
+                $this->createMock(UserTimezoneResolver::class),
             ),
         );
         $controller->setContainer(new Container());

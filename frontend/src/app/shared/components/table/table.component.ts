@@ -10,7 +10,7 @@ import {
   inject,
   injectAsync,
   input,
-  InputSignal,
+  type InputSignal,
   output,
   OutputEmitterRef,
   Signal,
@@ -32,12 +32,23 @@ import { formatDateInTimezone } from '@core/utilities/format-date-in-timezone.ut
 
 import type { Column } from '@shared/interfaces/column.interface';
 import type { Searchable } from '@shared/interfaces/searchable.interface';
-import { Task } from '@shared/models/task.model';
-import { TimeLog } from '@shared/models/time-log.model';
+import type { TableRowAction } from '@shared/interfaces/table-row-action.interface';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import type { AreYouSureService } from '@shared/services/are-you-sure.service';
 import type { AsyncLoader } from '@shared/types/async-loader.type';
 import { getNestedObject } from '@shared/utilities/get-nested-object.utility';
+
+export interface TableConfiguration {
+  columns: Column[];
+  data?: Searchable[] | null;
+  rowActions?: TableRowAction[];
+  selectable?: boolean;
+  footer?: boolean;
+  sort?: {
+    field?: string;
+    direction?: SortDirection;
+  };
+}
 
 @Component({
   selector: 'shared-shared-table',
@@ -64,20 +75,9 @@ import { getNestedObject } from '@shared/utilities/get-nested-object.utility';
 export class TableComponent implements AfterViewInit {
   private static readonly hiddenLoopColumns: string[] = [
     'select',
-    'remove',
-    'sync',
   ];
 
-  public readonly isSelectable: InputSignal<boolean> = input(true);
-  public readonly enableRemoveAction: InputSignal<boolean> = input(false);
-  public readonly enableSyncAction: InputSignal<boolean> = input(false);
-  public readonly stickyHeader: InputSignal<boolean> = input(true);
-  public readonly stickyFooter: InputSignal<boolean> = input(true);
-  public readonly enableFooter: InputSignal<boolean> = input(false);
-  public readonly sortField: InputSignal<string> = input('id');
-  public readonly sortDirection: InputSignal<'' | 'asc' | 'desc'> = input<SortDirection>('asc');
-  public readonly columns: InputSignal<Column[]> = input<Column[]>([]);
-  public readonly data: InputSignal<Searchable[] | null | undefined> = input<Searchable[] | null>();
+  public readonly configuration: InputSignal<TableConfiguration> = input<TableConfiguration>({ columns: [] });
 
   protected readonly cellClicked: OutputEmitterRef<[Searchable, Column]> = output<[
     Searchable,
@@ -87,30 +87,26 @@ export class TableComponent implements AfterViewInit {
     Searchable[],
     Column
   ]>();
-  protected readonly removeAction: OutputEmitterRef<Searchable> = output<Searchable>();
-  protected readonly syncAction: OutputEmitterRef<Searchable> = output<Searchable>();
+  protected readonly rowAction: OutputEmitterRef<[Searchable, string]> = output<[Searchable, string]>();
 
   protected readonly sort: Signal<MatSort> = viewChild.required(MatSort);
 
   protected readonly paginator: Signal<MatPaginator> = viewChild.required(MatPaginator);
   protected readonly displayedColumns: Signal<string[]> = computed(() => {
-    const columns: string[] = this.columns()
+    const columns: string[] = this.configuration().columns
       .filter(({ hidden }: Column) => !hidden)
       .filter(({ excludeFromLoop }: Column) => !excludeFromLoop)
       .map(({ columnDef }: Column) => columnDef);
 
-    if (this.enableRemoveAction()) {
-      columns.push('remove');
-    }
+    columns.push(...(this.configuration().rowActions ?? []).map((action: TableRowAction) => action.columnDef));
 
-    if (this.isSelectable()) {
+    if (this.configuration().selectable ?? true) {
       columns.unshift('select');
     }
 
     return columns;
   });
-  protected readonly loopColumns: Signal<Column[]> = computed(() => this.columns().filter((column: Column) => this.shouldDisplayColumn(column)));
-  protected readonly syncColumn: Signal<Column | undefined> = computed(() => this.columns().find((column: Column) => this.shouldShowSyncColumn(column)));
+  protected readonly loopColumns: Signal<Column[]> = computed(() => this.configuration().columns.filter((column: Column) => this.shouldDisplayColumn(column)));
 
   protected selection: SelectionModel<Searchable> = new SelectionModel<Searchable>(true, []);
 
@@ -127,7 +123,7 @@ export class TableComponent implements AfterViewInit {
 
   constructor() {
     effect(() => {
-      this._data = [...(this.data() ?? [])];
+      this._data = [...(this.configuration().data ?? [])];
       this.selection.clear();
       this.dataSource.data = this._data;
     });
@@ -209,38 +205,20 @@ export class TableComponent implements AfterViewInit {
     }
   }
 
-  protected async onRemoveAction(
+  protected onRowAction(
     row: Searchable,
-  ): Promise<void> {
-    const timeLog: TimeLog | undefined = row as TimeLog;
-
-    if (!timeLog) {
+    action: TableRowAction,
+  ): void | Promise<void> {
+    if (this.isRowActionDisabled(row, action)) {
       return;
     }
 
-    const areYouSureService: AreYouSureService = await this.loadAreYouSureService();
-    const confirmation$: ReturnType<AreYouSureService['openDialog']> | undefined = areYouSureService.openDialog(
-      this.buildRemoveConfirmationLabel(timeLog),
-    );
-
-    if (!confirmation$) {
+    if (!action.confirmLabel) {
+      this.rowAction.emit([row, action.id]);
       return;
     }
 
-    confirmation$
-      .pipe(take(1))
-      .subscribe((response: boolean | undefined) => {
-        if (response === true) {
-          this.removeAction.emit(timeLog);
-        }
-      });
-  }
-
-  protected onSyncAction(
-    row: Searchable,
-  ): void {
-    const task: Task | undefined = row as Task;
-    this.syncAction.emit(task);
+    return this.confirmRowAction(row, action);
   }
 
   protected getColumnCellValue(
@@ -261,24 +239,14 @@ export class TableComponent implements AfterViewInit {
   }
 
   protected shouldShowFooter(): boolean {
-    return this.enableFooter();
+    return this.configuration().footer ?? false;
   }
 
-  protected shouldShowSyncColumn(
-    column: Column,
-  ): boolean {
-    return column.columnDef === 'sync' && !column.hidden && !column.excludeFromLoop;
-  }
-
-  protected hasSyncColumn(): boolean {
-    return this.syncColumn() !== undefined;
-  }
-
-  protected isSyncDisabled(
+  protected isRowActionDisabled(
     row: Searchable,
-    column: Column,
+    action: TableRowAction,
   ): boolean {
-    return column.taskSynced?.(row) ?? false;
+    return action.isDisabled?.(row) ?? false;
   }
 
   protected isFooterClickable(
@@ -290,7 +258,7 @@ export class TableComponent implements AfterViewInit {
   protected onRowClick(
     row: Searchable,
   ): void {
-    if (this.isSelectable()) {
+    if (this.configuration().selectable ?? true) {
       this.selection.toggle(row);
     }
   }
@@ -353,21 +321,23 @@ export class TableComponent implements AfterViewInit {
       '';
   }
 
-  private buildRemoveConfirmationLabel(
-    timeLog: TimeLog,
-  ): string {
-    const timeLogDate: string = formatDateInTimezone(timeLog.date, 'yyyy-MM-dd', this.localeService.locale, this.timezoneService.timezone);
-    const timeLogStart: string | null = this.formatTimePart(timeLog.startTime);
-    const timeLogEnd: string | null = this.formatTimePart(timeLog.endTime);
+  private async confirmRowAction(
+    row: Searchable,
+    action: TableRowAction,
+  ): Promise<void> {
+    const areYouSureService: AreYouSureService = await this.loadAreYouSureService();
+    const confirmation$: ReturnType<AreYouSureService['openDialog']> | undefined = areYouSureService.openDialog(action.confirmLabel?.(row) ?? '');
 
-    return `Time log "${ timeLogDate } ${ timeLogStart }-${ timeLogEnd }"`;
-  }
+    if (!confirmation$) {
+      return;
+    }
 
-  private formatTimePart(
-    value: Date | undefined,
-  ): string | null {
-    return value ?
-      formatDateInTimezone(value, 'HH:mm:ss', this.localeService.locale, this.timezoneService.timezone) :
-      null;
+    confirmation$
+      .pipe(take(1))
+      .subscribe((response: boolean | undefined) => {
+        if (response === true) {
+          this.rowAction.emit([row, action.id]);
+        }
+      });
   }
 }

@@ -20,10 +20,9 @@ import type { LocaleOption } from '@core/interfaces/locale-option.interface';
 import { Setting } from '@core/models/setting.model';
 import { LocaleService } from '@core/services/locale.service';
 
-import { JiraUserSettings } from '@settings/enums/jira-user-settings.enum';
+import { UserPreferencesAdapter } from '@settings/adapters/user-preferences.adapter';
 import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
 import type { UserSettingsFormValue } from '@settings/interfaces/user-settings-form-value.interface';
-import { findSettingByName } from '@settings/utilities/find-setting-by-name.utility';
 
 @Component({
   selector: 'settings-timezone-configurator',
@@ -48,6 +47,7 @@ export class UserSettingsConfiguratorComponent {
   ];
 
   private readonly localeService: LocaleService = inject(LocaleService);
+  private readonly userPreferencesAdapter: UserPreferencesAdapter = inject(UserPreferencesAdapter);
 
   public readonly settings: InputSignal<Setting[]> = input<Setting[]>([]);
   public readonly disabled: InputSignal<boolean | null | undefined> = input<boolean | null>();
@@ -91,10 +91,7 @@ export class UserSettingsConfiguratorComponent {
     event?.preventDefault?.();
 
     const formData: UserSettingsFormValue = this.userSettingsFormModel();
-    const changedSettings: Setting[] = [
-      this.buildChangedSetting(JiraUserSettings.userTimeZone, formData.timezone),
-      this.buildChangedSetting(JiraUserSettings.locale, formData.locale),
-    ].filter((setting: Setting | undefined): setting is Setting => setting !== undefined);
+    const changedSettings: Setting[] = this.userPreferencesAdapter.changedSettings(this.settings(), formData);
 
     if (changedSettings.length > 0) {
       this.settingsChange.emit({
@@ -105,62 +102,16 @@ export class UserSettingsConfiguratorComponent {
   }
 
   private resetFormData(): void {
-    const configuredTimezone: string = String(this.getSettingValue(JiraUserSettings.userTimeZone, ''));
+    const formValue: UserSettingsFormValue = this.userPreferencesAdapter.toFormValue(this.settings());
 
-    if (configuredTimezone && !this.timezones.includes(configuredTimezone)) {
+    if (formValue.timezone && !this.timezones.includes(formValue.timezone)) {
       this.timezones = [
-        configuredTimezone,
+        formValue.timezone,
         ...this.timezones,
       ];
     }
 
-    this.userSettingsForm().reset({
-      timezone: configuredTimezone,
-      locale: this.getSettingValue(JiraUserSettings.locale, 'lv-LV'),
-    });
-  }
-
-  private getSetting(name: JiraUserSettings): Setting | undefined {
-    const settings: Setting[] = this.settings();
-
-    if (Array.isArray(settings)) {
-      return findSettingByName(settings, name);
-    }
-
-    return undefined;
-  }
-
-  private getSettingValue(
-    name: JiraUserSettings,
-    defaultValue: string,
-  ): string {
-    const settings: Setting[] = this.settings();
-
-    if (Array.isArray(settings)) {
-      const setting: undefined | Setting = findSettingByName(settings, name);
-
-      if (setting && typeof setting.value === 'string') {
-        return setting.value;
-      }
-    }
-
-    return defaultValue;
-  }
-
-  private buildChangedSetting(
-    name: JiraUserSettings,
-    nextValue: string,
-  ): Setting | undefined {
-    const originalSetting: Setting | undefined = this.getSetting(name);
-
-    if (!originalSetting || this.getSettingValue(name, '') === nextValue) {
-      return undefined;
-    }
-
-    return new Setting({
-      ...originalSetting,
-      value: nextValue,
-    });
+    this.userSettingsForm().reset(formValue);
   }
 
   private getSupportedTimezones(): string[] {

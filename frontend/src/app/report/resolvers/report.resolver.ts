@@ -1,17 +1,20 @@
 import { inject } from '@angular/core';
-import { ParamMap, RedirectCommand, type ResolveFn, Router } from '@angular/router';
+import { type ResolveFn } from '@angular/router';
 
+import type { ReportRouteSettings } from '@report/interfaces/report-route-settings.interface';
 import { ReportService } from '@report/services/report.service';
 
-export const reportResolver: ResolveFn<boolean | RedirectCommand> = (route): boolean | RedirectCommand => {
-  const router: Router = inject(Router);
+export const reportResolver: ResolveFn<boolean> = (route): boolean => {
   const reportService: ReportService = inject(ReportService);
-  const paramMap: ParamMap = route.paramMap;
-  const result: { shouldRedirect: boolean } = reportService.applyRouteParams(paramMap);
+  const routeSettings: ReportRouteSettings = {
+    reportMode: route.paramMap.get('reportMode'),
+    date: route.paramMap.get('date'),
+  };
 
-  if (result.shouldRedirect) {
-    return new RedirectCommand(router.parseUrl('/report'));
-  }
+  reportService.applySettingsChange({
+    type: 'route-settings',
+    routeSettings,
+  });
 
   return true;
 };

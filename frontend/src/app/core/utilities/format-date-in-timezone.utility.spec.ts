@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { formatDateInTimezone } from './format-date-in-timezone.utility';
 
-describe('format-date-in-timezone.utility', () => {
+describe('Core Utils format-date-in-timezone.utility', () => {
   it('formats dates using timezone-aware replacements', () => {
     const result = formatDateInTimezone(
       '2026-06-02T22:00:00.000Z',
@@ -38,5 +38,23 @@ describe('format-date-in-timezone.utility', () => {
     );
 
     expect(result).toContain('2026');
+  });
+
+  it('uses token fallback values when Intl format parts are missing', () => {
+    const originalIntl = globalThis.Intl;
+    vi.stubGlobal('Intl', {
+      ...originalIntl,
+      DateTimeFormat: class {
+        constructor(..._args: unknown[]) {}
+
+        formatToParts(): Intl.DateTimeFormatPart[] {
+          return [];
+        }
+      },
+    });
+
+    expect(formatDateInTimezone('2026-06-02T22:00:00.000Z', 'yyyy-H:m:s', 'en-CA', 'UTC')).toBe('-0:0:0');
+
+    vi.unstubAllGlobals();
   });
 });

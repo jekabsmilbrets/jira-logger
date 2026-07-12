@@ -78,4 +78,64 @@ describe('Settings Components user-settings-configurator.component', () => {
     expect(emitted.changedSettings[0].name).toBe(JiraUserSettings.locale);
     expect(emitted.changedSettings[0].value).toBe('en-US');
   });
+
+  it('does not emit when values are unchanged and prevents native submit', () => {
+    const emitSpy = vi.spyOn((component as any).settingsChange, 'emit');
+    const preventDefault = vi.fn();
+
+    (component as any).onSaveFormData({ preventDefault });
+
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(emitSpy).not.toHaveBeenCalled();
+  });
+
+  it('handles disabled controls', () => {
+    fixture.componentRef.setInput('disabled', true);
+    fixture.detectChanges();
+
+    expect((fixture.debugElement.query(By.css('button[aria-label="Save"]')).nativeElement as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('keeps an unknown configured timezone in the option list', () => {
+    fixture.componentRef.setInput('settings', [
+      new Setting({ id: '4', name: JiraUserSettings.userTimeZone, value: 'Mars/Olympus' }),
+      new Setting({ id: '5', name: JiraUserSettings.locale, value: 'lv-LV' }),
+    ]);
+    fixture.detectChanges();
+
+    expect((component as any).timezones[0]).toBe('Mars/Olympus');
+  });
+
+  it('uses timezone fallback when Intl timezone enumeration is unavailable or throws', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Intl, 'supportedValuesOf');
+    try {
+      Object.defineProperty(Intl, 'supportedValuesOf', { configurable: true, value: undefined });
+      expect((component as any).getSupportedTimezones()).toContain('UTC');
+      Object.defineProperty(Intl, 'supportedValuesOf', { configurable: true, value: vi.fn(() => { throw new Error('unsupported'); }) });
+      expect((component as any).getSupportedTimezones()).toContain('Europe/Riga');
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(Intl, 'supportedValuesOf', descriptor);
+      }
+    }
+  });
+
+  it('wires select, submit, and cancel template events', () => {
+    const emitSpy = vi.spyOn((component as any).settingsChange, 'emit');
+    const timezoneSpy = vi.spyOn(component as any, 'onTimezoneChange');
+    const localeSpy = vi.spyOn(component as any, 'onLocaleChange');
+    const cancelSpy = vi.spyOn(component as any, 'onCancel');
+    const selects = fixture.debugElement.queryAll(By.css('mat-select'));
+
+    selects[0].triggerEventHandler('valueChange', 'UTC');
+    selects[1].triggerEventHandler('valueChange', 'en-US');
+    fixture.debugElement.query(By.css('form')).nativeElement.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+    fixture.debugElement.query(By.css('button[aria-label="Cancel"]')).nativeElement.click();
+
+    expect(timezoneSpy).toHaveBeenCalledWith('UTC');
+    expect(localeSpy).toHaveBeenCalledWith('en-US');
+    expect(emitSpy).toHaveBeenCalledTimes(1);
+    expect(cancelSpy).toHaveBeenCalledTimes(1);
+  });
 });

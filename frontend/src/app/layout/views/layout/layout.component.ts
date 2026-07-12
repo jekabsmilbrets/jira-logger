@@ -8,11 +8,11 @@ import { filter, map, startWith } from 'rxjs';
 import { LoaderStateService } from '@core/services/loader-state.service';
 
 import { Task } from '@shared/models/task.model';
-import { TaskManagerService } from '@shared/services/task-manager.service';
 
 import { HeaderComponent } from '@layout/components/header/header.component';
 import { SidenavComponent } from '@layout/components/sidenav/sidenav.component';
 import { HEADER_MENU_ROUTE_DATA_KEY, type HeaderMenuRouteData } from '@layout/interfaces/header-menu-route-data.interface';
+import { HeaderDataService } from '@layout/services/header-data.service';
 
 @Component({
   selector: 'layout-view',
@@ -29,7 +29,7 @@ import { HEADER_MENU_ROUTE_DATA_KEY, type HeaderMenuRouteData } from '@layout/in
 })
 export class LayoutComponent {
   private readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
-  private readonly taskManagerService: TaskManagerService = inject(TaskManagerService);
+  private readonly headerDataService: HeaderDataService = inject(HeaderDataService);
   private readonly router: Router = inject(Router);
   private readonly activeRouteSnapshot: Signal<ActivatedRouteSnapshot> = toSignal(
     this.router.events.pipe(
@@ -41,8 +41,8 @@ export class LayoutComponent {
   );
 
   protected readonly isLoading: Signal<boolean> = this.loaderStateService.isLoading;
-  protected readonly activeTask: Signal<Task | null> = this.taskManagerService.activeTask;
-  protected readonly timeLoggedToday: Signal<number> = this.taskManagerService.timeLoggedToday;
+  protected readonly activeTask: Signal<Task | null> = this.headerDataService.activeTask;
+  protected readonly timeLoggedToday: Signal<number> = this.headerDataService.timeLoggedToday;
   protected readonly activeMenu: Signal<HeaderMenuRouteData | null> = computed(() => this.resolveActiveMenu(this.activeRouteSnapshot()));
 
   private resolveActiveMenu(

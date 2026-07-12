@@ -10,6 +10,7 @@ use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
 use App\Service\Task\Input\TaskInputFactory;
 use App\Service\Task\TaskService;
+use App\Service\Task\TimeLog\TimeLogService;
 use App\Service\Task\Sync\TaskSyncResult;
 use App\Service\Task\Sync\TaskSyncStatus;
 use App\Service\Task\Write\TaskWriteResult;
@@ -168,6 +169,85 @@ class TaskController extends BaseApiController
         return $this->jsonApi(
             $tasks
         );
+    }
+
+    /**
+     * @throws ExceptionInterface
+     */
+    #[
+        Route(
+            path: '/active',
+            name: 'active-task',
+            methods: [Request::METHOD_GET],
+            stateless: true,
+        ),
+        OA\Tag(name: self::OA_TAG),
+        OA\Get(
+            operationId: 'active-task',
+            summary: 'Active task',
+            tags: [self::OA_TAG]
+        ),
+        OA\Response(
+            response: Response::HTTP_OK,
+            description: 'Returns active task',
+            content: new OA\JsonContent(ref: self::MODEL_SCHEMA),
+        ),
+        OA\Response(
+            response: Response::HTTP_NOT_FOUND,
+            description: self::TASK_NOT_FOUND,
+        ),
+    ]
+    final public function active(TimeLogService $timeLogService): JsonResponse
+    {
+        $task = $timeLogService->activeTask();
+
+        if (!$task instanceof Task) {
+            return $this->jsonApi(
+                errors: [self::TASK_NOT_FOUND],
+                status: Response::HTTP_NOT_FOUND
+            );
+        }
+
+        return $this->jsonApi($task);
+    }
+
+    /**
+     * @throws ExceptionInterface
+     */
+    #[
+        Route(
+            path: '/today/seconds',
+            name: 'today-task-time-log-seconds',
+            methods: [Request::METHOD_GET],
+            stateless: true,
+        ),
+        OA\Tag(name: self::OA_TAG),
+        OA\Get(
+            operationId: 'today-task-time-log-seconds',
+            summary: 'Today task time log seconds',
+            tags: [self::OA_TAG]
+        ),
+        OA\Response(
+            response: Response::HTTP_OK,
+            description: 'Returns total seconds logged today',
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(
+                        property: 'data',
+                        properties: [
+                            new OA\Property(property: 'totalSeconds', type: 'integer'),
+                        ],
+                        type: 'object'
+                    ),
+                ]
+            ),
+        ),
+    ]
+    final public function todayLoggedSeconds(TimeLogService $timeLogService): JsonResponse
+    {
+        return $this->jsonApi([
+            'totalSeconds' => $timeLogService->todayLoggedSeconds(),
+        ]);
     }
 
     #[

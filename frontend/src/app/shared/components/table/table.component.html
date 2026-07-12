@@ -1,7 +1,7 @@
 <div class="table-container">
     <mat-table [dataSource]="dataSource"
-               [matSortActive]="sortField()"
-               [matSortDirection]="sortDirection()"
+               [matSortActive]="configuration().sort?.field ?? 'id'"
+               [matSortDirection]="configuration().sort?.direction ?? 'asc'"
                matSort
                matSortDisableClear>
         @for (column of loopColumns(); track column.columnDef) {
@@ -28,22 +28,20 @@
             </ng-container>
         }
 
-        @if (hasSyncColumn()) {
-            <ng-container [cdkColumnDef]="syncColumn()!.columnDef"
-                          [stickyEnd]="syncColumn()!.stickyEnd"
-                          [sticky]="syncColumn()!.sticky">
-                <mat-header-cell *cdkHeaderCellDef>Sync</mat-header-cell>
+        @for (action of configuration().rowActions ?? []; track action.columnDef) {
+            <ng-container [cdkColumnDef]="action.columnDef">
+                <mat-header-cell *cdkHeaderCellDef>{{ action.header }}</mat-header-cell>
 
                 <mat-cell *cdkCellDef="let row"
-                          [matTooltipDisabled]="!isSyncDisabled(row, syncColumn()!)"
-                          matTooltip="Task already synced with JIRA server!">
-                    <button (click)="onSyncAction(row)"
-                            [disabled]="isSyncDisabled(row, syncColumn()!)"
-                            aria-label="Sync task to Jira"
-                            color="warn"
-                            type="button"
-                            mat-icon-button>
-                        <mat-icon>sync</mat-icon>
+                          [matTooltipDisabled]="!action.tooltip || !isRowActionDisabled(row, action)"
+                          [matTooltip]="action.tooltip ?? ''">
+                    <button (click)="onRowAction(row, action)"
+                            [attr.aria-label]="action.ariaLabel"
+                            [color]="action.color"
+                            [disabled]="isRowActionDisabled(row, action)"
+                            mat-icon-button
+                            type="button">
+                        <mat-icon>{{ action.icon }}</mat-icon>
                     </button>
                 </mat-cell>
 
@@ -66,26 +64,10 @@
             <mat-footer-cell *cdkFooterCellDef/>
         </ng-container>
 
-        <ng-container cdkColumnDef="remove">
-            <mat-header-cell *cdkHeaderCellDef>Remove</mat-header-cell>
-
-            <mat-cell *cdkCellDef="let row">
-                <button (click)="onRemoveAction(row)"
-                        aria-label="Remove row"
-                        color="warn"
-                        mat-icon-button
-                        type="button">
-                    <mat-icon>delete</mat-icon>
-                </button>
-            </mat-cell>
-
-            <mat-footer-cell *cdkFooterCellDef/>
-        </ng-container>
-
-        <mat-header-row *cdkHeaderRowDef="displayedColumns(); sticky: stickyHeader()"/>
+        <mat-header-row *cdkHeaderRowDef="displayedColumns(); sticky: true"/>
 
         <mat-footer-row [style.display]="shouldShowFooter() ? '' : 'none'"
-                        *cdkFooterRowDef="displayedColumns(); sticky: stickyFooter()"/>
+                        *cdkFooterRowDef="displayedColumns(); sticky: true"/>
 
         <mat-row (click)="onRowClick(row)"
                  *matRowDef="let row; columns: displayedColumns()"

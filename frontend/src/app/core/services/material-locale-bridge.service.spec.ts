@@ -7,7 +7,7 @@ import { environment } from '@environments/environment';
 import { LocaleService } from './locale.service';
 import { MaterialLocaleBridgeService } from './material-locale-bridge.service';
 
-describe('MaterialLocaleBridgeService', () => {
+describe('Core Services MaterialLocaleBridgeService', () => {
   it('sets the initial adapter locale from the environment', () => {
     const localeState = signal<string>(environment['appLocale'] as string);
     const setLocale = vi.fn();
