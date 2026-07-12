@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   effect,
+  inject,
   input,
   InputSignal,
   output,
@@ -19,10 +20,9 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { Setting } from '@core/models/setting.model';
 
-import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
+import { JiraApiSettingsAdapter } from '@settings/adapters/jira-api-settings.adapter';
 import type { JiraApiFormValue } from '@settings/interfaces/jira-api-form-value.interface';
 import type { SettingsSaveEvent } from '@settings/interfaces/settings-save-event.interface';
-import { findSettingByName } from '@settings/utilities/find-setting-by-name.utility';
 
 @Component({
   selector: 'settings-jira-api-configurator',
@@ -41,6 +41,8 @@ import { findSettingByName } from '@settings/utilities/find-setting-by-name.util
   ],
 })
 export class JiraApiConfiguratorComponent {
+  private readonly jiraApiSettingsAdapter: JiraApiSettingsAdapter = inject(JiraApiSettingsAdapter);
+
   public readonly settings: InputSignal<Setting[]> = input<Setting[]>([]);
   public readonly disabled: InputSignal<boolean | null | undefined> = input<boolean | null>();
 
@@ -116,12 +118,8 @@ export class JiraApiConfiguratorComponent {
   }
 
   private resetFormData(): void {
-    this.hasStoredPersonalAccessToken.set(!!this.getSettingValue(JiraApiSettings.personalAccessToken, ''));
-    this.jiraApiForm().reset({
-      enabled: this.getSettingValue(JiraApiSettings.enabled, false) as boolean,
-      host: String(this.getSettingValue(JiraApiSettings.host, '')),
-      personalAccessToken: '',
-    });
+    this.hasStoredPersonalAccessToken.set(this.jiraApiSettingsAdapter.hasStoredPersonalAccessToken(this.settings()));
+    this.jiraApiForm().reset(this.jiraApiSettingsAdapter.toFormValue(this.settings()));
     this.hidePersonalAccessToken.set(true);
   }
 
@@ -130,108 +128,10 @@ export class JiraApiConfiguratorComponent {
   protected readonly showStoredTokenHint: () => boolean = () => this.hasStoredPersonalAccessToken();
   protected readonly showTokenRequiredError: () => boolean = () => this.jiraApiForm.personalAccessToken().touched() && this.isTokenRequired();
 
-  private getSetting(
-    name: JiraApiSettings,
-  ): Setting | undefined {
-    const settings: Setting[] = this.settings();
-
-    if (Array.isArray(settings)) {
-      return findSettingByName(settings, name);
-    }
-
-    return undefined;
-  }
-
-  private getSettingValue(
-    name: JiraApiSettings,
-    defaultValue: string | boolean,
-  ): string | boolean {
-    const setting: Setting | undefined = this.getSetting(name);
-
-    return this.normalizeSettingValue(setting?.value, defaultValue);
-  }
-
   private collectChangedSettings(
     formData: JiraApiFormValue,
   ): Setting[] {
-    return this.getSettingEntries(formData)
-      .map(([name, value]: [JiraApiSettings, string | boolean]) => this.buildChangedSetting(name, value))
-      .filter((setting): setting is Setting => setting !== undefined);
-  }
-
-  private getSettingEntries(
-    formData: JiraApiFormValue,
-  ): [JiraApiSettings, string | boolean][] {
-    return [
-      [JiraApiSettings.enabled, formData.enabled],
-      [JiraApiSettings.host, formData.host],
-      [JiraApiSettings.personalAccessToken, formData.personalAccessToken],
-    ];
-  }
-
-  private buildChangedSetting(
-    name: JiraApiSettings,
-    value: string | boolean,
-  ): Setting | undefined {
-    const originalSetting: Setting | undefined = this.getSetting(name);
-
-    if (!originalSetting || this.getSettingValue(name, false) === value || !this.shouldPersistSetting(name, value)) {
-      return undefined;
-    }
-
-    return new Setting({
-      ...originalSetting,
-      value: this.stringifySettingValue(value),
-    });
-  }
-
-  private shouldPersistSetting(
-    name: JiraApiSettings,
-    value: string | boolean,
-  ): boolean {
-    return name !== JiraApiSettings.personalAccessToken ||
-      (typeof value === 'string' && value.trim().length > 0);
-  }
-
-  private stringifySettingValue(
-    value: string | boolean,
-  ): string {
-    return typeof value === 'boolean' ?
-      String(value) :
-      value ?? '';
-  }
-
-  private normalizeSettingValue(
-    value: unknown,
-    defaultValue: string | boolean,
-  ): string | boolean {
-    if (typeof value === 'boolean') {
-      return value;
-    }
-
-    if (typeof value !== 'string') {
-      return defaultValue;
-    }
-
-    const normalizedBoolean: boolean | undefined = this.normalizeBooleanLikeValue(value);
-
-    return normalizedBoolean ?? value;
-  }
-
-  private normalizeBooleanLikeValue(
-    value: string,
-  ): boolean | undefined {
-    const normalizedValue: string = value.toLowerCase();
-
-    if (normalizedValue === 'true') {
-      return true;
-    }
-
-    if (normalizedValue === 'false') {
-      return false;
-    }
-
-    return undefined;
+    return this.jiraApiSettingsAdapter.changedSettings(this.settings(), formData);
   }
 
   private emitChangedSettings(

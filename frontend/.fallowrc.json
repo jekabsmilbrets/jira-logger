@@ -1,0 +1,5 @@
+{
+  "dynamicallyLoaded": [
+    "vitest-base.config.ts"
+  ]
+}

@@ -1,0 +1,28 @@
+:host {
+  --display-v: flex;
+  --flex-direction-v: row;
+  --justify-content-v: space-between;
+  --align-items-v: center;
+  --gap-v: 6px;
+
+  display: var(--display-v);
+  flex-direction: var(--flex-direction-v);
+  justify-content: var(--justify-content-v);
+  align-items: var(--align-items-v);
+  gap: var(--gap-v);
+
+  --mat-form-field-container-vertical-padding: 8px;
+  --mat-form-field-container-height: 40px;
+
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none !important;
+  }
+
+  ::ng-deep .mat-mdc-text-field-wrapper {
+    height: 40px;
+  }
+}
+
+::ng-deep .report-menu-dialog {
+  padding: 8px;
+}

@@ -22,3 +22,8 @@ export interface ImportReport {
   warnings: ImportWarning[];
   errors: string[];
 }
+
+export interface TaskImportOutcome {
+  message: string;
+  duration: number;
+}

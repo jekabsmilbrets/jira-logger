@@ -1,5 +1,7 @@
 @if (!isSmallerThanDesktop()) {
-    <ng-template [ngTemplateOutlet]="menuItems"/>
+    <report-settings-controls (settingsIntent)="onSettingsIntent($event)"
+                              [hideWeekendsWhenDateMode]="true"
+                              [state]="state()"/>
 } @else {
     <ng-template [ngTemplateOutlet]="smallScreen"/>
 }
@@ -12,34 +14,11 @@
     </button>
 </ng-template>
 
-<ng-template #menuItems>
-    <shared-report-hide-unreported-tasks (hideUnreportedTasksChange)="onHideUnreportedTasksChange($event)"
-                                         [hideUnreportedTasks]="state().hideUnreportedTasks"/>
-
-    @if (state().reportMode !== ReportMode.date) {
-        <shared-report-show-weekends (showWeekendsChange)="onShowWeekendsChange($event)"
-                                     [showWeekends]="state().showWeekends"/>
-    }
-
-    @if (showDatePicker()) {
-        <shared-report-date-selector (dateChange)="onDateChange($event)"
-                                     (endDateChange)="onEndDateChange($event)"
-                                     (startDateChange)="onStartDateChange($event)"
-                                     [date]="state().date"
-                                     [endDate]="state().endDate"
-                                     [reportMode]="state().reportMode"
-                                     [startDate]="state().startDate"/>
-    }
-
-    <shared-report-tag-filter (tagChange)="onTagChange($event)"
-                              [tags]="state().tags"/>
-
-    <shared-report-mode-switcher (reportModeChange)="onReportModeChange($event)"
-                                 [reportMode]="state().reportMode"/>
-</ng-template>
 
 <ng-template #smallScreenDialog>
     <div class="report-menu-dialog">
-        <ng-template [ngTemplateOutlet]="menuItems"/>
+        <report-settings-controls (settingsIntent)="onSettingsIntent($event)"
+                                  [hideWeekendsWhenDateMode]="true"
+                                  [state]="state()"/>
     </div>
 </ng-template>

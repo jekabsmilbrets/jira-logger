@@ -1,0 +1,185 @@
+import { TestBed } from '@angular/core/testing';
+
+import { LocaleService } from '@core/services/locale.service';
+import { TimezoneService } from '@core/services/timezone.service';
+
+import { JiraWorkLog } from '@shared/models/jira-work-log.model';
+import { Task } from '@shared/models/task.model';
+import { TimeLog } from '@shared/models/time-log.model';
+
+import { ReportDateCalendarService } from './report-date-calendar.service';
+
+describe('Report Service ReportDateCalendarService', () => {
+  let service: ReportDateCalendarService;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-29T12:00:00.000Z'));
+
+    TestBed.configureTestingModule({
+      providers: [
+        ReportDateCalendarService,
+        { provide: LocaleService, useValue: { locale: 'en-US' } },
+        { provide: TimezoneService, useValue: { timezone: 'UTC' } },
+      ],
+    });
+
+    service = TestBed.inject(ReportDateCalendarService);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    TestBed.resetTestingModule();
+  });
+
+  it('builds today report route link', () => {
+    expect(service.todayRouteLink()).toBe('/report/date/2026-05-29');
+  });
+
+  it('returns today as a Report Date', () => {
+    expect(service.todayReportDate().toISOString()).toBe('2026-05-29T00:00:00.000Z');
+  });
+
+  it('parses valid route dates and rejects invalid route dates', () => {
+    expect(service.parseRouteDate('2026-05-29')?.toISOString()).toBe('2026-05-29T00:00:00.000Z');
+    expect(service.parseRouteDate('2026-02-31')).toBeNull();
+    expect(service.parseRouteDate('2026-05-29T12:00:00.000Z')).toBeNull();
+    expect(service.parseRouteDate(null)).toBeNull();
+  });
+
+  it('formats query and Jira sync dates', () => {
+    const date = new Date('2026-05-29T22:15:00.000Z');
+
+    expect(service.formatQueryDate(date)).toBe('2026-05-29');
+    expect(service.formatJiraSyncDate(date)).toBe('2026-05-29');
+  });
+
+  it('builds inclusive report date ranges', () => {
+    const dates = service.datesInRange(
+      new Date('2026-05-29T00:00:00.000Z'),
+      new Date('2026-05-31T00:00:00.000Z'),
+    );
+
+    expect(dates.map((date: Date) => date.toISOString())).toEqual([
+      '2026-05-29T00:00:00.000Z',
+      '2026-05-30T00:00:00.000Z',
+      '2026-05-31T00:00:00.000Z',
+    ]);
+  });
+
+  it('detects weekends', () => {
+    expect(service.isWeekend(new Date('2026-05-30T00:00:00.000Z'))).toBe(true);
+    expect(service.isWeekend(new Date('2026-05-29T00:00:00.000Z'))).toBe(false);
+  });
+
+  it('returns start of report date in active timezone', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        ReportDateCalendarService,
+        { provide: LocaleService, useValue: { locale: 'en-US' } },
+        { provide: TimezoneService, useValue: { timezone: 'Europe/Riga' } },
+      ],
+    });
+
+    const rigaService = TestBed.inject(ReportDateCalendarService);
+
+    expect(rigaService.startOfReportDate(new Date('2026-05-29T12:00:00.000Z')).toISOString()).toBe('2026-05-28T21:00:00.000Z');
+  });
+
+  it('returns end of report date in active timezone', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        ReportDateCalendarService,
+        { provide: LocaleService, useValue: { locale: 'en-US' } },
+        { provide: TimezoneService, useValue: { timezone: 'Europe/Riga' } },
+      ],
+    });
+
+    const rigaService = TestBed.inject(ReportDateCalendarService);
+
+    expect(rigaService.endOfReportDate(new Date('2026-05-29T12:00:00.000Z')).toISOString()).toBe('2026-05-29T20:59:59.999Z');
+  });
+
+  it('checks Task sync through the Report Date calendar interface', () => {
+    const task = new Task({
+      timeLogs: [
+        new TimeLog({
+          startTime: new Date('2026-05-29T10:00:00.000Z'),
+          endTime: new Date('2026-05-29T11:00:00.000Z'),
+        }),
+      ],
+      jiraWorkLogs: [
+        new JiraWorkLog({
+          startTime: new Date('2026-05-29T00:00:00.000Z'),
+          timeSpentSeconds: 3600,
+        }),
+      ],
+    });
+
+    expect(service.timeLoggedForReportDate(task, new Date('2026-05-29T12:00:00.000Z'))).toBe(3600);
+    expect(service.timeSyncedForReportDate(task, new Date('2026-05-29T12:00:00.000Z'))).toBe(3600);
+    expect(service.isTaskSyncedForReportDate(task, new Date('2026-05-29T12:00:00.000Z'))).toBe(true);
+  });
+
+  it('filters visible Report Dates and formats column headers through the calendar interface', () => {
+    const visibleDates = service.visibleDatesInRange(
+      new Date('2026-05-29T00:00:00.000Z'),
+      new Date('2026-05-31T00:00:00.000Z'),
+      false,
+    );
+
+    expect(visibleDates.map((date: Date) => date.toISOString())).toEqual([
+      '2026-05-29T00:00:00.000Z',
+    ]);
+    expect(service.formatColumnHeader(new Date('2026-05-29T00:00:00.000Z'))).toBe('29. May');
+  });
+
+  it('checks sync against the selected Report Date instead of all logged time', () => {
+    const task = new Task({
+      timeLogs: [
+        new TimeLog({
+          startTime: new Date('2026-05-28T10:00:00.000Z'),
+          endTime: new Date('2026-05-28T11:00:00.000Z'),
+        }),
+        new TimeLog({
+          startTime: new Date('2026-05-29T10:00:00.000Z'),
+          endTime: new Date('2026-05-29T11:00:00.000Z'),
+        }),
+      ],
+      jiraWorkLogs: [
+        new JiraWorkLog({
+          startTime: new Date('2026-05-29T00:00:00.000Z'),
+          timeSpentSeconds: 3600,
+        }),
+      ],
+    });
+
+    expect(service.isTaskSyncedForReportDate(task, new Date('2026-05-29T12:00:00.000Z'))).toBe(true);
+  });
+
+  it('groups synced time by Report Date in the active timezone', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        ReportDateCalendarService,
+        { provide: LocaleService, useValue: { locale: 'en-US' } },
+        { provide: TimezoneService, useValue: { timezone: 'Europe/Vienna' } },
+      ],
+    });
+
+    const viennaService = TestBed.inject(ReportDateCalendarService);
+    const task = new Task({
+      jiraWorkLogs: [
+        new JiraWorkLog({
+          startTime: new Date('2026-06-02T21:00:00.000Z'),
+          timeSpentSeconds: 1800,
+        }),
+      ],
+    });
+
+    expect(viennaService.timeSyncedForReportDate(task, new Date('2026-06-02T12:00:00.000Z'))).toBe(1800);
+    expect(viennaService.timeSyncedForReportDate(task, new Date('2026-06-03T12:00:00.000Z'))).toBe(0);
+  });
+});

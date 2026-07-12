@@ -19,7 +19,6 @@ import type { TimeLogDialogData } from '@tasks/interfaces/time-log-dialog-data.i
 import type { TimeLogFormData } from '@tasks/interfaces/time-log-form-data.interface';
 import type { TimeLogFormValue } from '@tasks/interfaces/time-log-form-value.interface';
 import type { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
-import { buildTimeLogPayload } from '@tasks/utility/task-payload-builder.utility';
 
 @Component({
   selector: 'tasks-time-log-modal',
@@ -87,7 +86,13 @@ export class TimeLogModalComponent {
       return;
     }
 
-    const timeLog: TimeLog = buildTimeLogPayload(this.data.timeLog, this.buildSaveFormData(this.timeLogFormModel()));
+    const formData: TimeLogFormData = this.buildSaveFormData(this.timeLogFormModel());
+    const timeLog: TimeLog = new TimeLog({
+      ...this.data.timeLog,
+      startTime: formData.startTime ?? this.data.timeLog.startTime,
+      endTime: formData.endTime ?? undefined,
+      description: formData.description ?? undefined,
+    });
 
     this.dialogRef.close({
       responseType: 'update',

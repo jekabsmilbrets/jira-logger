@@ -81,4 +81,22 @@ describe('Core Services locale.service', () => {
     expect(service.locale).toBe('de-DE');
     expect(service.localeSignal()).toBe('de-DE');
   });
+
+  it('loads supported locale data once, shares in-flight loads, and ignores unknown locales', async () => {
+    TestBed.configureTestingModule({ providers: [LocaleService] });
+    const service = TestBed.inject(LocaleService) as any;
+    const ensure = service.ensureLocaleDataLoaded.bind(service);
+
+    await Promise.all([ensure('es-ES'), ensure('es-ES')]);
+    await ensure('lv-LV');
+    await ensure('de-DE');
+    await ensure('fr-FR');
+    await ensure('not-supported');
+
+    expect(service.loadedLocales.has('es-ES')).toBe(true);
+    expect(service.loadedLocales.has('lv-LV')).toBe(true);
+    expect(service.loadedLocales.has('de-DE')).toBe(true);
+    expect(service.loadedLocales.has('fr-FR')).toBe(true);
+    expect(service.loadingLocales.size).toBe(0);
+  });
 });

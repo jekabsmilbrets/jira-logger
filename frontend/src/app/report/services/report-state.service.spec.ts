@@ -5,11 +5,13 @@ import { of, Subject, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { StorageService } from '@core/services/storage.service';
+import { TimezoneService } from '@core/services/timezone.service';
 
 import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
 
 import { ReportMode } from '@report/enums/report-mode.enum';
+import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
 
 import { ReportStateService } from './report-state.service';
 
@@ -18,7 +20,7 @@ const waitForPersistence = async (): Promise<void> => {
   await Promise.resolve();
 };
 
-describe('ReportStateService', () => {
+describe('Report Service ReportStateService', () => {
   let service: ReportStateService;
   let storageService: { read: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> };
   let tagsState: ReturnType<typeof signal<Tag[]>>;
@@ -46,8 +48,10 @@ describe('ReportStateService', () => {
     TestBed.configureTestingModule({
       providers: [
         ReportStateService,
+        ReportDateCalendarService,
         { provide: StorageService, useValue: storageService },
         { provide: TagsService, useValue: { tags: tagsState.asReadonly() } },
+        { provide: TimezoneService, useValue: { timezone: 'UTC' } },
       ],
     });
 
@@ -61,8 +65,8 @@ describe('ReportStateService', () => {
 
   it('hydrates persisted settings and maps saved tag ids', () => {
     expect(storageService.read).toHaveBeenCalledWith('report', 'settings');
-    expect(service.reportMode()).toBe(ReportMode.total);
-    expect(service.tags().map((tag: Tag) => tag.id)).toEqual(['tag-1']);
+    expect(service.snapshot().reportMode).toBe(ReportMode.total);
+    expect(service.snapshot().tags.map((tag: Tag) => tag.id)).toEqual(['tag-1']);
   });
 
   it('does not persist before hydration finishes and restores tags after they load later', async () => {
@@ -78,8 +82,10 @@ describe('ReportStateService', () => {
     TestBed.configureTestingModule({
       providers: [
         ReportStateService,
+        ReportDateCalendarService,
         { provide: StorageService, useValue: localStorageService },
         { provide: TagsService, useValue: { tags: delayedTagsState.asReadonly() } },
+        { provide: TimezoneService, useValue: { timezone: 'UTC' } },
       ],
     });
 
@@ -100,7 +106,7 @@ describe('ReportStateService', () => {
     hydrationState$.complete();
     TestBed.tick();
 
-    expect(localService.tags()).toEqual([]);
+    expect(localService.snapshot().tags).toEqual([]);
 
     delayedTagsState.set([
       new Tag({ id: 'tag-1', name: 'Backend' }),
@@ -108,7 +114,7 @@ describe('ReportStateService', () => {
     ]);
     TestBed.tick();
 
-    expect(localService.tags().map((tag: Tag) => tag.id)).toEqual(['tag-2']);
+    expect(localService.snapshot().tags.map((tag: Tag) => tag.id)).toEqual(['tag-2']);
 
     await waitForPersistence();
     expect(localStorageService.create).toHaveBeenCalledWith(
@@ -131,24 +137,22 @@ describe('ReportStateService', () => {
     const startDateTimestamp = startDate.getTime();
     const endDateTimestamp = endDate.getTime();
 
-    service.setDate(date);
-    service.setStartDate(startDate);
-    service.setEndDate(endDate);
+    service.applySettingsIntent({ type: 'set-date', date });
+    service.applySettingsIntent({ type: 'set-start-date', startDate });
+    service.applySettingsIntent({ type: 'set-end-date', endDate });
 
-    expect(service.date()?.getHours()).toBe(0);
-    expect(service.startDate()?.getHours()).toBe(0);
-    expect(service.endDate()?.getHours()).toBe(23);
-    expect(service.endDate()?.getMinutes()).toBe(59);
-    expect(service.endDate()?.getSeconds()).toBe(59);
+    expect(service.snapshot().date?.toISOString()).toBe('2026-05-30T00:00:00.000Z');
+    expect(service.snapshot().startDate?.toISOString()).toBe('2026-05-01T00:00:00.000Z');
+    expect(service.snapshot().endDate?.toISOString()).toBe('2026-05-31T23:59:59.999Z');
     expect(date.getTime()).toBe(dateTimestamp);
     expect(startDate.getTime()).toBe(startDateTimestamp);
     expect(endDate.getTime()).toBe(endDateTimestamp);
   });
 
   it('persists state changes and swallows storage errors', async () => {
-    service.setTags([{ id: 'tag-2', name: 'Frontend' } as Tag]);
-    service.setHideUnreportedTasks(true);
-    service.setShowWeekends(true);
+    service.applySettingsIntent({ type: 'set-tags', tags: [{ id: 'tag-2', name: 'Frontend' } as Tag] });
+    service.applySettingsIntent({ type: 'set-hide-unreported-tasks', hideUnreportedTasks: true });
+    service.applySettingsIntent({ type: 'set-show-weekends', showWeekends: true });
 
     await waitForPersistence();
 
@@ -163,10 +167,18 @@ describe('ReportStateService', () => {
     );
 
     storageService.create.mockReturnValueOnce(throwError(() => new Error('persist-fail')));
-    service.setReportMode(ReportMode.date);
+    service.applySettingsIntent({ type: 'set-report-mode', reportMode: ReportMode.date });
 
     await waitForPersistence();
 
     expect(storageService.create).toHaveBeenCalled();
+  });
+
+  it('accepts null date and tag patches as empty state', () => {
+    service.applySettingsIntent({ type: 'set-date', date: null });
+    service.applySettingsIntent({ type: 'set-tags', tags: null as any });
+
+    expect(service.snapshot().date).toBeNull();
+    expect(service.snapshot().tags).toEqual([]);
   });
 });

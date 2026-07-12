@@ -1,5 +1,5 @@
 import { APP_BASE_HREF } from '@angular/common';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { ApplicationConfig, inject, isDevMode, LOCALE_ID, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { provideRouter } from '@angular/router';
@@ -13,14 +13,12 @@ import { MonitorService } from '@core/services/monitor.service';
 import { SettingsService } from '@core/services/settings.service';
 import { StorageService } from '@core/services/storage.service';
 
-import { loadableServicesInitializerFactory } from '@shared/factories/loadable-services-initializer.factory';
-import { tagsPreloaderFactory } from '@shared/factories/tags-preloader.factory';
-import { Tag } from '@shared/models/tag.model';
+import type { LoadableInitializer } from '@shared/interfaces/loadable-initializer.interface';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
-import { TaskImportService } from '@tasks/services/task-import.service';
+import { TaskBackupService } from '@tasks/services/task-backup.service';
 
 import { routes } from './app.routes';
 
@@ -32,27 +30,24 @@ export const appConfig: ApplicationConfig = {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
     }),
-    provideHttpClient(),
+    provideHttpClient(
+      withInterceptors([]),
+    ),
     provideAppInitializer(() => runtimeConfigInitializer()),
     provideAppInitializer(() => {
-      const initializerFn: () => Promise<void> = loadableServicesInitializerFactory(
-        inject(TagsService),
+      const services: LoadableInitializer[] = [
         inject(TasksService),
         inject(TimeLogsService),
         inject(MonitorService),
         inject(StorageService),
-        inject(TaskImportService),
+        inject(TaskBackupService),
         inject(SettingsService),
-      );
-
-      return initializerFn();
-    }),
-    provideAppInitializer(() => {
-      const initializerFn: () => Promise<Tag[]> = tagsPreloaderFactory(
         inject(TagsService),
-      );
+      ];
 
-      return initializerFn();
+      services.forEach((service: LoadableInitializer) => {
+        service.init();
+      });
     }),
     provideAppInitializer(() => {
       inject(MaterialLocaleBridgeService);

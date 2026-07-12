@@ -1,5 +1,4 @@
 import type { Column } from '@shared/interfaces/column.interface';
-import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { columnValue } from '@shared/utilities/column-value.utility';
 
@@ -34,10 +33,7 @@ export const reportBaseColumns: Column[] = [
     header: 'Tags',
     sortable: true,
     hidden: false,
-    cell: (task: Task) => (columnValue(
-      task,
-      'tags',
-    ) as Tag[]).map((t: Tag) => t.name),
+    cell: (task: Task) => task.tags.map((tag) => tag.name),
   },
   {
     columnDef: 'lastTimeLogStartTime',

@@ -1,390 +1,148 @@
-import { formatDate } from '@angular/common';
-import { computed, inject, Service, type Signal } from '@angular/core';
-import type { ParamMap } from '@angular/router';
+import { computed, inject, type ResourceRef, Service, type Signal, signal, type WritableSignal } from '@angular/core';
+import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 
-import { LocaleService } from '@core/services/locale.service';
-import { TimezoneService } from '@core/services/timezone.service';
+import { catchError, debounceTime, of } from 'rxjs';
+
+import { SettingsService } from '@core/services/settings.service';
 
 import type { Column } from '@shared/interfaces/column.interface';
-import { Tag } from '@shared/models/tag.model';
+import type { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 import { Task } from '@shared/models/task.model';
+import { TaskQueryService } from '@shared/services/task-query.service';
 
-import { reportDateRangeColumns } from '@report/constants/report-date-range-columns.constant';
-import { reportTotalColumns } from '@report/constants/report-total-columns.constant';
 import { ReportMode } from '@report/enums/report-mode.enum';
+import type { ReportRouteSettings } from '@report/interfaces/report-route-settings.interface';
+import type { ReportSettingsChange } from '@report/interfaces/report-settings-change.interface';
+import type { ReportSettingsControlsState } from '@report/interfaces/report-settings-controls-state.interface';
 import type { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
+import type { ReportViewState } from '@report/interfaces/report-view-state.interface';
+import { ReportColumnsService } from '@report/services/report-columns.service';
+import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
 import { ReportStateService } from '@report/services/report-state.service';
-import { ReportTaskQueryService } from '@report/services/report-task-query.service';
-import { buildReportTagTotalColumns } from '@report/utilities/build-report-tag-total-columns.utility';
+
+import { JiraApiSettingsAdapter } from '@settings/adapters/jira-api-settings.adapter';
 
 @Service()
 export class ReportService {
   private readonly reportStateService: ReportStateService = inject(ReportStateService);
-  private readonly reportTaskQueryService: ReportTaskQueryService = inject(ReportTaskQueryService);
-  private readonly timezoneService: TimezoneService = inject(TimezoneService);
-  private readonly localeService: LocaleService = inject(LocaleService);
+  private readonly reportColumnsService: ReportColumnsService = inject(ReportColumnsService);
+  private readonly reportDateCalendarService: ReportDateCalendarService = inject(ReportDateCalendarService);
+  private readonly settingsService: SettingsService = inject(SettingsService);
+  private readonly taskQueryService: TaskQueryService = inject(TaskQueryService);
+  private readonly jiraApiSettingsAdapter: JiraApiSettingsAdapter = inject(JiraApiSettingsAdapter);
+  private readonly reloadVersionSignal: WritableSignal<number> = signal<number>(0);
 
-  public readonly columns: Signal<Column[]> = computed(() => this.buildColumns());
-  public readonly reportMode: Signal<ReportMode> = this.reportStateService.reportMode;
-  public readonly tags: Signal<Tag[]> = this.reportStateService.tags;
-  public readonly date: Signal<Date | null> = this.reportStateService.date;
-  public readonly startDate: Signal<Date | null> = this.reportStateService.startDate;
-  public readonly endDate: Signal<Date | null> = this.reportStateService.endDate;
-  public readonly showWeekends: Signal<boolean> = this.reportStateService.showWeekends;
-  public readonly hideUnreportedTasks: Signal<boolean> = this.reportStateService.hideUnreportedTasks;
-  public readonly tasks: Signal<Task[]> = this.reportTaskQueryService.tasks;
-  public readonly state: Signal<ReportStateSnapshot> = computed(() => this.reportStateService.getStateSnapshot());
+  private readonly settings: Signal<ReportStateSnapshot> = this.reportStateService.snapshot;
+  private readonly effectiveReportMode: Signal<ReportMode> = this.reportStateService.effectiveReportMode;
+  private readonly showDatePicker: Signal<boolean> = this.reportStateService.showDatePicker;
+  private readonly jiraApiEnabled: Signal<boolean> = computed(() => this.jiraApiSettingsAdapter.isEnabled(this.settingsService.settings()));
+  private readonly taskRequest: Signal<{
+    filter: TaskListFilter;
+    reloadVersion: number;
+  }> = computed(() => ({
+    filter: this.reportStateService.taskFilter(),
+    reloadVersion: this.reloadVersionSignal(),
+  }));
+  private readonly debouncedTaskRequest: Signal<{
+    filter: TaskListFilter;
+    reloadVersion: number;
+  }> = toSignal(
+    toObservable(this.taskRequest).pipe(debounceTime(250)),
+    { initialValue: this.taskRequest() },
+  );
+  private readonly tasksResource: ResourceRef<Task[] | undefined> = rxResource({
+    params: this.debouncedTaskRequest,
+    stream: ({ params }) => this.taskQueryService.query(params.filter)
+      .pipe(
+        catchError(() => of([])),
+      ),
+  });
+  private readonly tasks: Signal<Task[]> = computed(() => this.tasksResource.value() ?? []);
+  private readonly columns: Signal<Column[]> = computed(() => {
+    const state: ReportStateSnapshot = this.settings();
+
+    return this.reportColumnsService.buildColumns(
+      state,
+      this.effectiveReportMode(),
+      this.jiraApiEnabled(),
+    );
+  });
+  public readonly settingsControlsState: Signal<ReportSettingsControlsState> = computed(() => {
+    const settings: ReportStateSnapshot = this.settings();
+
+    return {
+      reportMode: settings.reportMode,
+      tags: settings.tags,
+      date: settings.date,
+      startDate: settings.startDate,
+      endDate: settings.endDate,
+      showWeekends: settings.showWeekends,
+      hideUnreportedTasks: settings.hideUnreportedTasks,
+      showDatePicker: this.showDatePicker(),
+    };
+  });
+  public readonly viewState: Signal<ReportViewState> = computed(() => {
+    const settings: ReportStateSnapshot = this.settings();
+    const effectiveReportMode: ReportMode = this.effectiveReportMode();
+
+    return {
+      tasks: this.tasks(),
+      columns: this.columns(),
+      reportDate: settings.date,
+      canSyncJiraWorkLogs: effectiveReportMode === ReportMode.date,
+    };
+  });
 
   public reload(): void {
-    this.reportTaskQueryService.reload();
+    this.reloadVersionSignal.update((value: number) => value + 1);
   }
 
-  public updateState(
-    patch: Partial<ReportStateSnapshot>,
+  public applySettingsChange(
+    change: ReportSettingsChange,
   ): void {
-    if (patch.reportMode !== undefined) {
-      this.setReportMode(patch.reportMode);
-    }
-
-    if (patch.tags !== undefined) {
-      this.setTags(patch.tags);
-    }
-
-    if (patch.date !== undefined) {
-      this.setDate(patch.date);
-    }
-
-    if (patch.startDate !== undefined) {
-      this.setStartDate(patch.startDate);
-    }
-
-    if (patch.endDate !== undefined) {
-      this.setEndDate(patch.endDate);
-    }
-
-    if (patch.showWeekends !== undefined) {
-      this.setShowWeekends(patch.showWeekends);
-    }
-
-    if (patch.hideUnreportedTasks !== undefined) {
-      this.setHideUnreportedTasks(patch.hideUnreportedTasks);
+    switch (change.type) {
+      case 'settings-intent':
+        this.reportStateService.applySettingsIntent(change.intent);
+        break;
+      case 'route-settings':
+        this.applyRouteSettings(change.routeSettings);
+        break;
     }
   }
 
-  public applyRouteParams(
-    paramMap: ParamMap,
-  ): { shouldRedirect: boolean } {
-    if (paramMap.has('reportMode')) {
-      const reportMode: ReportMode = paramMap.get('reportMode') as ReportMode;
-      this.updateState({
-        reportMode: reportMode in ReportMode ? reportMode : ReportMode.total,
-      });
-    }
-
-    if (paramMap.has('date')) {
-      const date: Date = new Date(paramMap.get('date') as string);
-
-      if (isFinite(+date)) {
-        this.updateState({ date });
-
-        return { shouldRedirect: true };
-      }
-    }
-
-    return { shouldRedirect: false };
-  }
-
-  public setReportMode(
-    mode: ReportMode,
+  private applyRouteSettings(
+    routeSettings: ReportRouteSettings,
   ): void {
-    this.reportStateService.setReportMode(mode);
-  }
-
-  public setTags(
-    tags: Tag[],
-  ): void {
-    this.reportStateService.setTags(tags);
-  }
-
-  public setDate(
-    date: Date | null,
-  ): void {
-    this.reportStateService.setDate(date);
-  }
-
-  public setStartDate(
-    startDate: Date | null,
-  ): void {
-    this.reportStateService.setStartDate(startDate);
-  }
-
-  public setEndDate(
-    endDate: Date | null,
-  ): void {
-    this.reportStateService.setEndDate(endDate);
-  }
-
-  public setShowWeekends(
-    showWeekends: boolean,
-  ): void {
-    this.reportStateService.setShowWeekends(showWeekends);
-  }
-
-  public setHideUnreportedTasks(
-    hideUnreportedTasks: boolean,
-  ): void {
-    this.reportStateService.setHideUnreportedTasks(hideUnreportedTasks);
-  }
-
-  private buildColumns(): Column[] {
-    const reportMode: ReportMode = this.reportStateService.getEffectiveReportMode(
-      this.reportMode(),
-      this.date(),
-      this.startDate(),
-      this.endDate(),
-    );
-    const columnsByMode: Record<ReportMode, () => Column[]> = {
-      [ReportMode.total]: () => this.buildTotalColumns(),
-      [ReportMode.date]: () => this.buildDateColumns(reportMode),
-      [ReportMode.dateRange]: () => this.buildRangeColumns(reportMode),
-    };
-
-    return columnsByMode[reportMode]();
-  }
-
-  private generateMonthColumns(
-    startDate: Date,
-    endDate: Date,
-    showWeekends: boolean,
-    reportMode: ReportMode,
-    jiraApiEnabled: boolean,
-  ): Column[] {
-    const visibleDates: Date[] = this.buildVisibleDates(
-      startDate,
-      endDate,
-      showWeekends,
-      reportMode,
-    );
-
-    return [
-      ...reportDateRangeColumns,
-      ...this.buildDateColumnsForRange(startDate, endDate, showWeekends, reportMode),
-      ...this.buildTagTotalColumns(
-        (task: Task) => this.sumValues(
-          visibleDates,
-          (date: Date) => task.calcTimeLoggedForDate(
-            date,
-            this.timezoneService.timezone,
-          ),
-        ),
-      ),
-      ...this.buildTrailingColumns(startDate, reportMode, jiraApiEnabled),
-    ];
-  }
-
-  private buildDateColumnsForRange(
-    startDate: Date,
-    endDate: Date,
-    showWeekends: boolean,
-    reportMode: ReportMode,
-  ): Column[] {
-    const columns: Column[] = [];
-    const currentDate: Date = new Date(startDate);
-
-    while (currentDate <= endDate) {
-      columns.push(this.buildDateColumn(new Date(currentDate.getTime()), showWeekends, reportMode));
-      currentDate.setDate(currentDate.getDate() + 1);
+    if (!routeSettings.reportMode) {
+      return;
     }
 
-    return columns;
-  }
+    const reportMode: ReportMode = routeSettings.reportMode as ReportMode;
 
-  private buildVisibleDates(
-    startDate: Date,
-    endDate: Date,
-    showWeekends: boolean,
-    reportMode: ReportMode,
-  ): Date[] {
-    const dates: Date[] = [];
-    const currentDate: Date = new Date(startDate);
-
-    while (currentDate <= endDate) {
-      const date: Date = new Date(currentDate.getTime());
-
-      if (reportMode === ReportMode.date || !this.shouldHideWeekendColumn(
-        date,
-        showWeekends,
-      )) {
-        dates.push(date);
-      }
-
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return dates;
-  }
-
-  private buildDateColumn(
-    currentDate: Date,
-    showWeekends: boolean,
-    reportMode: ReportMode,
-  ): Column {
-    return {
-      columnDef: 'date-' + currentDate.getTime(),
-      header: formatDate(
-        currentDate,
-        'd. MMM',
-        this.localeService.locale,
-        this.timezoneService.timezone,
-      ),
-      sortable: false,
-      hidden: reportMode !== ReportMode.date && this.shouldHideWeekendColumn(currentDate, showWeekends),
-      pipe: 'readableTime',
-      isClickable: true,
-      cellClickType: 'readableTime',
-      footerCellClickType: 'readableTime',
-      cell: (task: Task) => task.calcTimeLoggedForDate(currentDate, this.timezoneService.timezone),
-      hasFooter: true,
-      footerCell: (tasks: Task[]) => this.sumValues(tasks, (task: Task) => task.calcTimeLoggedForDate(currentDate, this.timezoneService.timezone)),
-    };
-  }
-
-  private shouldHideWeekendColumn(
-    currentDate: Date,
-    showWeekends: boolean,
-  ): boolean {
-    return !showWeekends && [0, 6].includes(currentDate.getDay());
-  }
-
-  private buildTrailingColumns(
-    startDate: Date,
-    reportMode: ReportMode,
-    jiraApiEnabled: boolean,
-  ): Column[] {
     if (reportMode === ReportMode.date) {
-      return jiraApiEnabled ?
-        this.buildDateSyncColumns(startDate) :
-        [];
+      this.applyDateRouteSettings(routeSettings);
+      return;
     }
 
-    return [this.buildTimeLoggedColumn()];
+    this.reportStateService.applyRouteSettings({
+      reportMode: reportMode in ReportMode ? reportMode : ReportMode.total,
+    });
   }
 
-  private buildDateSyncColumns(
-    startDate: Date,
-  ): Column[] {
-    const taskSynced: (task: Task) => boolean = (task: Task) =>
-      task.calcTimeLogged() > 0 && task.calcTimeLogged() === task.calcTimeSynced(startDate, this.timezoneService.timezone);
+  private applyDateRouteSettings(
+    routeSettings: ReportRouteSettings,
+  ): void {
+    const date: Date | null = routeSettings.date ?
+      this.reportDateCalendarService.parseRouteDate(routeSettings.date) :
+      this.reportDateCalendarService.todayReportDate();
 
-    return [
-      {
-        columnDef: 'synced',
-        header: 'Synced',
-        sortable: false,
-        stickyEnd: true,
-        excludeFromLoop: false,
-        hidden: false,
-        taskSynced,
-        pipe: 'readableTime',
-        footerCellClickType: 'readableTime',
-        cell: (task: Task) => task.calcTimeSynced(startDate, this.timezoneService.timezone),
-        hasFooter: true,
-        footerCell: (tasks: Task[]) => this.sumValues(tasks, (task: Task) => task.calcTimeSynced(startDate, this.timezoneService.timezone)),
-      },
-      {
-        columnDef: 'sync',
-        header: 'Sync',
-        excludeFromLoop: false,
-        hidden: false,
-        taskSynced,
-        cell: (task: Task) => {
-          void task;
-
-          return undefined;
-        },
-      },
-    ];
-  }
-
-  private buildTimeLoggedColumn(): Column {
-    return {
-      columnDef: 'timeLogged',
-      header: 'Total Time Logged',
-      sortable: false,
-      stickyEnd: true,
-      hidden: false,
-      isClickable: true,
-      cellClickType: 'readableTime',
-      footerCellClickType: 'readableTime',
-      pipe: 'readableTime',
-      cell: (task: Task) => task.calcTimeLogged(),
-      hasFooter: true,
-      footerCell: (tasks: Task[]) => this.sumValues(tasks, (task: Task) => task.calcTimeLogged()),
-    };
-  }
-
-  private buildTagTotalColumns(
-    getTaskVisibleTime: (task: Task) => number,
-  ): Column[] {
-    return buildReportTagTotalColumns(
-      this.tags(),
-      getTaskVisibleTime,
-    );
-  }
-
-  private buildTotalColumns(): Column[] {
-    const columns: Column[] = [...reportTotalColumns];
-    const timeLoggedColumnIndex: number = columns.findIndex((column: Column) => column.columnDef === 'timeLogged');
-
-    columns.splice(
-      timeLoggedColumnIndex,
-      0,
-      ...this.buildTagTotalColumns((task: Task) => task.timeLogged),
-    );
-
-    return columns;
-  }
-
-  private buildDateColumns(
-    reportMode: ReportMode,
-  ): Column[] {
-    const date: Date | null = this.date();
-
-    return date ?
-      this.generateMonthColumns(
+    if (date) {
+      this.reportStateService.applyRouteSettings({
+        reportMode: ReportMode.date,
         date,
-        date,
-        this.showWeekends(),
-        reportMode,
-        this.reportTaskQueryService.jiraApiEnabled(),
-      ) :
-      [...reportTotalColumns];
+      });
+    } else {
+      this.reportStateService.applyRouteSettings({ reportMode: ReportMode.date });
+    }
   }
-
-  private buildRangeColumns(
-    reportMode: ReportMode,
-  ): Column[] {
-    const startDate: Date | null = this.startDate();
-    const endDate: Date | null = this.endDate();
-
-    return startDate && endDate ?
-      this.generateMonthColumns(
-        startDate,
-        endDate,
-        this.showWeekends(),
-        reportMode,
-        this.reportTaskQueryService.jiraApiEnabled(),
-      ) :
-      [...reportTotalColumns];
-  }
-
-  private sumValues<T>(
-    values: T[],
-    getValue: (value: T) => number,
-  ): number {
-    return values
-      .map(getValue)
-      .reduce((acc: number, value: number) => acc + value, 0);
-  }
-
 }

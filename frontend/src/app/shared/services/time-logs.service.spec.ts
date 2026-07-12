@@ -1,37 +1,25 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { catchError, firstValueFrom, of, throwError } from 'rxjs';
+import { firstValueFrom, of, take, throwError } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
+import { createResourceRequestHandleMock } from '@shared/testing/resource-request-handle.mock';
 
 import { TimeLogsService } from './time-logs.service';
 
 describe('Shared Services time-logs.service', () => {
   let service: TimeLogsService;
-  const apiRequestService = {
-    buildApiUrl: vi.fn((base: string, suffix = '') => `https://api/${ base }${ suffix }`),
-    request: vi.fn(),
-    resourceRequest: vi.fn((
-      base: string,
-      suffix: string,
-      _requestGate: unknown,
-      _isLoadingSignal: unknown,
-      method: 'get' | 'post' | 'patch' | 'delete',
-      body: unknown,
-      processError?: (error: unknown) => any,
-    ) => apiRequestService.request(apiRequestService.buildApiUrl(base, suffix), method, body)
-      .pipe(catchError((error: unknown) => processError ? processError(error) : throwError(() => error)))),
-  } as any;
+  const apiRequestService = createResourceRequestHandleMock();
 
   beforeEach(async () => {
     apiRequestService.request.mockReset();
-    apiRequestService.resourceRequest.mockClear();
-    apiRequestService.buildApiUrl.mockClear();
+    apiRequestService.resource.mockClear();
+    apiRequestService.isLoadingSignal.set(false);
 
     await TestBed.configureTestingModule({
       providers: [
@@ -60,6 +48,7 @@ describe('Shared Services time-logs.service', () => {
     await firstValueFrom(service.create(task, timeLog));
 
     const body = apiRequestService.request.mock.calls[0]?.[2];
+    expect(apiRequestService.request.mock.calls[0]?.[0]).toBe('https://api/task/task-1/time-log');
     expect(body.startTime).toBe(String(startTime.getTime()));
     expect(body.endTime).toBe(String(endTime.getTime()));
     expect(body.description).toBe('desc');
@@ -79,9 +68,37 @@ describe('Shared Services time-logs.service', () => {
     await firstValueFrom(service.update(task, timeLog));
 
     const body = apiRequestService.request.mock.calls[0]?.[2];
+    expect(apiRequestService.request.mock.calls[0]?.[0]).toBe('https://api/task/task-1/time-log/log-1');
     expect(body.startTime).toBeUndefined();
     expect(body.endTime).toBeUndefined();
     expect(body.description).toBeUndefined();
+  });
+
+  it('emits changed task after time log updates', async () => {
+    const task = new Task({ id: 'task-1', name: 'Task', tags: [], timeLogs: [] } as any);
+    const timeLog = new TimeLog({
+      id: 'log-1',
+      startTime: new Date('2024-01-01T10:20:30.456Z'),
+    } as any);
+    const changedTask = firstValueFrom(service.timeLogChanged$.pipe(take(1)));
+
+    apiRequestService.request.mockReturnValueOnce(of({ data: { id: 'log-1', task: 'task-1' } }));
+
+    await firstValueFrom(service.update(task, timeLog));
+
+    await expect(changedTask).resolves.toBe(task);
+  });
+
+  it('emits changed task after time log delete', async () => {
+    const task = new Task({ id: 'task-1', name: 'Task', tags: [], timeLogs: [] } as any);
+    const timeLog = new TimeLog({ id: 'log-1' } as any);
+    const changedTask = firstValueFrom(service.timeLogChanged$.pipe(take(1)));
+
+    apiRequestService.request.mockReturnValueOnce(of(undefined));
+
+    await firstValueFrom(service.delete(task, timeLog));
+
+    await expect(changedTask).resolves.toBe(task);
   });
 
   it('returns an empty list when the API reports no time logs for a task', async () => {
@@ -95,17 +112,36 @@ describe('Shared Services time-logs.service', () => {
     await expect(firstValueFrom(service.list(task))).resolves.toEqual([]);
   });
 
-  it('rethrows non-empty-list 404 responses from the API', async () => {
+  it('starts and stops tasks through their action suffixes', async () => {
     const task = new Task({ id: 'task-1', name: 'Task', tags: [], timeLogs: [] } as any);
+    const startedTask = firstValueFrom(service.taskStarted$.pipe(take(1)));
+    const finishedTask = firstValueFrom(service.taskFinished$.pipe(take(1)));
 
-    apiRequestService.request.mockReturnValueOnce(throwError(() => ({
-      status: 404,
-      error: { errors: ['Task not found'] },
-    })));
+    apiRequestService.request.mockReturnValueOnce(of(undefined)).mockReturnValueOnce(of(undefined));
 
-    await expect(firstValueFrom(service.list(task))).rejects.toMatchObject({
-      status: 404,
-      error: { errors: ['Task not found'] },
-    });
+    await firstValueFrom(service.start(task));
+    await firstValueFrom(service.stop(task));
+
+    expect(apiRequestService.request).toHaveBeenNthCalledWith(1, 'https://api/task/task-1/time-log/start', 'post', null);
+    expect(apiRequestService.request).toHaveBeenNthCalledWith(2, 'https://api/task/task-1/time-log/stop', 'post', null);
+    await expect(startedTask).resolves.toBe(task);
+    await expect(finishedTask).resolves.toBe(task);
+  });
+
+  it('uses the task suffix when an updated time log has no id', async () => {
+    const task = new Task({ id: 'task-1', name: 'Task', tags: [], timeLogs: [] } as any);
+    const timeLog = { startTime: undefined, endTime: undefined, description: undefined } as unknown as TimeLog;
+
+    apiRequestService.request.mockReturnValueOnce(of({ data: { id: 'log-1', task: 'task-1' } }));
+
+    await firstValueFrom(service.update(task, timeLog));
+
+    expect(apiRequestService.request.mock.calls[0]?.[0]).toBe('https://api/task/task-1/time-log');
+  });
+
+  it('registers its loading state on initialization', () => {
+    service.init();
+
+    expect(service.loaderStateService.addLoader).toHaveBeenCalledWith(service.isLoading, 'TimeLogsService');
   });
 });

@@ -1,11 +1,11 @@
-export interface LegacyTagInput {
+export interface TaskBackupLegacyTagInput {
   id?: string;
   _id?: string;
   name?: string;
   _name?: string;
 }
 
-export interface LegacyTimeLogInput {
+export interface TaskBackupLegacyTimeLogInput {
   id?: string;
   _id?: string;
   startTime?: unknown;
@@ -16,7 +16,7 @@ export interface LegacyTimeLogInput {
   _description?: unknown;
 }
 
-export interface LegacyTaskInput {
+export interface TaskBackupLegacyTaskInput {
   id?: string;
   _id?: string;
   createdAt?: unknown;

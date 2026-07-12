@@ -1,7 +1,7 @@
 <tasks-view-header/>
 
 @if (tasks(); as taskList) {
-    <tasks-task-list>
+    <div class="task-list">
         @for (task of taskList; track task.id) {
             <tasks-task (action)="onAction($event)"
                         (remove)="onRemove($event)"
@@ -10,5 +10,5 @@
                         [isLoading]="isLoading()"
                         [task]="task"/>
         }
-    </tasks-task-list>
+    </div>
 }

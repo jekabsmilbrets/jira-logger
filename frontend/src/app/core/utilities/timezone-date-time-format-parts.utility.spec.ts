@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { getTimeZoneFormatParts } from './timezone-date-time-format-parts.utility';
 
-describe('timezone-date-time-format-parts.utility', () => {
+describe('Core Utils timezone-date-time-format-parts.utility', () => {
   it('collects non-literal parts from Intl.DateTimeFormat', () => {
     const formatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Europe/Vienna',

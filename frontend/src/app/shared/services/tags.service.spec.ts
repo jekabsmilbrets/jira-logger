@@ -1,40 +1,28 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { catchError, firstValueFrom, of, throwError } from 'rxjs';
+import { firstValueFrom, of, throwError } from 'rxjs';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
 import { Tag } from '@shared/models/tag.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import { ErrorDialogService } from '@shared/services/error-dialog.service';
+import { createResourceRequestHandleMock } from '@shared/testing/resource-request-handle.mock';
 
 import { TagsService } from './tags.service';
 
 describe('Shared Services tags.service', () => {
   let service: TagsService;
-  const apiRequestService = {
-    buildApiUrl: vi.fn((base: string, suffix = '') => `https://api/${ base }${ suffix }`),
-    request: vi.fn(),
-    resourceRequest: vi.fn((
-      base: string,
-      suffix: string,
-      _requestGate: unknown,
-      _isLoadingSignal: unknown,
-      method: 'get' | 'post' | 'patch' | 'delete',
-      body: unknown,
-      processError?: (error: unknown) => any,
-    ) => apiRequestService.request(apiRequestService.buildApiUrl(base, suffix), method, body)
-      .pipe(catchError((error: unknown) => processError ? processError(error) : throwError(() => error)))),
-  } as any;
+  const apiRequestService = createResourceRequestHandleMock();
   const errorDialogService = {
     openDialog: vi.fn(() => of(undefined)),
   } as any;
 
   beforeEach(async () => {
     apiRequestService.request.mockReset();
-    apiRequestService.resourceRequest.mockClear();
-    apiRequestService.buildApiUrl.mockClear();
+    apiRequestService.resource.mockClear();
+    apiRequestService.isLoadingSignal.set(false);
     await TestBed.configureTestingModule({
       providers: [
         { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly(), addLoader: vi.fn() } },
@@ -57,7 +45,7 @@ describe('Shared Services tags.service', () => {
     }));
     const result = await firstValueFrom(service.list());
 
-    expect(apiRequestService.buildApiUrl).toHaveBeenCalledWith('tag', '');
+    expect(apiRequestService.request).toHaveBeenCalledWith('https://api/tag', 'get', null);
     expect(result).toHaveLength(1);
     expect(result[0]).toBeInstanceOf(Tag);
     expect(result[0].isUsed).toBe(true);
@@ -87,5 +75,44 @@ describe('Shared Services tags.service', () => {
     expect(apiRequestService.request).toHaveBeenNthCalledWith(1, 'https://api/tag', 'post', { name: 'A' });
     expect(apiRequestService.request).toHaveBeenNthCalledWith(3, 'https://api/tag/1', 'patch', { id: '1', name: 'B' });
     expect(apiRequestService.request).toHaveBeenNthCalledWith(5, 'https://api/tag/1', 'delete', null);
+  });
+
+  it('initializes the loader and clears preload errors after a successful list', async () => {
+    apiRequestService.request.mockReturnValueOnce(of({ data: [] }));
+
+    service.init();
+
+    expect(service.loaderStateService.addLoader).toHaveBeenCalledWith(service.isLoading, 'TagsService');
+    expect(service.preloadError()).toBe(false);
+  });
+
+  it('skips reloads after mutations when requested', async () => {
+    apiRequestService.request
+      .mockReturnValueOnce(of({ data: { id: '1', isUsed: false, name: '', createdAt: '2024-01-01T00:00:00.000Z' } }))
+      .mockReturnValueOnce(of({ data: { id: '1', isUsed: false, name: '', createdAt: '2024-01-01T00:00:00.000Z' } }))
+      .mockReturnValueOnce(of(undefined));
+
+    const tag = new Tag({ id: '1', name: '' } as any);
+
+    await firstValueFrom(service.create(tag, true));
+    await firstValueFrom(service.update(tag, true));
+    await firstValueFrom(service.delete(tag, true));
+
+    expect(apiRequestService.request).toHaveBeenCalledTimes(3);
+    expect(apiRequestService.request).toHaveBeenNthCalledWith(1, 'https://api/tag', 'post', { name: '' });
+  });
+
+  it('routes mutation failures through the error dialog', async () => {
+    const tag = new Tag({ id: '1', name: 'Tag' } as any);
+    apiRequestService.request.mockReturnValueOnce(throwError(() => new Error('create failed')));
+    await expect(firstValueFrom(service.create(tag))).rejects.toThrow('create failed');
+
+    apiRequestService.request.mockReturnValueOnce(throwError(() => new Error('update failed')));
+    await expect(firstValueFrom(service.update(tag))).rejects.toThrow('update failed');
+
+    apiRequestService.request.mockReturnValueOnce(throwError(() => new Error('delete failed')));
+    await expect(firstValueFrom(service.delete(tag))).rejects.toThrow('delete failed');
+
+    expect(errorDialogService.openDialog).toHaveBeenCalledTimes(3);
   });
 });

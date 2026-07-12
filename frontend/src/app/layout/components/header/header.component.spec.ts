@@ -6,6 +6,8 @@ import { provideRouter } from '@angular/router';
 
 import { describe, expect, it, vi } from 'vitest';
 
+import { ReportDateCalendarService } from '@report/services/report-date-calendar.service';
+
 import type { HeaderMenuRouteData } from '@layout/interfaces/header-menu-route-data.interface';
 
 import { HeaderComponent } from './header.component';
@@ -23,6 +25,7 @@ describe('Layout Components header.component', () => {
       imports: [HeaderComponent],
       providers: [
         provideRouter([]),
+        { provide: ReportDateCalendarService, useValue: { todayRouteLink: vi.fn(() => '/report/date/2026-05-29') } },
       ],
     }).compileComponents();
   });
@@ -107,7 +110,7 @@ describe('Layout Components header.component', () => {
 
     const timeSpentLink: HTMLAnchorElement = fixture.nativeElement.querySelector('a.time-spent');
 
-    expect(timeSpentLink.getAttribute('href')).toMatch(/^\/report\/date\/\d{4}-\d{2}-\d{2}$/);
+    expect(timeSpentLink.getAttribute('href')).toBe('/report/date/2026-05-29');
   });
 
   it('clears dynamic menu container when no active menu is provided', () => {

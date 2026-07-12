@@ -49,6 +49,39 @@ class TimeLogRepository extends ServiceEntityRepository
         }
     }
 
+    public function findActive(): ?TimeLog
+    {
+        /** @var TimeLog[] $timeLogs */
+        $timeLogs = $this->createQueryBuilder('tl')
+            ->andWhere('tl.endTime IS NULL')
+            ->orderBy('tl.startTime', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getResult();
+
+        return $timeLogs[0] ?? null;
+    }
+
+    /**
+     * @return TimeLog[]
+     */
+    public function findOverlappingRange(
+        \DateTimeInterface $rangeStart,
+        \DateTimeInterface $rangeEnd,
+    ): array {
+        /** @var TimeLog[] $timeLogs */
+        $timeLogs = $this->createQueryBuilder('tl')
+            ->andWhere('tl.startTime <= :rangeEnd')
+            ->andWhere('tl.endTime IS NULL OR tl.endTime >= :rangeStart')
+            ->setParameter('rangeStart', $rangeStart)
+            ->setParameter('rangeEnd', $rangeEnd)
+            ->orderBy('tl.startTime', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $timeLogs;
+    }
+
     /**
      * @throws Exception
      */

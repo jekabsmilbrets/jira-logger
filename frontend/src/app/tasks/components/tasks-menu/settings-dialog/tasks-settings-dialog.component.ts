@@ -8,14 +8,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
-import { Tag } from '@shared/models/tag.model';
-import { TagsService } from '@shared/services/tags.service';
-
 import type { TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 import type { TaskSettingsFormData } from '@tasks/interfaces/task-settings-form-data.interface';
 import type { TasksSettingsDialogData } from '@tasks/interfaces/tasks-settings-dialog-data.interface';
 import type { TasksSettingsFormValue } from '@tasks/interfaces/tasks-settings-form-value.interface';
-import { prepareTaskImportRequest, stringifyTaskBackupV2 } from '@tasks/utilities/task-backup.utility';
+import { TaskBackupService } from '@tasks/services/task-backup.service';
 
 @Component({
   selector: 'tasks-settings-dialog',
@@ -28,7 +25,6 @@ import { prepareTaskImportRequest, stringifyTaskBackupV2 } from '@tasks/utilitie
     MatButtonModule,
     MatIconModule,
     MatSlideToggleModule,
-    MatButtonModule,
     CdkCopyToClipboard,
     MatFormFieldModule,
     MatInputModule,
@@ -50,7 +46,7 @@ export class TasksSettingsDialogComponent {
 
   private readonly destroyRef: DestroyRef = inject(DestroyRef);
   private readonly dialogRef: MatDialogRef<TasksSettingsDialogComponent, undefined | TaskImportRequest> = inject<MatDialogRef<TasksSettingsDialogComponent, TaskImportRequest | undefined>>(MatDialogRef);
-  private readonly tagsService: TagsService = inject(TagsService);
+  private readonly taskBackupService: TaskBackupService = inject(TaskBackupService);
 
   constructor() {
     this.loadCurrentBackupJson();
@@ -67,17 +63,10 @@ export class TasksSettingsDialogComponent {
     }
 
     const formData: TaskSettingsFormData = this.tasksSettingsFormModel();
-    const tags: Tag[] = this.tagsService.tags();
     this.importErrorMessage.set(null);
 
     try {
-      const request: TaskImportRequest = prepareTaskImportRequest(
-        JSON.parse(
-          formData.json as string,
-        ),
-        this.data.currentTasks,
-        tags,
-      );
+      const request: TaskImportRequest = this.taskBackupService.parseTaskImportRequest(formData.json as string);
 
       this.dialogRef.close(request);
     } catch (e) {
@@ -91,7 +80,7 @@ export class TasksSettingsDialogComponent {
         return;
       }
 
-      this.currentBackupJson.set(stringifyTaskBackupV2(this.data.currentTasks));
+      this.currentBackupJson.set(this.taskBackupService.exportTasksForUser(this.data.currentTasks));
     } catch (error) {
       if (this.destroyRef.destroyed || this.isDestroyedInjectorError(error)) {
         return;

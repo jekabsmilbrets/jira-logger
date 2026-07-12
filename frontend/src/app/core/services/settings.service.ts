@@ -5,12 +5,11 @@ import { catchError, map, type Observable, of, switchMap, take, tap } from 'rxjs
 
 import { adaptSettings } from '@core/adapters/api-setting.adapter';
 import type { ApiSetting } from '@core/interfaces/api/api-setting.interface';
-import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { Setting } from '@core/models/setting.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
-import { RequestGate } from '@core/utilities/request-gate.utility';
 
-import type { LoadableService } from '@shared/interfaces/loadable-service.interface';
+import type { LoadableInitializer } from '@shared/interfaces/loadable-initializer.interface';
+import type { ResourceRequestHandle } from '@shared/interfaces/resource-request-handle.interface';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import type { ErrorDialogService } from '@shared/services/error-dialog.service';
 import type { ApiRequestBody } from '@shared/types/api-request-body.type';
@@ -18,28 +17,24 @@ import type { AsyncLoader } from '@shared/types/async-loader.type';
 import { openLoadErrorDialog } from '@shared/utilities/open-load-error-dialog.utility';
 
 @Service()
-export class SettingsService implements LoadableService {
+export class SettingsService implements LoadableInitializer {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
+  private readonly settingResource: ResourceRequestHandle = this.apiRequestService.resource('setting');
   private readonly loadErrorDialogService: AsyncLoader<ErrorDialogService> = injectAsync(
     () => import('@shared/services/error-dialog.service').then((m) => m.ErrorDialogService),
   );
 
-  private readonly isLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
   private readonly settingsSignal: WritableSignal<Setting[]> = signal<Setting[]>([]);
 
-  public readonly isLoading: Signal<boolean> = this.isLoadingSignal.asReadonly();
+  public readonly isLoading: Signal<boolean> = this.settingResource.isLoading;
   public readonly settings: Signal<Setting[]> = this.settingsSignal.asReadonly();
-
-  private readonly requestGate: RequestGate = new RequestGate();
-
-  private basePath: string = 'setting';
 
   public init(): void {
     this.loaderStateService.addLoader(
       this.isLoading,
-      this.constructor.name,
+      'SettingsService',
     );
     this.list()
       .pipe(take(1))
@@ -47,18 +42,14 @@ export class SettingsService implements LoadableService {
   }
 
   public list(): Observable<Setting[]> {
-    return this.makeRequest<JsonApi<ApiSetting[]>>('', 'get', null, false)
+    return this.settingResource.listRequest<ApiSetting>(
+      '',
+      'get',
+      null,
+    )
       .pipe(
-        catchError((error: HttpErrorResponse) => {
-          if (error.status === 404) {
-            return of({ data: [] });
-          }
-
-          return this.processError(error);
-        }),
-        map(
-          (response: JsonApi<ApiSetting[]>) => (response.data && adaptSettings(response.data)) as Setting[],
-        ),
+        catchError((error: HttpErrorResponse) => this.processError(error)),
+        map((settings: ApiSetting[]) => adaptSettings(settings)),
         tap((tasks: Setting[]) => this.settingsSignal.set(tasks)),
       );
   }
@@ -72,7 +63,12 @@ export class SettingsService implements LoadableService {
       value: String(setting.value),
     };
 
-    return this.makeRequest<JsonApi<ApiSetting[]>>('', 'post', body, true)
+    return this.settingResource.request(
+      '',
+      'post',
+      body,
+      (error: unknown) => this.processError(error),
+    )
       .pipe(
         switchMap(() => this.reloadList(skipReload)),
         map((settings: Setting[]) => this.findSetting(settings, setting)),
@@ -89,7 +85,12 @@ export class SettingsService implements LoadableService {
       value: String(setting.value),
     };
 
-    return this.makeRequest<JsonApi<ApiSetting[]>>(`/${ setting.id }`, 'patch', body, true)
+    return this.settingResource.request(
+      `/${ setting.id }`,
+      'patch',
+      body,
+      (error: unknown) => this.processError(error),
+    )
       .pipe(
         switchMap(() => this.reloadList(skipReload)),
         map((settings: Setting[]) => this.findSetting(settings, setting)),
@@ -99,7 +100,12 @@ export class SettingsService implements LoadableService {
   public delete(
     setting: Setting,
   ): Observable<void> {
-    return this.makeRequest<void>(`/${ setting.id }`, 'delete', null, true)
+    return this.settingResource.request<void>(
+      `/${ setting.id }`,
+      'delete',
+      null,
+      (error: unknown) => this.processError(error),
+    )
       .pipe(
         switchMap(
           () => this.list().pipe(take(1)),
@@ -117,25 +123,6 @@ export class SettingsService implements LoadableService {
         this.list()
     )
       .pipe(take(1));
-  }
-
-  private makeRequest<T>(
-    url: string,
-    method: 'get' | 'post' | 'patch' | 'delete' = 'get',
-    body: ApiRequestBody | null = null,
-    reportError: boolean = false,
-  ): Observable<T> {
-    return this.apiRequestService.resourceRequest<T>(
-      this.basePath,
-      url,
-      this.requestGate,
-      this.isLoadingSignal,
-      method,
-      body,
-      reportError ?
-        (error: unknown) => this.processError(error) as Observable<T> :
-        undefined,
-    );
   }
 
   private findSetting(
@@ -158,7 +145,6 @@ export class SettingsService implements LoadableService {
   ): Observable<never> {
     return openLoadErrorDialog(
       this.loadErrorDialogService,
-      this.isLoadingSignal,
       error,
       this.settings(),
     );

@@ -7,11 +7,10 @@ import { describe, expect, it } from 'vitest';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
-import { TaskManagerService } from '@shared/services/task-manager.service';
-
 import { HeaderComponent } from '@layout/components/header/header.component';
 import { SidenavComponent } from '@layout/components/sidenav/sidenav.component';
 import { HEADER_MENU_ROUTE_DATA_KEY, type HeaderMenuRouteData } from '@layout/interfaces/header-menu-route-data.interface';
+import { HeaderDataService } from '@layout/services/header-data.service';
 
 import { LayoutComponent } from './layout.component';
 
@@ -125,7 +124,7 @@ describe('Layout Views layout.component', () => {
           },
         },
         {
-          provide: TaskManagerService,
+          provide: HeaderDataService,
           useValue: {
             activeTask: activeTaskState.asReadonly(),
             timeLoggedToday: timeLoggedTodayState.asReadonly(),
@@ -223,7 +222,7 @@ describe('Layout Views layout.component integration', () => {
           provideRouter([]),
           { provide: LoaderStateService, useValue: { isLoading: signal(false).asReadonly() } },
           {
-            provide: TaskManagerService,
+            provide: HeaderDataService,
             useValue: {
               activeTask: signal<unknown | null>(null).asReadonly(),
               timeLoggedToday: signal<number>(0).asReadonly(),

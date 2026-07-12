@@ -47,4 +47,15 @@ describe('Core Utils request-gate.utility', () => {
     thirdTurn();
     expect(isLoading()).toBe(false);
   });
+
+  it('makes turn release idempotent', async () => {
+    const requestGate = new RequestGate();
+    const isLoading = signal(false);
+    const release = await firstValueFrom(waitForTurn(requestGate, isLoading));
+
+    release();
+    release();
+
+    expect(isLoading()).toBe(false);
+  });
 });

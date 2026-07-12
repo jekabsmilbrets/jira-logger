@@ -21,7 +21,7 @@ import { take } from 'rxjs';
 import { Tag } from '@shared/models/tag.model';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
 
-import type { TaskListTagChangeEvent } from '@settings/interfaces/task-list-tag-change-event.interface';
+import type { TagManagementCommand } from '@settings/interfaces/tag-management-command.interface';
 
 @Component({
   selector: 'settings-tag-management-configurator',
@@ -43,7 +43,7 @@ export class TagManagementConfiguratorComponent {
   public readonly disabled: InputSignal<boolean> = input<boolean>(false);
   public readonly tags: InputSignal<Tag[]> = input<Tag[]>([]);
 
-  protected readonly tagChange: OutputEmitterRef<TaskListTagChangeEvent> = output<TaskListTagChangeEvent>();
+  protected readonly tagChange: OutputEmitterRef<TagManagementCommand> = output<TagManagementCommand>();
   protected readonly newTagName: WritableSignal<string> = signal('');
   protected readonly editedTagNames: WritableSignal<Record<string, string>> = signal<Record<string, string>>({});
   protected readonly editingTagId: WritableSignal<string | null> = signal<string | null>(null);
@@ -104,7 +104,6 @@ export class TagManagementConfiguratorComponent {
 
     this.tagChange.emit({
       action: 'create',
-      successMessage: 'Successfully created tag!',
       tag: new Tag({ name }),
     });
     this.newTagName.set('');
@@ -119,7 +118,6 @@ export class TagManagementConfiguratorComponent {
 
     this.tagChange.emit({
       action: 'update',
-      successMessage: 'Successfully updated tag!',
       tag: new Tag({
         id: tag.id,
         isUsed: tag.isUsed,
@@ -143,7 +141,6 @@ export class TagManagementConfiguratorComponent {
 
         this.tagChange.emit({
           action: 'delete',
-          successMessage: 'Successfully deleted tag!',
           tag,
         });
       });

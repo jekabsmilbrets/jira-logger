@@ -36,8 +36,7 @@ describe('Tasks Components task.component', () => {
     startTime: new Date(startIso),
   });
 
-  const setup = async () => {
-    const baseTask = buildTask();
+  const setup = async (baseTask: Task = buildTask()) => {
 
     const areYouSureService = {
       openDialog: vi.fn(() => of(true)),
@@ -51,7 +50,8 @@ describe('Tasks Components task.component', () => {
     };
 
     const tasksService = {
-      tasks: signal([baseTask]).asReadonly(),
+      allTasks: signal([baseTask]).asReadonly(),
+      taskExist: vi.fn(() => of(null)),
     };
 
     const timeLogListService = {
@@ -87,6 +87,7 @@ describe('Tasks Components task.component', () => {
   };
 
   afterEach(() => {
+    vi.useRealTimers();
     TestBed.resetTestingModule();
   });
 
@@ -123,7 +124,7 @@ describe('Tasks Components task.component', () => {
   });
 
   it('emits update payload and exits edit mode on update', async () => {
-    const { component } = await setup();
+    const { component, fixture } = await setup();
     const updateSpy = vi.spyOn(component['update'], 'emit');
 
     component['onToggleEditMode']();
@@ -133,10 +134,27 @@ describe('Tasks Components task.component', () => {
       tags: [],
     });
     component['taskForm']().markAsDirty();
+    await fixture.whenStable();
     component['onUpdate']();
 
     expect(updateSpy).toHaveBeenCalledOnce();
     expect(component['editMode']()).toBe(false);
+  });
+
+  it('keeps unchanged task names valid without duplicate lookup', async () => {
+    const { component, tasksService, fixture } = await setup();
+
+    component['onToggleEditMode']();
+    component['taskFormModel'].update((value) => ({
+      ...value,
+      name: ' Task name ',
+    }));
+    component['taskForm']().markAsDirty();
+    await fixture.whenStable();
+
+    component['onUpdate']();
+
+    expect(tasksService.taskExist).not.toHaveBeenCalled();
   });
 
   it('emits remove only when confirmation is true', async () => {
@@ -151,20 +169,13 @@ describe('Tasks Components task.component', () => {
     expect(removeSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('emits correct toggle action based on running state', async () => {
+  it('emits task when toggling work logging', async () => {
     const { component, baseTask } = await setup();
     const actionSpy = vi.spyOn(component['action'], 'emit');
 
     component['onToggleTimeLogging']();
 
-    const runningTimeLog = buildTimeLog('2026-03-02T10:00:00.000Z');
-    baseTask.lastTimeLog = runningTimeLog;
-
-    component['onToggleTimeLogging']();
-
-    expect(actionSpy).toHaveBeenCalledTimes(2);
-    expect(actionSpy.mock.calls[0][0][1]).toBe('start-work-log');
-    expect(actionSpy.mock.calls[1][0][1]).toBe('stop-work-log');
+    expect(actionSpy).toHaveBeenCalledWith(baseTask);
   });
 
   it('emits timeLogsSaved when modal reports a successful save', async () => {
@@ -232,6 +243,28 @@ describe('Tasks Components task.component', () => {
 
     const icons = fixture.debugElement.queryAll(By.css('button.play-pause-button mat-icon'));
     expect(icons[1].nativeElement.textContent.trim()).toBe('pause');
+  });
+
+  it('renders active task total time and updates every ten seconds', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-02T10:01:00.000Z'));
+
+    const runningTimeLog = buildTimeLog('2026-03-02T10:00:00.000Z');
+    const task = buildTask();
+    task.timeLogs = [runningTimeLog];
+    task.lastTimeLog = runningTimeLog;
+
+    const { fixture } = await setup(task);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Total Time Worked: 1m');
+    expect(fixture.nativeElement.textContent).not.toContain('Total Time Worked: 1m 0s');
+
+    vi.advanceTimersByTime(10000);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Total Time Worked: 1m');
+    expect(fixture.nativeElement.textContent).not.toContain('Total Time Worked: 1m 10s');
   });
 
   it('adds action button tooltips matching their aria labels', async () => {
@@ -318,5 +351,26 @@ describe('Tasks Components task.component', () => {
     form.triggerEventHandler('submit', {});
 
     expect(updateSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('updates selected tags through the tags-change handler', async () => {
+    const { component } = await setup();
+    const tags = [new Tag({ id: '2', name: 'Backend' })];
+
+    component['onTagsChange'](tags);
+
+    expect(component['taskFormModel']().tags).toEqual(tags);
+  });
+
+  it('marks invalid updates as touched without emitting', async () => {
+    const { component } = await setup();
+    const updateSpy = vi.spyOn(component['update'], 'emit');
+    component['taskFormModel'].update((value) => ({ ...value, name: '' }));
+
+    component['onUpdate']();
+
+    expect(component['taskForm']().touched()).toBe(true);
+    expect(component['hasNameError']()).toBe(true);
+    expect(updateSpy).not.toHaveBeenCalled();
   });
 });

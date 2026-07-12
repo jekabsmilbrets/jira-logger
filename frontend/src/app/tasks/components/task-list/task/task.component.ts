@@ -13,7 +13,7 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
-import { type FieldTree, form, FormField, required, validate } from '@angular/forms/signals';
+import { type FieldTree, FormField } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -33,11 +33,16 @@ import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 import type { AsyncLoader } from '@shared/types/async-loader.type';
 
-import { TaskUpdateAction } from '@tasks/enums/task-update-action.enum';
 import type { TaskFormValue } from '@tasks/interfaces/task-form-value.interface';
 import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
 import type { TimeLogListService } from '@tasks/services/time-log-list.service';
-import { buildTaskUpdatePayload } from '@tasks/utility/task-payload-builder.utility';
+import {
+  buildEmptyTaskFormValue,
+  buildTaskEditForm,
+  buildTaskFormValue,
+  buildTaskUpdatePayload,
+  setTaskFormTags,
+} from '@tasks/utilities/task-form-intent.utility';
 
 @Component({
   selector: 'tasks-task',
@@ -63,19 +68,13 @@ export class TaskComponent {
   public readonly task: InputSignal<Task> = input.required<Task>();
   public readonly isLoading: InputSignal<boolean> = input.required<boolean>();
 
-  protected readonly action: OutputEmitterRef<[Task, TaskUpdateAction]> = output<[
-    Task,
-    TaskUpdateAction
-  ]>();
+  protected readonly action: OutputEmitterRef<Task> = output<Task>();
   protected readonly update: OutputEmitterRef<Task> = output<Task>();
   protected readonly remove: OutputEmitterRef<Task> = output<Task>();
   protected readonly timeLogsSaved: OutputEmitterRef<void> = output<void>();
-  protected readonly taskFormModel: WritableSignal<TaskFormValue> = signal<TaskFormValue>({
-    name: '',
-    description: '',
-    tags: [],
-  });
+  protected readonly taskFormModel: WritableSignal<TaskFormValue> = signal<TaskFormValue>(buildEmptyTaskFormValue());
   protected readonly editMode: WritableSignal<boolean> = signal(false);
+  protected readonly currentTime: WritableSignal<number> = signal(Date.now());
 
   private readonly loadAreYouSureService: AsyncLoader<AreYouSureService> = injectAsync(
     () => import('@shared/services/are-you-sure.service').then((m) => m.AreYouSureService),
@@ -86,32 +85,32 @@ export class TaskComponent {
     () => import('@tasks/services/time-log-list.service').then((m) => m.TimeLogListService),
   );
   private readonly tasksService: TasksService = inject(TasksService);
-  private readonly tasks: Signal<Task[]> = this.tasksService.tasks;
 
-  protected readonly taskForm: FieldTree<TaskFormValue> = form(this.taskFormModel, (path) => {
-    required(path.name, { message: 'Task name is required.' });
-    validate(path.name, ({ value }) => {
-      const name: string = value().trim();
-
-      if (!name) {
-        return null;
-      }
-
-      return this.tasks().some((task) => task.id !== this.task().id && task.name === name) ?
-        {
-          kind: 'duplicate-task',
-          message: 'Task already exists.',
-        } :
-        null;
-    });
-  });
+  protected readonly taskForm: FieldTree<TaskFormValue> = buildTaskEditForm(
+    this.taskFormModel,
+    this.task,
+    (taskName: string) => this.tasksService.taskExist(taskName),
+  );
   protected readonly tags: Signal<Tag[]> = this.tagsService.tags;
 
   constructor() {
     effect(() => {
       if (!this.editMode()) {
-        this.taskForm().reset(this.buildFormValue(this.task()));
+        this.taskForm().reset(buildTaskFormValue(this.task()));
       }
+    });
+
+    effect((onCleanup) => {
+      if (!this.isTimeLogRunning()) {
+        return;
+      }
+
+      const intervalId: ReturnType<typeof setInterval> = setInterval(
+        () => this.currentTime.set(Date.now()),
+        10000,
+      );
+
+      onCleanup(() => clearInterval(intervalId));
     });
   }
 
@@ -153,6 +152,16 @@ export class TaskComponent {
     return this.task().description ?? '';
   }
 
+  protected getTotalTimeWorked(): number {
+    if (!this.isTimeLogRunning()) {
+      return this.task().timeLogged;
+    }
+
+    this.currentTime();
+
+    return this.task().calcTimeLogged();
+  }
+
   protected isViewActionDisabled(): boolean {
     return this.isLoading() || this.editMode();
   }
@@ -190,10 +199,7 @@ export class TaskComponent {
   }
 
   protected onTagsChange(tags: Tag[]): void {
-    const field: ReturnType<typeof this.taskForm.tags> = this.taskForm.tags();
-    field.value.set(tags);
-    field.markAsDirty();
-    field.markAsTouched({ skipDescendants: true });
+    setTaskFormTags(this.taskForm.tags(), tags);
   }
 
   protected onUpdate(event?: Event): void {
@@ -204,9 +210,7 @@ export class TaskComponent {
       return;
     }
 
-    const taskPayload: Task = buildTaskUpdatePayload(this.task(), this.taskFormModel());
-    taskPayload.updateTimeLogged();
-    this.update.emit(taskPayload);
+    this.update.emit(buildTaskUpdatePayload(this.task(), this.taskFormModel()));
     this.editMode.set(false);
   }
 
@@ -227,19 +231,12 @@ export class TaskComponent {
     this.editMode.set(nextEditMode);
 
     if (nextEditMode) {
-      this.taskForm().reset(this.buildFormValue(this.task()));
+      this.taskForm().reset(buildTaskFormValue(this.task()));
     }
   }
 
   protected onToggleTimeLogging(): void {
-    const action: TaskUpdateAction = this.isTimeLogRunning() ?
-      TaskUpdateAction.stopWorkLog :
-      TaskUpdateAction.startWorkLog;
-
-    this.action.emit([
-      this.task(),
-      action,
-    ]);
+    this.action.emit(this.task());
   }
 
   protected async onOpenTimeLogsModal(): Promise<void> {
@@ -254,11 +251,4 @@ export class TaskComponent {
       });
   }
 
-  private buildFormValue(task: Task): TaskFormValue {
-    return {
-      name: task.name,
-      description: task.description ?? '',
-      tags: [...task.tags],
-    };
-  }
 }
