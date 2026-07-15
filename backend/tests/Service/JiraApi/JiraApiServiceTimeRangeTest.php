@@ -84,19 +84,17 @@ class JiraApiServiceTimeRangeTest extends TestCase
         self::assertSame(600, $seconds);
     }
 
-    public function testCalculateSingleTimeLogSecondsRejectsValuesBelowMinimumThreshold(): void
+    public function testSyncWorkLogRejectsValuesBelowMinimumThresholdBeforeClientInitialization(): void
     {
-        $service = $this->createApiService();
-        $timeLog = (new TimeLog())
-            ->setStartTime(new \DateTimeImmutable('2026-05-30 10:00:00'))
-            ->setEndTime(new \DateTimeImmutable('2026-05-30 10:00:59'));
-
-        $method = new \ReflectionMethod(JiraApiService::class, 'calculateTimeSpentInSecondsSingleTimeLog');
-
         $this->expectException(JiraApiServiceException::class);
         $this->expectExceptionMessage('Cannot report less than 60 second!');
 
-        $method->invoke($service, $timeLog);
+        $this->createApiService()->syncWorkLog(
+            task: (new Task())->setName('TASK-1'),
+            workLogId: null,
+            startTime: new \DateTime('2026-05-30 10:00:00'),
+            timeSpentSeconds: 59,
+        );
     }
 
     public function testSyncTaskTranslatesJiraServiceFailureToTaskSyncFailure(): void

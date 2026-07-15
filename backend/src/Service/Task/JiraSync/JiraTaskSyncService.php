@@ -10,7 +10,6 @@ use App\Exception\JiraApiServiceException;
 use App\Repository\JiraWorkLog\JiraWorkLogRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\JiraApi\JiraApiService;
-use JiraRestApi\Issue\Worklog;
 
 class JiraTaskSyncService
 {
@@ -28,8 +27,6 @@ class JiraTaskSyncService
     public function syncTask(Task $task, string $date): bool
     {
         try {
-            $this->jiraApiService->init();
-
             return $this->sync($task, $date);
         } catch (JiraApiServiceException $e) {
             throw new TaskJiraSyncException(message: $e->getMessage(), code: $e->getCode(), previous: $e);
@@ -70,12 +67,12 @@ class JiraTaskSyncService
             $descriptions = [trim(explode('-#-', $taskName)[1])];
         }
 
-        $jiraApiWorkLog = $this->createUpdateRecreateWorkLogWithTimeSpent(
-            jiraWorkLog: $jiraWorkLog,
+        $jiraApiWorkLog = $this->jiraApiService->syncWorkLog(
             task: $task,
-            startDate: $jiraStartDateTime,
+            workLogId: $jiraWorkLog->getWorkLogId() ? (int) $jiraWorkLog->getWorkLogId() : null,
+            startTime: $jiraStartDateTime,
             timeSpentSeconds: $timeSpentSeconds,
-            descriptions: $descriptions,
+            description: implode(', ', $descriptions),
         );
 
         $jiraWorkLog->setTimeSpentSeconds($timeSpentSeconds);
@@ -88,51 +85,6 @@ class JiraTaskSyncService
         );
 
         return true;
-    }
-
-    /**
-     * @param string[] $descriptions
-     *
-     * @throws JiraApiServiceException
-     */
-    private function createUpdateRecreateWorkLogWithTimeSpent(
-        JiraWorkLog $jiraWorkLog,
-        Task $task,
-        \DateTime $startDate,
-        int $timeSpentSeconds,
-        array $descriptions,
-    ): Worklog {
-        $descriptionsConcatenated = implode(', ', $descriptions);
-
-        if (!empty($workLogId = $jiraWorkLog->getWorkLogId())) {
-            try {
-                $workLog = $this->jiraApiService->updateWorkLogWithTimeSpent(
-                    task: $task,
-                    workLogId: (int) $workLogId,
-                    startTime: $startDate,
-                    timeSpentSeconds: $timeSpentSeconds,
-                    description: $descriptionsConcatenated,
-                );
-            } catch (JiraApiServiceException) {
-                $workLog = $this->jiraApiService->createWorkLogWithTimeSpent(
-                    task: $task,
-                    startTime: $startDate,
-                    timeSpentSeconds: $timeSpentSeconds,
-                    description: $descriptionsConcatenated,
-                );
-
-                $jiraWorkLog->setWorkLogId((string) $workLog->id);
-            }
-        } else {
-            $workLog = $this->jiraApiService->createWorkLogWithTimeSpent(
-                task: $task,
-                startTime: $startDate,
-                timeSpentSeconds: $timeSpentSeconds,
-                description: $descriptionsConcatenated,
-            );
-        }
-
-        return $workLog;
     }
 
     private function createUpdateJiraWorkLog(
