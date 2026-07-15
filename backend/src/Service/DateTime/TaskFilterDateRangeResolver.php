@@ -20,16 +20,6 @@ class TaskFilterDateRangeResolver
      *
      * @return array{startDate: DateTimeImmutable, endDate: DateTimeImmutable}|null
      */
-    public function resolve(array $filter): ?array
-    {
-        return $this->resolveTaskFilter($filter);
-    }
-
-    /**
-     * @param array<string, mixed> $filter
-     *
-     * @return array{startDate: DateTimeImmutable, endDate: DateTimeImmutable}|null
-     */
     public function resolveTaskFilter(array $filter): ?array
     {
         if (!isset($filter['date']) && !isset($filter['startDate'], $filter['endDate'])) {
