@@ -58,10 +58,7 @@ class TaskFilterDateRangeResolver
         ];
     }
 
-    /**
-     * @return array{syncDate: \DateTime, startDate: DateTimeImmutable, endDate: DateTimeImmutable, jiraStartDateTime: \DateTime}
-     */
-    public function resolveJiraSyncDate(string $date): array
+    public function resolveJiraSyncDate(string $date): JiraSyncPeriod
     {
         $dateRange = $this->resolveTaskFilter(['date' => $date]);
         if (null === $dateRange) {
@@ -70,12 +67,12 @@ class TaskFilterDateRangeResolver
 
         $syncDate = (new \DateTime($date))->setTime(0, 0, 0);
 
-        return [
-            'syncDate' => $syncDate,
-            'startDate' => $dateRange['startDate'],
-            'endDate' => $dateRange['endDate'],
-            'jiraStartDateTime' => (clone $syncDate)->setTime(17, 0, 0),
-        ];
+        return new JiraSyncPeriod(
+            syncDate: $syncDate,
+            startDate: $dateRange['startDate'],
+            endDate: $dateRange['endDate'],
+            jiraStartDateTime: (clone $syncDate)->setTime(17, 0, 0),
+        );
     }
 
     private function normalizeDateValue(string $value): string

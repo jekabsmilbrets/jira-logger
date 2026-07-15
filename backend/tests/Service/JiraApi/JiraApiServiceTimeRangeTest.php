@@ -73,12 +73,12 @@ class JiraApiServiceTimeRangeTest extends TestCase
         $timeLog = (new TimeLog())
             ->setStartTime(new \DateTimeImmutable('2026-06-23T00:00:00+02:00'))
             ->setEndTime(new \DateTimeImmutable('2026-06-23T00:10:00+02:00'));
-        $syncDates = $this->createDateRangeResolver('Europe/Vienna')->resolveJiraSyncDate('2026-06-23');
+        $period = $this->createDateRangeResolver('Europe/Vienna')->resolveJiraSyncDate('2026-06-23');
 
         [$seconds] = (new JiraSyncTimeLogAggregation())->summarize(
             new ArrayCollection([$timeLog]),
-            $syncDates['startDate'],
-            $syncDates['endDate'],
+            $period->startDate(),
+            $period->endDate(),
         );
 
         self::assertSame(600, $seconds);

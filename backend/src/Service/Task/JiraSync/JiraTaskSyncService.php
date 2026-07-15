@@ -38,11 +38,8 @@ class JiraTaskSyncService
      */
     final public function sync(Task $task, string $date): bool
     {
-        $syncDates = $this->taskFilterDateRangeResolver->resolveJiraSyncDate($date);
-        $syncDate = $syncDates['syncDate'];
-        $startDate = $syncDates['startDate'];
-        $endDate = $syncDates['endDate'];
-        $jiraStartDateTime = $syncDates['jiraStartDateTime'];
+        $period = $this->taskFilterDateRangeResolver->resolveJiraSyncDate($date);
+        $syncDate = $period->syncDate();
 
         $jiraWorkLog = $this->jiraWorkLogRepository->findOneBy(
             [
@@ -58,8 +55,8 @@ class JiraTaskSyncService
 
         [$timeSpentSeconds, $descriptions] = $this->timeLogAggregation->summarize(
             timeLogs: $task->getTimeLogs(),
-            startDate: $startDate,
-            endDate: $endDate
+            startDate: $period->startDate(),
+            endDate: $period->endDate(),
         );
         $workLogId = $jiraWorkLog->getWorkLogId();
 
@@ -70,7 +67,7 @@ class JiraTaskSyncService
         $jiraApiWorkLog = $this->jiraApiService->syncWorkLog(
             task: $task,
             workLogId: $jiraWorkLog->getWorkLogId() ? (int) $jiraWorkLog->getWorkLogId() : null,
-            startTime: $jiraStartDateTime,
+            startTime: $period->jiraStartDateTime(),
             timeSpentSeconds: $timeSpentSeconds,
             description: implode(', ', $descriptions),
         );
