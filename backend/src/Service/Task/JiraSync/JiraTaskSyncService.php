@@ -6,10 +6,14 @@ namespace App\Service\Task\JiraSync;
 
 use App\Entity\JiraWorkLog\JiraWorkLog;
 use App\Entity\Task\Task;
+use App\Entity\Task\TimeLog\TimeLog;
 use App\Exception\JiraApiServiceException;
 use App\Repository\JiraWorkLog\JiraWorkLogRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\JiraApi\JiraApiService;
+use App\Utility\TimeLog\TimeLogDuration;
+use App\Utility\TimeLog\TimeLogRange;
+use Doctrine\Common\Collections\Collection;
 
 class JiraTaskSyncService
 {
@@ -17,7 +21,6 @@ class JiraTaskSyncService
         private readonly JiraApiService $jiraApiService,
         private readonly JiraWorkLogRepository $jiraWorkLogRepository,
         private readonly TaskFilterDateRangeResolver $taskFilterDateRangeResolver,
-        private readonly JiraSyncTimeLogAggregation $timeLogAggregation,
     ) {
     }
 
@@ -36,7 +39,7 @@ class JiraTaskSyncService
     /**
      * @throws JiraApiServiceException
      */
-    final public function sync(Task $task, string $date): bool
+    private function sync(Task $task, string $date): bool
     {
         $period = $this->taskFilterDateRangeResolver->resolveJiraSyncDate($date);
         $syncDate = $period->syncDate();
@@ -53,7 +56,7 @@ class JiraTaskSyncService
             $jiraWorkLog->setTask($task);
         }
 
-        [$timeSpentSeconds, $descriptions] = $this->timeLogAggregation->summarize(
+        [$timeSpentSeconds, $descriptions] = $this->summarize(
             timeLogs: $task->getTimeLogs(),
             startDate: $period->startDate(),
             endDate: $period->endDate(),
@@ -84,6 +87,43 @@ class JiraTaskSyncService
         return true;
     }
 
+    /**
+     * @param Collection<int, TimeLog> $timeLogs
+     *
+     * @return array{int, string[]}
+     */
+    private function summarize(
+        Collection $timeLogs,
+        \DateTimeInterface $startDate,
+        \DateTimeInterface $endDate,
+    ): array {
+        $timeSpentSeconds = 0;
+        $descriptions = [];
+
+        /** @var TimeLog $timeLog */
+        foreach ($timeLogs->toArray() as $timeLog) {
+            $logStart = $timeLog->getStartTime();
+            $logEnd = $timeLog->getEndTime();
+
+            if (!TimeLogRange::overlaps($startDate, $endDate, $logStart, $logEnd)) {
+                continue;
+            }
+
+            $timeSpentSeconds += TimeLogDuration::clippedSecondsInRange(
+                rangeStart: $startDate,
+                rangeEnd: $endDate,
+                logStart: $logStart,
+                logEnd: $logEnd,
+            );
+
+            if (!empty($description = $timeLog->getDescription())) {
+                $descriptions[] = $description;
+            }
+        }
+
+        return [$timeSpentSeconds, $descriptions];
+    }
+
     private function createUpdateJiraWorkLog(
         JiraWorkLog $jiraWorkLog,
         ?string $workLogId,
@@ -97,5 +137,4 @@ class JiraTaskSyncService
             $this->jiraWorkLogRepository->flush();
         }
     }
-
 }

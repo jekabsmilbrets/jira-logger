@@ -39,7 +39,7 @@ class JiraApiService
     /**
      * @throws JiraApiServiceException
      */
-    final public function syncWorkLog(
+    public function syncWorkLog(
         Task $task,
         ?int $workLogId,
         \DateTime $startTime,

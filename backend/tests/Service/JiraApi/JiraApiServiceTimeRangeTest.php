@@ -16,9 +16,9 @@ use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\JiraApi\JiraApiService;
 use App\Service\Setting\SettingService;
 use App\Service\Task\JiraSync\JiraTaskSyncService;
-use App\Service\Task\JiraSync\JiraSyncTimeLogAggregation;
 use App\Service\Task\JiraSync\TaskJiraSyncException;
-use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\EntityManagerInterface;
+use JiraRestApi\Issue\Worklog;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -26,46 +26,43 @@ class JiraApiServiceTimeRangeTest extends TestCase
 {
     public function testCalculateTimeSpentUsesClippedIntervalsWithoutMutatingTimeLog(): void
     {
-        $aggregation = new JiraSyncTimeLogAggregation();
-
         $start = new \DateTime('2026-05-29 10:00:00');
         $end = new \DateTime('2026-05-31 10:00:00');
-
+        $task = (new Task())->setName('TASK-1');
         $timeLog = (new TimeLog())
             ->setStartTime($start)
             ->setEndTime($end)
             ->setDescription('Long task');
+        $task->addTimeLog($timeLog);
+        $jiraApiService = $this->createMock(JiraApiService::class);
+        $jiraApiService
+            ->expects(self::once())
+            ->method('syncWorkLog')
+            ->with($task, null, self::isInstanceOf(\DateTime::class), 86399, 'Long task')
+            ->willReturn($this->workLog());
 
-        $rangeStart = new \DateTime('2026-05-30 00:00:00');
-        $rangeEnd = new \DateTime('2026-05-30 23:59:59');
+        $synced = $this->createService(jiraApiService: $jiraApiService)->syncTask($task, '2026-05-30');
 
-        [$seconds, $descriptions] = $aggregation->summarize(
-            new ArrayCollection([$timeLog]),
-            $rangeStart,
-            $rangeEnd,
-        );
-
-        self::assertSame(86399, $seconds);
-        self::assertSame(['Long task'], $descriptions);
+        self::assertTrue($synced);
         self::assertSame('2026-05-29 10:00:00', $timeLog->getStartTime()?->format('Y-m-d H:i:s'));
         self::assertSame('2026-05-31 10:00:00', $timeLog->getEndTime()?->format('Y-m-d H:i:s'));
     }
 
     public function testFilterIncludesTimeLogSpanningWholeRequestedRange(): void
     {
-        $aggregation = new JiraSyncTimeLogAggregation();
-
+        $task = (new Task())->setName('TASK-1');
         $timeLog = (new TimeLog())
             ->setStartTime(new \DateTime('2026-05-29 00:00:00'))
             ->setEndTime(new \DateTime('2026-05-31 00:00:00'));
+        $task->addTimeLog($timeLog);
+        $jiraApiService = $this->createMock(JiraApiService::class);
+        $jiraApiService
+            ->expects(self::once())
+            ->method('syncWorkLog')
+            ->with($task, null, self::isInstanceOf(\DateTime::class), 86399, '')
+            ->willReturn($this->workLog());
 
-        [$seconds] = $aggregation->summarize(
-            new ArrayCollection([$timeLog]),
-            new \DateTime('2026-05-30 00:00:00'),
-            new \DateTime('2026-05-30 23:59:59'),
-        );
-
-        self::assertSame(86399, $seconds);
+        self::assertTrue($this->createService(jiraApiService: $jiraApiService)->syncTask($task, '2026-05-30'));
     }
 
     public function testResolveSyncDatesUsesUserTimezoneForDateModeRange(): void
@@ -73,15 +70,16 @@ class JiraApiServiceTimeRangeTest extends TestCase
         $timeLog = (new TimeLog())
             ->setStartTime(new \DateTimeImmutable('2026-06-23T00:00:00+02:00'))
             ->setEndTime(new \DateTimeImmutable('2026-06-23T00:10:00+02:00'));
-        $period = $this->createDateRangeResolver('Europe/Vienna')->resolveJiraSyncDate('2026-06-23');
+        $task = (new Task())->setName('TASK-1');
+        $task->addTimeLog($timeLog);
+        $jiraApiService = $this->createMock(JiraApiService::class);
+        $jiraApiService
+            ->expects(self::once())
+            ->method('syncWorkLog')
+            ->with($task, null, self::isInstanceOf(\DateTime::class), 600, '')
+            ->willReturn($this->workLog());
 
-        [$seconds] = (new JiraSyncTimeLogAggregation())->summarize(
-            new ArrayCollection([$timeLog]),
-            $period->startDate(),
-            $period->endDate(),
-        );
-
-        self::assertSame(600, $seconds);
+        self::assertTrue($this->createService('Europe/Vienna', jiraApiService: $jiraApiService)->syncTask($task, '2026-06-23'));
     }
 
     public function testSyncWorkLogRejectsValuesBelowMinimumThresholdAfterConfiguration(): void
@@ -123,14 +121,38 @@ class JiraApiServiceTimeRangeTest extends TestCase
         $service->syncTask((new Task())->setName('TASK-1'), '2026-06-23');
     }
 
-    private function createService(string $userTimezone = 'UTC', ?SettingService $settingService = null): JiraTaskSyncService
+    private function createService(
+        string $userTimezone = 'UTC',
+        ?SettingService $settingService = null,
+        ?JiraApiService $jiraApiService = null,
+    ): JiraTaskSyncService
     {
         return new JiraTaskSyncService(
-            $this->createApiService($settingService),
-            $this->createMock(JiraWorkLogRepository::class),
+            $jiraApiService ?? $this->createApiService($settingService),
+            $this->jiraWorkLogRepository(),
             $this->createDateRangeResolver($userTimezone),
-            new JiraSyncTimeLogAggregation(),
         );
+    }
+
+    private function jiraWorkLogRepository(): JiraWorkLogRepository
+    {
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $repository = $this->getMockBuilder(JiraWorkLogRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findOneBy', 'getEntityManager'])
+            ->getMock();
+        $repository->method('findOneBy')->willReturn(null);
+        $repository->method('getEntityManager')->willReturn($entityManager);
+
+        return $repository;
+    }
+
+    private function workLog(): Worklog
+    {
+        $workLog = new Worklog();
+        $workLog->id = 123;
+
+        return $workLog;
     }
 
     private function createDateRangeResolver(string $userTimezone = 'UTC'): TaskFilterDateRangeResolver
