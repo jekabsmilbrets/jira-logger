@@ -6,7 +6,6 @@ namespace App\Service\Setting;
 
 use App\Dto\Setting\SettingRequest;
 use App\Entity\Setting\Setting;
-use App\Factory\Setting\SettingFactory;
 use App\Repository\Setting\SettingRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 
@@ -19,11 +18,14 @@ class SettingService
     ) {
     }
 
+    /**
+     * @return ArrayCollection<int, Setting>|null
+     */
     final public function list(): ?ArrayCollection
     {
         $settings = $this->settingRepository->findAll();
 
-        if (empty($settings) || [] === $settings) {
+        if (empty($settings)) {
             return null;
         }
 
@@ -59,7 +61,7 @@ class SettingService
         }
 
         if ($settingRequest && !$setting) {
-            $setting = SettingFactory::create($settingRequest);
+            $setting = $this->applyRequest($settingRequest);
         }
 
         $this->settingRepository->save(
@@ -79,8 +81,6 @@ class SettingService
         switch (true) {
             case !$settingRequest && !$setting:
                 throw new \RuntimeException(self::NO_DATA_PROVIDED);
-            case (!$settingRequest && $setting) && !$setting instanceof Setting:
-                return null;
 
             case $settingRequest && !$setting:
                 $setting = $this->settingRepository->find($id);
@@ -89,10 +89,7 @@ class SettingService
                     return null;
                 }
 
-                $setting = SettingFactory::create(
-                    settingRequest: $settingRequest,
-                    setting: $setting
-                );
+                $setting = $this->applyRequest($settingRequest, $setting);
                 break;
         }
 
@@ -119,5 +116,20 @@ class SettingService
         );
 
         return true;
+    }
+
+    private function applyRequest(SettingRequest $request, ?Setting $setting = null): Setting
+    {
+        $setting ??= new Setting();
+
+        if (null !== ($name = $request->getName())) {
+            $setting->setName($name);
+        }
+
+        if (null !== ($value = $request->getValue())) {
+            $setting->setValue($value);
+        }
+
+        return $setting;
     }
 }

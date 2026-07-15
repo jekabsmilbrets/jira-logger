@@ -7,7 +7,6 @@ namespace App\Service\JiraWorkLog;
 use App\Dto\JiraWorkLog\JiraWorkLogRequest;
 use App\Entity\JiraWorkLog\JiraWorkLog;
 use App\Entity\Task\Task;
-use App\Factory\JiraWorkLog\JiraWorkLogFactory;
 use App\Repository\JiraWorkLog\JiraWorkLogRepository;
 use App\Service\Task\TaskService;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -74,8 +73,8 @@ class JiraWorkLogService
         bool $flush = true,
     ): JiraWorkLogWriteResult {
         try {
-            $jiraWorkLog = JiraWorkLogFactory::create(
-                jiraWorkLogRequest: $jiraWorkLogRequest,
+            $jiraWorkLog = $this->applyRequest(
+                request: $jiraWorkLogRequest,
                 task: $this->task((string) $jiraWorkLogRequest->getTask())
             );
             $this->jiraWorkLogRepository->save(
@@ -105,8 +104,8 @@ class JiraWorkLogService
         }
 
         try {
-            $jiraWorkLog = JiraWorkLogFactory::create(
-                jiraWorkLogRequest: $jiraWorkLogRequest,
+            $jiraWorkLog = $this->applyRequest(
+                request: $jiraWorkLogRequest,
                 task: $this->task((string) $jiraWorkLogRequest->getTask()),
                 jiraWorkLog: $jiraWorkLog
             );
@@ -145,6 +144,26 @@ class JiraWorkLogService
         }
 
         return JiraWorkLogWriteResult::deleted();
+    }
+
+    private function applyRequest(
+        JiraWorkLogRequest $request,
+        Task $task,
+        ?JiraWorkLog $jiraWorkLog = null,
+    ): JiraWorkLog {
+        $jiraWorkLog ??= new JiraWorkLog();
+
+        if (null !== ($description = $request->getDescription())) {
+            $jiraWorkLog->setDescription($description);
+        }
+
+        $jiraWorkLog->setTask($task);
+
+        if (null !== ($timeSpentSeconds = $request->getTimeSpentSeconds())) {
+            $jiraWorkLog->setTimeSpentSeconds($timeSpentSeconds);
+        }
+
+        return $jiraWorkLog;
     }
 
     private function task(string $taskId): Task

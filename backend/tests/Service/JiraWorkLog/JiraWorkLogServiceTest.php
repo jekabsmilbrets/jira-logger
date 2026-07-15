@@ -42,10 +42,12 @@ class JiraWorkLogServiceTest extends TestCase
 
     public function testNewReturnsCreatedWhenTaskExists(): void
     {
+        $task = new Task();
         $taskRepository = $this->createMock(TaskRepository::class);
-        $taskRepository->method('find')->willReturn(new Task());
+        $taskRepository->method('find')->willReturn($task);
         $request = (new JiraWorkLogRequest())
             ->setTask('5640e2d4-eff2-4f53-8e71-8cd305530f7f')
+            ->setDescription('note')
             ->setTimeSpentSeconds(120);
         $entityManager = $this->createMock(EntityManagerInterface::class);
         $entityManager->expects(self::once())->method('persist');
@@ -69,5 +71,8 @@ class JiraWorkLogServiceTest extends TestCase
 
         self::assertSame(JiraWorkLogWriteStatus::Created, $result->status);
         self::assertNotNull($result->jiraWorkLog);
+        self::assertSame('note', $result->jiraWorkLog->getDescription());
+        self::assertSame(120, $result->jiraWorkLog->getTimeSpentSeconds());
+        self::assertSame($task, $result->jiraWorkLog->getTask());
     }
 }
