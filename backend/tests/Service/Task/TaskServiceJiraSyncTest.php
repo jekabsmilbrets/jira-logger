@@ -7,10 +7,8 @@ namespace App\Tests\Service\Task;
 use App\Entity\Task\Task;
 use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
-use App\Service\Task\Filter\TaskFilterCriteriaFactory;
 use App\Service\Task\JiraSync\JiraTaskSyncService;
 use App\Service\Task\JiraSync\TaskJiraSyncException;
-use App\Service\Task\Projection\TaskListProjection;
 use App\Service\Task\Sync\TaskSyncStatus;
 use App\Service\Task\TaskService;
 use PHPUnit\Framework\TestCase;
@@ -77,9 +75,8 @@ class TaskServiceJiraSyncTest extends TestCase
     {
         return new TaskService(
             $repository,
-            new TaskFilterCriteriaFactory($this->createMock(TaskFilterDateRangeResolver::class)),
+            $this->createMock(TaskFilterDateRangeResolver::class),
             $adapter,
-            new TaskListProjection(),
         );
     }
 }
