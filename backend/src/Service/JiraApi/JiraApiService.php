@@ -46,6 +46,7 @@ class JiraApiService
         int $timeSpentSeconds,
         ?string $description = null,
     ): Worklog {
+        $this->client = $this->initClient();
         $issueKey = $this->getIssueNameFromTask($task);
         $description = $description ?? $task->getDescription();
         $workLog = $this->prepareWorkLog(
@@ -54,8 +55,6 @@ class JiraApiService
             timeSpentSeconds: $timeSpentSeconds,
             description: $description,
         );
-        $this->client = $this->initClient();
-
         if (null !== $workLogId) {
             try {
                 return $this->updateWorkLog($issueKey, $workLog, $workLogId, $description);

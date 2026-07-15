@@ -84,12 +84,22 @@ class JiraApiServiceTimeRangeTest extends TestCase
         self::assertSame(600, $seconds);
     }
 
-    public function testSyncWorkLogRejectsValuesBelowMinimumThresholdBeforeClientInitialization(): void
+    public function testSyncWorkLogRejectsValuesBelowMinimumThresholdAfterConfiguration(): void
     {
+        $settingRepository = $this->createMock(SettingRepository::class);
+        $settings = [
+            JiraApiService::JIRA_ENABLED_KEY => (new Setting())->setName(JiraApiService::JIRA_ENABLED_KEY)->setValue('true'),
+            JiraApiService::JIRA_HOST_SETTING_KEY => (new Setting())->setName(JiraApiService::JIRA_HOST_SETTING_KEY)->setValue('https://jira.example.test'),
+            JiraApiService::JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY => (new Setting())->setName(JiraApiService::JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY)->setValue('token'),
+        ];
+        $settingRepository
+            ->method('findOneBy')
+            ->willReturnCallback(static fn (array $criteria): ?Setting => $settings[$criteria['name']] ?? null);
+
         $this->expectException(JiraApiServiceException::class);
         $this->expectExceptionMessage('Cannot report less than 60 second!');
 
-        $this->createApiService()->syncWorkLog(
+        $this->createApiService(new SettingService($settingRepository))->syncWorkLog(
             task: (new Task())->setName('TASK-1'),
             workLogId: null,
             startTime: new \DateTime('2026-05-30 10:00:00'),
