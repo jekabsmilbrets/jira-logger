@@ -8,8 +8,8 @@ use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
+use App\Service\Tag\TagService;
 use App\Service\Task\Filter\TaskFilterCriteria;
-use App\Service\Task\Input\TaskInput;
 use App\Service\Task\JiraSync\JiraTaskSyncService;
 use App\Service\Task\JiraSync\TaskJiraSyncException;
 use App\Service\Task\Sync\TaskSyncResult;
@@ -21,12 +21,11 @@ use Ramsey\Uuid\Uuid;
 
 class TaskService
 {
-    final public const NO_DATA_PROVIDED = 'No Task Model or TaskInput was provided';
-
     public function __construct(
         private readonly TaskRepository $taskRepository,
         private readonly TaskFilterDateRangeResolver $taskFilterDateRangeResolver,
         private readonly JiraTaskSyncService $jiraTaskSyncService,
+        private readonly TagService $tagService,
     ) {
     }
 
@@ -72,9 +71,12 @@ class TaskService
         return $task ?? null;
     }
 
-    final public function create(TaskInput $taskInput): TaskWriteResult
+    /**
+     * @param string[]|null $tagIds
+     */
+    final public function create(?string $name, ?string $description, ?array $tagIds): TaskWriteResult
     {
-        $task = $this->applyInput($taskInput);
+        $task = $this->applyInput($name, $description, $tagIds);
 
         try {
             $this->taskRepository->save(
@@ -90,15 +92,22 @@ class TaskService
         return TaskWriteResult::created($task);
     }
 
-    final public function update(string $id, TaskInput $taskInput): TaskWriteResult
-    {
+    /**
+     * @param string[]|null $tagIds
+     */
+    final public function update(
+        string $id,
+        ?string $name,
+        ?string $description,
+        ?array $tagIds,
+    ): TaskWriteResult {
         $task = $this->taskRepository->find($id);
 
         if (!$task instanceof Task) {
             return TaskWriteResult::notFound();
         }
 
-        $task = $this->applyInput($taskInput, $task);
+        $task = $this->applyInput($name, $description, $tagIds, $task);
 
         try {
             $this->taskRepository->flush();
@@ -228,26 +237,35 @@ class TaskService
         return $task;
     }
 
-    private function applyInput(TaskInput $taskInput, ?Task $task = null): Task
-    {
+    /**
+     * @param string[]|null $tagIds
+     */
+    private function applyInput(
+        ?string $name,
+        ?string $description,
+        ?array $tagIds,
+        ?Task $task = null,
+    ): Task {
         $task ??= new Task();
 
-        if (null !== $taskInput->name) {
-            $task->setName($taskInput->name);
+        if (null !== $name) {
+            $task->setName($name);
         }
 
-        if (null !== $taskInput->description) {
-            $task->setDescription($taskInput->description);
+        if (null !== $description) {
+            $task->setDescription($description);
         }
 
-        if (null !== $taskInput->tags) {
+        if (null !== $tagIds) {
+            $tags = $this->tagService->findByIds($tagIds);
+
             foreach ($task->getTags() as $taskTag) {
-                if (!$taskInput->tags->contains($taskTag)) {
+                if (!$tags->contains($taskTag)) {
                     $task->removeTag($taskTag);
                 }
             }
 
-            foreach ($taskInput->tags as $tag) {
+            foreach ($tags as $tag) {
                 $task->addTag($tag);
             }
         }

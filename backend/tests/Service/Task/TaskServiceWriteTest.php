@@ -6,15 +6,15 @@ namespace App\Tests\Service\Task;
 
 use App\Entity\Tag\Tag;
 use App\Entity\Task\Task;
+use App\Repository\Tag\TagRepository;
 use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
-use App\Service\Task\Input\TaskInput;
+use App\Service\Tag\TagService;
 use App\Service\Task\JiraSync\JiraTaskSyncService;
 use App\Service\Task\TaskService;
 use App\Service\Task\Write\TaskWriteStatus;
 use Doctrine\DBAL\Driver\Exception as DriverException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
-use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -27,9 +27,7 @@ class TaskServiceWriteTest extends TestCase
         $entityManager->expects(self::once())->method('flush');
         $repository = $this->repositoryWithEntityManager($entityManager);
 
-        $result = $this->service($repository)->create(
-            new TaskInput(name: 'Task', description: 'Description', tags: null)
-        );
+        $result = $this->service($repository)->create(name: 'Task', description: 'Description', tagIds: null);
 
         self::assertSame(TaskWriteStatus::Created, $result->status);
         self::assertInstanceOf(Task::class, $result->task);
@@ -41,7 +39,7 @@ class TaskServiceWriteTest extends TestCase
         $entityManager->method('persist')->willThrowException($this->uniqueConstraintViolation());
         $repository = $this->repositoryWithEntityManager($entityManager);
 
-        $result = $this->service($repository)->create(new TaskInput(name: 'Task', description: null, tags: null));
+        $result = $this->service($repository)->create(name: 'Task', description: null, tagIds: null);
 
         self::assertSame(TaskWriteStatus::Duplicate, $result->status);
         self::assertNull($result->task);
@@ -53,7 +51,7 @@ class TaskServiceWriteTest extends TestCase
         $entityManager->method('flush')->willThrowException(new \RuntimeException('db down'));
         $repository = $this->repositoryWithEntityManager($entityManager);
 
-        $result = $this->service($repository)->create(new TaskInput(name: 'Task', description: null, tags: null));
+        $result = $this->service($repository)->create(name: 'Task', description: null, tagIds: null);
 
         self::assertSame(TaskWriteStatus::Failed, $result->status);
     }
@@ -65,7 +63,7 @@ class TaskServiceWriteTest extends TestCase
         $entityManager->expects(self::once())->method('flush');
         $repository = $this->repositoryWithEntityManager($entityManager, $task);
 
-        $result = $this->service($repository)->update('task-id', new TaskInput(name: 'New', description: null, tags: null));
+        $result = $this->service($repository)->update('task-id', name: 'New', description: null, tagIds: null);
 
         self::assertSame(TaskWriteStatus::Updated, $result->status);
         self::assertSame($task, $result->task);
@@ -79,12 +77,15 @@ class TaskServiceWriteTest extends TestCase
         $task->addTag($existingTag);
         $entityManager = $this->createMock(EntityManagerInterface::class);
         $repository = $this->repositoryWithEntityManager($entityManager, $task);
+        $tagRepository = $this->createMock(TagRepository::class);
+        $tagRepository->expects(self::never())->method('findBy');
 
-        $result = $this->service($repository)->update('task-id', new TaskInput(
+        $result = $this->service($repository, new TagService($tagRepository))->update(
+            'task-id',
             name: null,
             description: null,
-            tags: new ArrayCollection([])
-        ));
+            tagIds: [],
+        );
 
         self::assertSame(TaskWriteStatus::Updated, $result->status);
         self::assertCount(0, $task->getTags());
@@ -95,12 +96,14 @@ class TaskServiceWriteTest extends TestCase
         $tag = (new Tag())->setName('A');
         $entityManager = $this->createMock(EntityManagerInterface::class);
         $repository = $this->repositoryWithEntityManager($entityManager);
+        $tagRepository = $this->createMock(TagRepository::class);
+        $tagRepository->expects(self::once())->method('findBy')->with(['id' => ['tag-id']])->willReturn([$tag]);
 
-        $result = $this->service($repository)->create(new TaskInput(
+        $result = $this->service($repository, new TagService($tagRepository))->create(
             name: 'Task',
             description: null,
-            tags: new ArrayCollection([$tag])
-        ));
+            tagIds: ['tag-id'],
+        );
 
         self::assertSame(TaskWriteStatus::Created, $result->status);
         self::assertCount(1, $result->task?->getTags());
@@ -110,7 +113,7 @@ class TaskServiceWriteTest extends TestCase
     {
         $repository = $this->repositoryWithEntityManager($this->createMock(EntityManagerInterface::class), null);
 
-        $result = $this->service($repository)->update('missing', new TaskInput(name: 'Task', description: null, tags: null));
+        $result = $this->service($repository)->update('missing', name: 'Task', description: null, tagIds: null);
 
         self::assertSame(TaskWriteStatus::NotFound, $result->status);
     }
@@ -140,12 +143,13 @@ class TaskServiceWriteTest extends TestCase
         self::assertSame(TaskWriteStatus::Failed, $result->status);
     }
 
-    private function service(TaskRepository $repository): TaskService
+    private function service(TaskRepository $repository, ?TagService $tagService = null): TaskService
     {
         return new TaskService(
             $repository,
             $this->createMock(TaskFilterDateRangeResolver::class),
             $this->createMock(JiraTaskSyncService::class),
+            $tagService ?? new TagService($this->createMock(TagRepository::class)),
         );
     }
 

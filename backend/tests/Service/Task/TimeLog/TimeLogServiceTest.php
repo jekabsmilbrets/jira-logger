@@ -11,6 +11,7 @@ use App\Repository\Task\TimeLog\TimeLogRepository;
 use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\DateTime\UserTimezoneResolver;
+use App\Service\Tag\TagService;
 use App\Service\Task\JiraSync\JiraTaskSyncService;
 use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
@@ -37,6 +38,7 @@ class TimeLogServiceTest extends TestCase
                 $taskRepository,
                 $this->createMock(TaskFilterDateRangeResolver::class),
                 $this->createMock(JiraTaskSyncService::class),
+                $this->createMock(TagService::class),
             ),
             $this->createMock(DateInputParser::class),
             $this->timezoneResolver(),

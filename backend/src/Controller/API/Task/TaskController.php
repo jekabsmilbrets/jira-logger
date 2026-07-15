@@ -8,7 +8,6 @@ use App\Controller\API\BaseApiController;
 use App\Dto\Task\TaskListFilterRequest;
 use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
-use App\Service\Task\Input\TaskInputFactory;
 use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
 use App\Service\Task\Sync\TaskSyncResult;
@@ -46,7 +45,6 @@ class TaskController extends BaseApiController
 
     public function __construct(
         private readonly TaskService $taskService,
-        private readonly TaskInputFactory $taskInputFactory,
         private readonly ValidatorInterface $validator,
         private readonly SerializerInterface $serializer,
     ) {
@@ -386,11 +384,11 @@ class TaskController extends BaseApiController
         }
 
         return $this->writeResultResponse(
-            result: $this->taskService->create($this->taskInputFactory->create(
+            result: $this->taskService->create(
                 name: $taskRequest->getName(),
                 description: $taskRequest->getDescription(),
                 tagIds: $taskRequest->getTagIds(),
-            )),
+            ),
             failureMessage: self::CANNOT_CREATE_TASK,
         );
     }
@@ -498,11 +496,9 @@ class TaskController extends BaseApiController
         return $this->writeResultResponse(
             result: $this->taskService->update(
                 id: $id,
-                taskInput: $this->taskInputFactory->create(
-                    name: $taskRequest->getName(),
-                    description: $taskRequest->getDescription(),
-                    tagIds: $taskRequest->getTagIds(),
-                ),
+                name: $taskRequest->getName(),
+                description: $taskRequest->getDescription(),
+                tagIds: $taskRequest->getTagIds(),
             ),
             failureMessage: self::CANNOT_UPDATE_TASK,
         );

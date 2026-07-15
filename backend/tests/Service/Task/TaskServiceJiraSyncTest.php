@@ -7,6 +7,7 @@ namespace App\Tests\Service\Task;
 use App\Entity\Task\Task;
 use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
+use App\Service\Tag\TagService;
 use App\Service\Task\JiraSync\JiraTaskSyncService;
 use App\Service\Task\JiraSync\TaskJiraSyncException;
 use App\Service\Task\Sync\TaskSyncStatus;
@@ -77,6 +78,7 @@ class TaskServiceJiraSyncTest extends TestCase
             $repository,
             $this->createMock(TaskFilterDateRangeResolver::class),
             $adapter,
+            $this->createMock(TagService::class),
         );
     }
 }

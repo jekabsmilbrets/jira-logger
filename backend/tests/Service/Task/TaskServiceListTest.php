@@ -8,6 +8,7 @@ use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
+use App\Service\Tag\TagService;
 use App\Service\Task\JiraSync\JiraTaskSyncService;
 use App\Service\Task\TaskService;
 use Doctrine\ORM\Query;
@@ -106,6 +107,7 @@ class TaskServiceListTest extends TestCase
             $repository,
             $resolver,
             $this->createMock(JiraTaskSyncService::class),
+            $this->createMock(TagService::class),
         );
     }
 
