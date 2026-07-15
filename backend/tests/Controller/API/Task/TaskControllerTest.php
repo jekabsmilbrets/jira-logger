@@ -15,7 +15,7 @@ use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\Tag\TagService;
 use App\Service\Task\Filter\TaskFilterCriteriaFactory;
 use App\Service\Task\Input\TaskInputFactory;
-use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
+use App\Service\Task\JiraSync\JiraTaskSyncService;
 use App\Service\Task\Projection\TaskListProjection;
 use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
@@ -63,7 +63,7 @@ class TaskControllerTest extends TestCase
         return new TaskService(
             $taskRepository ?? $this->getMockBuilder(TaskRepository::class)->disableOriginalConstructor()->getMock(),
             new TaskFilterCriteriaFactory($taskFilterDateRangeResolver),
-            $this->createMock(TaskJiraSyncAdapter::class),
+            $this->createMock(JiraTaskSyncService::class),
             new TaskListProjection(),
         );
     }

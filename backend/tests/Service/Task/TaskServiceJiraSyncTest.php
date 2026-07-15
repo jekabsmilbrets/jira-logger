@@ -8,7 +8,7 @@ use App\Entity\Task\Task;
 use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\Task\Filter\TaskFilterCriteriaFactory;
-use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
+use App\Service\Task\JiraSync\JiraTaskSyncService;
 use App\Service\Task\JiraSync\TaskJiraSyncException;
 use App\Service\Task\Projection\TaskListProjection;
 use App\Service\Task\Sync\TaskSyncStatus;
@@ -21,7 +21,7 @@ class TaskServiceJiraSyncTest extends TestCase
     {
         $repository = $this->createMock(TaskRepository::class);
         $repository->method('find')->with('missing')->willReturn(null);
-        $adapter = $this->createMock(TaskJiraSyncAdapter::class);
+        $adapter = $this->createMock(JiraTaskSyncService::class);
         $adapter->expects(self::never())->method('syncTask');
 
         $result = $this->service($repository, $adapter)->syncWithJira('missing', '2026-06-23');
@@ -34,7 +34,7 @@ class TaskServiceJiraSyncTest extends TestCase
         $task = (new Task())->setName('TASK');
         $repository = $this->createMock(TaskRepository::class);
         $repository->method('find')->with('task-id')->willReturn($task);
-        $adapter = $this->createMock(TaskJiraSyncAdapter::class);
+        $adapter = $this->createMock(JiraTaskSyncService::class);
         $adapter
             ->expects(self::once())
             ->method('syncTask')
@@ -51,7 +51,7 @@ class TaskServiceJiraSyncTest extends TestCase
         $task = (new Task())->setName('TASK');
         $repository = $this->createMock(TaskRepository::class);
         $repository->method('find')->willReturn($task);
-        $adapter = $this->createMock(TaskJiraSyncAdapter::class);
+        $adapter = $this->createMock(JiraTaskSyncService::class);
         $adapter->method('syncTask')->willReturn(false);
 
         $result = $this->service($repository, $adapter)->syncWithJira('task-id', '2026-06-23');
@@ -64,7 +64,7 @@ class TaskServiceJiraSyncTest extends TestCase
         $task = (new Task())->setName('TASK');
         $repository = $this->createMock(TaskRepository::class);
         $repository->method('find')->willReturn($task);
-        $adapter = $this->createMock(TaskJiraSyncAdapter::class);
+        $adapter = $this->createMock(JiraTaskSyncService::class);
         $adapter->method('syncTask')->willThrowException(new TaskJiraSyncException('jira failed'));
 
         $result = $this->service($repository, $adapter)->syncWithJira('task-id', '2026-06-23');
@@ -73,7 +73,7 @@ class TaskServiceJiraSyncTest extends TestCase
         self::assertSame('jira failed', $result->errorMessage);
     }
 
-    private function service(TaskRepository $repository, TaskJiraSyncAdapter $adapter): TaskService
+    private function service(TaskRepository $repository, JiraTaskSyncService $adapter): TaskService
     {
         return new TaskService(
             $repository,

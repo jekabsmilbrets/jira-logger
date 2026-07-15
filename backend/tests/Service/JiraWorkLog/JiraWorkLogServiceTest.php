@@ -12,7 +12,7 @@ use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\JiraWorkLog\JiraWorkLogService;
 use App\Service\JiraWorkLog\JiraWorkLogWriteStatus;
 use App\Service\Task\Filter\TaskFilterCriteriaFactory;
-use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
+use App\Service\Task\JiraSync\JiraTaskSyncService;
 use App\Service\Task\Projection\TaskListProjection;
 use App\Service\Task\TaskService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -33,7 +33,7 @@ class JiraWorkLogServiceTest extends TestCase
             new TaskService(
                 $taskRepository,
                 new TaskFilterCriteriaFactory($this->createMock(TaskFilterDateRangeResolver::class)),
-                $this->createMock(TaskJiraSyncAdapter::class),
+                $this->createMock(JiraTaskSyncService::class),
                 new TaskListProjection(),
             )
         );
@@ -61,7 +61,7 @@ class JiraWorkLogServiceTest extends TestCase
             new TaskService(
                 $taskRepository,
                 new TaskFilterCriteriaFactory($this->createMock(TaskFilterDateRangeResolver::class)),
-                $this->createMock(TaskJiraSyncAdapter::class),
+                $this->createMock(JiraTaskSyncService::class),
                 new TaskListProjection(),
             )
         );

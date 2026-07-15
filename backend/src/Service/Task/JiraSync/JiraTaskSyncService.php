@@ -12,7 +12,7 @@ use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\JiraApi\JiraApiService;
 use JiraRestApi\Issue\Worklog;
 
-class JiraTaskSyncService implements TaskJiraSyncAdapter
+class JiraTaskSyncService
 {
     public function __construct(
         private readonly JiraApiService $jiraApiService,
@@ -25,7 +25,7 @@ class JiraTaskSyncService implements TaskJiraSyncAdapter
     /**
      * @throws TaskJiraSyncException
      */
-    final public function syncTask(Task $task, string $date): bool
+    public function syncTask(Task $task, string $date): bool
     {
         try {
             $this->jiraApiService->init();

@@ -9,7 +9,7 @@ use App\Repository\Task\TaskRepository;
 use App\Service\Task\Filter\TaskFilterCriteria;
 use App\Service\Task\Filter\TaskFilterCriteriaFactory;
 use App\Service\Task\Input\TaskInput;
-use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
+use App\Service\Task\JiraSync\JiraTaskSyncService;
 use App\Service\Task\JiraSync\TaskJiraSyncException;
 use App\Service\Task\Projection\TaskListProjection;
 use App\Service\Task\Sync\TaskSyncResult;
@@ -23,7 +23,7 @@ class TaskService
     public function __construct(
         private readonly TaskRepository $taskRepository,
         private readonly TaskFilterCriteriaFactory $taskFilterCriteriaFactory,
-        private readonly TaskJiraSyncAdapter $taskJiraSyncAdapter,
+        private readonly JiraTaskSyncService $jiraTaskSyncService,
         private readonly TaskListProjection $taskListProjection,
     ) {
     }
@@ -137,7 +137,7 @@ class TaskService
         }
 
         try {
-            $synced = $this->taskJiraSyncAdapter->syncTask($task, $date);
+            $synced = $this->jiraTaskSyncService->syncTask($task, $date);
         } catch (TaskJiraSyncException $e) {
             return TaskSyncResult::failed($e->getMessage());
         }

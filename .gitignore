@@ -61,3 +61,4 @@ db_dump.sql
 /backend/CONTEXT.md
 /backend/docs/adr/
 
+.codebase-memory
