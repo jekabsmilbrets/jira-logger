@@ -216,28 +216,24 @@ class TagController extends BaseApiController
         Request $request,
     ): JsonResponse {
         try {
-            $tagRequest = $serializer->deserialize(
-                data: $request->getContent(),
+            $tagRequest = $this->deserializeJsonRequest(
+                serializer: $serializer,
+                request: $request,
                 type: TagRequest::class,
-                format: 'json'
             );
         } catch (UnexpectedValueException) {
-            return $this->jsonApi(
-                errors: [self::BAD_REQUEST],
-                status: 400
-            );
+            return $this->badRequestJsonApi();
         }
 
-        $errors = $validator->validate(
-            value: $tagRequest,
-            groups: ['create']
+        $validationError = $this->validateRequestDto(
+            validator: $validator,
+            requestDto: $tagRequest,
+            group: 'create',
+            status: 406,
         );
 
-        if (\count($errors) > 0) {
-            return $this->validationErrorJsonApi(
-                constraintViolationList: $errors,
-                status: 406
-            );
+        if ($validationError instanceof JsonResponse) {
+            return $validationError;
         }
 
         try {
@@ -340,28 +336,24 @@ class TagController extends BaseApiController
         Request $request,
     ): JsonResponse {
         try {
-            $tagRequest = $serializer->deserialize(
-                data: $request->getContent(),
+            $tagRequest = $this->deserializeJsonRequest(
+                serializer: $serializer,
+                request: $request,
                 type: TagRequest::class,
-                format: 'json'
             );
         } catch (UnexpectedValueException) {
-            return $this->jsonApi(
-                errors: [self::BAD_REQUEST],
-                status: 400
-            );
+            return $this->badRequestJsonApi();
         }
 
-        $errors = $validator->validate(
-            value: $tagRequest,
-            groups: ['update']
+        $validationError = $this->validateRequestDto(
+            validator: $validator,
+            requestDto: $tagRequest,
+            group: 'update',
+            status: 406,
         );
 
-        if (\count($errors) > 0) {
-            return $this->validationErrorJsonApi(
-                constraintViolationList: $errors,
-                status: 406
-            );
+        if ($validationError instanceof JsonResponse) {
+            return $validationError;
         }
 
         try {
