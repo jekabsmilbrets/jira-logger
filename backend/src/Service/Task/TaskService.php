@@ -10,9 +10,6 @@ use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\Tag\TagService;
 use App\Service\Task\Filter\TaskFilterCriteria;
-use App\Service\Task\JiraSync\JiraTaskSyncService;
-use App\Service\Task\JiraSync\TaskJiraSyncException;
-use App\Service\Task\Sync\TaskSyncResult;
 use App\Service\Task\Write\TaskWriteResult;
 use App\Utility\TimeLog\TimeLogRange;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -24,7 +21,6 @@ class TaskService
     public function __construct(
         private readonly TaskRepository $taskRepository,
         private readonly TaskFilterDateRangeResolver $taskFilterDateRangeResolver,
-        private readonly JiraTaskSyncService $jiraTaskSyncService,
         private readonly TagService $tagService,
     ) {
     }
@@ -151,23 +147,6 @@ class TaskService
         }
 
         return true;
-    }
-
-    final public function syncWithJira(string $id, string $date): TaskSyncResult
-    {
-        $task = $this->show($id);
-
-        if (!$task instanceof Task) {
-            return TaskSyncResult::notFound();
-        }
-
-        try {
-            $synced = $this->jiraTaskSyncService->syncTask($task, $date);
-        } catch (TaskJiraSyncException $e) {
-            return TaskSyncResult::failed($e->getMessage());
-        }
-
-        return $synced ? TaskSyncResult::synced() : TaskSyncResult::conflict();
     }
 
     /**

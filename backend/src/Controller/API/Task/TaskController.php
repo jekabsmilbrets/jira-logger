@@ -8,6 +8,7 @@ use App\Controller\API\BaseApiController;
 use App\Dto\Task\TaskListFilterRequest;
 use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
+use App\Service\Task\JiraSync\JiraTaskSyncService;
 use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
 use App\Service\Task\Sync\TaskSyncResult;
@@ -45,6 +46,7 @@ class TaskController extends BaseApiController
 
     public function __construct(
         private readonly TaskService $taskService,
+        private readonly JiraTaskSyncService $jiraTaskSyncService,
         private readonly ValidatorInterface $validator,
         private readonly SerializerInterface $serializer,
     ) {
@@ -662,7 +664,7 @@ class TaskController extends BaseApiController
         string $id,
         string $date,
     ): JsonResponse {
-        return $this->syncResultResponse($this->taskService->syncWithJira($id, $date));
+        return $this->syncResultResponse($this->jiraTaskSyncService->syncTask($id, $date));
     }
 
     private function writeResultResponse(TaskWriteResult $result, string $failureMessage): JsonResponse

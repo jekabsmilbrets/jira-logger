@@ -9,8 +9,10 @@ use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Exception\JiraApiServiceException;
 use App\Repository\JiraWorkLog\JiraWorkLogRepository;
+use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\JiraApi\JiraApiService;
+use App\Service\Task\Sync\TaskSyncResult;
 use App\Utility\TimeLog\TimeLogDuration;
 use App\Utility\TimeLog\TimeLogRange;
 use Doctrine\Common\Collections\Collection;
@@ -21,25 +23,31 @@ class JiraTaskSyncService
         private readonly JiraApiService $jiraApiService,
         private readonly JiraWorkLogRepository $jiraWorkLogRepository,
         private readonly TaskFilterDateRangeResolver $taskFilterDateRangeResolver,
+        private readonly TaskRepository $taskRepository,
     ) {
     }
 
-    /**
-     * @throws TaskJiraSyncException
-     */
-    public function syncTask(Task $task, string $date): bool
+    public function syncTask(string $id, string $date): TaskSyncResult
     {
-        try {
-            return $this->sync($task, $date);
-        } catch (JiraApiServiceException $e) {
-            throw new TaskJiraSyncException(message: $e->getMessage(), code: $e->getCode(), previous: $e);
+        $task = $this->taskRepository->find($id);
+
+        if (!$task instanceof Task) {
+            return TaskSyncResult::notFound();
         }
+
+        try {
+            $this->sync($task, $date);
+        } catch (JiraApiServiceException $e) {
+            return TaskSyncResult::failed($e->getMessage());
+        }
+
+        return TaskSyncResult::synced();
     }
 
     /**
      * @throws JiraApiServiceException
      */
-    private function sync(Task $task, string $date): bool
+    private function sync(Task $task, string $date): void
     {
         $period = $this->taskFilterDateRangeResolver->resolveJiraSyncDate($date);
         $syncDate = $period->syncDate();
@@ -83,8 +91,6 @@ class JiraTaskSyncService
             jiraWorkLog: $jiraWorkLog,
             workLogId: $workLogId
         );
-
-        return true;
     }
 
     /**

@@ -14,6 +14,7 @@ use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\Tag\TagService;
 use App\Service\Task\JiraSync\JiraTaskSyncService;
+use App\Service\Task\Sync\TaskSyncResult;
 use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
 use App\Service\DateTime\DateInputParser;
@@ -34,10 +35,12 @@ class TaskControllerTest extends TestCase
         TaskService $taskService,
         SerializerInterface $serializer,
         ?ValidatorInterface $validator = null,
+        ?JiraTaskSyncService $jiraTaskSyncService = null,
     ): TaskController
     {
         $controller = new TaskController(
             $taskService,
+            $jiraTaskSyncService ?? $this->createMock(JiraTaskSyncService::class),
             $validator ?? $this->createMock(ValidatorInterface::class),
             $serializer
         );
@@ -58,7 +61,6 @@ class TaskControllerTest extends TestCase
         return new TaskService(
             $taskRepository ?? $this->getMockBuilder(TaskRepository::class)->disableOriginalConstructor()->getMock(),
             $taskFilterDateRangeResolver,
-            $this->createMock(JiraTaskSyncService::class),
             $this->createMock(TagService::class),
         );
     }
@@ -329,5 +331,22 @@ class TaskControllerTest extends TestCase
 
         self::assertSame('date', $dateParameter->getName());
         self::assertSame('string', (string) $dateParameter->getType());
+    }
+
+    public function testSyncWithJiraPreservesHttpStatusMapping(): void
+    {
+        $jiraTaskSyncService = $this->createMock(JiraTaskSyncService::class);
+        $jiraTaskSyncService
+            ->method('syncTask')
+            ->with('task-id', '2026-06-23')
+            ->willReturn(TaskSyncResult::synced());
+
+        $response = $this->controllerWith(
+            $this->taskServiceWith(),
+            $this->createMock(SerializerInterface::class),
+            jiraTaskSyncService: $jiraTaskSyncService,
+        )->syncWithJira('task-id', '2026-06-23');
+
+        self::assertSame(204, $response->getStatusCode());
     }
 }
