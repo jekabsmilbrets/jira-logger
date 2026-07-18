@@ -570,7 +570,7 @@ describe('Report Service ReportService', () => {
     expect(taskQueryService.query).toHaveBeenLastCalledWith(
       {
         tags: ['tag-2'],
-        date: expect.any(Date),
+        date: '2026-05-30',
         hideUnreported: false,
       },
     );
@@ -619,14 +619,14 @@ describe('Report Service ReportService', () => {
 
     expect(taskQueryService.query).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        startDate: expect.any(Date),
-        endDate: expect.any(Date),
+        startDate: '2026-05-01',
+        endDate: '2026-05-03',
         hideUnreported: false,
       }),
     );
     expect(taskQueryService.query).toHaveBeenLastCalledWith(
       expect.not.objectContaining({
-        date: expect.any(Date),
+        date: expect.anything(),
       }),
     );
     expect(service.viewState().columns.some((column) => column.columnDef === 'timeLogged')).toBe(true);

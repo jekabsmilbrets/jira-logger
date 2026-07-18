@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { LocaleService } from '@core/services/locale.service';
 import { StorageService } from '@core/services/storage.service';
 import { TimezoneService } from '@core/services/timezone.service';
 
@@ -49,6 +50,7 @@ describe('Report Service ReportStateService', () => {
       providers: [
         ReportStateService,
         ReportDateCalendarService,
+        { provide: LocaleService, useValue: { locale: 'en-US' } },
         { provide: StorageService, useValue: storageService },
         { provide: TagsService, useValue: { tags: tagsState.asReadonly() } },
         { provide: TimezoneService, useValue: { timezone: 'UTC' } },
@@ -83,6 +85,7 @@ describe('Report Service ReportStateService', () => {
       providers: [
         ReportStateService,
         ReportDateCalendarService,
+        { provide: LocaleService, useValue: { locale: 'en-US' } },
         { provide: StorageService, useValue: localStorageService },
         { provide: TagsService, useValue: { tags: delayedTagsState.asReadonly() } },
         { provide: TimezoneService, useValue: { timezone: 'UTC' } },
@@ -180,5 +183,30 @@ describe('Report Service ReportStateService', () => {
 
     expect(service.snapshot().date).toBeNull();
     expect(service.snapshot().tags).toEqual([]);
+  });
+
+  it('serializes only the dates used by the effective Report Mode', () => {
+    service.applySettingsIntent({ type: 'set-tags', tags: [] });
+    service.applySettingsIntent({ type: 'set-date', date: new Date('2026-05-30T10:00:00.000Z') });
+    service.applySettingsIntent({ type: 'set-start-date', startDate: new Date('2026-05-01T10:00:00.000Z') });
+    service.applySettingsIntent({ type: 'set-end-date', endDate: new Date('2026-05-03T10:00:00.000Z') });
+
+    service.applySettingsIntent({ type: 'set-report-mode', reportMode: ReportMode.date });
+    expect(service.taskFilter()).toEqual({
+      date: '2026-05-30',
+      hideUnreported: false,
+    });
+
+    service.applySettingsIntent({ type: 'set-report-mode', reportMode: ReportMode.dateRange });
+    expect(service.taskFilter()).toEqual({
+      startDate: '2026-05-01',
+      endDate: '2026-05-03',
+      hideUnreported: false,
+    });
+
+    service.applySettingsIntent({ type: 'set-report-mode', reportMode: ReportMode.total });
+    expect(service.taskFilter()).toEqual({
+      hideUnreported: false,
+    });
   });
 });

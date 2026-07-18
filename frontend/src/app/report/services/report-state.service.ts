@@ -299,9 +299,9 @@ export class ReportStateService {
   ): TaskListFilter {
     const filter: TaskListFilter = {
       tags: state.tags.map((tag) => tag.id),
-      date: state.date,
-      startDate: state.startDate,
-      endDate: state.endDate,
+      date: state.date ? this.reportDateCalendarService.formatRequestDate(state.date) : null,
+      startDate: state.startDate ? this.reportDateCalendarService.formatRequestDate(state.startDate) : null,
+      endDate: state.endDate ? this.reportDateCalendarService.formatRequestDate(state.endDate) : null,
       hideUnreported: state.hideUnreportedTasks,
     };
 

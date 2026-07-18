@@ -3,9 +3,6 @@ import { inject, Service } from '@angular/core';
 
 import { map, type Observable } from 'rxjs';
 
-import { TimezoneService } from '@core/services/timezone.service';
-import { formatDateInTimezone } from '@core/utilities/format-date-in-timezone.utility';
-
 import { adaptTasks } from '@shared/adapters/task.adapter';
 import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import type { ResourceRequestHandle } from '@shared/interfaces/resource-request-handle.interface';
@@ -17,11 +14,11 @@ import type { QueryParams } from '@shared/types/query-params.type';
 type QueryParamKey = keyof QueryParams;
 type QueryParamEntry = readonly [QueryParamKey, string | undefined];
 
-const queryParamBuilders: [QueryParamKey, (filter: TaskListFilter, formatDateForQuery: (date: Date) => string) => string | undefined][] = [
+const queryParamBuilders: [QueryParamKey, (filter: TaskListFilter) => string | undefined][] = [
   ['hideUnreported', (filter: TaskListFilter) => filter.hideUnreported ? String(filter.hideUnreported) : undefined],
-  ['date', (filter: TaskListFilter, formatDateForQuery: (date: Date) => string) => filter.date ? formatDateForQuery(filter.date) : undefined],
-  ['startDate', (filter: TaskListFilter, formatDateForQuery: (date: Date) => string) => filter.startDate ? formatDateForQuery(filter.startDate) : undefined],
-  ['endDate', (filter: TaskListFilter, formatDateForQuery: (date: Date) => string) => filter.endDate ? formatDateForQuery(filter.endDate) : undefined],
+  ['date', (filter: TaskListFilter) => filter.date ?? undefined],
+  ['startDate', (filter: TaskListFilter) => filter.startDate ?? undefined],
+  ['endDate', (filter: TaskListFilter) => filter.endDate ?? undefined],
   ['tags', (filter: TaskListFilter) => filter.tags ? filter.tags.join(',') : undefined],
   ['name', (filter: TaskListFilter) => filter.name],
 ];
@@ -30,7 +27,6 @@ const queryParamBuilders: [QueryParamKey, (filter: TaskListFilter, formatDateFor
 export class TaskQueryService {
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);
   private readonly taskResource: ResourceRequestHandle = this.apiRequestService.resource('task');
-  private readonly timezoneService: TimezoneService = inject(TimezoneService);
 
   public query(
     filter: TaskListFilter,
@@ -59,10 +55,7 @@ export class TaskQueryService {
         .map(
           ([key, buildValue]) => [
             key,
-            buildValue(
-              filter,
-              (date: Date) => formatDateInTimezone(date, 'yyyy-MM-dd', 'en-US', this.timezoneService.timezone),
-            ),
+            buildValue(filter),
           ] as QueryParamEntry,
         )
         .filter((entry: QueryParamEntry) => entry[1] !== undefined) as [QueryParamKey, string][],

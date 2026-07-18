@@ -1,10 +1,6 @@
-import { registerLocaleData } from '@angular/common';
-import localeLv from '@angular/common/locales/lv';
 import { TestBed } from '@angular/core/testing';
 
 import { firstValueFrom, of, throwError } from 'rxjs';
-
-import { TimezoneService } from '@core/services/timezone.service';
 
 import { Task } from '@shared/models/task.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
@@ -16,7 +12,6 @@ describe('Shared Services TaskQueryService', () => {
   const apiRequestService = createResourceRequestHandleMock();
 
   beforeEach(async () => {
-    registerLocaleData(localeLv, 'lv-LV');
     apiRequestService.request.mockReset();
     apiRequestService.resource.mockClear();
 
@@ -24,7 +19,6 @@ describe('Shared Services TaskQueryService', () => {
       providers: [
         TaskQueryService,
         { provide: ApiRequestService, useValue: apiRequestService },
-        { provide: TimezoneService, useValue: { timezone: 'UTC' } },
       ],
     });
 
@@ -51,9 +45,9 @@ describe('Shared Services TaskQueryService', () => {
 
   it('builds query params for every supported task filter', async () => {
     apiRequestService.request.mockReturnValueOnce(of({ data: [] }));
-    const date = new Date(2024, 0, 1, 10, 0, 0);
-    const startDate = new Date(2024, 0, 2, 10, 0, 0);
-    const endDate = new Date(2024, 0, 3, 10, 0, 0);
+    const date = '2024-01-01';
+    const startDate = '2024-01-02';
+    const endDate = '2024-01-03';
 
     await firstValueFrom(service.query({
       hideUnreported: true,

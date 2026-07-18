@@ -47,11 +47,10 @@ describe('Report Service ReportDateCalendarService', () => {
     expect(service.parseRouteDate(null)).toBeNull();
   });
 
-  it('formats query and Jira sync dates', () => {
+  it('formats request dates', () => {
     const date = new Date('2026-05-29T22:15:00.000Z');
 
-    expect(service.formatQueryDate(date)).toBe('2026-05-29');
-    expect(service.formatJiraSyncDate(date)).toBe('2026-05-29');
+    expect(service.formatRequestDate(date)).toBe('2026-05-29');
   });
 
   it('builds inclusive report date ranges', () => {
@@ -157,6 +156,54 @@ describe('Report Service ReportDateCalendarService', () => {
     });
 
     expect(service.isTaskSyncedForReportDate(task, new Date('2026-05-29T12:00:00.000Z'))).toBe(true);
+  });
+
+  it('accounts for short and long Report Dates across daylight-saving transitions', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        ReportDateCalendarService,
+        { provide: LocaleService, useValue: { locale: 'en-US' } },
+        { provide: TimezoneService, useValue: { timezone: 'Europe/Riga' } },
+      ],
+    });
+
+    const rigaService = TestBed.inject(ReportDateCalendarService);
+    const shortDayTask = new Task({
+      timeLogs: [new TimeLog({
+        startTime: new Date('2026-03-28T22:00:00.000Z'),
+        endTime: new Date('2026-03-29T21:00:00.000Z'),
+      })],
+    });
+    const longDayTask = new Task({
+      timeLogs: [new TimeLog({
+        startTime: new Date('2026-10-24T21:00:00.000Z'),
+        endTime: new Date('2026-10-25T22:00:00.000Z'),
+      })],
+    });
+
+    expect(rigaService.timeLoggedForReportDate(
+      shortDayTask,
+      new Date('2026-03-29T12:00:00.000Z'),
+    )).toBe(23 * 60 * 60);
+    expect(rigaService.timeLoggedForReportDate(
+      longDayTask,
+      new Date('2026-10-25T12:00:00.000Z'),
+    )).toBe(25 * 60 * 60);
+  });
+
+  it('accounts for a running Time Log through the Report Date interval', () => {
+    vi.setSystemTime(new Date('2026-05-29T12:00:00.000Z'));
+    const task = new Task({
+      timeLogs: [new TimeLog({
+        startTime: new Date('2026-05-29T11:30:00.000Z'),
+      })],
+    });
+
+    expect(service.timeLoggedForReportDate(
+      task,
+      new Date('2026-05-29T12:00:00.000Z'),
+    )).toBe(30 * 60);
   });
 
   it('groups synced time by Report Date in the active timezone', () => {

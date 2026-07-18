@@ -35,7 +35,7 @@ describe('Tasks Service JiraWorkLogSyncService', () => {
     const apiRequestService = createResourceRequestHandleMock();
     apiRequestService.request.mockReturnValue(of(undefined));
     const reportDateCalendarService = {
-      formatJiraSyncDate: vi.fn((date: Date) => date.toISOString().slice(0, 10)),
+      formatRequestDate: vi.fn((date: Date) => date.toISOString().slice(0, 10)),
     };
     const timeLogsService = {
       start: vi.fn(() => of(undefined)),
@@ -71,7 +71,7 @@ describe('Tasks Service JiraWorkLogSyncService', () => {
 
     const result = await firstValueFrom(service.syncReportDate(task, date));
 
-    expect(reportDateCalendarService.formatJiraSyncDate).toHaveBeenCalledWith(date);
+    expect(reportDateCalendarService.formatRequestDate).toHaveBeenCalledWith(date);
     expect(apiRequestService.request).toHaveBeenCalledWith(
       'https://api/task/task-1/2026-05-30',
       'post',

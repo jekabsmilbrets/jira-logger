@@ -16,7 +16,7 @@ export class ReportDateCalendarService {
   private readonly timezoneService: TimezoneService = inject(TimezoneService);
 
   public todayRouteLink(): string {
-    return `/report/date/${ this.formatQueryDate(new Date()) }`;
+    return `/report/date/${ this.formatRequestDate(new Date()) }`;
   }
 
   public todayReportDate(): Date {
@@ -52,16 +52,10 @@ export class ReportDateCalendarService {
     return fromWallClockDateInTimezone(wallClockDate, this.timezoneService.timezone);
   }
 
-  public formatQueryDate(
+  public formatRequestDate(
     date: Date,
   ): string {
     return formatDateInTimezone(date, 'yyyy-MM-dd', this.localeService.locale, this.timezoneService.timezone);
-  }
-
-  public formatJiraSyncDate(
-    date: Date,
-  ): string {
-    return this.formatQueryDate(date);
   }
 
   public datesInRange(
@@ -121,29 +115,26 @@ export class ReportDateCalendarService {
   public endOfReportDate(
     date: Date,
   ): Date {
-    const parts: TimezoneDateParts = getDateTimePartsInTimezone(date, this.timezoneService.timezone);
-    const startOfNextReportDate: Date = fromWallClockDateInTimezone(
-      new Date(parts.year, parts.month - 1, parts.day + 1, 0, 0, 0, 0),
-      this.timezoneService.timezone,
-    );
-
-    return new Date(startOfNextReportDate.getTime() - 1);
+    return new Date(this.startOfNextReportDate(date).getTime() - 1);
   }
 
   public timeLoggedForReportDate(
     task: Task,
     date: Date,
   ): number {
-    return task.calcTimeLoggedForDate(this.startOfReportDate(date), this.timezoneService.timezone);
+    return task.calcTimeLoggedBetween(
+      this.startOfReportDate(date),
+      this.startOfNextReportDate(date),
+    );
   }
 
   public timeSyncedForReportDate(
     task: Task,
     date: Date,
   ): number {
-    const reportDate: string = this.formatQueryDate(date);
+    const reportDate: string = this.formatRequestDate(date);
     const jiraWorkLog: JiraWorkLog | undefined = task.jiraWorkLogs.find(
-      (workLog: JiraWorkLog) => this.formatQueryDate(workLog.startTime) === reportDate,
+      (workLog: JiraWorkLog) => this.formatRequestDate(workLog.startTime) === reportDate,
     );
 
     return jiraWorkLog?.timeSpentSeconds ?? 0;
@@ -157,5 +148,16 @@ export class ReportDateCalendarService {
 
     return timeLogged > 0 &&
       timeLogged === this.timeSyncedForReportDate(task, date);
+  }
+
+  private startOfNextReportDate(
+    date: Date,
+  ): Date {
+    const parts: TimezoneDateParts = getDateTimePartsInTimezone(date, this.timezoneService.timezone);
+
+    return fromWallClockDateInTimezone(
+      new Date(parts.year, parts.month - 1, parts.day + 1, 0, 0, 0, 0),
+      this.timezoneService.timezone,
+    );
   }
 }

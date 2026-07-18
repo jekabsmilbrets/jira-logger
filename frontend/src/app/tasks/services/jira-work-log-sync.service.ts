@@ -41,7 +41,7 @@ export class JiraWorkLogSyncService {
     task: Task,
     date: Date,
   ): Observable<boolean> {
-    const formattedDate: string = this.reportDateCalendarService.formatJiraSyncDate(date);
+    const formattedDate: string = this.reportDateCalendarService.formatRequestDate(date);
 
     return this.taskResource.request<void>(
       `/${ task.id }/${ formattedDate }`,
