@@ -158,11 +158,11 @@ class JiraApiService
                 throw new JiraApiServiceException(self::JIRA_DISABLED_MSG);
             }
 
-            $jiraHost = $this->settingService->value(
+            $jiraHost = $this->settingService->findValue(
                 self::JIRA_HOST_SETTING_KEY
             );
             $personalAccessToken = getenv('JIRA_PERSONAL_ACCESS_TOKEN') ?:
-                $this->settingService->value(
+                $this->settingService->findValue(
                     self::JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY
                 ) ?:
                 null;

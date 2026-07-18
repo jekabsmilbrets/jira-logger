@@ -8,35 +8,66 @@ use App\Dto\Setting\SettingRequest;
 use App\Entity\Setting\Setting;
 use App\Repository\Setting\SettingRepository;
 use App\Service\Setting\SettingService;
+use App\Tests\Support\EntityIdSetter;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
-class SettingServiceTest extends TestCase
+final class SettingServiceTest extends TestCase
 {
-    public function testNewMapsRequestToSetting(): void
+    use EntityIdSetter;
+
+    public function testListDisclosesNormalValuesAndRedactsSensitiveValues(): void
+    {
+        $host = (new Setting())->setName('jira.host')->setValue('https://jira.example');
+        $token = (new Setting())->setName('JIRA.Personal-Access-TOKEN')->setValue('secret');
+        $this->setEntityId($host, 'host-id');
+        $this->setEntityId($token, 'token-id');
+        $repository = $this->repository(['findAll']);
+        $repository->method('findAll')->willReturn([$host, $token]);
+
+        $settings = (new SettingService($repository))->list();
+
+        self::assertSame('https://jira.example', $settings[0]['value'] ?? null);
+        self::assertSame(SettingService::REDACTED_VALUE, $settings[1]['value'] ?? null);
+    }
+
+    public function testListReturnsNullWhenRepositoryIsEmpty(): void
+    {
+        $repository = $this->repository(['findAll']);
+        $repository->method('findAll')->willReturn([]);
+
+        self::assertNull((new SettingService($repository))->list());
+    }
+
+    public function testCreateMapsPersistsAndDisclosesSetting(): void
     {
         $entityManager = $this->createMock(EntityManagerInterface::class);
-        $entityManager->expects(self::once())->method('persist');
-        $repository = $this->getMockBuilder(SettingRepository::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['getEntityManager'])
-            ->getMock();
+        $entityManager
+            ->expects(self::once())
+            ->method('persist')
+            ->with(self::callback(function (Setting $setting): bool {
+                $this->setEntityId($setting, 'setting-id');
+
+                return 'jira-host' === $setting->getName()
+                    && 'https://jira' === $setting->getValue();
+            }));
+        $entityManager->expects(self::once())->method('flush');
+        $repository = $this->repository(['getEntityManager']);
         $repository->method('getEntityManager')->willReturn($entityManager);
         $request = (new SettingRequest())->setName('jira-host')->setValue('https://jira');
 
-        $setting = (new SettingService($repository))->new($request, flush: false);
+        $setting = (new SettingService($repository))->create($request);
 
-        self::assertSame('jira-host', $setting->getName());
-        self::assertSame('https://jira', $setting->getValue());
+        self::assertSame(
+            ['id' => 'setting-id', 'name' => 'jira-host', 'value' => 'https://jira'],
+            $setting,
+        );
     }
 
-    public function testValueReturnsStoredValueOrNull(): void
+    public function testFindValueReturnsRawStoredValueOrNull(): void
     {
         $setting = (new Setting())->setValue('https://jira.example');
-        $repository = $this->getMockBuilder(SettingRepository::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['findOneBy'])
-            ->getMock();
+        $repository = $this->repository(['findOneBy']);
         $repository
             ->expects(self::exactly(2))
             ->method('findOneBy')
@@ -45,8 +76,8 @@ class SettingServiceTest extends TestCase
             );
         $service = new SettingService($repository);
 
-        self::assertSame('https://jira.example', $service->value('jira-host'));
-        self::assertNull($service->value('missing'));
+        self::assertSame('https://jira.example', $service->findValue('jira-host'));
+        self::assertNull($service->findValue('missing'));
     }
 
     /**
@@ -55,10 +86,7 @@ class SettingServiceTest extends TestCase
     public function testBooleanValueUsesPhpBooleanFilter(?string $value, bool $expected): void
     {
         $setting = null === $value ? null : (new Setting())->setValue($value);
-        $repository = $this->getMockBuilder(SettingRepository::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['findOneBy'])
-            ->getMock();
+        $repository = $this->repository(['findOneBy']);
         $repository->method('findOneBy')->willReturn($setting);
 
         self::assertSame($expected, (new SettingService($repository))->booleanValue('feature'));
@@ -73,35 +101,121 @@ class SettingServiceTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider safeValues
-     */
-    public function testSafeValueRedactsSecretNames(
-        string $name,
-        ?string $value,
-        ?string $expected,
-    ): void {
-        $repository = $this->getMockBuilder(SettingRepository::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $setting = (new Setting())->setName($name);
+    public function testShowDisclosesSettingAndReturnsNullWhenMissing(): void
+    {
+        $token = (new Setting())->setName('apiKey')->setValue('sensitive');
+        $this->setEntityId($token, 'token-id');
+        $repository = $this->repository(['find']);
+        $repository
+            ->expects(self::exactly(2))
+            ->method('find')
+            ->willReturnCallback(static fn (string $id): ?Setting => 'token-id' === $id ? $token : null);
+        $service = new SettingService($repository);
 
-        if (null !== $value) {
-            $setting->setValue($value);
-        }
-
-        self::assertSame($expected, (new SettingService($repository))->safeValue($setting));
+        self::assertSame(
+            ['id' => 'token-id', 'name' => 'apiKey', 'value' => SettingService::REDACTED_VALUE],
+            $service->show('token-id'),
+        );
+        self::assertNull($service->show('missing'));
     }
 
-    public static function safeValues(): iterable
+    public function testUpdateReturnsNullWhenSettingDoesNotExist(): void
+    {
+        $repository = $this->repository(['find']);
+        $repository->method('find')->with('missing')->willReturn(null);
+
+        $result = (new SettingService($repository))->update(
+            'missing',
+            (new SettingRequest())->setName('jira-host')->setValue('https://jira'),
+        );
+
+        self::assertNull($result);
+    }
+
+    public function testUpdatePersistsAndDisclosesSetting(): void
+    {
+        $setting = (new Setting())->setName('jira-host')->setValue('old');
+        $this->setEntityId($setting, 'setting-id');
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects(self::once())->method('flush');
+        $repository = $this->repository(['find', 'getEntityManager']);
+        $repository->method('find')->with('setting-id')->willReturn($setting);
+        $repository->method('getEntityManager')->willReturn($entityManager);
+
+        $result = (new SettingService($repository))->update(
+            'setting-id',
+            (new SettingRequest())->setName('jira-token')->setValue('new-secret'),
+        );
+
+        self::assertSame(
+            ['id' => 'setting-id', 'name' => 'jira-token', 'value' => SettingService::REDACTED_VALUE],
+            $result,
+        );
+        self::assertSame('new-secret', $setting->getValue());
+    }
+
+    /**
+     * @dataProvider redactedWriteMethods
+     */
+    public function testRedactedValueCannotBeWritten(string $method): void
+    {
+        $setting = (new Setting())->setName('jira-token')->setValue('stored-secret');
+        $repository = $this->repository(['find', 'getEntityManager']);
+        $repository->method('find')->willReturn($setting);
+        $repository->expects(self::never())->method('getEntityManager');
+        $request = (new SettingRequest())
+            ->setName('jira-token')
+            ->setValue(SettingService::REDACTED_VALUE);
+
+        try {
+            if ('create' === $method) {
+                (new SettingService($repository))->create($request);
+            } else {
+                (new SettingService($repository))->update('setting-id', $request);
+            }
+
+            self::fail('Expected redacted value write to be rejected.');
+        } catch (\DomainException $exception) {
+            self::assertSame(SettingService::REDACTED_VALUE_NOT_WRITABLE, $exception->getMessage());
+        }
+
+        self::assertSame('stored-secret', $setting->getValue());
+    }
+
+    public static function redactedWriteMethods(): iterable
     {
         yield from [
-            ['jira-host', 'https://jira.example', 'https://jira.example'],
-            ['optional-value', null, null],
-            ['JIRA_TOKEN', 'sensitive', '***REDACTED***'],
-            ['database-password', 'sensitive', '***REDACTED***'],
-            ['client-SECRET-value', 'sensitive', '***REDACTED***'],
-            ['apiKey', 'sensitive', '***REDACTED***'],
+            ['create'],
+            ['update'],
         ];
+    }
+
+    public function testDeleteReturnsFalseWhenMissingAndRemovesExistingSetting(): void
+    {
+        $setting = (new Setting())->setName('jira-host')->setValue('https://jira');
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects(self::once())->method('remove')->with($setting);
+        $entityManager->expects(self::once())->method('flush');
+        $repository = $this->repository(['find', 'getEntityManager']);
+        $repository
+            ->expects(self::exactly(2))
+            ->method('find')
+            ->willReturnOnConsecutiveCalls(null, $setting);
+        $repository->method('getEntityManager')->willReturn($entityManager);
+        $service = new SettingService($repository);
+
+        self::assertFalse($service->delete('missing'));
+        self::assertTrue($service->delete('setting-id'));
+    }
+
+    /**
+     * @param list<string> $methods
+     */
+    private function repository(array $methods): SettingRepository
+    {
+        return $this->getMockBuilder(SettingRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods($methods)
+            ->getMock();
     }
 }

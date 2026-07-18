@@ -7,13 +7,11 @@ namespace App\Service\Setting;
 use App\Dto\Setting\SettingRequest;
 use App\Entity\Setting\Setting;
 use App\Repository\Setting\SettingRepository;
-use Doctrine\Common\Collections\ArrayCollection;
 
 class SettingService
 {
-    final public const NO_DATA_PROVIDED = 'No Setting Model or SettingRequest was provided';
-
-    private const REDACTED_VALUE = '***REDACTED***';
+    final public const REDACTED_VALUE = '***REDACTED***';
+    final public const REDACTED_VALUE_NOT_WRITABLE = 'Redacted setting values cannot be stored.';
     private const SECRET_NAME_PARTS = ['token', 'password', 'secret', 'key'];
 
     public function __construct(
@@ -22,9 +20,9 @@ class SettingService
     }
 
     /**
-     * @return ArrayCollection<int, Setting>|null
+     * @return list<array{id: string, name: ?string, value: ?string}>|null
      */
-    final public function list(): ?ArrayCollection
+    final public function list(): ?array
     {
         $settings = $this->settingRepository->findAll();
 
@@ -32,10 +30,10 @@ class SettingService
             return null;
         }
 
-        return new ArrayCollection($settings);
+        return array_map($this->disclose(...), $settings);
     }
 
-    final public function value(string $name): ?string
+    final public function findValue(string $name): ?string
     {
         return $this->settingRepository->findOneBy(
             [
@@ -46,83 +44,58 @@ class SettingService
 
     final public function booleanValue(string $name): bool
     {
-        return filter_var($this->value($name), \FILTER_VALIDATE_BOOLEAN);
+        return filter_var($this->findValue($name), \FILTER_VALIDATE_BOOLEAN);
     }
 
-    final public function safeValue(Setting $setting): ?string
-    {
-        $name = mb_strtolower($setting->getName() ?? '');
-
-        foreach (self::SECRET_NAME_PARTS as $part) {
-            if (str_contains($name, $part)) {
-                return self::REDACTED_VALUE;
-            }
-        }
-
-        return $setting->getValue();
-    }
-
+    /**
+     * @return array{id: string, name: ?string, value: ?string}|null
+     */
     final public function show(
         string $id
-    ): ?Setting {
+    ): ?array {
         $setting = $this->settingRepository->find($id);
 
-        return $setting ?? null;
+        return $setting instanceof Setting ? $this->disclose($setting) : null;
     }
 
-    final public function new(
-        ?SettingRequest $settingRequest = null,
-        ?Setting $setting = null,
-        bool $flush = true,
-    ): Setting {
-        if (!$settingRequest && !$setting) {
-            throw new \RuntimeException(self::NO_DATA_PROVIDED);
-        }
-
-        if ($settingRequest && !$setting) {
-            $setting = $this->applyRequest($settingRequest);
-        }
+    /**
+     * @return array{id: string, name: ?string, value: ?string}
+     */
+    final public function create(SettingRequest $settingRequest): array
+    {
+        $this->assertWritable($settingRequest->getValue());
+        $setting = $this->applyRequest($settingRequest);
 
         $this->settingRepository->save(
             entity: $setting,
-            flush: $flush
+            flush: true,
         );
 
-        return $setting;
+        return $this->disclose($setting);
     }
 
-    final public function edit(
+    /**
+     * @return array{id: string, name: ?string, value: ?string}|null
+     */
+    final public function update(
         string $id,
-        ?SettingRequest $settingRequest = null,
-        ?Setting $setting = null,
-        bool $flush = true,
-    ): ?Setting {
-        switch (true) {
-            case !$settingRequest && !$setting:
-                throw new \RuntimeException(self::NO_DATA_PROVIDED);
+        SettingRequest $settingRequest,
+    ): ?array {
+        $setting = $this->settingRepository->find($id);
 
-            case $settingRequest && !$setting:
-                $setting = $this->settingRepository->find($id);
-
-                if (!$setting instanceof Setting) {
-                    return null;
-                }
-
-                $setting = $this->applyRequest($settingRequest, $setting);
-                break;
+        if (!$setting instanceof Setting) {
+            return null;
         }
 
-        if ($flush) {
-            $this->settingRepository->flush();
-        }
+        $this->assertWritable($settingRequest->getValue());
+        $this->applyRequest($settingRequest, $setting);
+        $this->settingRepository->flush();
 
-        return $setting;
+        return $this->disclose($setting);
     }
 
-    final public function delete(
-        string $id,
-        bool $flush = true,
-    ): bool {
+    final public function delete(string $id): bool
+    {
         $setting = $this->settingRepository->find($id);
 
         if (!$setting instanceof Setting) {
@@ -131,7 +104,7 @@ class SettingService
 
         $this->settingRepository->remove(
             entity: $setting,
-            flush: $flush
+            flush: true,
         );
 
         return true;
@@ -139,16 +112,32 @@ class SettingService
 
     private function applyRequest(SettingRequest $request, ?Setting $setting = null): Setting
     {
-        $setting ??= new Setting();
+        return ($setting ?? new Setting())
+            ->setName($request->getName())
+            ->setValue($request->getValue());
+    }
 
-        if (null !== ($name = $request->getName())) {
-            $setting->setName($name);
+    /**
+     * @return array{id: string, name: ?string, value: ?string}
+     */
+    private function disclose(Setting $setting): array
+    {
+        $name = mb_strtolower($setting->getName() ?? '');
+
+        return [
+            'id' => $setting->getId(),
+            'name' => $setting->getName(),
+            'value' => array_any(
+                self::SECRET_NAME_PARTS,
+                static fn (string $part): bool => str_contains($name, $part),
+            ) ? self::REDACTED_VALUE : $setting->getValue(),
+        ];
+    }
+
+    private function assertWritable(string $value): void
+    {
+        if (self::REDACTED_VALUE === $value) {
+            throw new \DomainException(self::REDACTED_VALUE_NOT_WRITABLE);
         }
-
-        if (null !== ($value = $request->getValue())) {
-            $setting->setValue($value);
-        }
-
-        return $setting;
     }
 }
