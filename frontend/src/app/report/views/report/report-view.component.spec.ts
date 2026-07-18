@@ -33,7 +33,7 @@ describe('Report View Component ReportViewComponent', () => {
   };
   let matSnackBar: { open: ReturnType<typeof vi.fn> };
   let reportDateCalendarService: {
-    isTaskSyncedForReportDate: ReturnType<typeof vi.fn>;
+    accountTask: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(async () => {
@@ -46,7 +46,13 @@ describe('Report View Component ReportViewComponent', () => {
       } satisfies JiraWorkLogSyncOutcome)),
     };
     matSnackBar = { open: vi.fn() };
-    reportDateCalendarService = { isTaskSyncedForReportDate: vi.fn(() => false) };
+    reportDateCalendarService = {
+      accountTask: vi.fn(() => ({
+        timeLogged: 0,
+        timeSynced: 0,
+        isSynced: false,
+      })),
+    };
     reportService = new ReportServiceStub({
       settingsControlsState: {
         reportMode: ReportMode.date,
@@ -242,7 +248,11 @@ describe('Report View Component ReportViewComponent', () => {
   it('disables synced row actions through the report date calendar', () => {
     const task = { name: 'Task H' } as Task;
     const date = new Date('2026-05-30T00:00:00.000Z');
-    reportDateCalendarService.isTaskSyncedForReportDate.mockReturnValueOnce(true);
+    reportDateCalendarService.accountTask.mockReturnValueOnce({
+      timeLogged: 3600,
+      timeSynced: 3600,
+      isSynced: true,
+    });
     reportService.setViewState({
       reportDate: date,
       canSyncJiraWorkLogs: true,
@@ -251,7 +261,7 @@ describe('Report View Component ReportViewComponent', () => {
     const [syncAction] = (component as any).rowActions();
 
     expect(syncAction.isDisabled(task)).toBe(true);
-    expect(reportDateCalendarService.isTaskSyncedForReportDate).toHaveBeenCalledWith(task, date);
+    expect(reportDateCalendarService.accountTask).toHaveBeenCalledWith(task, date);
   });
 
   it('leaves sync enabled when report date is not a Date', () => {

@@ -1,8 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { Tag } from '@shared/models/tag.model';
+import { Task } from '@shared/models/task.model';
 
 import { ReportMode } from '@report/enums/report-mode.enum';
 import type { ReportStateSnapshot } from '@report/interfaces/report-state-snapshot.interface';
@@ -54,5 +55,41 @@ describe('Report Service ReportColumnsService', () => {
       startDate: new Date(0),
       endDate: null,
     }, ReportMode.dateRange, false).map((column) => column.columnDef)).toContain('timeLogged');
+  });
+
+  it('reads logged and synced columns from one Report Date Accounting result', () => {
+    const date = new Date('2026-05-29T00:00:00.000Z');
+    const task = new Task();
+    const accountTask = vi.fn(() => ({
+      timeLogged: 3600,
+      timeSynced: 1800,
+      isSynced: false,
+    }));
+
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: ReportDateCalendarService,
+          useValue: {
+            datesInRange: vi.fn(() => [date]),
+            formatColumnHeader: vi.fn(() => '29. May'),
+            accountTask,
+          },
+        },
+        ReportColumnsService,
+      ],
+    });
+
+    const columns = TestBed.inject(ReportColumnsService).buildColumns({
+      ...state,
+      tags: [],
+      date,
+    }, ReportMode.date, true);
+    const loggedColumn = columns.find((column) => column.columnDef === `date-${ date.getTime() }`);
+    const syncedColumn = columns.find((column) => column.columnDef === 'synced');
+
+    expect(loggedColumn?.cell(task)).toBe(3600);
+    expect(syncedColumn?.cell(task)).toBe(1800);
+    expect(accountTask).toHaveBeenCalledWith(task, date);
   });
 });

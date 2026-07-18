@@ -101,7 +101,7 @@ describe('Report Service ReportDateCalendarService', () => {
     expect(rigaService.endOfReportDate(new Date('2026-05-29T12:00:00.000Z')).toISOString()).toBe('2026-05-29T20:59:59.999Z');
   });
 
-  it('checks Task sync through the Report Date calendar interface', () => {
+  it('accounts for logged time, synced time, and sync state as one result', () => {
     const task = new Task({
       timeLogs: [
         new TimeLog({
@@ -117,9 +117,36 @@ describe('Report Service ReportDateCalendarService', () => {
       ],
     });
 
-    expect(service.timeLoggedForReportDate(task, new Date('2026-05-29T12:00:00.000Z'))).toBe(3600);
-    expect(service.timeSyncedForReportDate(task, new Date('2026-05-29T12:00:00.000Z'))).toBe(3600);
-    expect(service.isTaskSyncedForReportDate(task, new Date('2026-05-29T12:00:00.000Z'))).toBe(true);
+    expect(service.accountTask(task, new Date('2026-05-29T12:00:00.000Z'))).toEqual({
+      timeLogged: 3600,
+      timeSynced: 3600,
+      isSynced: true,
+    });
+  });
+
+  it('does not treat zero logged and zero synced time as synced', () => {
+    expect(service.accountTask(
+      new Task(),
+      new Date('2026-05-29T12:00:00.000Z'),
+    )).toEqual({
+      timeLogged: 0,
+      timeSynced: 0,
+      isSynced: false,
+    });
+  });
+
+  it('accounts only for the Time Log overlap with the selected Report Date', () => {
+    const task = new Task({
+      timeLogs: [new TimeLog({
+        startTime: new Date('2026-05-28T23:30:00.000Z'),
+        endTime: new Date('2026-05-29T00:30:00.000Z'),
+      })],
+    });
+
+    expect(service.accountTask(
+      task,
+      new Date('2026-05-29T12:00:00.000Z'),
+    ).timeLogged).toBe(30 * 60);
   });
 
   it('filters visible Report Dates and formats column headers through the calendar interface', () => {
@@ -155,7 +182,7 @@ describe('Report Service ReportDateCalendarService', () => {
       ],
     });
 
-    expect(service.isTaskSyncedForReportDate(task, new Date('2026-05-29T12:00:00.000Z'))).toBe(true);
+    expect(service.accountTask(task, new Date('2026-05-29T12:00:00.000Z')).isSynced).toBe(true);
   });
 
   it('accounts for short and long Report Dates across daylight-saving transitions', () => {
@@ -182,14 +209,14 @@ describe('Report Service ReportDateCalendarService', () => {
       })],
     });
 
-    expect(rigaService.timeLoggedForReportDate(
+    expect(rigaService.accountTask(
       shortDayTask,
       new Date('2026-03-29T12:00:00.000Z'),
-    )).toBe(23 * 60 * 60);
-    expect(rigaService.timeLoggedForReportDate(
+    ).timeLogged).toBe(23 * 60 * 60);
+    expect(rigaService.accountTask(
       longDayTask,
       new Date('2026-10-25T12:00:00.000Z'),
-    )).toBe(25 * 60 * 60);
+    ).timeLogged).toBe(25 * 60 * 60);
   });
 
   it('accounts for a running Time Log through the Report Date interval', () => {
@@ -200,10 +227,10 @@ describe('Report Service ReportDateCalendarService', () => {
       })],
     });
 
-    expect(service.timeLoggedForReportDate(
+    expect(service.accountTask(
       task,
       new Date('2026-05-29T12:00:00.000Z'),
-    )).toBe(30 * 60);
+    ).timeLogged).toBe(30 * 60);
   });
 
   it('groups synced time by Report Date in the active timezone', () => {
@@ -226,7 +253,7 @@ describe('Report Service ReportDateCalendarService', () => {
       ],
     });
 
-    expect(viennaService.timeSyncedForReportDate(task, new Date('2026-06-02T12:00:00.000Z'))).toBe(1800);
-    expect(viennaService.timeSyncedForReportDate(task, new Date('2026-06-03T12:00:00.000Z'))).toBe(0);
+    expect(viennaService.accountTask(task, new Date('2026-06-02T12:00:00.000Z')).timeSynced).toBe(1800);
+    expect(viennaService.accountTask(task, new Date('2026-06-03T12:00:00.000Z')).timeSynced).toBe(0);
   });
 });

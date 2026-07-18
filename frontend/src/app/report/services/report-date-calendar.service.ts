@@ -118,36 +118,25 @@ export class ReportDateCalendarService {
     return new Date(this.startOfNextReportDate(date).getTime() - 1);
   }
 
-  public timeLoggedForReportDate(
+  public accountTask(
     task: Task,
     date: Date,
-  ): number {
-    return task.calcTimeLoggedBetween(
+  ) {
+    const timeLogged: number = task.calcTimeLoggedBetween(
       this.startOfReportDate(date),
       this.startOfNextReportDate(date),
     );
-  }
-
-  public timeSyncedForReportDate(
-    task: Task,
-    date: Date,
-  ): number {
     const reportDate: string = this.formatRequestDate(date);
     const jiraWorkLog: JiraWorkLog | undefined = task.jiraWorkLogs.find(
       (workLog: JiraWorkLog) => this.formatRequestDate(workLog.startTime) === reportDate,
     );
+    const timeSynced: number = jiraWorkLog?.timeSpentSeconds ?? 0;
 
-    return jiraWorkLog?.timeSpentSeconds ?? 0;
-  }
-
-  public isTaskSyncedForReportDate(
-    task: Task,
-    date: Date,
-  ): boolean {
-    const timeLogged: number = this.timeLoggedForReportDate(task, date);
-
-    return timeLogged > 0 &&
-      timeLogged === this.timeSyncedForReportDate(task, date);
+    return {
+      timeLogged,
+      timeSynced,
+      isSynced: timeLogged > 0 && timeLogged === timeSynced,
+    } as const;
   }
 
   private startOfNextReportDate(

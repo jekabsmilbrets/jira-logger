@@ -52,7 +52,7 @@ export class ReportColumnsService {
         state,
         (task: Task) => this.sumValues(
           visibleDates,
-          (date: Date) => this.reportDateCalendarService.timeLoggedForReportDate(task, date),
+          (date: Date) => this.reportDateCalendarService.accountTask(task, date).timeLogged,
         ),
       ),
       ...this.buildTrailingColumns(startDate, reportMode, jiraApiEnabled),
@@ -83,9 +83,12 @@ export class ReportColumnsService {
       isClickable: true,
       cellClickType: 'readableTime',
       footerCellClickType: 'readableTime',
-      cell: (task: Task) => this.reportDateCalendarService.timeLoggedForReportDate(task, currentDate),
+      cell: (task: Task) => this.reportDateCalendarService.accountTask(task, currentDate).timeLogged,
       hasFooter: true,
-      footerCell: (tasks: Task[]) => this.sumValues(tasks, (task: Task) => this.reportDateCalendarService.timeLoggedForReportDate(task, currentDate)),
+      footerCell: (tasks: Task[]) => this.sumValues(
+        tasks,
+        (task: Task) => this.reportDateCalendarService.accountTask(task, currentDate).timeLogged,
+      ),
     };
   }
 
@@ -116,9 +119,12 @@ export class ReportColumnsService {
         hidden: false,
         pipe: 'readableTime',
         footerCellClickType: 'readableTime',
-        cell: (task: Task) => this.reportDateCalendarService.timeSyncedForReportDate(task, startDate),
+        cell: (task: Task) => this.reportDateCalendarService.accountTask(task, startDate).timeSynced,
         hasFooter: true,
-        footerCell: (tasks: Task[]) => this.sumValues(tasks, (task: Task) => this.reportDateCalendarService.timeSyncedForReportDate(task, startDate)),
+        footerCell: (tasks: Task[]) => this.sumValues(
+          tasks,
+          (task: Task) => this.reportDateCalendarService.accountTask(task, startDate).timeSynced,
+        ),
       },
     ];
   }

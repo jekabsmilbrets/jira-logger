@@ -114,7 +114,7 @@ export class ReportViewComponent {
     const date: Date | null = this.state().reportDate;
 
     return date instanceof Date &&
-      this.reportDateCalendarService.isTaskSyncedForReportDate(task, date);
+      this.reportDateCalendarService.accountTask(task, date).isSynced;
   }
 
   private syncJiraWorkLog(
