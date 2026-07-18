@@ -8,7 +8,6 @@ use App\Entity\Tag\Tag;
 use App\Entity\Task\Task;
 use App\Repository\Tag\TagRepository;
 use App\Repository\Task\TaskRepository;
-use App\Service\Tag\TagService;
 use App\Service\Task\TaskService;
 use App\Service\Task\Write\TaskWriteStatus;
 use Doctrine\DBAL\Driver\Exception as DriverException;
@@ -78,7 +77,7 @@ class TaskServiceWriteTest extends TestCase
         $tagRepository = $this->createMock(TagRepository::class);
         $tagRepository->expects(self::never())->method('findBy');
 
-        $result = $this->service($repository, new TagService($tagRepository))->update(
+        $result = $this->service($repository, $tagRepository)->update(
             'task-id',
             name: null,
             description: null,
@@ -87,6 +86,7 @@ class TaskServiceWriteTest extends TestCase
 
         self::assertSame(TaskWriteStatus::Updated, $result->status);
         self::assertCount(0, $task->getTags());
+        self::assertCount(0, $existingTag->getTasks());
     }
 
     public function testCreateAppliesResolvedTags(): void
@@ -97,7 +97,7 @@ class TaskServiceWriteTest extends TestCase
         $tagRepository = $this->createMock(TagRepository::class);
         $tagRepository->expects(self::once())->method('findBy')->with(['id' => ['tag-id']])->willReturn([$tag]);
 
-        $result = $this->service($repository, new TagService($tagRepository))->create(
+        $result = $this->service($repository, $tagRepository)->create(
             name: 'Task',
             description: null,
             tagIds: ['tag-id'],
@@ -105,6 +105,39 @@ class TaskServiceWriteTest extends TestCase
 
         self::assertSame(TaskWriteStatus::Created, $result->status);
         self::assertCount(1, $result->task?->getTags());
+        self::assertTrue($tag->getTasks()->contains($result->task));
+    }
+
+    public function testUpdateReconcilesResolvedTagsByIdentity(): void
+    {
+        $retainedTag = (new Tag())->setName('Retained');
+        $removedTag = (new Tag())->setName('Removed');
+        $addedTag = (new Tag())->setName('Added');
+        $task = (new Task())->setName('Task');
+        $task->addTag($retainedTag)->addTag($removedTag);
+        $repository = $this->repositoryWithEntityManager(
+            $this->createMock(EntityManagerInterface::class),
+            $task,
+        );
+        $tagRepository = $this->createMock(TagRepository::class);
+        $tagRepository
+            ->expects(self::once())
+            ->method('findBy')
+            ->with(['id' => ['retained-id', 'added-id', 'unknown-id']])
+            ->willReturn([$retainedTag, $addedTag]);
+
+        $result = $this->service($repository, $tagRepository)->update(
+            'task-id',
+            name: null,
+            description: null,
+            tagIds: ['retained-id', 'added-id', 'unknown-id'],
+        );
+
+        self::assertSame(TaskWriteStatus::Updated, $result->status);
+        self::assertSame([$retainedTag, $addedTag], array_values($task->getTags()->toArray()));
+        self::assertTrue($retainedTag->getTasks()->contains($task));
+        self::assertTrue($addedTag->getTasks()->contains($task));
+        self::assertFalse($removedTag->getTasks()->contains($task));
     }
 
     public function testUpdateReturnsNotFoundOutcome(): void
@@ -141,11 +174,11 @@ class TaskServiceWriteTest extends TestCase
         self::assertSame(TaskWriteStatus::Failed, $result->status);
     }
 
-    private function service(TaskRepository $repository, ?TagService $tagService = null): TaskService
+    private function service(TaskRepository $repository, ?TagRepository $tagRepository = null): TaskService
     {
         return new TaskService(
             $repository,
-            $tagService ?? new TagService($this->createMock(TagRepository::class)),
+            $tagRepository ?? $this->createMock(TagRepository::class),
         );
     }
 

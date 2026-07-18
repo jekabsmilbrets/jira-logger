@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Service\Task;
 
 use App\Entity\Task\Task;
+use App\Repository\Tag\TagRepository;
 use App\Repository\Task\TaskRepository;
-use App\Service\Tag\TagService;
 use App\Service\Task\Write\TaskWriteResult;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
@@ -14,7 +14,7 @@ class TaskService
 {
     public function __construct(
         private readonly TaskRepository $taskRepository,
-        private readonly TagService $tagService,
+        private readonly TagRepository $tagRepository,
     ) {
     }
 
@@ -128,19 +128,27 @@ class TaskService
         }
 
         if (null !== $tagIds) {
-            $tags = $this->tagService->findByIds($tagIds);
-
-            foreach ($task->getTags() as $taskTag) {
-                if (!$tags->contains($taskTag)) {
-                    $task->removeTag($taskTag);
-                }
-            }
-
-            foreach ($tags as $tag) {
-                $task->addTag($tag);
-            }
+            $this->synchronizeTags($task, $tagIds);
         }
 
         return $task;
+    }
+
+    /**
+     * @param string[] $tagIds
+     */
+    private function synchronizeTags(Task $task, array $tagIds): void
+    {
+        $tags = [] === $tagIds ? [] : $this->tagRepository->findBy(['id' => $tagIds]);
+
+        foreach ($task->getTags() as $taskTag) {
+            if (!in_array($taskTag, $tags, true)) {
+                $task->removeTag($taskTag);
+            }
+        }
+
+        foreach ($tags as $tag) {
+            $task->addTag($tag);
+        }
     }
 }

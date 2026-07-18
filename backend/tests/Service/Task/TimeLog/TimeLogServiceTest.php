@@ -11,8 +11,6 @@ use App\Repository\Task\TaskRepository;
 use App\Repository\Task\TimeLog\TimeLogRepository;
 use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\UserTimezoneResolver;
-use App\Service\Tag\TagService;
-use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
 use App\Service\Task\TimeLog\TimeLogWriteStatus;
 use Doctrine\ORM\EntityManagerInterface;
@@ -37,10 +35,7 @@ class TimeLogServiceTest extends TestCase
 
         return new TimeLogService(
             $timeLogRepository,
-            new TaskService(
-                $taskRepository,
-                $this->createMock(TagService::class),
-            ),
+            $taskRepository,
             $dateInputParser ?? $this->createMock(DateInputParser::class),
             $this->timezoneResolver(),
         );

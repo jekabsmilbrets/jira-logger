@@ -10,8 +10,6 @@ use App\Repository\JiraWorkLog\JiraWorkLogRepository;
 use App\Repository\Task\TaskRepository;
 use App\Service\JiraWorkLog\JiraWorkLogService;
 use App\Service\JiraWorkLog\JiraWorkLogWriteStatus;
-use App\Service\Tag\TagService;
-use App\Service\Task\TaskService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -27,10 +25,7 @@ class JiraWorkLogServiceTest extends TestCase
 
         $service = new JiraWorkLogService(
             $this->createMock(JiraWorkLogRepository::class),
-            new TaskService(
-                $taskRepository,
-                $this->createMock(TagService::class),
-            )
+            $taskRepository,
         );
 
         self::assertSame(JiraWorkLogWriteStatus::NotFound, $service->new($request, flush: false)->status);
@@ -55,10 +50,7 @@ class JiraWorkLogServiceTest extends TestCase
 
         $service = new JiraWorkLogService(
             $repository,
-            new TaskService(
-                $taskRepository,
-                $this->createMock(TagService::class),
-            )
+            $taskRepository,
         );
 
         $result = $service->new($request, flush: false);

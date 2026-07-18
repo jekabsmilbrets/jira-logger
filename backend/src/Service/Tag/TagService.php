@@ -34,20 +34,6 @@ class TagService
         return new ArrayCollection($tags);
     }
 
-    /**
-     * @param string[] $ids
-     *
-     * @return ArrayCollection<int, Tag>
-     */
-    final public function findByIds(array $ids): ArrayCollection
-    {
-        if ([] === $ids) {
-            return new ArrayCollection([]);
-        }
-
-        return new ArrayCollection($this->tagRepository->findBy(['id' => $ids]));
-    }
-
     final public function show(
         string $id
     ): ?Tag {

@@ -7,10 +7,10 @@ namespace App\Service\Task\TimeLog;
 use App\Dto\Task\TimeLog\TimeLogRequest;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
+use App\Repository\Task\TaskRepository;
 use App\Repository\Task\TimeLog\TimeLogRepository;
 use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\UserTimezoneResolver;
-use App\Service\Task\TaskService;
 use App\Utility\TimeLog\TimeLogDuration;
 use Doctrine\DBAL\Exception;
 
@@ -20,7 +20,7 @@ class TimeLogService
 
     public function __construct(
         private readonly TimeLogRepository $timeLogRepository,
-        private readonly TaskService $taskService,
+        private readonly TaskRepository $taskRepository,
         private readonly DateInputParser $dateInputParser,
         private readonly UserTimezoneResolver $userTimezoneResolver,
     ) {
@@ -298,7 +298,7 @@ class TimeLogService
 
     private function task(string $taskId): ?Task
     {
-        return $this->taskService->show($taskId);
+        return $this->taskRepository->find($taskId);
     }
 
     /**

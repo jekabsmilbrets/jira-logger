@@ -11,8 +11,6 @@ use App\Repository\Task\TaskRepository;
 use App\Repository\Task\TimeLog\TimeLogRepository;
 use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\UserTimezoneResolver;
-use App\Service\Tag\TagService;
-use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Container;
@@ -31,10 +29,7 @@ class TimeLogControllerTest extends TestCase
         $controller = new TimeLogController(
             new TimeLogService(
                 $timeLogRepository,
-                new TaskService(
-                    $this->createMock(TaskRepository::class),
-                    $this->createMock(TagService::class),
-                ),
+                $this->createMock(TaskRepository::class),
                 $this->createMock(DateInputParser::class),
                 $this->createMock(UserTimezoneResolver::class),
             ),

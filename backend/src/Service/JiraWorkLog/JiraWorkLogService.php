@@ -8,7 +8,7 @@ use App\Dto\JiraWorkLog\JiraWorkLogRequest;
 use App\Entity\JiraWorkLog\JiraWorkLog;
 use App\Entity\Task\Task;
 use App\Repository\JiraWorkLog\JiraWorkLogRepository;
-use App\Service\Task\TaskService;
+use App\Repository\Task\TaskRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
@@ -18,7 +18,7 @@ class JiraWorkLogService
 
     public function __construct(
         private readonly JiraWorkLogRepository $jiraWorkLogRepository,
-        private readonly TaskService $taskService,
+        private readonly TaskRepository $taskRepository,
     ) {
     }
 
@@ -168,7 +168,7 @@ class JiraWorkLogService
 
     private function task(string $taskId): Task
     {
-        $task = $this->taskService->show($taskId);
+        $task = $this->taskRepository->find($taskId);
 
         if (!$task instanceof Task) {
             throw new \RuntimeException('Task not found');
