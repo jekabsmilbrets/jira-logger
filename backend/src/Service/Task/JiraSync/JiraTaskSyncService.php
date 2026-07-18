@@ -51,7 +51,7 @@ class JiraTaskSyncService
      */
     private function sync(Task $task, string $date): void
     {
-        $dateRange = $this->taskFilterDateRangeResolver->resolveTaskFilter(['date' => $date]);
+        $dateRange = $this->taskFilterDateRangeResolver->resolve(date: $date);
         if (null === $dateRange) {
             throw new \InvalidArgumentException('Sync date could not be resolved.');
         }

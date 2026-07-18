@@ -10,7 +10,6 @@ use App\Entity\Task\TimeLog\TimeLog;
 use App\Repository\Task\TaskRepository;
 use App\Repository\Task\TimeLog\TimeLogRepository;
 use App\Service\DateTime\DateInputParser;
-use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\Tag\TagService;
 use App\Service\Task\TaskService;
@@ -34,7 +33,6 @@ class TimeLogControllerTest extends TestCase
                 $timeLogRepository,
                 new TaskService(
                     $this->createMock(TaskRepository::class),
-                    $this->createMock(TaskFilterDateRangeResolver::class),
                     $this->createMock(TagService::class),
                 ),
                 $this->createMock(DateInputParser::class),

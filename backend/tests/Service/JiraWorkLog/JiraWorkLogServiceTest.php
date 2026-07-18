@@ -8,7 +8,6 @@ use App\Dto\JiraWorkLog\JiraWorkLogRequest;
 use App\Entity\Task\Task;
 use App\Repository\JiraWorkLog\JiraWorkLogRepository;
 use App\Repository\Task\TaskRepository;
-use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\JiraWorkLog\JiraWorkLogService;
 use App\Service\JiraWorkLog\JiraWorkLogWriteStatus;
 use App\Service\Tag\TagService;
@@ -30,7 +29,6 @@ class JiraWorkLogServiceTest extends TestCase
             $this->createMock(JiraWorkLogRepository::class),
             new TaskService(
                 $taskRepository,
-                $this->createMock(TaskFilterDateRangeResolver::class),
                 $this->createMock(TagService::class),
             )
         );
@@ -59,7 +57,6 @@ class JiraWorkLogServiceTest extends TestCase
             $repository,
             new TaskService(
                 $taskRepository,
-                $this->createMock(TaskFilterDateRangeResolver::class),
                 $this->createMock(TagService::class),
             )
         );

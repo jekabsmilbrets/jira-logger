@@ -14,6 +14,7 @@ use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\Tag\TagService;
 use App\Service\Task\JiraSync\JiraTaskSyncService;
+use App\Service\Task\ReportedTask\ReportedTaskQuery;
 use App\Service\Task\Sync\TaskSyncResult;
 use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
@@ -36,10 +37,14 @@ class TaskControllerTest extends TestCase
         SerializerInterface $serializer,
         ?ValidatorInterface $validator = null,
         ?JiraTaskSyncService $jiraTaskSyncService = null,
+        ?ReportedTaskQuery $reportedTaskQuery = null,
     ): TaskController
     {
         $controller = new TaskController(
             $taskService,
+            $reportedTaskQuery ?? $this->reportedTaskQueryWith(
+                $this->getMockBuilder(TaskRepository::class)->disableOriginalConstructor()->getMock(),
+            ),
             $jiraTaskSyncService ?? $this->createMock(JiraTaskSyncService::class),
             $validator ?? $this->createMock(ValidatorInterface::class),
             $serializer
@@ -54,15 +59,19 @@ class TaskControllerTest extends TestCase
 
     private function taskServiceWith(
         ?TaskRepository $taskRepository = null,
-        ?TaskFilterDateRangeResolver $taskFilterDateRangeResolver = null,
     ): TaskService {
-        $taskFilterDateRangeResolver ??= $this->createMock(TaskFilterDateRangeResolver::class);
-
         return new TaskService(
             $taskRepository ?? $this->getMockBuilder(TaskRepository::class)->disableOriginalConstructor()->getMock(),
-            $taskFilterDateRangeResolver,
             $this->createMock(TagService::class),
         );
+    }
+
+    private function reportedTaskQueryWith(TaskRepository $taskRepository): ReportedTaskQuery
+    {
+        $dateRangeResolver = $this->createMock(TaskFilterDateRangeResolver::class);
+        $dateRangeResolver->method('resolve')->willReturn(null);
+
+        return new ReportedTaskQuery($taskRepository, $dateRangeResolver);
     }
 
     private function timeLogServiceWith(TimeLogRepository $timeLogRepository): TimeLogService
@@ -83,6 +92,7 @@ class TaskControllerTest extends TestCase
         $serializer = new class implements SerializerInterface {
             public function serialize(mixed $data, string $format, array $context = []): string { return ''; }
             public function deserialize(mixed $data, string $type, string $format, array $context = []): mixed { return null; }
+
             public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): mixed
             {
                 throw new UnexpectedValueException('bad');
@@ -211,7 +221,12 @@ class TaskControllerTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Repository unavailable');
 
-        $this->controllerWith($taskService, $serializer, $validator)
+        $this->controllerWith(
+            $taskService,
+            $serializer,
+            $validator,
+            reportedTaskQuery: $this->reportedTaskQueryWith($taskRepository),
+        )
             ->list(new Request(['name' => 'backend']));
     }
 

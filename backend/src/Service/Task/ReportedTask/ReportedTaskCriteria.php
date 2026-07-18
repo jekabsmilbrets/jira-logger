@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Service\Task\Filter;
+namespace App\Service\Task\ReportedTask;
 
-final readonly class TaskFilterCriteria
+final readonly class ReportedTaskCriteria
 {
     /**
-     * @param string[] $tagIds
+     * @param string[]                                                               $tagIds
      * @param array{startDate: \DateTimeImmutable, endDate: \DateTimeImmutable}|null $dateRange
      */
     public function __construct(

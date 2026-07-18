@@ -9,10 +9,11 @@ use App\Dto\Task\TaskListFilterRequest;
 use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
 use App\Service\Task\JiraSync\JiraTaskSyncService;
-use App\Service\Task\TaskService;
-use App\Service\Task\TimeLog\TimeLogService;
+use App\Service\Task\ReportedTask\ReportedTaskQuery;
 use App\Service\Task\Sync\TaskSyncResult;
 use App\Service\Task\Sync\TaskSyncStatus;
+use App\Service\Task\TaskService;
+use App\Service\Task\TimeLog\TimeLogService;
 use App\Service\Task\Write\TaskWriteResult;
 use App\Service\Task\Write\TaskWriteStatus;
 use OpenApi\Attributes as OA;
@@ -46,6 +47,7 @@ class TaskController extends BaseApiController
 
     public function __construct(
         private readonly TaskService $taskService,
+        private readonly ReportedTaskQuery $reportedTaskQuery,
         private readonly JiraTaskSyncService $jiraTaskSyncService,
         private readonly ValidatorInterface $validator,
         private readonly SerializerInterface $serializer,
@@ -156,10 +158,9 @@ class TaskController extends BaseApiController
             return $validationError;
         }
 
-        $filter = $filterRequest->toFilterArray();
-        $tasks = $this->taskService->list($filter);
+        $tasks = $this->reportedTaskQuery->list($filterRequest);
 
-        if (empty($tasks) || [] === $tasks) {
+        if ([] === $tasks) {
             return $this->jsonApi(
                 errors: [self::TASKS_NOT_FOUND],
                 status: Response::HTTP_NOT_FOUND

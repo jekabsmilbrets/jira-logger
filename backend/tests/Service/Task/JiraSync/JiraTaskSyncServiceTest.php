@@ -149,7 +149,8 @@ final class JiraTaskSyncServiceTest extends TestCase
     {
         $dateRangeResolver = $this->createMock(TaskFilterDateRangeResolver::class);
         $dateRangeResolver
-            ->method('resolveTaskFilter')
+            ->method('resolve')
+            ->with(date: 'invalid')
             ->willThrowException(new \InvalidArgumentException('invalid date'));
 
         $service = $this->createService(

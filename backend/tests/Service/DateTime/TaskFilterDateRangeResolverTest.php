@@ -24,20 +24,18 @@ class TaskFilterDateRangeResolverTest extends TestCase
         );
     }
 
-    public function testResolveTaskFilterReturnsNullWithoutDateFilters(): void
+    public function testResolveReturnsNullWithoutDateFilters(): void
     {
         $resolver = $this->createResolver();
 
-        self::assertNull($resolver->resolveTaskFilter([]));
+        self::assertNull($resolver->resolve());
     }
 
-    public function testResolveTaskFilterUsesEndOfDayForSingleDateFilter(): void
+    public function testResolveUsesEndOfDayForSingleDateFilter(): void
     {
         $resolver = $this->createResolver('Europe/Vienna');
 
-        $range = $resolver->resolveTaskFilter([
-            'date' => '2026-06-06',
-        ]);
+        $range = $resolver->resolve(date: '2026-06-06');
 
         self::assertNotNull($range);
         self::assertSame('UTC', $range['startDate']->getTimezone()->getName());
@@ -45,14 +43,14 @@ class TaskFilterDateRangeResolverTest extends TestCase
         self::assertSame('2026-06-06 21:59:59', $range['endDate']->format('Y-m-d H:i:s'));
     }
 
-    public function testResolveTaskFilterUsesUserTimezoneForTimestampRange(): void
+    public function testResolveUsesUserTimezoneForTimestampRange(): void
     {
         $resolver = $this->createResolver('Europe/Riga');
 
-        $range = $resolver->resolveTaskFilter([
-            'startDate' => '2026-06-02 00:00:00',
-            'endDate' => '2026-06-03',
-        ]);
+        $range = $resolver->resolve(
+            startDate: '2026-06-02 00:00:00',
+            endDate: '2026-06-03',
+        );
 
         self::assertNotNull($range);
         self::assertSame('UTC', $range['startDate']->getTimezone()->getName());
@@ -60,14 +58,14 @@ class TaskFilterDateRangeResolverTest extends TestCase
         self::assertSame('2026-06-03 20:59:59', $range['endDate']->format('Y-m-d H:i:s'));
     }
 
-    public function testResolveTaskFilterUsesEndOfDayForDateOnlyRangeFilters(): void
+    public function testResolveUsesEndOfDayForDateOnlyRangeFilters(): void
     {
         $resolver = $this->createResolver('Europe/Vienna');
 
-        $range = $resolver->resolveTaskFilter([
-            'startDate' => '2026-06-05',
-            'endDate' => '2026-06-06',
-        ]);
+        $range = $resolver->resolve(
+            startDate: '2026-06-05',
+            endDate: '2026-06-06',
+        );
 
         self::assertNotNull($range);
         self::assertSame('UTC', $range['startDate']->getTimezone()->getName());
@@ -75,14 +73,14 @@ class TaskFilterDateRangeResolverTest extends TestCase
         self::assertSame('2026-06-06 21:59:59', $range['endDate']->format('Y-m-d H:i:s'));
     }
 
-    public function testResolveTaskFilterNormalizesFlexibleRawFilterInputs(): void
+    public function testResolveNormalizesFlexibleRawInputs(): void
     {
         $resolver = $this->createResolver('Europe/Riga');
 
-        $range = $resolver->resolveTaskFilter([
-            'startDate' => '2026-05-31T14:30:45Z',
-            'endDate' => '31/05/2026',
-        ]);
+        $range = $resolver->resolve(
+            startDate: '2026-05-31T14:30:45Z',
+            endDate: '31/05/2026',
+        );
 
         self::assertNotNull($range);
         self::assertSame('2026-05-31 14:30:45', $range['startDate']->format('Y-m-d H:i:s'));

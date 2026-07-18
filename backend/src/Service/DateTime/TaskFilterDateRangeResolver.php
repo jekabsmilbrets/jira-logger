@@ -16,29 +16,31 @@ class TaskFilterDateRangeResolver
     }
 
     /**
-     * @param array<string, mixed> $filter
-     *
      * @return array{startDate: DateTimeImmutable, endDate: DateTimeImmutable}|null
      */
-    public function resolveTaskFilter(array $filter): ?array
+    public function resolve(
+        ?string $date = null,
+        ?string $startDate = null,
+        ?string $endDate = null,
+    ): ?array
     {
-        if (!isset($filter['date']) && !isset($filter['startDate'], $filter['endDate'])) {
+        if (null === $date && (null === $startDate || null === $endDate)) {
             return null;
         }
 
         $timezone = new DateTimeZone($this->userTimezoneResolver->resolveCurrentUserTimezone());
         $utcTimezone = new DateTimeZone('UTC');
-        $startValue = $this->normalizeDateValue((string) ($filter['date'] ?? $filter['startDate']));
-        $endValue = $this->normalizeDateValue((string) ($filter['date'] ?? $filter['endDate']));
+        $startValue = $this->normalizeDateValue($date ?? $startDate);
+        $endValue = $this->normalizeDateValue($date ?? $endDate);
 
         $startDate = new DateTimeImmutable($startValue, $timezone);
         $endDate = new DateTimeImmutable($endValue, $timezone);
 
-        if (isset($filter['date']) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $startValue)) {
+        if (null !== $date || preg_match('/^\d{4}-\d{2}-\d{2}$/', $startValue)) {
             $startDate = $startDate->setTime(0, 0, 0);
         }
 
-        if (isset($filter['date']) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $endValue)) {
+        if (null !== $date || preg_match('/^\d{4}-\d{2}-\d{2}$/', $endValue)) {
             $endDate = $endDate->setTime(23, 59, 59);
         }
 

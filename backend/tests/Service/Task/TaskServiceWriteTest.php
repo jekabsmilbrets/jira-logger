@@ -8,7 +8,6 @@ use App\Entity\Tag\Tag;
 use App\Entity\Task\Task;
 use App\Repository\Tag\TagRepository;
 use App\Repository\Task\TaskRepository;
-use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\Tag\TagService;
 use App\Service\Task\TaskService;
 use App\Service\Task\Write\TaskWriteStatus;
@@ -146,7 +145,6 @@ class TaskServiceWriteTest extends TestCase
     {
         return new TaskService(
             $repository,
-            $this->createMock(TaskFilterDateRangeResolver::class),
             $tagService ?? new TagService($this->createMock(TagRepository::class)),
         );
     }
