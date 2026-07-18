@@ -7,7 +7,6 @@ import { LoaderStateService } from '@core/services/loader-state.service';
 
 import { adaptTasks } from '@shared/adapters/task.adapter';
 import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
-import type { LoadableInitializer } from '@shared/interfaces/loadable-initializer.interface';
 import type { ResourceRequestHandle } from '@shared/interfaces/resource-request-handle.interface';
 import type { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 import { Tag } from '@shared/models/tag.model';
@@ -20,7 +19,7 @@ import type { AsyncLoader } from '@shared/types/async-loader.type';
 import { openLoadErrorDialog } from '@shared/utilities/open-load-error-dialog.utility';
 
 @Service()
-export class TasksService implements LoadableInitializer {
+export class TasksService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);

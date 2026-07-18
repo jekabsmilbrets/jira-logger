@@ -8,7 +8,6 @@ import type { ApiSetting } from '@core/interfaces/api/api-setting.interface';
 import { Setting } from '@core/models/setting.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
 
-import type { LoadableInitializer } from '@shared/interfaces/loadable-initializer.interface';
 import type { ResourceRequestHandle } from '@shared/interfaces/resource-request-handle.interface';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import type { ErrorDialogService } from '@shared/services/error-dialog.service';
@@ -17,7 +16,7 @@ import type { AsyncLoader } from '@shared/types/async-loader.type';
 import { openLoadErrorDialog } from '@shared/utilities/open-load-error-dialog.utility';
 
 @Service()
-export class SettingsService implements LoadableInitializer {
+export class SettingsService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);

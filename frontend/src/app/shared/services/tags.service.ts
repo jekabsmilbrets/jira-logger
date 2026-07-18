@@ -7,7 +7,6 @@ import { LoaderStateService } from '@core/services/loader-state.service';
 
 import { adaptTag, adaptTags } from '@shared/adapters/api-tag.adapter';
 import type { ApiTag } from '@shared/interfaces/api/api-tag.interface';
-import type { LoadableInitializer } from '@shared/interfaces/loadable-initializer.interface';
 import type { ResourceRequestHandle } from '@shared/interfaces/resource-request-handle.interface';
 import { Tag } from '@shared/models/tag.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
@@ -17,7 +16,7 @@ import type { AsyncLoader } from '@shared/types/async-loader.type';
 import { openLoadErrorDialog } from '@shared/utilities/open-load-error-dialog.utility';
 
 @Service()
-export class TagsService implements LoadableInitializer {
+export class TagsService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);

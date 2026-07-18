@@ -13,7 +13,6 @@ import { MonitorService } from '@core/services/monitor.service';
 import { SettingsService } from '@core/services/settings.service';
 import { StorageService } from '@core/services/storage.service';
 
-import type { LoadableInitializer } from '@shared/interfaces/loadable-initializer.interface';
 import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
@@ -35,7 +34,7 @@ export const appConfig: ApplicationConfig = {
     ),
     provideAppInitializer(() => runtimeConfigInitializer()),
     provideAppInitializer(() => {
-      const services: LoadableInitializer[] = [
+      [
         inject(TasksService),
         inject(TimeLogsService),
         inject(MonitorService),
@@ -43,11 +42,7 @@ export const appConfig: ApplicationConfig = {
         inject(TaskBackupService),
         inject(SettingsService),
         inject(TagsService),
-      ];
-
-      services.forEach((service: LoadableInitializer) => {
-        service.init();
-      });
+      ].forEach((service) => service.init());
     }),
     provideAppInitializer(() => {
       inject(MaterialLocaleBridgeService);

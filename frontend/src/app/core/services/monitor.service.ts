@@ -8,12 +8,11 @@ import type { JsonApi } from '@core/interfaces/json-api.interface';
 import { Monitor } from '@core/models/monitor.model';
 import { LoaderStateService } from '@core/services/loader-state.service';
 
-import type { LoadableInitializer } from '@shared/interfaces/loadable-initializer.interface';
 import type { ResourceRequestHandle } from '@shared/interfaces/resource-request-handle.interface';
 import { ApiRequestService } from '@shared/services/api-request.service';
 
 @Service()
-export class MonitorService implements LoadableInitializer, OnDestroy {
+export class MonitorService implements OnDestroy {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   private readonly apiRequestService: ApiRequestService = inject(ApiRequestService);

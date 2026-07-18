@@ -7,7 +7,6 @@ import { LoaderStateService } from '@core/services/loader-state.service';
 import { RequestGate } from '@core/utilities/request-gate.utility';
 import { waitForTurn } from '@core/utilities/wait-for.utility';
 
-import type { LoadableInitializer } from '@shared/interfaces/loadable-initializer.interface';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TagsService } from '@shared/services/tags.service';
@@ -24,7 +23,7 @@ import { TaskBackupUnsupportedMetadata } from './task-backup-unsupported-metadat
 import { TaskImportExecutionPlan } from './task-import-execution-plan';
 
 @Service()
-export class TaskBackupService implements LoadableInitializer {
+export class TaskBackupService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   private readonly tagsService: TagsService = inject(TagsService);

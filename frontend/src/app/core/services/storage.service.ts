@@ -9,10 +9,8 @@ import type { KeyValueEntry } from '@core/types/key-value-entry.type';
 import { RequestGate } from '@core/utilities/request-gate.utility';
 import { waitForTurn } from '@core/utilities/wait-for.utility';
 
-import type { LoadableInitializer } from '@shared/interfaces/loadable-initializer.interface';
-
 @Service()
-export class StorageService implements LoadableInitializer {
+export class StorageService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   protected stores: Map<string, UseStore> = new Map<string, UseStore>([]);

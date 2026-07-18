@@ -6,7 +6,6 @@ import { LoaderStateService } from '@core/services/loader-state.service';
 
 import { adaptTimeLog, adaptTimeLogs } from '@shared/adapters/time-log.adapter';
 import type { ApiTimeLog } from '@shared/interfaces/api/api-time-log.interface';
-import type { LoadableInitializer } from '@shared/interfaces/loadable-initializer.interface';
 import type { ResourceRequestHandle } from '@shared/interfaces/resource-request-handle.interface';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
@@ -15,7 +14,7 @@ import type { ApiRequestBody } from '@shared/types/api-request-body.type';
 import { toUnixMs } from '@shared/utilities/to-unix-ms.utility';
 
 @Service()
-export class TimeLogsService implements LoadableInitializer {
+export class TimeLogsService {
   public readonly loaderStateService: LoaderStateService = inject(LoaderStateService);
 
   public taskStarted$: Observable<Task>;
