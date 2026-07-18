@@ -2,28 +2,24 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Service\JiraApi;
+namespace App\Tests\Service\Task\JiraSync;
 
-use App\Entity\Setting\Setting;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Exception\JiraApiServiceException;
 use App\Repository\JiraWorkLog\JiraWorkLogRepository;
-use App\Repository\Setting\SettingRepository;
 use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\JiraApi\JiraApiService;
-use App\Service\Setting\SettingService;
 use App\Service\Task\JiraSync\JiraTaskSyncService;
 use App\Service\Task\Sync\TaskSyncStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use JiraRestApi\Issue\Worklog;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
-class JiraApiServiceTimeRangeTest extends TestCase
+final class JiraTaskSyncServiceTest extends TestCase
 {
     public function testCalculateTimeSpentUsesClippedIntervalsWithoutMutatingTimeLog(): void
     {
@@ -70,66 +66,76 @@ class JiraApiServiceTimeRangeTest extends TestCase
         self::assertSame(TaskSyncStatus::Synced, $result->status);
     }
 
-    public function testResolveSyncDatesUsesUserTimezoneForDateModeRange(): void
+    public function testUtcSyncUsesBackendIdentityAndUtcJiraReportingTime(): void
     {
-        $timeLog = (new TimeLog())
-            ->setStartTime(new \DateTimeImmutable('2026-06-23T00:00:00+02:00'))
-            ->setEndTime(new \DateTimeImmutable('2026-06-23T00:10:00+02:00'));
-        $task = (new Task())->setName('TASK-1');
-        $task->addTimeLog($timeLog);
-        $jiraApiService = $this->createMock(JiraApiService::class);
-        $jiraApiService
-            ->expects(self::once())
-            ->method('syncWorkLog')
-            ->with($task, null, self::isInstanceOf(\DateTime::class), 600, '')
-            ->willReturn($this->workLog());
+        $facts = $this->captureSyncFacts('UTC', '2026-05-30');
 
-        $result = $this->createService('Europe/Vienna', jiraApiService: $jiraApiService, task: $task)
-            ->syncTask('task-id', '2026-06-23');
-
-        self::assertSame(TaskSyncStatus::Synced, $result->status);
+        self::assertSame(
+            '2026-05-30 00:00:00 '.date_default_timezone_get(),
+            $facts['identity'],
+        );
+        self::assertSame('2026-05-30T17:00:00+00:00', $facts['jiraStart']);
+        self::assertSame(86399, $facts['timeSpentSeconds']);
     }
 
-    public function testSyncWorkLogRejectsValuesBelowMinimumThresholdAfterConfiguration(): void
+    public function testWinterSyncUsesNamedUserTimezoneOffset(): void
     {
-        $settingRepository = $this->createMock(SettingRepository::class);
-        $settings = [
-            JiraApiService::JIRA_ENABLED_KEY => (new Setting())->setName(JiraApiService::JIRA_ENABLED_KEY)->setValue('true'),
-            JiraApiService::JIRA_HOST_SETTING_KEY => (new Setting())->setName(JiraApiService::JIRA_HOST_SETTING_KEY)->setValue('https://jira.example.test'),
-            JiraApiService::JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY => (new Setting())->setName(JiraApiService::JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY)->setValue('token'),
-        ];
-        $settingRepository
-            ->method('findOneBy')
-            ->willReturnCallback(static fn (array $criteria): ?Setting => $settings[$criteria['name']] ?? null);
+        $facts = $this->captureSyncFacts('Europe/Vienna', '2026-01-15');
 
-        $this->expectException(JiraApiServiceException::class);
-        $this->expectExceptionMessage('Cannot report less than 60 second!');
+        self::assertSame('2026-01-15T17:00:00+01:00', $facts['jiraStart']);
+    }
 
-        $this->createApiService(new SettingService($settingRepository))->syncWorkLog(
-            task: (new Task())->setName('TASK-1'),
-            workLogId: null,
-            startTime: new \DateTime('2026-05-30 10:00:00'),
-            timeSpentSeconds: 59,
+    public function testSummerSyncUsesNamedUserTimezoneOffset(): void
+    {
+        $facts = $this->captureSyncFacts('Europe/Vienna', '2026-06-23');
+
+        self::assertSame('2026-06-23T17:00:00+02:00', $facts['jiraStart']);
+    }
+
+    public function testDstTransitionClipsTheShortenedUserDay(): void
+    {
+        $facts = $this->captureSyncFacts('Europe/Vienna', '2026-03-29');
+
+        self::assertSame('2026-03-29T17:00:00+02:00', $facts['jiraStart']);
+        self::assertSame(82799, $facts['timeSpentSeconds']);
+    }
+
+    public function testFlexibleInputUsesOneCanonicalDateForRangeIdentityAndJira(): void
+    {
+        $facts = $this->captureSyncFacts('UTC', '31/05/2026');
+
+        self::assertSame(
+            '2026-05-31 00:00:00 '.date_default_timezone_get(),
+            $facts['identity'],
         );
+        self::assertSame('2026-05-31T17:00:00+00:00', $facts['jiraStart']);
+        self::assertSame(86399, $facts['timeSpentSeconds']);
+    }
+
+    public function testIdentityIsStableWhileJiraOffsetsFollowDifferentUserTimezones(): void
+    {
+        $viennaFacts = $this->captureSyncFacts('Europe/Vienna', '2026-06-23');
+        $newYorkFacts = $this->captureSyncFacts('America/New_York', '2026-06-23');
+
+        self::assertSame($viennaFacts['identity'], $newYorkFacts['identity']);
+        self::assertSame('2026-06-23T17:00:00+02:00', $viennaFacts['jiraStart']);
+        self::assertSame('2026-06-23T17:00:00-04:00', $newYorkFacts['jiraStart']);
     }
 
     public function testSyncTaskTranslatesJiraServiceFailureToTaskSyncFailure(): void
     {
-        $settingRepository = $this->createMock(SettingRepository::class);
-        $settingRepository
-            ->method('findOneBy')
-            ->with(['name' => JiraApiService::JIRA_ENABLED_KEY])
-            ->willReturn((new Setting())->setName(JiraApiService::JIRA_ENABLED_KEY)->setValue('false'));
+        $jiraApiService = $this->createMock(JiraApiService::class);
+        $jiraApiService
+            ->method('syncWorkLog')
+            ->willThrowException(new JiraApiServiceException('Jira disabled'));
 
-        $service = $this->createService(
-            settingService: new SettingService($settingRepository),
+        $result = $this->createService(
+            jiraApiService: $jiraApiService,
             task: (new Task())->setName('TASK-1'),
-        );
-
-        $result = $service->syncTask('task-id', '2026-06-23');
+        )->syncTask('task-id', '2026-06-23');
 
         self::assertSame(TaskSyncStatus::Failed, $result->status);
-        self::assertSame(JiraApiService::JIRA_DISABLED_MSG, $result->errorMessage);
+        self::assertSame('Jira disabled', $result->errorMessage);
     }
 
     public function testSyncTaskReturnsNotFoundWhenTaskIsMissing(): void
@@ -143,7 +149,7 @@ class JiraApiServiceTimeRangeTest extends TestCase
     {
         $dateRangeResolver = $this->createMock(TaskFilterDateRangeResolver::class);
         $dateRangeResolver
-            ->method('resolveJiraSyncDate')
+            ->method('resolveTaskFilter')
             ->willThrowException(new \InvalidArgumentException('invalid date'));
 
         $service = $this->createService(
@@ -184,22 +190,94 @@ class JiraApiServiceTimeRangeTest extends TestCase
         $service->syncTask('task-id', '2026-06-23');
     }
 
+    /**
+     * @return array{identity: string, jiraStart: string, timeSpentSeconds: int}
+     */
+    private function captureSyncFacts(string $userTimezone, string $date): array
+    {
+        $task = (new Task())->setName('TASK-1');
+        $task->addTimeLog(
+            (new TimeLog())
+                ->setStartTime(new \DateTime('2025-01-01T00:00:00+00:00'))
+                ->setEndTime(new \DateTime('2027-01-01T00:00:00+00:00'))
+        );
+        $identity = null;
+        $jiraStart = null;
+        $timeSpentSeconds = null;
+        $jiraWorkLogRepository = $this->jiraWorkLogRepository();
+        $jiraWorkLogRepository
+            ->method('findOneBy')
+            ->willReturnCallback(
+                static function (array $criteria) use (&$identity): null {
+                    self::assertInstanceOf(\DateTime::class, $criteria['startTime']);
+                    $identity = $criteria['startTime']->format('Y-m-d H:i:s e');
+
+                    return null;
+                }
+            );
+        $workLog = $this->workLog();
+        $jiraApiService = $this->createMock(JiraApiService::class);
+        $jiraApiService
+            ->method('syncWorkLog')
+            ->willReturnCallback(
+                static function (
+                    Task $syncedTask,
+                    ?int $workLogId,
+                    \DateTime $startTime,
+                    int $seconds,
+                    ?string $description,
+                ) use ($task, $workLog, &$jiraStart, &$timeSpentSeconds): Worklog {
+                    self::assertSame($task, $syncedTask);
+                    self::assertNull($workLogId);
+                    self::assertSame('', $description);
+                    $jiraStart = $startTime->format(\DateTimeInterface::ATOM);
+                    $timeSpentSeconds = $seconds;
+
+                    return $workLog;
+                }
+            );
+
+        $result = $this->createService(
+            userTimezone: $userTimezone,
+            jiraApiService: $jiraApiService,
+            task: $task,
+            jiraWorkLogRepository: $jiraWorkLogRepository,
+        )->syncTask('task-id', $date);
+
+        self::assertSame(TaskSyncStatus::Synced, $result->status);
+        self::assertIsString($identity);
+        self::assertIsString($jiraStart);
+        self::assertIsInt($timeSpentSeconds);
+
+        return [
+            'identity' => $identity,
+            'jiraStart' => $jiraStart,
+            'timeSpentSeconds' => $timeSpentSeconds,
+        ];
+    }
+
     private function createService(
         string $userTimezone = 'UTC',
-        ?SettingService $settingService = null,
         ?JiraApiService $jiraApiService = null,
         ?Task $task = null,
         ?JiraWorkLogRepository $jiraWorkLogRepository = null,
         ?TaskFilterDateRangeResolver $dateRangeResolver = null,
-    ): JiraTaskSyncService
-    {
+    ): JiraTaskSyncService {
         $taskRepository = $this->createMock(TaskRepository::class);
         $taskRepository->method('find')->willReturn($task);
+        $userTimezoneResolver = $this->createMock(UserTimezoneResolver::class);
+        $userTimezoneResolver
+            ->method('resolveCurrentUserTimezone')
+            ->willReturn($userTimezone);
 
         return new JiraTaskSyncService(
-            $jiraApiService ?? $this->createApiService($settingService),
+            $jiraApiService ?? $this->createMock(JiraApiService::class),
             $jiraWorkLogRepository ?? $this->jiraWorkLogRepository(),
-            $dateRangeResolver ?? $this->createDateRangeResolver($userTimezone),
+            $dateRangeResolver ?? new TaskFilterDateRangeResolver(
+                $userTimezoneResolver,
+                new DateInputParser($userTimezoneResolver, 'UTC')
+            ),
+            $userTimezoneResolver,
             $taskRepository,
         );
     }
@@ -223,26 +301,5 @@ class JiraApiServiceTimeRangeTest extends TestCase
         $workLog->id = 123;
 
         return $workLog;
-    }
-
-    private function createDateRangeResolver(string $userTimezone = 'UTC'): TaskFilterDateRangeResolver
-    {
-        $userTimezoneResolver = $this->createMock(UserTimezoneResolver::class);
-        $userTimezoneResolver
-            ->method('resolveCurrentUserTimezone')
-            ->willReturn($userTimezone);
-
-        return new TaskFilterDateRangeResolver(
-            $userTimezoneResolver,
-            new DateInputParser($userTimezoneResolver, 'UTC')
-        );
-    }
-
-    private function createApiService(?SettingService $settingService = null): JiraApiService
-    {
-        return new JiraApiService(
-            $this->createMock(LoggerInterface::class),
-            $settingService ?? $this->createMock(SettingService::class),
-        );
     }
 }

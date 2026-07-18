@@ -11,6 +11,7 @@ use App\Exception\JiraApiServiceException;
 use App\Repository\JiraWorkLog\JiraWorkLogRepository;
 use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
+use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\JiraApi\JiraApiService;
 use App\Service\Task\Sync\TaskSyncResult;
 use App\Utility\TimeLog\TimeLogDuration;
@@ -23,6 +24,7 @@ class JiraTaskSyncService
         private readonly JiraApiService $jiraApiService,
         private readonly JiraWorkLogRepository $jiraWorkLogRepository,
         private readonly TaskFilterDateRangeResolver $taskFilterDateRangeResolver,
+        private readonly UserTimezoneResolver $userTimezoneResolver,
         private readonly TaskRepository $taskRepository,
     ) {
     }
@@ -49,8 +51,15 @@ class JiraTaskSyncService
      */
     private function sync(Task $task, string $date): void
     {
-        $period = $this->taskFilterDateRangeResolver->resolveJiraSyncDate($date);
-        $syncDate = $period->syncDate();
+        $dateRange = $this->taskFilterDateRangeResolver->resolveTaskFilter(['date' => $date]);
+        if (null === $dateRange) {
+            throw new \InvalidArgumentException('Sync date could not be resolved.');
+        }
+
+        $userTimezone = new \DateTimeZone($this->userTimezoneResolver->resolveCurrentUserTimezone());
+        $canonicalDate = $dateRange['startDate']->setTimezone($userTimezone)->format('Y-m-d');
+        $syncDate = (new \DateTime($canonicalDate))->setTime(0, 0, 0);
+        $jiraStartDateTime = (new \DateTime($canonicalDate, $userTimezone))->setTime(17, 0, 0);
 
         $jiraWorkLog = $this->jiraWorkLogRepository->findOneBy(
             [
@@ -66,8 +75,8 @@ class JiraTaskSyncService
 
         [$timeSpentSeconds, $descriptions] = $this->summarize(
             timeLogs: $task->getTimeLogs(),
-            startDate: $period->startDate(),
-            endDate: $period->endDate(),
+            startDate: $dateRange['startDate'],
+            endDate: $dateRange['endDate'],
         );
         $workLogId = $jiraWorkLog->getWorkLogId();
 
@@ -78,7 +87,7 @@ class JiraTaskSyncService
         $jiraApiWorkLog = $this->jiraApiService->syncWorkLog(
             task: $task,
             workLogId: $jiraWorkLog->getWorkLogId() ? (int) $jiraWorkLog->getWorkLogId() : null,
-            startTime: $period->jiraStartDateTime(),
+            startTime: $jiraStartDateTime,
             timeSpentSeconds: $timeSpentSeconds,
             description: implode(', ', $descriptions),
         );

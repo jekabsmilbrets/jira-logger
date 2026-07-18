@@ -89,23 +89,4 @@ class TaskFilterDateRangeResolverTest extends TestCase
         self::assertSame('2026-05-31 20:59:59', $range['endDate']->format('Y-m-d H:i:s'));
     }
 
-    public function testResolveJiraSyncDateKeepsCanonicalMidnightAndJiraAnchor(): void
-    {
-        $period = $this->createResolver('UTC')->resolveJiraSyncDate('2026-05-30');
-
-        self::assertSame('2026-05-30 00:00:00', $period->syncDate()->format('Y-m-d H:i:s'));
-        self::assertSame('2026-05-30 00:00:00', $period->startDate()->format('Y-m-d H:i:s'));
-        self::assertSame('2026-05-30 23:59:59', $period->endDate()->format('Y-m-d H:i:s'));
-        self::assertSame('2026-05-30 17:00:00', $period->jiraStartDateTime()->format('Y-m-d H:i:s'));
-    }
-
-    public function testResolveJiraSyncDateUsesUserTimezoneForDateModeRange(): void
-    {
-        $period = $this->createResolver('Europe/Vienna')->resolveJiraSyncDate('2026-06-23');
-
-        self::assertSame('2026-06-23', $period->syncDate()->format('Y-m-d'));
-        self::assertSame('2026-06-23 17:00:00', $period->jiraStartDateTime()->format('Y-m-d H:i:s'));
-        self::assertSame('2026-06-22T22:00:00+00:00', $period->startDate()->format(\DateTimeInterface::ATOM));
-        self::assertSame('2026-06-23T21:59:59+00:00', $period->endDate()->format(\DateTimeInterface::ATOM));
-    }
 }
