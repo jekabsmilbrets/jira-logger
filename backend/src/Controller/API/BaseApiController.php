@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\API;
 
-use App\Dto\JsonApi\JsonApi;
-use App\Serializer\Normalizer\ModelNormalizer;
+use App\Serializer\Normalizer\JsonApiResponseNormalizer;
 use App\Service\DateTime\UserTimezoneResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -110,27 +109,18 @@ class BaseApiController extends AbstractController
         array $headers = [],
         array $context = []
     ): JsonResponse {
-        $jsonApi = new JsonApi();
-
-        if ($data) {
-            $resolvedTimezone = $this->userTimezoneResolver?->resolveCurrentUserTimezone();
-            $normalizer = new ModelNormalizer();
-            $normalizedData = $normalizer->normalize(
-                object: $data,
-                context: [
-                    'groups' => ['list'],
-                    'timezone' => $resolvedTimezone,
-                ]
-            );
-
-            $jsonApi->setData($normalizedData);
-        }
-
-        $jsonApi->setMeta($meta);
-        $jsonApi->setErrors($errors);
+        $resolvedTimezone = $data
+            ? $this->userTimezoneResolver?->resolveCurrentUserTimezone()
+            : null;
+        $response = (new JsonApiResponseNormalizer())->normalize(
+            data: $data,
+            errors: $errors,
+            meta: $meta,
+            timezone: $resolvedTimezone,
+        );
 
         return $this->json(
-            data: $jsonApi->jsonSerialize(),
+            data: $response,
             status: $status,
             headers: $headers,
             context: $context

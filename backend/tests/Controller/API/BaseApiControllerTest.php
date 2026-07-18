@@ -8,6 +8,8 @@ use App\Controller\API\BaseApiController;
 use App\Service\DateTime\UserTimezoneResolver;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Container;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 
@@ -91,5 +93,40 @@ class BaseApiControllerTest extends TestCase
             '"time":"2026-06-01T13:00:00+03:00"',
             (string) $response->getContent()
         );
+    }
+
+    public function testJsonApiPassesStatusHeadersAndFinalSerializerContext(): void
+    {
+        $serializer = $this->createMock(SerializerInterface::class);
+        $serializer
+            ->expects(self::once())
+            ->method('serialize')
+            ->with(
+                ['data' => ['x' => 1]],
+                'json',
+                [
+                    'json_encode_options' => JsonResponse::DEFAULT_ENCODING_OPTIONS,
+                    'groups' => ['transport'],
+                ],
+            )
+            ->willReturn('{"data":{"x":1}}');
+
+        $container = new Container();
+        $container->set('serializer', $serializer);
+
+        $controller = new BaseApiController();
+        $controller->setContainer($container);
+        $controller->setUserTimezoneResolver($this->buildTimezoneResolver('Europe/Riga'));
+
+        $response = $controller->jsonApi(
+            data: ['x' => 1],
+            status: 202,
+            headers: ['X-Contract' => 'preserved'],
+            context: ['groups' => ['transport']],
+        );
+
+        self::assertSame(202, $response->getStatusCode());
+        self::assertSame('preserved', $response->headers->get('X-Contract'));
+        self::assertSame('{"data":{"x":1}}', $response->getContent());
     }
 }
