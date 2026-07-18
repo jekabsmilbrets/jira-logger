@@ -33,6 +33,7 @@ import { TasksService } from '@shared/services/tasks.service';
 import { TasksSettingsDialogComponent } from '@tasks/components/tasks-menu/settings-dialog/tasks-settings-dialog.component';
 import { TasksSettingsToggleComponent } from '@tasks/components/tasks-menu/tasks-settings-toggler/tasks-settings-toggle.component';
 import type { TaskImportOutcome, TaskImportRequest } from '@tasks/interfaces/import-report.interface';
+import type { TasksSettingsDialogData } from '@tasks/interfaces/tasks-settings-dialog-data.interface';
 import { TaskBackupService } from '@tasks/services/task-backup/task-backup.service';
 import { TaskFormSession } from '@tasks/services/task-form-session';
 
@@ -99,11 +100,11 @@ export class TasksMenuComponent {
 
   protected onOpenSettingsDialog(): void {
     this.matDialog
-      .open<TasksSettingsDialogComponent, { tasks: Task[] }, TaskImportRequest | undefined>(
+      .open<TasksSettingsDialogComponent, TasksSettingsDialogData, TaskImportRequest | undefined>(
         TasksSettingsDialogComponent,
         {
           data: {
-            tasks: this.tasksService.allTasks(),
+            currentTasks: this.tasksService.allTasks(),
           },
         },
       )

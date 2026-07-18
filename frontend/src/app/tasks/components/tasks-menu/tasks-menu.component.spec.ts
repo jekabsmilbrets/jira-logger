@@ -221,7 +221,7 @@ describe('Tasks Components tasks-menu.component', () => {
 
     expect(matDialogMock.open).toHaveBeenCalledWith(TasksSettingsDialogComponent, {
       data: {
-        tasks: [],
+        currentTasks: [],
       },
     });
   });
