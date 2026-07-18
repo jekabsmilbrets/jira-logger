@@ -101,6 +101,36 @@ final class ReportedTaskQueryTest extends TestCase
         self::assertNull($timeLog->getOriginalEndTime());
     }
 
+    public function testListSerializesFilteredTimeLogsAsList(): void
+    {
+        $task = $this->task('task-id');
+        $task->addTimeLog($this->timeLog(
+            'excluded-log-id',
+            new \DateTimeImmutable('2026-05-29 10:00:00'),
+            new \DateTimeImmutable('2026-05-29 11:00:00'),
+        ));
+        $task->addTimeLog($this->timeLog(
+            'included-log-id',
+            new \DateTimeImmutable('2026-05-30 10:00:00'),
+            new \DateTimeImmutable('2026-05-30 11:00:00'),
+        ));
+        $dateRange = [
+            'startDate' => new \DateTimeImmutable('2026-05-30 00:00:00'),
+            'endDate' => new \DateTimeImmutable('2026-05-30 23:59:59'),
+        ];
+        $resolver = $this->createMock(TaskFilterDateRangeResolver::class);
+        $resolver->method('resolve')->willReturn($dateRange);
+        $repository = $this->repositoryWithQueryResult([$task]);
+        $views = (new ReportedTaskQuery($repository, $resolver))->list(
+            (new TaskListFilterRequest())->setDate('2026-05-30'),
+        );
+
+        $response = (new JsonApiResponseNormalizer())->normalize($views);
+
+        self::assertTrue(array_is_list($response['data'][0]['timeLogs']));
+        self::assertSame('included-log-id', $response['data'][0]['timeLogs'][0]['id']);
+    }
+
     public function testListKeepsOverlappingOpenLogsOpenAndSelectsThemAsLast(): void
     {
         $task = $this->task('task-id');

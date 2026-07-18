@@ -76,7 +76,7 @@ final class ReportedTaskQuery
     {
         $timeLogs = [];
 
-        foreach ($task->getTimeLogs() as $key => $timeLog) {
+        foreach ($task->getTimeLogs() as $timeLog) {
             if (
                 null !== $dateRange
                 && !TimeLogRange::overlaps(
@@ -89,7 +89,7 @@ final class ReportedTaskQuery
                 continue;
             }
 
-            $timeLogs[$key] = $this->timeLogView($timeLog, $dateRange);
+            $timeLogs[] = $this->timeLogView($timeLog, $dateRange);
         }
 
         return new ReportedTaskView(
