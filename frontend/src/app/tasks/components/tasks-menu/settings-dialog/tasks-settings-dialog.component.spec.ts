@@ -5,7 +5,7 @@ import { By } from '@angular/platform-browser';
 import { vi } from 'vitest';
 
 import type { TaskImportRequest } from '@tasks/interfaces/import-report.interface';
-import { TaskBackupService } from '@tasks/services/task-backup.service';
+import { TaskBackupService } from '@tasks/services/task-backup/task-backup.service';
 
 import { TasksSettingsDialogComponent } from './tasks-settings-dialog.component';
 

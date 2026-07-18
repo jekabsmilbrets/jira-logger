@@ -33,7 +33,7 @@ import { TasksService } from '@shared/services/tasks.service';
 import { TasksSettingsDialogComponent } from '@tasks/components/tasks-menu/settings-dialog/tasks-settings-dialog.component';
 import { TasksSettingsToggleComponent } from '@tasks/components/tasks-menu/tasks-settings-toggler/tasks-settings-toggle.component';
 import type { TaskImportOutcome, TaskImportRequest } from '@tasks/interfaces/import-report.interface';
-import { TaskBackupService } from '@tasks/services/task-backup.service';
+import { TaskBackupService } from '@tasks/services/task-backup/task-backup.service';
 import { TaskFormSession } from '@tasks/services/task-form-session';
 
 @Component({

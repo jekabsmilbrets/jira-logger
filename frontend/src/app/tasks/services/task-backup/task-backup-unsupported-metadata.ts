@@ -1,5 +1,3 @@
-import { Service } from '@angular/core';
-
 import { JiraWorkLog } from '@shared/models/jira-work-log.model';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
@@ -11,19 +9,19 @@ import type {
   TaskBackupJiraWorkLog,
   TaskBackupSourceMetadataEntry,
   TaskBackupTimeLog,
-  TaskBackupUnsupportedMetadata,
+  TaskBackupUnsupportedMetadata as TaskBackupUnsupportedMetadataValue,
 } from '@tasks/interfaces/task-backup.interface';
 import type { TaskBackupLegacyTaskInput, TaskBackupLegacyTimeLogInput } from '@tasks/interfaces/task-backup-legacy-input.interface';
 import type { UnsupportedMetadataField, UnsupportedMetadataValue } from '@tasks/types/task-backup-metadata.type';
 
 export interface TaskBackupExportMetadata {
   timeLogs: TaskBackupTimeLog[];
-  metadata?: TaskBackupUnsupportedMetadata;
+  metadata?: TaskBackupUnsupportedMetadataValue;
 }
 
 export interface TaskBackupImportMetadata {
   timeLogs: ImportTimeLogInput[];
-  unsupportedMetadata?: TaskBackupUnsupportedMetadata;
+  unsupportedMetadata?: TaskBackupUnsupportedMetadataValue;
   warning?: ImportWarning;
 }
 
@@ -39,8 +37,7 @@ const unsupportedMetadataFieldDefinitions: {
   { field: 'timeLogged', label: 'timeLogged' },
 ];
 
-@Service()
-export class TaskBackupUnsupportedMetadataService {
+export class TaskBackupUnsupportedMetadata {
   public readExportMetadata(
     task: Task,
   ): TaskBackupExportMetadata {
@@ -56,7 +53,7 @@ export class TaskBackupUnsupportedMetadataService {
   ): TaskBackupImportMetadata {
     const rawTimeLogs: unknown[] = this.pickTimeLogs(value);
     const timeLogs: ImportTimeLogInput[] = rawTimeLogs.map((timeLog: unknown) => this.normalizeBackupTimeLog(timeLog));
-    const unsupportedMetadata: TaskBackupUnsupportedMetadata | undefined = this.collectFromImport(value);
+    const unsupportedMetadata: TaskBackupUnsupportedMetadataValue | undefined = this.collectFromImport(value);
 
     return {
       timeLogs,
@@ -105,7 +102,7 @@ export class TaskBackupUnsupportedMetadataService {
 
   private collectFromTask(
     task: Task,
-  ): TaskBackupUnsupportedMetadata | undefined {
+  ): TaskBackupUnsupportedMetadataValue | undefined {
     const taskValue: Record<string, unknown> = task as unknown as Record<string, unknown>;
 
     return this.toUnsupportedMetadataResult({
@@ -134,7 +131,7 @@ export class TaskBackupUnsupportedMetadataService {
 
   private collectFromImport(
     value: TaskBackupLegacyTaskInput,
-  ): TaskBackupUnsupportedMetadata | undefined {
+  ): TaskBackupUnsupportedMetadataValue | undefined {
     if (this.isRecord(value.metadata)) {
       return this.toUnsupportedMetadataResult({
         task: this.toMetadataEntry(value.metadata['task'], ['id'], ['createdAt'], ['updatedAt']),
@@ -158,7 +155,7 @@ export class TaskBackupUnsupportedMetadataService {
 
   private buildWarning(
     taskName: string,
-    metadata: TaskBackupUnsupportedMetadata,
+    metadata: TaskBackupUnsupportedMetadataValue,
   ): ImportWarning {
     const fields: string[] = unsupportedMetadataFieldDefinitions
       .filter(({ field }) => {
@@ -373,8 +370,8 @@ export class TaskBackupUnsupportedMetadataService {
   }
 
   private toUnsupportedMetadataResult(
-    metadata: TaskBackupUnsupportedMetadata,
-  ): TaskBackupUnsupportedMetadata | undefined {
+    metadata: TaskBackupUnsupportedMetadataValue,
+  ): TaskBackupUnsupportedMetadataValue | undefined {
     const values: unknown[] = [
       metadata.task,
       metadata.timeLogs,

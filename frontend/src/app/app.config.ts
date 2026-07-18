@@ -18,7 +18,7 @@ import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
-import { TaskBackupService } from '@tasks/services/task-backup.service';
+import { TaskBackupService } from '@tasks/services/task-backup/task-backup.service';
 
 import { routes } from './app.routes';
 

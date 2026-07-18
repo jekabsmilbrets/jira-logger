@@ -16,7 +16,7 @@ import { TasksService } from '@shared/services/tasks.service';
 
 import { TasksSettingsDialogComponent } from '@tasks/components/tasks-menu/settings-dialog/tasks-settings-dialog.component';
 import type { ImportReport, TaskImportRequest } from '@tasks/interfaces/import-report.interface';
-import { TaskBackupService } from '@tasks/services/task-backup.service';
+import { TaskBackupService } from '@tasks/services/task-backup/task-backup.service';
 
 import { TasksMenuComponent } from './tasks-menu.component';
 

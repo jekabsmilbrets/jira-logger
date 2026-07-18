@@ -2,11 +2,12 @@ import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 
 import type { TaskBackupTagRef, TaskBackupTask } from '@tasks/interfaces/task-backup.interface';
-import type { TaskBackupExportMetadata } from '@tasks/services/task-backup-unsupported-metadata.service';
+
+import type { TaskBackupExportMetadata } from './task-backup-unsupported-metadata';
 
 type ReadExportMetadata = (task: Task) => TaskBackupExportMetadata;
 
-export const stringifyTaskBackup: (tasks: Task[], readExportMetadata: ReadExportMetadata) => string = (
+export const serializeTaskBackup: (tasks: Task[], readExportMetadata: ReadExportMetadata) => string = (
   tasks: Task[],
   readExportMetadata: ReadExportMetadata,
 ): string => JSON.stringify(

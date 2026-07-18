@@ -14,13 +14,14 @@ import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
-import { stringifyTaskBackup } from '@tasks/adapters/task-backup-export.adapter';
-import { adaptTaskImportRequest } from '@tasks/adapters/task-backup-import.adapter';
 import type { ImportReport, TaskImportOutcome, TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 import type { ImportTagInput, ImportTaskInput } from '@tasks/interfaces/import-task-input.interface';
-import { TaskBackupUnsupportedMetadataService } from '@tasks/services/task-backup-unsupported-metadata.service';
-import { normalizeBackupKey } from '@tasks/utilities/task-backup-normalization.utility';
-import { TaskImportExecutionPlan } from '@tasks/utilities/task-import-execution-plan.utility';
+
+import { normalizeBackupKey } from './task-backup-normalization';
+import { parseTaskBackup } from './task-backup-parser';
+import { serializeTaskBackup } from './task-backup-serializer';
+import { TaskBackupUnsupportedMetadata } from './task-backup-unsupported-metadata';
+import { TaskImportExecutionPlan } from './task-import-execution-plan';
 
 @Service()
 export class TaskBackupService implements LoadableInitializer {
@@ -29,7 +30,7 @@ export class TaskBackupService implements LoadableInitializer {
   private readonly tagsService: TagsService = inject(TagsService);
   private readonly tasksService: TasksService = inject(TasksService);
   private readonly timeLogsService: TimeLogsService = inject(TimeLogsService);
-  private readonly unsupportedMetadataService: TaskBackupUnsupportedMetadataService = inject(TaskBackupUnsupportedMetadataService);
+  private readonly unsupportedMetadata: TaskBackupUnsupportedMetadata = new TaskBackupUnsupportedMetadata();
 
   private readonly isLoadingSignal: WritableSignal<boolean> = signal<boolean>(false);
 
@@ -40,23 +41,23 @@ export class TaskBackupService implements LoadableInitializer {
   public exportTasksForUser(
     tasks: Task[],
   ): string {
-    return stringifyTaskBackup(
+    return serializeTaskBackup(
       tasks,
-      (task: Task) => this.unsupportedMetadataService.readExportMetadata(task),
+      (task: Task) => this.unsupportedMetadata.readExportMetadata(task),
     );
   }
 
   public parseTaskImportRequest(
     json: string,
   ): TaskImportRequest {
-    return adaptTaskImportRequest(
+    return parseTaskBackup(
       JSON.parse(json),
       this.tagsService.tags(),
-      (task, name) => this.unsupportedMetadataService.readImportMetadata(task, name),
+      (task, name) => this.unsupportedMetadata.readImportMetadata(task, name),
     );
   }
 
-  public applyTaskBackup(
+  private applyTaskBackup(
     request: TaskImportRequest,
   ): Observable<ImportReport> {
     const duplicateErrors: string[] = this.findExistingDuplicateNames(request.tasks);

@@ -1,15 +1,53 @@
+import { signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+
 import { describe, expect, it } from 'vitest';
 
+import { LoaderStateService } from '@core/services/loader-state.service';
+
 import { Tag } from '@shared/models/tag.model';
+import { TagsService } from '@shared/services/tags.service';
+import { TasksService } from '@shared/services/tasks.service';
+import { TimeLogsService } from '@shared/services/time-logs.service';
 
-import { adaptTaskImportRequest } from '@tasks/adapters/task-backup-import.adapter';
-import { TaskBackupUnsupportedMetadataService } from '@tasks/services/task-backup-unsupported-metadata.service';
+import type { TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 
-describe('Tasks Adapters task-backup-import.adapter', () => {
-  const unsupportedMetadataService = new TaskBackupUnsupportedMetadataService();
+import { TaskBackupService } from './task-backup.service';
+
+describe('TaskBackupService parse', () => {
+  let service: TaskBackupService;
+
+  const tagsServiceMock: { tags: ReturnType<typeof signal<Tag[]>> } = {
+    tags: signal<Tag[]>([]),
+  };
+
+  beforeEach(() => {
+    tagsServiceMock.tags = signal<Tag[]>([]);
+
+    TestBed.configureTestingModule({
+      providers: [
+        TaskBackupService,
+        { provide: TagsService, useValue: tagsServiceMock },
+        { provide: TasksService, useValue: { allTasks: signal([]).asReadonly() } },
+        { provide: TimeLogsService, useValue: {} },
+        { provide: LoaderStateService, useValue: {} },
+      ],
+    });
+
+    service = TestBed.inject(TaskBackupService);
+  });
+
+  const parse = (
+    input: unknown,
+    currentTags: Tag[] = [],
+  ): TaskImportRequest => {
+    tagsServiceMock.tags.set(currentTags);
+
+    return service.parseTaskImportRequest(JSON.stringify(input));
+  };
 
   it('parses version 2 import metadata and warnings', () => {
-    const result = adaptTaskImportRequest(
+    const result = parse(
       {
         version: 2,
         tasks: [{
@@ -37,7 +75,6 @@ describe('Tasks Adapters task-backup-import.adapter', () => {
         }],
       },
       [new Tag({ id: 'tag-1', name: 'Alpha' })],
-      (task, name) => unsupportedMetadataService.readImportMetadata(task, name),
     );
 
     expect(result.tasks[0]).toEqual(expect.objectContaining({
@@ -60,7 +97,7 @@ describe('Tasks Adapters task-backup-import.adapter', () => {
   });
 
   it('parses legacy task metadata fields and keeps existing tag names', () => {
-    const result = adaptTaskImportRequest(
+    const result = parse(
       [{
         _name: 'Legacy task',
         _description: 'Legacy format',
@@ -79,7 +116,6 @@ describe('Tasks Adapters task-backup-import.adapter', () => {
         _updatedAt: 1_717_252_000_000,
       }],
       [new Tag({ id: 'tag-1', name: 'Alpha' })],
-      (task, name) => unsupportedMetadataService.readImportMetadata(task, name),
     );
 
     expect(result.tasks[0]).toEqual(expect.objectContaining({
@@ -98,19 +134,28 @@ describe('Tasks Adapters task-backup-import.adapter', () => {
     }));
   });
 
+  it('resolves legacy ID-only Tag references to current Tag names', () => {
+    const result = parse([{
+      _name: 'Legacy task',
+      _timeLogs: [],
+      _tags: [{ _id: 'tag-1' }],
+    }], [new Tag({ id: 'tag-1', name: 'Frontend' })]);
+
+    expect(result.tasks[0]?.tags).toEqual([{
+      name: 'Frontend',
+      existingTagId: 'tag-1',
+    }]);
+  });
+
   it('rejects duplicate imported task names ignoring case and whitespace', () => {
-    expect(() => adaptTaskImportRequest(
-      [
+    expect(() => parse([
         { name: 'Task A', timeLogs: [], tags: [] },
         { name: ' task a ', timeLogs: [], tags: [] },
-      ],
-      [],
-      (task, name) => unsupportedMetadataService.readImportMetadata(task, name),
-    )).toThrow('Import contains duplicate task names: task a.');
+      ])).toThrow('Import contains duplicate task names: task a.');
   });
 
   it('keeps missing tag intent and dedupes tag refs by normalized name', () => {
-    const result = adaptTaskImportRequest(
+    const result = parse(
       [{
         name: 'Task A',
         timeLogs: [],
@@ -121,7 +166,6 @@ describe('Tasks Adapters task-backup-import.adapter', () => {
         ],
       }],
       [new Tag({ id: 'tag-1', name: 'Existing' })],
-      (task, name) => unsupportedMetadataService.readImportMetadata(task, name),
     );
 
     expect(result.tasks[0]?.tags).toEqual([
@@ -131,24 +175,20 @@ describe('Tasks Adapters task-backup-import.adapter', () => {
   });
 
   it('rejects unsupported formats and malformed task entries', () => {
-    const metadata = () => ({ timeLogs: [] });
-
-    expect(() => adaptTaskImportRequest({ version: 1 }, [], metadata)).toThrow('Unsupported task backup format.');
-    expect(() => adaptTaskImportRequest([null], [], metadata)).toThrow('Imported task must be an object.');
-    expect(() => adaptTaskImportRequest([{ tags: [], timeLogs: [] }], [], metadata))
+    expect(() => parse({ version: 1 })).toThrow('Unsupported task backup format.');
+    expect(() => parse([null])).toThrow('Imported task must be an object.');
+    expect(() => parse([{ tags: [], timeLogs: [] }]))
       .toThrow('Missing required field "name" for imported task.');
-    expect(() => adaptTaskImportRequest([{ name: 'Task', timeLogs: [] }], [], metadata))
+    expect(() => parse([{ name: 'Task', timeLogs: [] }]))
       .toThrow('Missing required field "tags" for imported task.');
   });
 
   it('validates malformed tag references and normalizes null optional text', () => {
-    const metadata = () => ({ timeLogs: [] });
-
-    expect(() => adaptTaskImportRequest([{ name: 'Task', tags: [1], timeLogs: [] }], [], metadata))
+    expect(() => parse([{ name: 'Task', tags: [1], timeLogs: [] }]))
       .toThrow('Imported tag reference must be a string or object.');
-    expect(() => adaptTaskImportRequest([{ name: 'Task', tags: [{}], timeLogs: [] }], [], metadata))
+    expect(() => parse([{ name: 'Task', tags: [{}], timeLogs: [] }]))
       .toThrow('Imported tag reference must include a name when the tag does not exist locally.');
-    expect(adaptTaskImportRequest([{ name: 'Task', description: null, tags: [], timeLogs: [] }], [], metadata).tasks[0])
+    expect(parse([{ name: 'Task', description: null, tags: [], timeLogs: [] }]).tasks[0])
       .toMatchObject({ name: 'Task', description: undefined, tags: [] });
   });
 });

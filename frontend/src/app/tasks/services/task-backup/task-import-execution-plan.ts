@@ -4,7 +4,8 @@ import { Tag } from '@shared/models/tag.model';
 import { TagsService } from '@shared/services/tags.service';
 
 import type { ImportTagInput, ImportTaskInput } from '@tasks/interfaces/import-task-input.interface';
-import { normalizeBackupKey } from '@tasks/utilities/task-backup-normalization.utility';
+
+import { normalizeBackupKey } from './task-backup-normalization';
 
 export class TaskImportExecutionPlan {
   public static fromTasks(

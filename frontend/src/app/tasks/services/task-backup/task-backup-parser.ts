@@ -3,12 +3,13 @@ import { Tag } from '@shared/models/tag.model';
 import type { ImportWarning, TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 import type { ImportTagInput, ImportTaskInput } from '@tasks/interfaces/import-task-input.interface';
 import type { TaskBackupLegacyTagInput, TaskBackupLegacyTaskInput } from '@tasks/interfaces/task-backup-legacy-input.interface';
-import type { TaskBackupImportMetadata } from '@tasks/services/task-backup-unsupported-metadata.service';
-import { normalizeBackupKey } from '@tasks/utilities/task-backup-normalization.utility';
+
+import { normalizeBackupKey } from './task-backup-normalization';
+import type { TaskBackupImportMetadata } from './task-backup-unsupported-metadata';
 
 type ReadImportMetadata = (task: TaskBackupLegacyTaskInput, name: string) => TaskBackupImportMetadata;
 
-export const adaptTaskImportRequest: (
+export const parseTaskBackup: (
   input: unknown,
   currentTags: Tag[],
   readImportMetadata: ReadImportMetadata,

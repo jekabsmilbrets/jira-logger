@@ -4,10 +4,10 @@ import { JiraWorkLog } from '@shared/models/jira-work-log.model';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 
-import { TaskBackupUnsupportedMetadataService } from './task-backup-unsupported-metadata.service';
+import { TaskBackupUnsupportedMetadata } from './task-backup-unsupported-metadata';
 
-describe('Tasks Service TaskBackupUnsupportedMetadataService', () => {
-  const service = new TaskBackupUnsupportedMetadataService();
+describe('TaskBackupUnsupportedMetadata', () => {
+  const service = new TaskBackupUnsupportedMetadata();
 
   it('uses current time log fields when both formats are present', () => {
     expect(service.readImportMetadata({

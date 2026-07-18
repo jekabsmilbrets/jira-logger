@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { of, throwError } from 'rxjs';
+import { defer, of, Subject, throwError } from 'rxjs';
 import { afterEach, vi } from 'vitest';
 
 import { LoaderStateService } from '@core/services/loader-state.service';
@@ -14,24 +14,26 @@ import { TasksService } from '@shared/services/tasks.service';
 import { TimeLogsService } from '@shared/services/time-logs.service';
 
 import type { TaskImportRequest } from '@tasks/interfaces/import-report.interface';
-import { TaskBackupUnsupportedMetadataService } from '@tasks/services/task-backup-unsupported-metadata.service';
 
 import { TaskBackupService } from './task-backup.service';
 
-describe('Tasks Services task-backup.service', () => {
+describe('TaskBackupService apply', () => {
   let service: TaskBackupService;
 
   const tagsServiceMock = {
     tags: signal<Tag[]>([]).asReadonly(),
     create: vi.fn(),
+    delete: vi.fn(),
   };
   const tasksServiceMock = {
     allTasks: signal<Task[]>([]).asReadonly(),
     create: vi.fn(),
+    delete: vi.fn(),
     list: vi.fn(),
   };
   const timeLogsServiceMock = {
     create: vi.fn(),
+    delete: vi.fn(),
   };
 
   const loaderStateServiceMock = {
@@ -41,17 +43,19 @@ describe('Tasks Services task-backup.service', () => {
   beforeEach(() => {
     tagsServiceMock.tags = signal<Tag[]>([]).asReadonly();
     tagsServiceMock.create.mockReset();
+    tagsServiceMock.delete.mockReset();
     tasksServiceMock.allTasks = signal<Task[]>([]).asReadonly();
     tasksServiceMock.create.mockReset();
+    tasksServiceMock.delete.mockReset();
     tasksServiceMock.list.mockReset();
     tasksServiceMock.list.mockReturnValue(of([]));
     timeLogsServiceMock.create.mockReset();
+    timeLogsServiceMock.delete.mockReset();
     loaderStateServiceMock.addLoader.mockReset();
 
     TestBed.configureTestingModule({
       providers: [
         TaskBackupService,
-        TaskBackupUnsupportedMetadataService,
         { provide: TagsService, useValue: tagsServiceMock },
         { provide: TasksService, useValue: tasksServiceMock },
         { provide: TimeLogsService, useValue: timeLogsServiceMock },
@@ -69,56 +73,7 @@ describe('Tasks Services task-backup.service', () => {
     vi.restoreAllMocks();
   });
 
-  it('exports current tasks as Task Backup JSON', () => {
-    vi.spyOn(Date, 'now').mockReturnValue(1_717_300_800_000);
-
-    const task: Task = new Task({
-      name: 'Task A',
-      description: 'Export me',
-      tags: [],
-      timeLogs: [],
-    });
-
-    expect(JSON.parse(service.exportTasksForUser([task]))).toEqual({
-      version: 2,
-      exportedAt: 1_717_300_800_000,
-      tasks: [{
-        name: 'Task A',
-        description: 'Export me',
-        timeLogs: [],
-        tags: [],
-        metadata: {
-          timeLogs: [],
-          tags: [],
-          timeLogged: 0,
-        },
-      }],
-    });
-    expect(service.exportTasksForUser([new Task({ name: 'Exported task', timeLogs: [], tags: [] })]))
-      .toContain('\n  "version": 2');
-  });
-
-  it('parses Task Import Request JSON using current tags', () => {
-    tagsServiceMock.tags = signal([
-      new Tag({ id: 'tag-1', name: 'Frontend' }),
-    ]).asReadonly();
-
-    const request = service.parseTaskImportRequest(JSON.stringify([
-      {
-        _name: 'Imported task',
-        _description: 'Imported',
-        _timeLogs: [],
-        _tags: [{ _id: 'tag-1' }],
-      },
-    ]));
-
-    expect(request.tasks[0].tags).toEqual([{
-      name: 'Frontend',
-      existingTagId: 'tag-1',
-    }]);
-  });
-
-  it('imports all tasks and returns success report', () => {
+  it('imports all tasks and returns a success outcome', () => {
     const createdTask = new Task({ id: '1', name: 'Task 1', timeLogs: [], tags: [] });
     const request: TaskImportRequest = {
       tasks: [{
@@ -133,7 +88,7 @@ describe('Tasks Services task-backup.service', () => {
     tasksServiceMock.create.mockReturnValue(of(createdTask));
 
     let result: unknown;
-    service.applyTaskBackup(request).subscribe((value) => {
+    service.applyTaskBackupForUser(request).subscribe((value) => {
       result = value;
     });
 
@@ -141,12 +96,8 @@ describe('Tasks Services task-backup.service', () => {
     expect(tasksServiceMock.list).toHaveBeenCalledTimes(1);
     expect(timeLogsServiceMock.create).not.toHaveBeenCalled();
     expect(result).toEqual({
-      status: 'success',
-      createdTaskCount: 1,
-      createdTagCount: 0,
-      createdTimeLogCount: 0,
-      warnings: [],
-      errors: [],
+      message: 'Imported 1 task, 0 time logs.',
+      duration: 7000,
     });
   });
 
@@ -154,17 +105,13 @@ describe('Tasks Services task-backup.service', () => {
     const request: TaskImportRequest = { tasks: [], warnings: [] };
     let result: unknown;
 
-    service.applyTaskBackup(request).subscribe((value) => {
+    service.applyTaskBackupForUser(request).subscribe((value) => {
       result = value;
     });
 
     expect(result).toEqual({
-      status: 'success',
-      createdTaskCount: 0,
-      createdTagCount: 0,
-      createdTimeLogCount: 0,
-      warnings: [],
-      errors: [],
+      message: 'Imported 0 tasks, 0 time logs.',
+      duration: 7000,
     });
     expect(tasksServiceMock.create).not.toHaveBeenCalled();
     expect(tasksServiceMock.list).toHaveBeenCalledTimes(1);
@@ -185,13 +132,16 @@ describe('Tasks Services task-backup.service', () => {
     tasksServiceMock.create.mockReturnValue(of(createdTask));
     timeLogsServiceMock.create.mockReturnValue(of(undefined));
 
-    let result: any;
-    service.applyTaskBackup(request).subscribe((value) => {
+    let result: unknown;
+    service.applyTaskBackupForUser(request).subscribe((value) => {
       result = value;
     });
 
     expect(timeLogsServiceMock.create).toHaveBeenCalledTimes(1);
-    expect(result.createdTimeLogCount).toBe(1);
+    expect(result).toEqual({
+      message: 'Imported 1 task, 1 time log.',
+      duration: 7000,
+    });
   });
 
   it('creates missing tags before importing tasks', () => {
@@ -210,8 +160,8 @@ describe('Tasks Services task-backup.service', () => {
     tagsServiceMock.create.mockReturnValue(of(createdTag));
     tasksServiceMock.create.mockReturnValue(of(createdTask));
 
-    let result: any;
-    service.applyTaskBackup(request).subscribe((value) => {
+    let result: unknown;
+    service.applyTaskBackupForUser(request).subscribe((value) => {
       result = value;
     });
 
@@ -219,7 +169,10 @@ describe('Tasks Services task-backup.service', () => {
     expect(tasksServiceMock.create).toHaveBeenCalledTimes(1);
     const createdTaskInput = tasksServiceMock.create.mock.calls[0]?.[0] as Task;
     expect(createdTaskInput.tags).toEqual([createdTag]);
-    expect(result.createdTagCount).toBe(1);
+    expect(result).toEqual({
+      message: 'Imported 1 task, 0 time logs, created 1 tag.',
+      duration: 7000,
+    });
   });
 
   it('uses existing tag intent without creating tags', () => {
@@ -236,15 +189,11 @@ describe('Tasks Services task-backup.service', () => {
 
     tasksServiceMock.create.mockReturnValue(of(createdTask));
 
-    let result: any;
-    service.applyTaskBackup(request).subscribe((value) => {
-      result = value;
-    });
+    service.applyTaskBackupForUser(request).subscribe();
 
     expect(tagsServiceMock.create).not.toHaveBeenCalled();
     const createdTaskInput = tasksServiceMock.create.mock.calls[0]?.[0] as Task;
     expect(createdTaskInput.tags).toEqual([new Tag({ id: 'tag-1', name: 'Frontend' })]);
-    expect(result.createdTagCount).toBe(0);
   });
 
   it('creates each missing tag once and reuses it across imported tasks', () => {
@@ -275,8 +224,8 @@ describe('Tasks Services task-backup.service', () => {
       timeLogs: [],
     })));
 
-    let result: any;
-    service.applyTaskBackup(request).subscribe((value) => {
+    let result: unknown;
+    service.applyTaskBackupForUser(request).subscribe((value) => {
       result = value;
     });
 
@@ -284,7 +233,10 @@ describe('Tasks Services task-backup.service', () => {
     expect(tasksServiceMock.create).toHaveBeenCalledTimes(2);
     expect((tasksServiceMock.create.mock.calls[0]?.[0] as Task).tags).toEqual([createdTag]);
     expect((tasksServiceMock.create.mock.calls[1]?.[0] as Task).tags).toEqual([createdTag]);
-    expect(result.createdTagCount).toBe(1);
+    expect(result).toEqual({
+      message: 'Imported 2 tasks, 0 time logs, created 1 tag.',
+      duration: 7000,
+    });
   });
 
   it('does not create a tag when another imported task maps the same tag to an existing tag', () => {
@@ -313,15 +265,11 @@ describe('Tasks Services task-backup.service', () => {
       timeLogs: [],
     })));
 
-    let result: any;
-    service.applyTaskBackup(request).subscribe((value) => {
-      result = value;
-    });
+    service.applyTaskBackupForUser(request).subscribe();
 
     expect(tagsServiceMock.create).not.toHaveBeenCalled();
     expect((tasksServiceMock.create.mock.calls[0]?.[0] as Task).tags).toEqual([new Tag({ id: 'tag-1', name: 'Frontend' })]);
     expect((tasksServiceMock.create.mock.calls[1]?.[0] as Task).tags).toEqual([new Tag({ id: 'tag-1', name: 'Frontend' })]);
-    expect(result.createdTagCount).toBe(0);
   });
 
   it('imports mixed existing and missing tag intent', () => {
@@ -342,7 +290,7 @@ describe('Tasks Services task-backup.service', () => {
     tagsServiceMock.create.mockReturnValue(of(createdTag));
     tasksServiceMock.create.mockReturnValue(of(new Task({ id: '1', name: 'Task 1', tags: [], timeLogs: [] })));
 
-    service.applyTaskBackup(request).subscribe();
+    service.applyTaskBackupForUser(request).subscribe();
 
     const createdTaskInput = tasksServiceMock.create.mock.calls[0]?.[0] as Task;
     expect(createdTaskInput.tags).toEqual([
@@ -365,7 +313,7 @@ describe('Tasks Services task-backup.service', () => {
     tagsServiceMock.create.mockReturnValue(of(new Tag({ id: 'tag-1', name: 'Other' })));
 
     let emittedError: unknown;
-    service.applyTaskBackup(request).subscribe({
+    service.applyTaskBackupForUser(request).subscribe({
       error: (e) => {
         emittedError = e;
       },
@@ -390,12 +338,15 @@ describe('Tasks Services task-backup.service', () => {
       new Task({ id: 'existing', name: ' Task 1 ', tags: [], timeLogs: [] }),
     ]).asReadonly();
 
-    let result: any;
-    service.applyTaskBackup(request).subscribe((value) => {
+    let result: unknown;
+    service.applyTaskBackupForUser(request).subscribe((value) => {
       result = value;
     });
 
-    expect(result.status).toBe('blocked');
+    expect(result).toEqual({
+      message: 'Task 1',
+      duration: 9000,
+    });
     expect(tasksServiceMock.create).not.toHaveBeenCalled();
     expect(tasksServiceMock.list).not.toHaveBeenCalled();
   });
@@ -415,7 +366,7 @@ describe('Tasks Services task-backup.service', () => {
     tasksServiceMock.create.mockReturnValue(throwError(() => error));
 
     let emittedError: unknown;
-    service.applyTaskBackup(request).subscribe({
+    service.applyTaskBackupForUser(request).subscribe({
       error: (e) => {
         emittedError = e;
       },
@@ -423,6 +374,69 @@ describe('Tasks Services task-backup.service', () => {
 
     expect(emittedError).toBe(error);
     expect(tasksServiceMock.list).not.toHaveBeenCalled();
+  });
+
+  it('stops sequential creation at the first Task Import Failure without rollback', () => {
+    const attemptedTaskNames: string[] = [];
+    const creationOrder: string[] = [];
+    const error = new Error('second task failed');
+    const request: TaskImportRequest = {
+      tasks: [
+        {
+          name: 'Task 1',
+          description: undefined,
+          tags: [{ name: 'Frontend' }],
+          timeLogs: [{ startTime: 1, endTime: 2, description: undefined }],
+        },
+        {
+          name: 'Task 2',
+          description: undefined,
+          tags: [],
+          timeLogs: [],
+        },
+        {
+          name: 'Task 3',
+          description: undefined,
+          tags: [],
+          timeLogs: [],
+        },
+      ],
+      warnings: [],
+    };
+
+    tagsServiceMock.create.mockReturnValue(defer(() => {
+      creationOrder.push('Tag');
+      return of(new Tag({ id: 'tag-1', name: 'Frontend' }));
+    }));
+    tasksServiceMock.create.mockImplementation((task: Task) => defer(() => {
+      attemptedTaskNames.push(task.name);
+      creationOrder.push(task.name);
+
+      return task.name === 'Task 2' ?
+        throwError(() => error) :
+        of(new Task({ id: task.name, name: task.name, tags: task.tags, timeLogs: [] }));
+    }));
+    timeLogsServiceMock.create.mockReturnValue(defer(() => {
+      creationOrder.push('Time Log');
+      return of(new TimeLog({}));
+    }));
+
+    let emittedError: unknown;
+    service.applyTaskBackupForUser(request).subscribe({
+      error: (caught) => {
+        emittedError = caught;
+      },
+    });
+
+    expect(emittedError).toBe(error);
+    expect(attemptedTaskNames).toEqual(['Task 1', 'Task 2']);
+    expect(creationOrder).toEqual(['Tag', 'Task 1', 'Time Log', 'Task 2']);
+    expect(timeLogsServiceMock.create).toHaveBeenCalledOnce();
+    expect(tasksServiceMock.list).not.toHaveBeenCalled();
+    expect(tagsServiceMock.delete).not.toHaveBeenCalled();
+    expect(tasksServiceMock.delete).not.toHaveBeenCalled();
+    expect(timeLogsServiceMock.delete).not.toHaveBeenCalled();
+    expect(service.isLoading()).toBe(false);
   });
 
   it('registers loader on init', () => {
@@ -433,6 +447,36 @@ describe('Tasks Services task-backup.service', () => {
       service.isLoading,
       'TaskBackupService',
     );
+  });
+
+  it('queues concurrent Task Backup requests behind the external apply operation', async () => {
+    const firstTask = new Subject<Task>();
+    const firstRequest: TaskImportRequest = {
+      tasks: [{ name: 'Task 1', description: undefined, tags: [], timeLogs: [] }],
+      warnings: [],
+    };
+    const secondRequest: TaskImportRequest = {
+      tasks: [{ name: 'Task 2', description: undefined, tags: [], timeLogs: [] }],
+      warnings: [],
+    };
+
+    tasksServiceMock.create
+      .mockReturnValueOnce(firstTask)
+      .mockReturnValueOnce(of(new Task({ id: '2', name: 'Task 2', tags: [], timeLogs: [] })));
+
+    service.applyTaskBackupForUser(firstRequest).subscribe();
+    service.applyTaskBackupForUser(secondRequest).subscribe();
+
+    expect(tasksServiceMock.create).toHaveBeenCalledOnce();
+    expect(service.isLoading()).toBe(true);
+
+    firstTask.next(new Task({ id: '1', name: 'Task 1', tags: [], timeLogs: [] }));
+    firstTask.complete();
+    await Promise.resolve();
+
+    expect(tasksServiceMock.create).toHaveBeenCalledTimes(2);
+    expect(tasksServiceMock.list).toHaveBeenCalledTimes(2);
+    expect(service.isLoading()).toBe(false);
   });
 
   it('returns user-facing successful and blocked Task Import outcomes', () => {

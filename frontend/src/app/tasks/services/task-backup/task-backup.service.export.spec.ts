@@ -1,15 +1,36 @@
+import { signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { LoaderStateService } from '@core/services/loader-state.service';
 
 import { JiraWorkLog } from '@shared/models/jira-work-log.model';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
+import { TagsService } from '@shared/services/tags.service';
+import { TasksService } from '@shared/services/tasks.service';
+import { TimeLogsService } from '@shared/services/time-logs.service';
 
-import { stringifyTaskBackup } from '@tasks/adapters/task-backup-export.adapter';
-import { TaskBackupUnsupportedMetadataService } from '@tasks/services/task-backup-unsupported-metadata.service';
+import { TaskBackupService } from './task-backup.service';
 
-describe('Tasks Adapters task-backup-export.adapter', () => {
-  const unsupportedMetadataService = new TaskBackupUnsupportedMetadataService();
+describe('TaskBackupService export', () => {
+  let service: TaskBackupService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        TaskBackupService,
+        { provide: TagsService, useValue: { tags: signal([]).asReadonly() } },
+        { provide: TasksService, useValue: { allTasks: signal([]).asReadonly() } },
+        { provide: TimeLogsService, useValue: {} },
+        { provide: LoaderStateService, useValue: {} },
+      ],
+    });
+
+    service = TestBed.inject(TaskBackupService);
+  });
 
   afterEach(() => {
     vi.restoreAllMocks();
@@ -57,10 +78,7 @@ describe('Tasks Adapters task-backup-export.adapter', () => {
     task.createdAt = new Date('2026-06-01T07:00:00.000Z');
     task.updatedAt = new Date('2026-06-01T14:00:00.000Z');
 
-    expect(JSON.parse(stringifyTaskBackup(
-      [task],
-      (sourceTask: Task) => unsupportedMetadataService.readExportMetadata(sourceTask),
-    ))).toEqual({
+    expect(JSON.parse(service.exportTasksForUser([task]))).toEqual({
       version: 2,
       exportedAt: 1_717_300_800_000,
       tasks: [{
@@ -106,5 +124,6 @@ describe('Tasks Adapters task-backup-export.adapter', () => {
         },
       }],
     });
+    expect(service.exportTasksForUser([task])).toContain('\n  "version": 2');
   });
 });

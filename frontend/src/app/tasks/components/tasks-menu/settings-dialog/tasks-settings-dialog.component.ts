@@ -12,7 +12,7 @@ import type { TaskImportRequest } from '@tasks/interfaces/import-report.interfac
 import type { TaskSettingsFormData } from '@tasks/interfaces/task-settings-form-data.interface';
 import type { TasksSettingsDialogData } from '@tasks/interfaces/tasks-settings-dialog-data.interface';
 import type { TasksSettingsFormValue } from '@tasks/interfaces/tasks-settings-form-value.interface';
-import { TaskBackupService } from '@tasks/services/task-backup.service';
+import { TaskBackupService } from '@tasks/services/task-backup/task-backup.service';
 
 @Component({
   selector: 'tasks-settings-dialog',
