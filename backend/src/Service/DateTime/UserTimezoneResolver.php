@@ -21,8 +21,7 @@ class UserTimezoneResolver
 
     public function resolveCurrentUserTimezone(): string
     {
-        $setting = $this->settingService->findByName(self::JIRA_USER_TIMEZONE_SETTING_NAME);
-        $value = $setting?->getValue();
+        $value = $this->settingService->value(self::JIRA_USER_TIMEZONE_SETTING_NAME);
 
         if (\is_string($value) && '' !== trim($value) && $this->isValidTimezone($value)) {
             return $value;

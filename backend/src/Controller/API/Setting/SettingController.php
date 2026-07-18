@@ -36,8 +36,6 @@ class SettingController extends BaseApiController
 
     final public const OA_TAG = 'Settings';
     final public const MODEL_SCHEMA = '#/components/schemas/SettingModel';
-    private const REDACTED_VALUE = '***REDACTED***';
-    private const SECRET_NAME_PARTS = ['token', 'password', 'secret', 'key'];
     private const EXTERNALLY_MANAGED_SETTING_NAMES = []; // ['jira.personal-access-token'];
 
     public function __construct(
@@ -480,20 +478,10 @@ class SettingController extends BaseApiController
 
     private function sanitizeSetting(Setting $setting): array
     {
-        $value = $setting->getValue();
-        $name = mb_strtolower($setting->getName() ?? '');
-
-        foreach (self::SECRET_NAME_PARTS as $part) {
-            if (str_contains($name, $part)) {
-                $value = self::REDACTED_VALUE;
-                break;
-            }
-        }
-
         return [
             'id' => $setting->getId(),
             'name' => $setting->getName(),
-            'value' => $value,
+            'value' => $this->settingService->safeValue($setting),
         ];
     }
 

@@ -13,6 +13,9 @@ class SettingService
 {
     final public const NO_DATA_PROVIDED = 'No Setting Model or SettingRequest was provided';
 
+    private const REDACTED_VALUE = '***REDACTED***';
+    private const SECRET_NAME_PARTS = ['token', 'password', 'secret', 'key'];
+
     public function __construct(
         private readonly SettingRepository $settingRepository,
     ) {
@@ -32,15 +35,31 @@ class SettingService
         return new ArrayCollection($settings);
     }
 
-    final public function findByName(string $name): ?Setting
+    final public function value(string $name): ?string
     {
-        $setting = $this->settingRepository->findOneBy(
+        return $this->settingRepository->findOneBy(
             [
                 'name' => $name,
             ]
-        );
+        )?->getValue();
+    }
 
-        return $setting ?? null;
+    final public function booleanValue(string $name): bool
+    {
+        return filter_var($this->value($name), \FILTER_VALIDATE_BOOLEAN);
+    }
+
+    final public function safeValue(Setting $setting): ?string
+    {
+        $name = mb_strtolower($setting->getName() ?? '');
+
+        foreach (self::SECRET_NAME_PARTS as $part) {
+            if (str_contains($name, $part)) {
+                return self::REDACTED_VALUE;
+            }
+        }
+
+        return $setting->getValue();
     }
 
     final public function show(

@@ -152,24 +152,19 @@ class JiraApiService
     private function initClient(): IssueService
     {
         try {
-            $jiraSyncEnabled = filter_var(
-                value: $this->settingService->findByName(
-                    self::JIRA_ENABLED_KEY
-                )?->getValue(),
-                filter: \FILTER_VALIDATE_BOOLEAN
-            );
+            $jiraSyncEnabled = $this->settingService->booleanValue(self::JIRA_ENABLED_KEY);
 
             if (!$jiraSyncEnabled) {
                 throw new JiraApiServiceException(self::JIRA_DISABLED_MSG);
             }
 
-            $jiraHost = $this->settingService->findByName(
+            $jiraHost = $this->settingService->value(
                 self::JIRA_HOST_SETTING_KEY
-            )?->getValue();
+            );
             $personalAccessToken = getenv('JIRA_PERSONAL_ACCESS_TOKEN') ?:
-                $this->settingService->findByName(
+                $this->settingService->value(
                     self::JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY
-                )?->getValue() ?:
+                ) ?:
                 null;
 
             if (
