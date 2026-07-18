@@ -13,7 +13,7 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
-import { type FieldTree, FormField } from '@angular/forms/signals';
+import { FormField } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -33,16 +33,9 @@ import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 import type { AsyncLoader } from '@shared/types/async-loader.type';
 
-import type { TaskFormValue } from '@tasks/interfaces/task-form-value.interface';
 import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
+import { TaskFormSession } from '@tasks/services/task-form-session';
 import type { TimeLogListService } from '@tasks/services/time-log-list.service';
-import {
-  buildEmptyTaskFormValue,
-  buildTaskEditForm,
-  buildTaskFormValue,
-  buildTaskUpdatePayload,
-  setTaskFormTags,
-} from '@tasks/utilities/task-form-intent.utility';
 
 @Component({
   selector: 'tasks-task',
@@ -72,7 +65,6 @@ export class TaskComponent {
   protected readonly update: OutputEmitterRef<Task> = output<Task>();
   protected readonly remove: OutputEmitterRef<Task> = output<Task>();
   protected readonly timeLogsSaved: OutputEmitterRef<void> = output<void>();
-  protected readonly taskFormModel: WritableSignal<TaskFormValue> = signal<TaskFormValue>(buildEmptyTaskFormValue());
   protected readonly editMode: WritableSignal<boolean> = signal(false);
   protected readonly currentTime: WritableSignal<number> = signal(Date.now());
 
@@ -86,8 +78,7 @@ export class TaskComponent {
   );
   private readonly tasksService: TasksService = inject(TasksService);
 
-  protected readonly taskForm: FieldTree<TaskFormValue> = buildTaskEditForm(
-    this.taskFormModel,
+  protected readonly taskFormSession: TaskFormSession = TaskFormSession.edit(
     this.task,
     (taskName: string) => this.tasksService.taskExist(taskName),
   );
@@ -96,7 +87,7 @@ export class TaskComponent {
   constructor() {
     effect(() => {
       if (!this.editMode()) {
-        this.taskForm().reset(buildTaskFormValue(this.task()));
+        this.taskFormSession.reset();
       }
     });
 
@@ -145,7 +136,7 @@ export class TaskComponent {
   }
 
   protected hasNameError(): boolean {
-    return this.taskForm.name().touched() && this.taskForm.name().invalid();
+    return this.taskFormSession.form.name().touched() && this.taskFormSession.form.name().invalid();
   }
 
   protected getTaskDescription(): string {
@@ -171,7 +162,7 @@ export class TaskComponent {
   }
 
   protected isSaveDisabled(): boolean {
-    return this.isLoading() || this.taskForm().invalid() || !this.taskForm().dirty();
+    return this.isLoading() || this.taskFormSession.form().invalid() || !this.taskFormSession.form().dirty();
   }
 
   protected getEditButtonIcon(): string {
@@ -199,18 +190,18 @@ export class TaskComponent {
   }
 
   protected onTagsChange(tags: Tag[]): void {
-    setTaskFormTags(this.taskForm.tags(), tags);
+    this.taskFormSession.setTags(tags);
   }
 
   protected onUpdate(event?: Event): void {
     event?.preventDefault?.();
 
-    if (!this.taskForm().valid()) {
-      this.taskForm().markAsTouched();
+    if (!this.taskFormSession.form().valid()) {
+      this.taskFormSession.form().markAsTouched();
       return;
     }
 
-    this.update.emit(buildTaskUpdatePayload(this.task(), this.taskFormModel()));
+    this.update.emit(this.taskFormSession.toTask());
     this.editMode.set(false);
   }
 
@@ -231,7 +222,7 @@ export class TaskComponent {
     this.editMode.set(nextEditMode);
 
     if (nextEditMode) {
-      this.taskForm().reset(buildTaskFormValue(this.task()));
+      this.taskFormSession.reset();
     }
   }
 

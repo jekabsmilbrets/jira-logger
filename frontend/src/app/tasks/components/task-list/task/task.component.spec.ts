@@ -94,9 +94,9 @@ describe('Tasks Components task.component', () => {
   it('initializes its signal-form model from the input task', async () => {
     const { component, baseTask } = await setup();
 
-    expect(component['taskFormModel']().name).toBe(baseTask.name);
-    expect(component['taskFormModel']().description).toBe(baseTask.description);
-    expect(component['taskFormModel']().tags).toEqual(baseTask.tags);
+    expect(component['taskFormSession'].draft().name).toBe(baseTask.name);
+    expect(component['taskFormSession'].draft().description).toBe(baseTask.description);
+    expect(component['taskFormSession'].draft().tags).toEqual(baseTask.tags);
   });
 
   it('returns true when tags have same id', async () => {
@@ -109,15 +109,12 @@ describe('Tasks Components task.component', () => {
   it('toggles edit mode and resets form only when entering edit mode', async () => {
     const { component } = await setup();
 
-    component['taskFormModel'].update((value: { name: string; description: string; tags: Tag[] }) => ({
-      ...value,
-      name: 'Modified name',
-    }));
-    component['taskForm']().markAsDirty();
+    component['taskFormSession'].form.name().value.set('Modified name');
+    component['taskFormSession'].form().markAsDirty();
 
     component['onToggleEditMode']();
     expect(component['editMode']()).toBe(true);
-    expect(component['taskFormModel']().name).toBe('Task name');
+    expect(component['taskFormSession'].draft().name).toBe('Task name');
 
     component['onToggleEditMode']();
     expect(component['editMode']()).toBe(false);
@@ -128,12 +125,10 @@ describe('Tasks Components task.component', () => {
     const updateSpy = vi.spyOn(component['update'], 'emit');
 
     component['onToggleEditMode']();
-    component['taskFormModel'].set({
-      name: 'Updated name',
-      description: 'Updated description',
-      tags: [],
-    });
-    component['taskForm']().markAsDirty();
+    component['taskFormSession'].form.name().value.set('Updated name');
+    component['taskFormSession'].form.description().value.set('Updated description');
+    component['taskFormSession'].setTags([]);
+    component['taskFormSession'].form().markAsDirty();
     await fixture.whenStable();
     component['onUpdate']();
 
@@ -145,11 +140,8 @@ describe('Tasks Components task.component', () => {
     const { component, tasksService, fixture } = await setup();
 
     component['onToggleEditMode']();
-    component['taskFormModel'].update((value) => ({
-      ...value,
-      name: ' Task name ',
-    }));
-    component['taskForm']().markAsDirty();
+    component['taskFormSession'].form.name().value.set(' Task name ');
+    component['taskFormSession'].form().markAsDirty();
     await fixture.whenStable();
 
     component['onUpdate']();
@@ -340,11 +332,8 @@ describe('Tasks Components task.component', () => {
     const updateSpy = vi.spyOn(component as any, 'onUpdate');
 
     component['onToggleEditMode']();
-    component['taskFormModel'].update((value: { name: string; description: string; tags: Tag[] }) => ({
-      ...value,
-      name: 'Updated over DOM',
-    }));
-    component['taskForm']().markAsDirty();
+    component['taskFormSession'].form.name().value.set('Updated over DOM');
+    component['taskFormSession'].form().markAsDirty();
     fixture.detectChanges();
 
     const form = fixture.debugElement.query(By.css('form'));
@@ -359,17 +348,17 @@ describe('Tasks Components task.component', () => {
 
     component['onTagsChange'](tags);
 
-    expect(component['taskFormModel']().tags).toEqual(tags);
+    expect(component['taskFormSession'].draft().tags).toEqual(tags);
   });
 
   it('marks invalid updates as touched without emitting', async () => {
     const { component } = await setup();
     const updateSpy = vi.spyOn(component['update'], 'emit');
-    component['taskFormModel'].update((value) => ({ ...value, name: '' }));
+    component['taskFormSession'].form.name().value.set('');
 
     component['onUpdate']();
 
-    expect(component['taskForm']().touched()).toBe(true);
+    expect(component['taskFormSession'].form().touched()).toBe(true);
     expect(component['hasNameError']()).toBe(true);
     expect(updateSpy).not.toHaveBeenCalled();
   });

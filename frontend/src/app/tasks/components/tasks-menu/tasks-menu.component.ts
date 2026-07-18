@@ -6,13 +6,11 @@ import {
   inject,
   type ResourceRef,
   type Signal,
-  signal,
   type TemplateRef,
   viewChild,
-  type WritableSignal,
 } from '@angular/core';
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { type FieldTree, FormField } from '@angular/forms/signals';
+import { FormField } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatOptionModule } from '@angular/material/core';
 import { MatDialog } from '@angular/material/dialog';
@@ -35,14 +33,8 @@ import { TasksService } from '@shared/services/tasks.service';
 import { TasksSettingsDialogComponent } from '@tasks/components/tasks-menu/settings-dialog/tasks-settings-dialog.component';
 import { TasksSettingsToggleComponent } from '@tasks/components/tasks-menu/tasks-settings-toggler/tasks-settings-toggle.component';
 import type { TaskImportOutcome, TaskImportRequest } from '@tasks/interfaces/import-report.interface';
-import type { TaskFormValue } from '@tasks/interfaces/task-form-value.interface';
 import { TaskBackupService } from '@tasks/services/task-backup.service';
-import {
-  buildEmptyTaskFormValue,
-  buildTaskCreateForm,
-  buildTaskCreatePayload,
-  setTaskFormTags,
-} from '@tasks/utilities/task-form-intent.utility';
+import { TaskFormSession } from '@tasks/services/task-form-session';
 
 @Component({
   selector: 'tasks-menu',
@@ -65,12 +57,9 @@ import {
   ],
 })
 export class TasksMenuComponent {
-  protected readonly createTaskFormModel: WritableSignal<TaskFormValue> = signal<TaskFormValue>(buildEmptyTaskFormValue());
-
   private readonly tasksService: TasksService = inject(TasksService);
 
-  protected readonly createTaskForm: FieldTree<TaskFormValue> = buildTaskCreateForm(
-    this.createTaskFormModel,
+  protected readonly taskFormSession: TaskFormSession = TaskFormSession.create(
     (taskName: string) => this.tasksService.taskExist(taskName),
   );
 
@@ -85,7 +74,7 @@ export class TasksMenuComponent {
   protected readonly tags: Signal<Tag[]> = this.tagsService.tags;
 
   private readonly dialogTemplate: Signal<TemplateRef<HTMLDivElement>> = viewChild.required<TemplateRef<HTMLDivElement>>('smallScreenDialog');
-  private readonly taskFilterName: Signal<string> = computed(() => this.createTaskForm.name().value().trim());
+  private readonly taskFilterName: Signal<string> = computed(() => this.taskFormSession.draft().name.trim());
   private readonly debouncedTaskFilterName: Signal<string> = toSignal(
     toObservable(this.taskFilterName).pipe(debounceTime(300)),
     { initialValue: this.taskFilterName() },
@@ -136,7 +125,7 @@ export class TasksMenuComponent {
   }
 
   protected onTagsChange(tags: Tag[]): void {
-    setTaskFormTags(this.createTaskForm.tags(), tags);
+    this.taskFormSession.setTags(tags);
   }
 
   protected isSameTag(tag1: Tag, tag2: Tag): boolean {
@@ -152,13 +141,13 @@ export class TasksMenuComponent {
   protected onCreate(event?: Event): void {
     event?.preventDefault?.();
 
-    if (!this.createTaskForm().valid()) {
-      this.createTaskForm().markAsTouched();
+    if (!this.taskFormSession.form().valid()) {
+      this.taskFormSession.form().markAsTouched();
       return;
     }
 
-    this.tasksService.create(buildTaskCreatePayload(this.createTaskFormModel()))
+    this.tasksService.create(this.taskFormSession.toTask())
       .pipe(take(1))
-      .subscribe(() => this.createTaskForm().reset(buildEmptyTaskFormValue()));
+      .subscribe(() => this.taskFormSession.reset());
   }
 }

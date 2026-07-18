@@ -17,7 +17,7 @@
 <ng-template #menuItems>
     <form (submit)="onCreate($event)">
         <mat-form-field>
-            <input [formField]="createTaskForm.name"
+            <input [formField]="taskFormSession.form.name"
                    matInput
                    placeholder="Task name"/>
         </mat-form-field>
@@ -25,7 +25,7 @@
         <mat-form-field>
             <mat-select (valueChange)="onTagsChange($event)"
                         [compareWith]="isSameTag"
-                        [value]="createTaskFormModel().tags"
+                        [value]="taskFormSession.draft().tags"
                         multiple
                         placeholder="Tags">
                 @for (tag of tags(); track tag.id) {
@@ -36,7 +36,7 @@
             </mat-select>
         </mat-form-field>
 
-        <button [disabled]="!createTaskForm().valid() || isLoading()"
+        <button [disabled]="!taskFormSession.form().valid() || isLoading()"
                 mat-raised-button
                 type="submit">
             Create

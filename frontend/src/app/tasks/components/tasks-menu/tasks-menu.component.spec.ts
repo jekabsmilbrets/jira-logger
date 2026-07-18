@@ -117,7 +117,7 @@ describe('Tasks Components tasks-menu.component', () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
     const component = fixture.componentInstance as any;
 
-    component.createTaskForm.name().value.set('Build docs');
+    component.taskFormSession.form.name().value.set('Build docs');
     fixture.detectChanges();
     vi.advanceTimersByTime(301);
 
@@ -128,11 +128,11 @@ describe('Tasks Components tasks-menu.component', () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
     const component = fixture.componentInstance as any;
 
-    component.createTaskForm.name().value.set('Build docs');
+    component.taskFormSession.form.name().value.set('Build docs');
     fixture.detectChanges();
     await vi.advanceTimersByTimeAsync(301);
 
-    component.createTaskForm.name().value.set('   ');
+    component.taskFormSession.form.name().value.set('   ');
     fixture.detectChanges();
     await vi.advanceTimersByTimeAsync(301);
 
@@ -146,10 +146,10 @@ describe('Tasks Components tasks-menu.component', () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
     const component = fixture.componentInstance as any;
 
-    component.createTaskForm.name().value.set('first');
+    component.taskFormSession.form.name().value.set('first');
     fixture.detectChanges();
     vi.advanceTimersByTime(301);
-    component.createTaskForm.name().value.set('second');
+    component.taskFormSession.form.name().value.set('second');
     fixture.detectChanges();
     vi.advanceTimersByTime(301);
 
@@ -162,7 +162,7 @@ describe('Tasks Components tasks-menu.component', () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
     const component = fixture.componentInstance as any;
 
-    component.createTaskForm.name().value.set('Existing Task');
+    component.taskFormSession.form.name().value.set('Existing Task');
     fixture.detectChanges();
     await vi.advanceTimersByTimeAsync(301);
     fixture.detectChanges();
@@ -176,11 +176,9 @@ describe('Tasks Components tasks-menu.component', () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
     const component = fixture.componentInstance as any;
 
-    component.createTaskFormModel.set({
-      name: 'New Task',
-      description: 'Desc',
-      tags: [new Tag({ id: '1', name: 'Frontend' })],
-    });
+    component.taskFormSession.form.name().value.set('New Task');
+    component.taskFormSession.form.description().value.set('Desc');
+    component.onTagsChange([new Tag({ id: '1', name: 'Frontend' })]);
     fixture.detectChanges();
     await vi.advanceTimersByTimeAsync(301);
     fixture.detectChanges();
@@ -190,19 +188,15 @@ describe('Tasks Components tasks-menu.component', () => {
     expect(tasksServiceMock.create).toHaveBeenCalledTimes(1);
     const createdTask = tasksServiceMock.create.mock.calls[0][0] as Task;
     expect(createdTask.name).toBe('New Task');
-    expect(component.createTaskFormModel().name).toBe('');
-    expect(component.createTaskFormModel().tags).toEqual([]);
+    expect(component.taskFormSession.draft().name).toBe('');
+    expect(component.taskFormSession.draft().tags).toEqual([]);
   });
 
   it('submits create form from DOM and triggers task creation', () => {
     const fixture = TestBed.createComponent(TasksMenuComponent);
     const component = fixture.componentInstance as any;
 
-    component.createTaskFormModel.set({
-      name: 'From DOM',
-      description: '',
-      tags: [],
-    });
+    component.taskFormSession.form.name().value.set('From DOM');
     fixture.detectChanges();
     vi.advanceTimersByTime(301);
     fixture.detectChanges();
@@ -366,7 +360,7 @@ describe('Tasks Components tasks-menu.component', () => {
 
     component.onTagsChange(selected);
 
-    expect(component.createTaskFormModel().tags).toEqual(selected);
+    expect(component.taskFormSession.draft().tags).toEqual(selected);
     expect(component.isSameTag(new Tag({ id: 'tag-1' }), new Tag({ id: 'tag-1' }))).toBe(true);
     expect(component.isSameTag(new Tag({ id: 'tag-1' }), new Tag({ id: 'tag-2' }))).toBe(false);
   });
