@@ -56,9 +56,11 @@ db_dump.sql
 # Frontend
 /frontend/CONTEXT.md
 /frontend/docs/adr/
+/frontend/docs/plans/
 
 # Backend
 /backend/CONTEXT.md
 /backend/docs/adr/
+/backend/docs/plans/
 
 .codebase-memory
