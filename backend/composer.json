@@ -33,7 +33,6 @@
     "symfony/property-access": "*",
     "symfony/property-info": "*",
     "symfony/runtime": "*",
-    "symfony/security-bundle": "*",
     "symfony/serializer": "*",
     "symfony/twig-bundle": "*",
     "symfony/validator": "*",
