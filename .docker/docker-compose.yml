@@ -59,7 +59,6 @@ services:
       - CORS_ALLOW_ORIGIN=${CORS_ALLOW_ORIGIN:?CORS_ALLOW_ORIGIN is required}
       - API_AUTH_USERNAME=${API_AUTH_USERNAME:?API_AUTH_USERNAME is required}
       - API_AUTH_PASSWORD=${API_AUTH_PASSWORD:?API_AUTH_PASSWORD is required}
-      - JIRA_PERSONAL_ACCESS_TOKEN=${JIRA_PERSONAL_ACCESS_TOKEN-}
     volumes:
       - assetsData:/var/www/public/ng:ro
     healthcheck:
@@ -111,7 +110,6 @@ services:
       - CORS_ALLOW_ORIGIN=${CORS_ALLOW_ORIGIN:?CORS_ALLOW_ORIGIN is required}
       - API_AUTH_USERNAME=${API_AUTH_USERNAME:?API_AUTH_USERNAME is required}
       - API_AUTH_PASSWORD=${API_AUTH_PASSWORD:?API_AUTH_PASSWORD is required}
-      - JIRA_PERSONAL_ACCESS_TOKEN=${JIRA_PERSONAL_ACCESS_TOKEN-}
     command:
       - sh
       - -c

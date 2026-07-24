@@ -63,7 +63,7 @@ class SettingControllerTest extends TestCase
     {
         yield from [
             ['jira-host', 'https://jira.example', 'https://jira.example'],
-            ['JIRA_PERSONAL_ACCESS_TOKEN', 'sensitive', '***REDACTED***'],
+            ['SERVICE_TOKEN', 'sensitive', '***REDACTED***'],
         ];
     }
 

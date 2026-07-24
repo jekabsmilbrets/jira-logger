@@ -21,7 +21,7 @@ final class JiraApiServiceTest extends TestCase
         $settings = [
             JiraApiService::JIRA_ENABLED_KEY => (new Setting())->setName(JiraApiService::JIRA_ENABLED_KEY)->setValue('true'),
             JiraApiService::JIRA_HOST_SETTING_KEY => (new Setting())->setName(JiraApiService::JIRA_HOST_SETTING_KEY)->setValue('https://jira.example.test'),
-            JiraApiService::JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY => (new Setting())->setName(JiraApiService::JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY)->setValue('token'),
+            JiraApiService::JIRA_PAT_SETTING_KEY => (new Setting())->setName(JiraApiService::JIRA_PAT_SETTING_KEY)->setValue('token'),
         ];
         $settingRepository
             ->method('findOneBy')
