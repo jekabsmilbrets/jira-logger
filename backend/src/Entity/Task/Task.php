@@ -20,15 +20,6 @@ use Symfony\Component\Serializer\Attribute\MaxDepth;
 
 #[
     ORM\Entity(repositoryClass: TaskRepository::class),
-    ORM\Table(
-        uniqueConstraints: [
-            new ORM\UniqueConstraint(
-                columns: [
-                    'name',
-                ]
-            ),
-        ]
-    ),
     ORM\HasLifecycleCallbacks,
 ]
 class Task implements EntityBaseInterface

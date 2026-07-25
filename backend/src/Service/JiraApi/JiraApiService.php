@@ -24,7 +24,7 @@ class JiraApiService
 
     final public const JIRA_ENABLED_KEY = 'jira.enabled';
     final public const JIRA_HOST_SETTING_KEY = 'jira.host';
-    final public const JIRA_PAT_SETTING_KEY = 'jira.personal-access-token';
+    final public const JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY = 'jira.personal-access-token';
 
     final public const MIN_REPORT_SECONDS = 60;
 
@@ -162,7 +162,7 @@ class JiraApiService
                 self::JIRA_HOST_SETTING_KEY
             );
             $personalAccessToken = $this->settingService->findValue(
-                self::JIRA_PAT_SETTING_KEY
+                self::JIRA_PERSONAL_ACCESS_TOKEN_SETTING_KEY
             );
 
             if (

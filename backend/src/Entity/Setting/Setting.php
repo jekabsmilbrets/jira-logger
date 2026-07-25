@@ -15,15 +15,6 @@ use Symfony\Component\Serializer\Attribute\Ignore;
 
 #[
     ORM\Entity(repositoryClass: SettingRepository::class),
-    ORM\Table(
-        uniqueConstraints: [
-            new ORM\UniqueConstraint(
-                columns: [
-                    'name',
-                ]
-            ),
-        ]
-    ),
     ORM\HasLifecycleCallbacks,
 ]
 class Setting implements EntityBaseInterface
