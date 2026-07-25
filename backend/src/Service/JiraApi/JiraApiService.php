@@ -79,7 +79,7 @@ class JiraApiService
                 issueIdOrKey: $issueKey,
                 worklog: $workLog,
             );
-        } catch (JiraException|\JsonMapper_Exception|JiraApiServiceException $e) {
+        } catch (JiraException|\JsonMapper_Exception $e) {
             $this->logger->error(
                 message: sprintf(
                     self::CREATE_ERROR_MSG,
@@ -109,7 +109,7 @@ class JiraApiService
                 worklog: $workLog,
                 worklogId: $workLogId,
             );
-        } catch (JiraException|\JsonMapper_Exception|JiraApiServiceException $e) {
+        } catch (JiraException|\JsonMapper_Exception $e) {
             $this->logger->error(
                 message: sprintf(
                     self::UPDATE_ERROR_MSG,

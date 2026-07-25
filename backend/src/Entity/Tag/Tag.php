@@ -37,6 +37,7 @@ class Tag implements EntityBaseInterface
     ]
     private ?string $name = null;
 
+    /** @var Collection<int, Task> */
     #[
         Groups([Group::DEEP]),
         MaxDepth(1),
@@ -82,6 +83,7 @@ class Tag implements EntityBaseInterface
         return $this->tasks->count() > 0;
     }
 
+    /** @return Collection<int, Task> */
     final public function getTasks(): Collection
     {
         return $this->tasks;

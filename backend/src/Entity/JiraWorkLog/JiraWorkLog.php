@@ -131,6 +131,16 @@ class JiraWorkLog implements EntityBaseInterface
         return $this;
     }
 
+    /**
+     * @return array{
+     *     id: string,
+     *     task: ?Task,
+     *     workLogId: ?string,
+     *     description: ?string,
+     *     timeSpentSeconds: ?int,
+     *     startTime: ?DateTimeInterface
+     * }
+     */
     final public function toArray(): array
     {
         return [

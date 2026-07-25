@@ -15,6 +15,7 @@ use Symfony\Component\Serializer\Serializer;
 
 final class JsonApiResponseNormalizer
 {
+    /** @return array{data?: mixed, meta?: mixed, errors?: mixed} */
     public function normalize(
         mixed $data = null,
         mixed $errors = null,

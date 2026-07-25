@@ -7,10 +7,10 @@ namespace App\Controller\API;
 use App\Serializer\Normalizer\JsonApiResponseNormalizer;
 use App\Service\DateTime\UserTimezoneResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Contracts\Service\Attribute\Required;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\DependencyInjection\Attribute\Required;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
@@ -99,6 +99,9 @@ class BaseApiController extends AbstractController
     }
 
     /**
+     * @param array<string, string|string[]> $headers
+     * @param array<string, mixed>           $context
+     *
      * @throws ExceptionInterface
      */
     final public function jsonApi(

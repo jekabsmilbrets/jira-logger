@@ -117,9 +117,7 @@ class TagService
     {
         $tag ??= new Tag();
 
-        if (null !== ($name = $request->getName())) {
-            $tag->setName($name);
-        }
+        $tag->setName($request->getName());
 
         return $tag;
     }

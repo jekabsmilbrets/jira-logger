@@ -25,6 +25,7 @@ use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -45,6 +46,7 @@ class TaskController extends BaseApiController
     final public const OA_TAG = 'Tasks';
     final public const MODEL_SCHEMA = '#/components/schemas/TaskModel';
 
+    /** @param SerializerInterface&DenormalizerInterface $serializer */
     public function __construct(
         private readonly TaskService $taskService,
         private readonly ReportedTaskQuery $reportedTaskQuery,
