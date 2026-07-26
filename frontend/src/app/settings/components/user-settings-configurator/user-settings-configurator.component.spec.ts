@@ -111,7 +111,11 @@ describe('Settings Components user-settings-configurator.component', () => {
     try {
       Object.defineProperty(Intl, 'supportedValuesOf', { configurable: true, value: undefined });
       expect((component as any).getSupportedTimezones()).toContain('UTC');
-      Object.defineProperty(Intl, 'supportedValuesOf', { configurable: true, value: vi.fn(() => { throw new Error('unsupported'); }) });
+      Object.defineProperty(Intl, 'supportedValuesOf', {
+        configurable: true, value: vi.fn(() => {
+          throw new Error('unsupported');
+        }),
+      });
       expect((component as any).getSupportedTimezones()).toContain('Europe/Riga');
     } finally {
       if (descriptor) {

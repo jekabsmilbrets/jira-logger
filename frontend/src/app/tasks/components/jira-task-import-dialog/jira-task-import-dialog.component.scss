@@ -1,0 +1,77 @@
+:host {
+  display: block;
+  width: min(1100px, 90vw);
+}
+
+.dialog-title,
+.criteria {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dialog-title {
+  justify-content: space-between;
+}
+
+.criteria {
+  flex-wrap: wrap;
+  border: 0;
+  padding: 0;
+  margin-bottom: 12px;
+
+  legend {
+    width: 100%;
+    font-weight: 600;
+  }
+
+  mat-form-field {
+    min-width: 160px;
+  }
+
+  .projects {
+    min-width: 240px;
+  }
+}
+
+.warning {
+  color: var(--mat-sys-error);
+}
+
+.results {
+  max-height: 50vh;
+  overflow: auto;
+
+  shared-shared-table {
+    ::ng-deep {
+      .table-container {
+        overflow: visible;
+      }
+
+      .mat-mdc-paginator {
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+      }
+
+      .mat-column-intakeStatus {
+        color: var(--mat-sys-error);
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+.tag-editor {
+  width: 100%;
+}
+
+@media (max-width: 700px) {
+  :host {
+    width: 90vw;
+  }
+
+  .criteria mat-form-field {
+    width: 100%;
+  }
+}

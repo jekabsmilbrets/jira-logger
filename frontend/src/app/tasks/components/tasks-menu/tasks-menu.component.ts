@@ -23,6 +23,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { catchError, debounceTime, of, take } from 'rxjs';
 
+import { SettingsService } from '@core/services/settings.service';
+
 import type { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
@@ -36,6 +38,8 @@ import type { TaskImportOutcome, TaskImportRequest } from '@tasks/interfaces/imp
 import type { TasksSettingsDialogData } from '@tasks/interfaces/tasks-settings-dialog-data.interface';
 import { TaskBackupService } from '@tasks/services/task-backup/task-backup.service';
 import { TaskFormSession } from '@tasks/services/task-form-session';
+
+import { JiraApiSettingsAdapter } from '@settings/adapters/jira-api-settings.adapter';
 
 @Component({
   selector: 'tasks-menu',
@@ -69,10 +73,15 @@ export class TasksMenuComponent {
   private readonly tagsService: TagsService = inject(TagsService);
   private readonly taskBackupService: TaskBackupService = inject(TaskBackupService);
   private readonly responsiveMenuService: ResponsiveMenuService = inject(ResponsiveMenuService);
+  private readonly settingsService: SettingsService = inject(SettingsService);
+  private readonly jiraApiSettingsAdapter: JiraApiSettingsAdapter = inject(JiraApiSettingsAdapter);
 
   protected readonly isLoading: Signal<boolean> = this.tasksService.isLoading;
   protected readonly isSmallerThanDesktop: Signal<boolean> = this.responsiveMenuService.isSmallerThanDesktop;
   protected readonly tags: Signal<Tag[]> = this.tagsService.tags;
+  protected readonly jiraEnabled: Signal<boolean> = computed(
+    () => this.jiraApiSettingsAdapter.isEnabled(this.settingsService.settings()),
+  );
 
   private readonly dialogTemplate: Signal<TemplateRef<HTMLDivElement>> = viewChild.required<TemplateRef<HTMLDivElement>>('smallScreenDialog');
   private readonly taskFilterName: Signal<string> = computed(() => this.taskFormSession.draft().name.trim());
@@ -123,6 +132,14 @@ export class TasksMenuComponent {
             { duration: outcome.duration },
           ));
       });
+  }
+
+  protected async onOpenJiraImportDialog(): Promise<void> {
+    const { JiraTaskImportDialogComponent } = await import(
+      '@tasks/components/jira-task-import-dialog/jira-task-import-dialog.component'
+      );
+
+    this.matDialog.open(JiraTaskImportDialogComponent);
   }
 
   protected onTagsChange(tags: Tag[]): void {

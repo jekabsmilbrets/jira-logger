@@ -8,6 +8,9 @@ import { By } from '@angular/platform-browser';
 import { of, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { Setting } from '@core/models/setting.model';
+import { SettingsService } from '@core/services/settings.service';
+
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { ResponsiveMenuService } from '@shared/services/responsive-menu.service';
@@ -17,6 +20,9 @@ import { TasksService } from '@shared/services/tasks.service';
 import { TasksSettingsDialogComponent } from '@tasks/components/tasks-menu/settings-dialog/tasks-settings-dialog.component';
 import type { ImportReport, TaskImportRequest } from '@tasks/interfaces/import-report.interface';
 import { TaskBackupService } from '@tasks/services/task-backup/task-backup.service';
+
+import { JiraApiSettingsAdapter } from '@settings/adapters/jira-api-settings.adapter';
+import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 
 import { TasksMenuComponent } from './tasks-menu.component';
 
@@ -45,6 +51,7 @@ describe('Tasks Components tasks-menu.component', () => {
     open: vi.fn(),
   };
   let isSmallerThanDesktop: WritableSignal<boolean>;
+  let settingsState: WritableSignal<Setting[]>;
 
   const importRequest: TaskImportRequest = {
     tasks: [{
@@ -77,6 +84,9 @@ describe('Tasks Components tasks-menu.component', () => {
     matDialogMock.open.mockReset();
     tagsServiceMock.tags = signal<Tag[]>([]).asReadonly();
     isSmallerThanDesktop = signal(false);
+    settingsState = signal([
+      new Setting({ name: JiraApiSettings.enabled, value: 'true' }),
+    ]);
 
     tasksServiceMock.create.mockImplementation((task: Task) => of(task));
     tasksServiceMock.list.mockReturnValue(of([]));
@@ -104,6 +114,8 @@ describe('Tasks Components tasks-menu.component', () => {
         { provide: TaskBackupService, useValue: taskBackupServiceMock },
         { provide: TagsService, useValue: tagsServiceMock },
         { provide: MatSnackBar, useValue: matSnackBarMock },
+        { provide: SettingsService, useValue: { settings: settingsState.asReadonly() } },
+        JiraApiSettingsAdapter,
       ],
     }).compileComponents();
   });
@@ -224,6 +236,25 @@ describe('Tasks Components tasks-menu.component', () => {
         currentTasks: [],
       },
     });
+  });
+
+  it('shows the Jira import icon only while Jira is enabled', async () => {
+    const fixture = TestBed.createComponent(TasksMenuComponent);
+    fixture.detectChanges();
+
+    const importButton = (): HTMLElement | undefined => fixture.debugElement
+      .query(By.css('button[aria-label="Import tasks from Jira"]'))
+      ?.nativeElement;
+
+    expect(importButton()).toBeDefined();
+    expect(importButton()?.textContent).toContain('cloud_download');
+
+    settingsState.set([
+      new Setting({ name: JiraApiSettings.enabled, value: 'false' }),
+    ]);
+    fixture.detectChanges();
+
+    expect(importButton()).toBeUndefined();
   });
 
   it('renders tag options from tags$ in template', async () => {

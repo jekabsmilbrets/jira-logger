@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service\Task\JiraSync;
 
+use App\Dto\Task\JiraTaskSearchRequest;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Exception\JiraApiServiceException;
@@ -191,6 +192,60 @@ final class JiraTaskSyncServiceTest extends TestCase
         $service->syncTask('task-id', '2026-06-23');
     }
 
+    public function testMissingTasksExcludeKeyOnlyLegacyCaseAndChangedSummaries(): void
+    {
+        $localTasks = [
+            (new Task())->setName(' ABC-1 '),
+            (new Task())->setName('abc-2 -#- old summary'),
+            (new Task())->setName('not a Jira task'),
+        ];
+        $jiraApiService = $this->createMock(JiraApiService::class);
+        $jiraApiService
+            ->method('getIssueKeyFromTask')
+            ->willReturnCallback(static fn (Task $task): string => trim(explode('-#-', $task->getName(), 2)[0]));
+        $jiraApiService
+            ->expects(self::once())
+            ->method('searchIssues')
+            ->with(self::isInstanceOf(JiraTaskSearchRequest::class))
+            ->willReturn([
+                ['key' => 'ABC-1', 'summary' => 'Current', 'status' => 'Open', 'issueType' => 'Task', 'updated' => null],
+                ['key' => 'ABC-2', 'summary' => 'Changed', 'status' => 'Open', 'issueType' => 'Task', 'updated' => null],
+                ['key' => 'ABC-3', 'summary' => 'Missing', 'status' => 'Open', 'issueType' => 'Bug', 'updated' => '2026-07-25T12:30:00+03:00'],
+                ['key' => 'abc-3', 'summary' => 'Duplicate', 'status' => 'Open', 'issueType' => 'Bug', 'updated' => null],
+            ]);
+
+        $result = $this->createService(
+            jiraApiService: $jiraApiService,
+            allTasks: $localTasks,
+        )->findMissingTasks(new JiraTaskSearchRequest());
+
+        self::assertFalse($result['truncated']);
+        self::assertSame(['ABC-3'], array_column($result['data'], 'key'));
+    }
+
+    public function testMissingTasksReturnDefaultLimitAndTruncationFlag(): void
+    {
+        $jiraApiService = $this->createMock(JiraApiService::class);
+        $jiraApiService->method('searchIssues')->willReturnCallback(static function (): iterable {
+            for ($index = 1; $index <= 51; ++$index) {
+                yield [
+                    'key' => 'ABC-'.$index,
+                    'summary' => 'Issue '.$index,
+                    'status' => 'Open',
+                    'issueType' => 'Task',
+                    'updated' => null,
+                ];
+            }
+        });
+
+        $result = $this->createService(jiraApiService: $jiraApiService)
+            ->findMissingTasks(new JiraTaskSearchRequest());
+
+        self::assertTrue($result['truncated']);
+        self::assertCount(50, $result['data']);
+        self::assertSame('ABC-50', $result['data'][49]['key']);
+    }
+
     /**
      * @return array{identity: string, jiraStart: string, timeSpentSeconds: int}
      */
@@ -263,9 +318,11 @@ final class JiraTaskSyncServiceTest extends TestCase
         ?Task $task = null,
         ?JiraWorkLogRepository $jiraWorkLogRepository = null,
         ?TaskFilterDateRangeResolver $dateRangeResolver = null,
+        array $allTasks = [],
     ): JiraTaskSyncService {
         $taskRepository = $this->createMock(TaskRepository::class);
         $taskRepository->method('find')->willReturn($task);
+        $taskRepository->method('findAll')->willReturn($allTasks);
         $userTimezoneResolver = $this->createMock(UserTimezoneResolver::class);
         $userTimezoneResolver
             ->method('resolveCurrentUserTimezone')

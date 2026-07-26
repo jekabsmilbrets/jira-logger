@@ -85,6 +85,14 @@ Notes:
   - active `log-*.log` files are rotated to `./.logs/jira-logger/archive/log-*.YYYY-MM-DD_HHMMSS.log`
   - archived logs older than 7 days are deleted
 
+## Importing Tasks from Jira
+
+Enable Jira and configure its host and personal access token on the Settings page. The Jira import icon then appears in the Tasks toolbar.
+
+The import dialog can search by assignee, reporter, resolution, project keys, and a result limit of 50, 100, 150, or 200. Results include only Jira issues that do not already exist as local tasks and can be sorted by key, summary, status, issue type, or updated time.
+
+Select the issues to import. Use the tag action on a result row to review or change its local tags, then import the selected issues.
+
 ## Upgrading Older Checkouts
 
 If you are updating from an older checkout that still used `backend/.env` or bind-mounted frontend assets, run:

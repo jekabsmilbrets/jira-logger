@@ -60,7 +60,8 @@ describe('Core Utils timezone-date.utility', () => {
     vi.stubGlobal('Intl', {
       ...originalIntl,
       DateTimeFormat: class {
-        constructor(..._args: unknown[]) {}
+        constructor(..._args: unknown[]) {
+        }
 
         formatToParts(): Intl.DateTimeFormatPart[] {
           return [

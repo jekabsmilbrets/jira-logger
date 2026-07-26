@@ -18,7 +18,15 @@
         flex-direction: column;
         justify-content: space-between;
 
+        .card-title-row {
+          display: flex;
+          align-items: flex-start;
+          gap: 4px;
+          min-width: 0;
+        }
+
         .card-title {
+          flex: 1;
           max-width: 300px;
           margin-bottom: 5px;
           text-overflow: ellipsis;
@@ -27,6 +35,31 @@
 
           @media (max-width: 1023px) {
             max-width: 215px;
+          }
+        }
+
+        .jira-link {
+          width: 24px !important;
+          height: 24px !important;
+          padding: 0px !important;
+          display: inline-flex !important;
+          align-items: center;
+          justify-content: center;
+
+          & > *[role=img] {
+            width: 16px;
+            height: 16px;
+            font-size: 16px;
+
+            svg {
+              width: 16px;
+              height: 16px;
+            }
+          }
+
+          .mat-mdc-button-touch-target {
+            width: 24px !important;
+            height: 24px !important;
           }
         }
       }

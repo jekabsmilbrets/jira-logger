@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service\Task\JiraSync;
 
+use App\Dto\Task\JiraTaskSearchRequest;
 use App\Entity\JiraWorkLog\JiraWorkLog;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
@@ -44,6 +45,49 @@ class JiraTaskSyncService
         }
 
         return TaskSyncResult::synced();
+    }
+
+    /**
+     * @return array{
+     *     data: list<array{key: string, summary: string, status: string, issueType: string, updated: ?string}>,
+     *     truncated: bool
+     * }
+     *
+     * @throws JiraApiServiceException
+     */
+    public function findMissingTasks(JiraTaskSearchRequest $request): array
+    {
+        $knownKeys = [];
+
+        foreach ($this->taskRepository->findAll() as $task) {
+            $issueKey = strtoupper($this->jiraApiService->getIssueKeyFromTask($task));
+            if (1 === preg_match('/^[A-Z][A-Z0-9_]*-\d+$/', $issueKey)) {
+                $knownKeys[$issueKey] = true;
+            }
+        }
+
+        $missing = [];
+        foreach ($this->jiraApiService->searchIssues($request) as $candidate) {
+            $normalizedKey = strtoupper(trim($candidate['key']));
+            if ('' === $normalizedKey || isset($knownKeys[$normalizedKey])) {
+                continue;
+            }
+
+            $knownKeys[$normalizedKey] = true;
+            $missing[] = $candidate;
+
+            if (\count($missing) > $request->getLimit()) {
+                return [
+                    'data' => \array_slice($missing, 0, $request->getLimit()),
+                    'truncated' => true,
+                ];
+            }
+        }
+
+        return [
+            'data' => $missing,
+            'truncated' => false,
+        ];
     }
 
     /**

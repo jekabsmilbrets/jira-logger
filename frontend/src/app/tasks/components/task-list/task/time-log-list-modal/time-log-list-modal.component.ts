@@ -11,9 +11,10 @@ import { LocaleService } from '@core/services/locale.service';
 import { TimezoneService } from '@core/services/timezone.service';
 import { formatDateInTimezone } from '@core/utilities/format-date-in-timezone.utility';
 
-import { TableComponent, type TableConfiguration } from '@shared/components/table/table.component';
+import { TableComponent } from '@shared/components/table/table.component';
 import type { Column } from '@shared/interfaces/column.interface';
 import type { Searchable } from '@shared/interfaces/searchable.interface';
+import type { TableConfiguration } from '@shared/interfaces/table-configuration.interface';
 import type { TableRowAction } from '@shared/interfaces/table-row-action.interface';
 import { TimeLog } from '@shared/models/time-log.model';
 import { TimeLogsService } from '@shared/services/time-logs.service';

@@ -6,6 +6,9 @@ import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { Setting } from '@core/models/setting.model';
+import { SettingsService } from '@core/services/settings.service';
+
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
@@ -14,6 +17,9 @@ import { TagsService } from '@shared/services/tags.service';
 import { TasksService } from '@shared/services/tasks.service';
 
 import { TimeLogListService } from '@tasks/services/time-log-list.service';
+
+import { JiraApiSettingsAdapter } from '@settings/adapters/jira-api-settings.adapter';
+import { JiraApiSettings } from '@settings/enums/jira-api-settings.enum';
 
 import { TaskComponent } from './task.component';
 
@@ -36,7 +42,10 @@ describe('Tasks Components task.component', () => {
     startTime: new Date(startIso),
   });
 
-  const setup = async (baseTask: Task = buildTask()) => {
+  const setup = async (
+    baseTask: Task = buildTask(),
+    jiraSettings: Setting[] = [],
+  ) => {
 
     const areYouSureService = {
       openDialog: vi.fn(() => of(true)),
@@ -57,6 +66,7 @@ describe('Tasks Components task.component', () => {
     const timeLogListService = {
       openTimeLogsListDialog: vi.fn(() => of(undefined)),
     };
+    const settingsState = signal<Setting[]>(jiraSettings);
 
     await TestBed.configureTestingModule({
       imports: [TaskComponent],
@@ -65,8 +75,11 @@ describe('Tasks Components task.component', () => {
         { provide: TagsService, useValue: tagsService },
         { provide: TasksService, useValue: tasksService },
         { provide: TimeLogListService, useValue: timeLogListService },
+        { provide: SettingsService, useValue: { settings: settingsState.asReadonly() } },
+        JiraApiSettingsAdapter,
       ],
-    });
+    })
+      .compileComponents();
 
     const fixture = TestBed.createComponent(TaskComponent);
     fixture.componentRef.setInput('task', baseTask);
@@ -83,6 +96,7 @@ describe('Tasks Components task.component', () => {
       tagsService,
       tasksService,
       timeLogListService,
+      settingsState,
     };
   };
 
@@ -302,6 +316,62 @@ describe('Tasks Components task.component', () => {
     const overlayText = document.body.textContent ?? '';
     expect(overlayText).toContain('Frontend');
     expect(overlayText).toContain('Backend');
+  });
+
+  it('links Jira task names to the configured host in a new tab', async () => {
+    const task = buildTask();
+    task.name = ' abc_1-123 -#- old summary ';
+    const { fixture } = await setup(task, [
+      new Setting({ name: JiraApiSettings.enabled, value: 'true' }),
+      new Setting({ name: JiraApiSettings.host, value: 'https://jira.example.test///' }),
+    ]);
+
+    const link: HTMLAnchorElement = fixture.debugElement
+      .query(By.css('a[aria-label="Open task in Jira"]'))
+      .nativeElement;
+
+    expect(link.href).toBe('https://jira.example.test/browse/ABC_1-123');
+    expect(link.target).toBe('_blank');
+    expect(link.rel).toBe('noopener noreferrer');
+  });
+
+  it('reactively hides Jira links when Jira is disabled and for non-Jira task names', async () => {
+    const task = buildTask();
+    task.name = 'ABC-123';
+    const { fixture, settingsState } = await setup(task, [
+      new Setting({ name: JiraApiSettings.enabled, value: 'true' }),
+      new Setting({ name: JiraApiSettings.host, value: 'https://jira.example.test' }),
+    ]);
+    const findLink = () => fixture.debugElement.query(By.css('a[aria-label="Open task in Jira"]'));
+
+    expect(findLink()).not.toBeNull();
+
+    settingsState.set([
+      new Setting({ name: JiraApiSettings.enabled, value: 'false' }),
+      new Setting({ name: JiraApiSettings.host, value: 'https://jira.example.test' }),
+    ]);
+    fixture.detectChanges();
+    expect(findLink()).toBeNull();
+
+    task.name = 'ordinary task';
+    settingsState.set([
+      new Setting({ name: JiraApiSettings.enabled, value: 'true' }),
+      new Setting({ name: JiraApiSettings.host, value: 'https://jira.example.test' }),
+    ]);
+    fixture.componentRef.setInput('task', task);
+    fixture.detectChanges();
+    expect(findLink()).toBeNull();
+  });
+
+  it('does not create Jira links for non-HTTP hosts', async () => {
+    const task = buildTask();
+    task.name = 'ABC-123';
+    const { fixture } = await setup(task, [
+      new Setting({ name: JiraApiSettings.enabled, value: 'true' }),
+      new Setting({ name: JiraApiSettings.host, value: 'javascript:alert(1)' }),
+    ]);
+
+    expect(fixture.debugElement.query(By.css('a[aria-label="Open task in Jira"]'))).toBeNull();
   });
 
   it('uses DOM button clicks to trigger task actions', async () => {

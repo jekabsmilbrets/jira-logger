@@ -102,7 +102,14 @@ describe('Shared Services tasks.service', () => {
     apiRequestService.request.mockReturnValueOnce(of({
       data: [
         { id: 'none', name: 'No log', timeLogs: [], tags: [], createdAt: '2024-01-01T00:00:00.000Z' },
-        { id: 'dated', name: 'Dated', timeLogs: [], lastTimeLog: { startTime: '2026-03-02T10:00:00.000Z' }, tags: [], createdAt: '2024-01-01T00:00:00.000Z' },
+        {
+          id: 'dated',
+          name: 'Dated',
+          timeLogs: [],
+          lastTimeLog: { startTime: '2026-03-02T10:00:00.000Z' },
+          tags: [],
+          createdAt: '2024-01-01T00:00:00.000Z',
+        },
       ],
     }));
 

@@ -7,9 +7,10 @@ import { of } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Column } from '@shared/interfaces/column.interface';
+import type { TableConfiguration } from '@shared/interfaces/table-configuration.interface';
 import { AreYouSureService } from '@shared/services/are-you-sure.service';
 
-import { TableComponent, type TableConfiguration } from './table.component';
+import { TableComponent } from './table.component';
 
 describe('Shared Components table.component', () => {
   const areYouSureService = {
@@ -116,6 +117,14 @@ describe('Shared Components table.component', () => {
 
     expect(component['getColumnCellValue'](row, createColumn({ cell: () => 120, pipe: 'readableTime' }))).toBe('2m');
     expect(component['getColumnCellValue'](row, createColumn({ cell: () => '2026-01-02', pipe: 'date' }))).toContain('2026');
+    expect(component['getColumnCellValue'](
+      row,
+      createColumn({
+        cell: () => new Date('2026-01-02T12:30:00.000Z'),
+        pipe: 'date',
+        dateFormat: 'yyyy-MM-dd HH:mm',
+      }),
+    )).toMatch(/\d{2}:\d{2}$/);
     expect(component['getColumnCellValue'](row, createColumn({ cell: () => ['a', 2] }))).toBe('a,2');
     expect(component['getColumnCellValue'](row, createColumn({ cell: (() => [{ value: 1 }]) as any }))).toBe('');
     expect(component['getFooterCellValue'](createColumn({ hasFooter: true, footerCell: () => 60, pipe: 'readableTime' }))).toBe('1m');
@@ -150,6 +159,28 @@ describe('Shared Components table.component', () => {
     component['masterToggle']();
     expect(component['selection'].selected).toHaveLength(0);
     expect(component['isAllSelected']()).toBe(false);
+  });
+
+  it('restores controlled selection and emits user selection changes', async () => {
+    const { fixture, component } = await createComponent();
+    const rows = [{ id: '1' }, { id: '2' }];
+    const emitSpy = vi.spyOn(component['selectionChange'], 'emit');
+    setConfiguration(fixture, { data: rows, selectedIds: ['2'] });
+    fixture.detectChanges();
+
+    expect(component['selection'].selected).toEqual([rows[1]]);
+
+    component['onSelectionToggle'](rows[0]);
+    expect(emitSpy).toHaveBeenLastCalledWith([rows[1], rows[0]]);
+
+    component['onMasterToggle']();
+    expect(emitSpy).toHaveBeenLastCalledWith([]);
+
+    const refreshedRows = [{ id: '1' }, { id: '2' }];
+    setConfiguration(fixture, { data: refreshedRows, selectedIds: ['1'] });
+    fixture.detectChanges();
+
+    expect(component['selection'].selected).toEqual([refreshedRows[0]]);
   });
 
   it('does not toggle a row click when selection is disabled', async () => {
@@ -348,6 +379,7 @@ describe('Shared Components table.component', () => {
           header: 'Sync',
           icon: 'sync',
           ariaLabel: 'Sync task to Jira',
+          cell: () => 'OPEX',
           color: 'warn',
           tooltip: 'Task already synced with JIRA server!',
           isDisabled: () => false,
@@ -394,11 +426,13 @@ describe('Shared Components table.component', () => {
     expect(fixture.debugElement.query(By.css('mat-paginator'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('button[aria-label="Remove row"]'))).toBeTruthy();
     expect(fixture.debugElement.query(By.css('button[aria-label="Sync task to Jira"]'))).toBeTruthy();
+    expect(fixture.debugElement.query(By.css('.table-row-action-value')).nativeElement.textContent).toContain('OPEX');
     expect(fixture.debugElement.queryAll(By.css('mat-checkbox')).length).toBeGreaterThan(0);
 
     fixture.debugElement.query(By.css('button[aria-label="Sync task to Jira"]')).nativeElement.click();
     fixture.detectChanges();
     expect(rowActionEmitSpy).toHaveBeenCalledWith([row, 'sync']);
+    expect(component['selection'].selected).toEqual([]);
 
     fixture.debugElement.query(By.css('button[aria-label="Remove row"]')).nativeElement.click();
     fixture.detectChanges();

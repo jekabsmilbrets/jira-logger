@@ -34,8 +34,9 @@
 
                 <mat-cell *cdkCellDef="let row"
                           [matTooltipDisabled]="!action.tooltip || !isRowActionDisabled(row, action)"
-                          [matTooltip]="action.tooltip ?? ''">
-                    <button (click)="onRowAction(row, action)"
+                          [matTooltip]="action.tooltip ?? ''"
+                          class="table-row-action">
+                    <button (click)="$event.stopPropagation(); onRowAction(row, action)"
                             [attr.aria-label]="action.ariaLabel"
                             [color]="action.color"
                             [disabled]="isRowActionDisabled(row, action)"
@@ -43,6 +44,10 @@
                             type="button">
                         <mat-icon>{{ action.icon }}</mat-icon>
                     </button>
+
+                    @if (action.cell) {
+                        <span class="table-row-action-value">{{ action.cell(row) }}</span>
+                    }
                 </mat-cell>
 
                 <mat-footer-cell *cdkFooterCellDef/>
@@ -52,13 +57,15 @@
             <mat-header-cell *cdkHeaderCellDef>
                 <mat-checkbox (change)="onMasterToggle()"
                               [checked]="selection.hasValue() && isAllSelected()"
-                              [indeterminate]="selection.hasValue() && !isAllSelected()"/>
+                              [indeterminate]="selection.hasValue() && !isAllSelected()"
+                              aria-label="Select all rows"/>
             </mat-header-cell>
 
             <mat-cell *cdkCellDef="let row">
                 <mat-checkbox (change)="onSelectionToggle(row)"
                               (click)="$event.stopPropagation()"
-                              [checked]="selection.isSelected(row)"/>
+                              [checked]="selection.isSelected(row)"
+                              aria-label="Select row"/>
             </mat-cell>
 
             <mat-footer-cell *cdkFooterCellDef/>

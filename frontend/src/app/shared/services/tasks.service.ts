@@ -5,16 +5,14 @@ import { catchError, map, type Observable, of, switchMap, take, tap, throwError 
 
 import { LoaderStateService } from '@core/services/loader-state.service';
 
-import { adaptTasks } from '@shared/adapters/task.adapter';
+import { adaptTaskRequest, adaptTasks } from '@shared/adapters/task.adapter';
 import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import type { ResourceRequestHandle } from '@shared/interfaces/resource-request-handle.interface';
 import type { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
-import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { ApiRequestService } from '@shared/services/api-request.service';
 import type { ErrorDialogService } from '@shared/services/error-dialog.service';
 import { TaskQueryService } from '@shared/services/task-query.service';
-import type { ApiRequestBody } from '@shared/types/api-request-body.type';
 import type { AsyncLoader } from '@shared/types/async-loader.type';
 import { openLoadErrorDialog } from '@shared/utilities/open-load-error-dialog.utility';
 
@@ -182,24 +180,13 @@ export class TasksService {
     return this.taskResource.request(
       url,
       method,
-      this.buildTaskRequestBody(task),
+      adaptTaskRequest(task),
       (error: unknown) => this.processError(error),
     )
       .pipe(
         switchMap(() => this.reloadList(skipReload)),
         map((tasks: Task[]) => this.findTask(tasks, task)),
       );
-  }
-
-  private buildTaskRequestBody(
-    task: Task,
-  ): ApiRequestBody {
-    return {
-      id: task.id,
-      name: task.name && task.name.trim(),
-      description: task.description && task.description.trim(),
-      tags: task.tags.map((tag: Tag) => tag.id),
-    };
   }
 
   private reloadList(

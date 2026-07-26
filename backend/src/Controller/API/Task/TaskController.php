@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Controller\API\Task;
 
 use App\Controller\API\BaseApiController;
+use App\Dto\Task\JiraTaskSearchRequest;
 use App\Dto\Task\TaskListFilterRequest;
 use App\Dto\Task\TaskRequest;
 use App\Entity\Task\Task;
+use App\Exception\JiraApiServiceException;
 use App\Service\Task\JiraSync\JiraTaskSyncService;
 use App\Service\Task\ReportedTask\ReportedTaskQuery;
 use App\Service\Task\Sync\TaskSyncResult;
@@ -42,6 +44,7 @@ class TaskController extends BaseApiController
     final public const CANNOT_DELETE_TASK = 'Can not Delete Task';
     final public const CANNOT_UPDATE_TASK = 'Can not Update Task';
     final public const DUPLICATE_TASK_NAME = 'Duplicate Task name';
+    final public const JIRA_SEARCH_FAILED = 'Unable to search Jira.';
 
     final public const OA_TAG = 'Tasks';
     final public const MODEL_SCHEMA = '#/components/schemas/TaskModel';
@@ -171,6 +174,132 @@ class TaskController extends BaseApiController
 
         return $this->jsonApi(
             $tasks
+        );
+    }
+
+    /**
+     * @throws ExceptionInterface
+     */
+    #[
+        Route(
+            path: '/jira/missing',
+            name: 'missing-jira-tasks',
+            methods: [Request::METHOD_GET],
+            stateless: true,
+        ),
+        OA\Tag(name: self::OA_TAG),
+        OA\Get(
+            operationId: 'missing-jira-tasks',
+            summary: 'List Jira issues that do not exist as local tasks',
+            tags: [self::OA_TAG],
+        ),
+        OA\Parameter(
+            name: 'assignedToMe',
+            in: 'query',
+            schema: new OA\Schema(type: 'boolean', default: true),
+        ),
+        OA\Parameter(
+            name: 'reportedByMe',
+            in: 'query',
+            schema: new OA\Schema(type: 'boolean', default: false),
+        ),
+        OA\Parameter(
+            name: 'resolution',
+            in: 'query',
+            schema: new OA\Schema(type: 'string', default: 'unresolved', enum: ['all', 'unresolved', 'resolved']),
+        ),
+        OA\Parameter(
+            name: 'projects',
+            description: 'Comma-separated Jira project keys',
+            in: 'query',
+            schema: new OA\Schema(type: 'string'),
+        ),
+        OA\Parameter(
+            name: 'limit',
+            description: 'Maximum number of missing Jira tasks to return',
+            in: 'query',
+            schema: new OA\Schema(
+                type: 'integer',
+                default: JiraTaskSearchRequest::DEFAULT_LIMIT,
+                minimum: JiraTaskSearchRequest::MIN_LIMIT,
+                maximum: JiraTaskSearchRequest::MAX_LIMIT,
+            ),
+        ),
+        OA\Response(
+            response: Response::HTTP_OK,
+            description: 'Missing Jira tasks',
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(
+                        property: 'data',
+                        type: 'array',
+                        items: new OA\Items(
+                            properties: [
+                                new OA\Property(property: 'key', type: 'string'),
+                                new OA\Property(property: 'summary', type: 'string'),
+                                new OA\Property(property: 'status', type: 'string'),
+                                new OA\Property(property: 'issueType', type: 'string'),
+                                new OA\Property(property: 'updated', type: 'string', format: 'date-time', nullable: true),
+                            ],
+                            type: 'object',
+                        ),
+                    ),
+                    new OA\Property(
+                        property: 'meta',
+                        properties: [
+                            new OA\Property(property: 'limit', type: 'integer', example: JiraTaskSearchRequest::DEFAULT_LIMIT),
+                            new OA\Property(property: 'truncated', type: 'boolean'),
+                        ],
+                        type: 'object',
+                    ),
+                ],
+            ),
+        ),
+        OA\Response(response: Response::HTTP_BAD_REQUEST, description: self::BAD_REQUEST),
+        OA\Response(response: Response::HTTP_NOT_ACCEPTABLE, description: 'Invalid Jira search criteria'),
+        OA\Response(response: Response::HTTP_BAD_GATEWAY, description: self::JIRA_SEARCH_FAILED),
+    ]
+    final public function missingJiraTasks(Request $request): JsonResponse
+    {
+        try {
+            $searchRequest = new JiraTaskSearchRequest();
+            /** @var JiraTaskSearchRequest $searchRequest */
+            $searchRequest = $this->serializer->denormalize(
+                data: $request->query->all(),
+                type: JiraTaskSearchRequest::class,
+                context: [
+                    AbstractNormalizer::OBJECT_TO_POPULATE => $searchRequest,
+                ],
+            );
+        } catch (UnexpectedValueException) {
+            return $this->badRequestJsonApi();
+        }
+
+        $validationError = $this->validateRequestDto(
+            validator: $this->validator,
+            requestDto: $searchRequest,
+            group: 'jira-search',
+        );
+
+        if ($validationError instanceof JsonResponse) {
+            return $validationError;
+        }
+
+        try {
+            $result = $this->jiraTaskSyncService->findMissingTasks($searchRequest);
+        } catch (JiraApiServiceException) {
+            return $this->jsonApi(
+                errors: [self::JIRA_SEARCH_FAILED],
+                status: Response::HTTP_BAD_GATEWAY,
+            );
+        }
+
+        return $this->jsonApi(
+            data: $result['data'],
+            meta: [
+                'limit' => $searchRequest->getLimit(),
+                'truncated' => $result['truncated'],
+            ],
         );
     }
 

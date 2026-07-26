@@ -46,6 +46,16 @@
 
 <tasks-settings-toggle (openSettingsDialog)="onOpenSettingsDialog()"/>
 
+@if (jiraEnabled()) {
+    <button (click)="onOpenJiraImportDialog()"
+            aria-label="Import tasks from Jira"
+            mat-icon-button
+            matTooltip="Import tasks from Jira"
+            type="button">
+        <mat-icon>cloud_download</mat-icon>
+    </button>
+}
+
 <ng-template #smallScreenDialog>
     <div class="tasks-menu-dialog">
         <ng-template [ngTemplateOutlet]="menuItems"/>

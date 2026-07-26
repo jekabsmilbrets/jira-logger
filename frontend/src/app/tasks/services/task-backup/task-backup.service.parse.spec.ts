@@ -149,9 +149,9 @@ describe('TaskBackupService parse', () => {
 
   it('rejects duplicate imported task names ignoring case and whitespace', () => {
     expect(() => parse([
-        { name: 'Task A', timeLogs: [], tags: [] },
-        { name: ' task a ', timeLogs: [], tags: [] },
-      ])).toThrow('Import contains duplicate task names: task a.');
+      { name: 'Task A', timeLogs: [], tags: [] },
+      { name: ' task a ', timeLogs: [], tags: [] },
+    ])).toThrow('Import contains duplicate task names: task a.');
   });
 
   it('keeps missing tag intent and dedupes tag refs by normalized name', () => {

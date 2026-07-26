@@ -2,16 +2,17 @@ import { NgClass } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   injectAsync,
   input,
-  InputSignal,
+  type InputSignal,
   output,
   OutputEmitterRef,
-  Signal,
+  type Signal,
   signal,
-  WritableSignal,
+  type WritableSignal,
 } from '@angular/core';
 import { FormField } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
@@ -25,6 +26,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { take } from 'rxjs';
 
+import { SettingsService } from '@core/services/settings.service';
+
 import { Tag } from '@shared/models/tag.model';
 import { Task } from '@shared/models/task.model';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
@@ -36,6 +39,8 @@ import type { AsyncLoader } from '@shared/types/async-loader.type';
 import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
 import { TaskFormSession } from '@tasks/services/task-form-session';
 import type { TimeLogListService } from '@tasks/services/time-log-list.service';
+
+import { JiraApiSettingsAdapter } from '@settings/adapters/jira-api-settings.adapter';
 
 @Component({
   selector: 'tasks-task',
@@ -77,12 +82,31 @@ export class TaskComponent {
     () => import('@tasks/services/time-log-list.service').then((m) => m.TimeLogListService),
   );
   private readonly tasksService: TasksService = inject(TasksService);
+  private readonly settingsService: SettingsService = inject(SettingsService);
+  private readonly jiraApiSettingsAdapter: JiraApiSettingsAdapter = inject(JiraApiSettingsAdapter);
 
   protected readonly taskFormSession: TaskFormSession = TaskFormSession.edit(
     this.task,
     (taskName: string) => this.tasksService.taskExist(taskName),
   );
   protected readonly tags: Signal<Tag[]> = this.tagsService.tags;
+  protected readonly jiraIssueUrl: Signal<string | null> = computed(() => {
+    if (
+      this.editMode()
+      || !this.jiraApiSettingsAdapter.isEnabled(this.settingsService.settings())
+    ) {
+      return null;
+    }
+
+    const host: string = this.jiraApiSettingsAdapter.toFormValue(this.settingsService.settings()).host
+      .trim()
+      .replace(/\/+$/, '');
+    const issueKey: string = this.task().name.split('-#-', 2)[0].trim().toUpperCase();
+
+    return this.isHttpHost(host) && /^[A-Z][A-Z0-9_]*-\d+$/.test(issueKey)
+      ? `${ host }/browse/${ encodeURIComponent(issueKey) }`
+      : null;
+  });
 
   constructor() {
     effect(() => {
@@ -114,6 +138,16 @@ export class TaskComponent {
 
   protected isTimeLogRunning(): boolean {
     return this.task().isTimeLogRunning;
+  }
+
+  private isHttpHost(
+    host: string,
+  ): boolean {
+    try {
+      return ['http:', 'https:'].includes(new URL(host).protocol);
+    } catch {
+      return false;
+    }
   }
 
   protected getCardClassMap(): Record<string, boolean> {

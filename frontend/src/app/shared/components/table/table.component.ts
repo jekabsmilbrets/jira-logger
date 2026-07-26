@@ -2,7 +2,7 @@ import { SelectionModel } from '@angular/cdk/collections';
 import { CdkCellDef, CdkColumnDef, CdkFooterCellDef, CdkFooterRowDef, CdkHeaderCellDef, CdkHeaderRowDef } from '@angular/cdk/table';
 import { formatDate } from '@angular/common';
 import {
-  AfterViewInit,
+  type AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -13,14 +13,14 @@ import {
   type InputSignal,
   output,
   OutputEmitterRef,
-  Signal,
+  type Signal,
   viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { MatSort, MatSortModule, SortDirection } from '@angular/material/sort';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
@@ -32,23 +32,12 @@ import { formatDateInTimezone } from '@core/utilities/format-date-in-timezone.ut
 
 import type { Column } from '@shared/interfaces/column.interface';
 import type { Searchable } from '@shared/interfaces/searchable.interface';
+import type { TableConfiguration } from '@shared/interfaces/table-configuration.interface';
 import type { TableRowAction } from '@shared/interfaces/table-row-action.interface';
 import { ReadableTimePipe } from '@shared/pipes/readable-time.pipe';
 import type { AreYouSureService } from '@shared/services/are-you-sure.service';
 import type { AsyncLoader } from '@shared/types/async-loader.type';
 import { getNestedObject } from '@shared/utilities/get-nested-object.utility';
-
-export interface TableConfiguration {
-  columns: Column[];
-  data?: Searchable[] | null;
-  rowActions?: TableRowAction[];
-  selectable?: boolean;
-  footer?: boolean;
-  sort?: {
-    field?: string;
-    direction?: SortDirection;
-  };
-}
 
 @Component({
   selector: 'shared-shared-table',
@@ -88,6 +77,7 @@ export class TableComponent implements AfterViewInit {
     Column
   ]>();
   protected readonly rowAction: OutputEmitterRef<[Searchable, string]> = output<[Searchable, string]>();
+  protected readonly selectionChange: OutputEmitterRef<Searchable[]> = output<Searchable[]>();
 
   protected readonly sort: Signal<MatSort> = viewChild.required(MatSort);
 
@@ -123,8 +113,12 @@ export class TableComponent implements AfterViewInit {
 
   constructor() {
     effect(() => {
-      this._data = [...(this.configuration().data ?? [])];
+      const configuration: TableConfiguration = this.configuration();
+      const selectedIds: Set<string> = new Set<string>(configuration.selectedIds ?? []);
+
+      this._data = [...(configuration.data ?? [])];
       this.selection.clear();
+      this.selection.select(...this._data.filter((row: Searchable) => selectedIds.has(row.id)));
       this.dataSource.data = this._data;
     });
   }
@@ -166,12 +160,14 @@ export class TableComponent implements AfterViewInit {
 
   protected onMasterToggle(): void {
     this.masterToggle();
+    this.emitSelectionChange();
   }
 
   protected onSelectionToggle(
     row: Searchable,
   ): void {
     this.selection.toggle(row);
+    this.emitSelectionChange();
   }
 
   protected shouldDisplayColumn(
@@ -225,7 +221,7 @@ export class TableComponent implements AfterViewInit {
     row: Searchable,
     column: Column,
   ): string | number {
-    return this.formatCellValue(column.cell(row), column.pipe, 'yyyy-MM-dd');
+    return this.formatCellValue(column.cell(row), column.pipe, column.dateFormat ?? 'yyyy-MM-dd');
   }
 
   protected getFooterCellValue(
@@ -260,6 +256,7 @@ export class TableComponent implements AfterViewInit {
   ): void {
     if (this.configuration().selectable ?? true) {
       this.selection.toggle(row);
+      this.emitSelectionChange();
     }
   }
 
@@ -319,6 +316,10 @@ export class TableComponent implements AfterViewInit {
     return typeof value === 'string' || typeof value === 'number' ?
       value :
       '';
+  }
+
+  private emitSelectionChange(): void {
+    this.selectionChange.emit([...this.selection.selected]);
   }
 
   private async confirmRowAction(

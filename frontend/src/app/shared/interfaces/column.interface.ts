@@ -18,6 +18,7 @@ export interface Column {
   emptyCellValue?: string | null;
   index?: number;
   pipe?: string;
+  dateFormat?: string;
   isClickable?: boolean;
   disableFooterClick?: boolean;
   hasFooter?: boolean;

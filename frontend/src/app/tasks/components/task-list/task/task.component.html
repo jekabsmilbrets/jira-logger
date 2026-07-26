@@ -3,11 +3,25 @@
               class="task-card">
         <mat-card-header [style.display]="getViewModeDisplay()">
             <mat-card-title>
-                <span class="card-title"
-                      [matTooltipDisabled]="task().name.length < 20"
-                      [matTooltip]="task().name">
-                    {{ task().name }}
-                </span>
+                <div class="card-title-row">
+                    <span class="card-title"
+                          [matTooltipDisabled]="task().name.length < 20"
+                          [matTooltip]="task().name">
+                        {{ task().name }}
+                    </span>
+
+                    @if (jiraIssueUrl(); as issueUrl) {
+                        <a [href]="issueUrl"
+                           aria-label="Open task in Jira"
+                           mat-icon-button
+                           matTooltip="Open task in Jira"
+                           rel="noopener noreferrer"
+                           class="jira-link"
+                           target="_blank">
+                            <mat-icon>open_in_new</mat-icon>
+                        </a>
+                    }
+                </div>
 
                 <mat-chip-listbox aria-label="Task tags"
                                   disabled>
