@@ -1,7 +1,4 @@
-import type { TimezoneDateParts } from '@core/interfaces/timezone-date-parts.interface';
 import { Base } from '@core/models/base.model';
-import { getDateParts } from '@core/utilities/get-date-parts.utility';
-import { fromWallClockDateInTimezone, getDateTimePartsInTimezone } from '@core/utilities/timezone-date.utility';
 
 import type { Searchable } from '@shared/interfaces/searchable.interface';
 import { JiraWorkLog } from '@shared/models/jira-work-log.model';
@@ -123,9 +120,7 @@ export class Task extends Base implements Searchable {
     }
   }
 
-  public calcTimeLoggedForDate(date: Date, timezone?: string): number {
-    const [rangeStart, rangeEnd] = this.getDayRange(date, timezone);
-
+  public calcTimeLoggedBetween(rangeStart: Date, rangeEnd: Date): number {
     return (this.timeLogs ?? []).reduce(
       (totalSeconds: number, timeLog: TimeLog) => totalSeconds + this.getTimeLogOverlapSeconds(timeLog, rangeStart, rangeEnd),
       0,
@@ -159,25 +154,6 @@ export class Task extends Base implements Searchable {
         reduceFn,
         0,
       ) ?? 0;
-  }
-
-  private getDayRange(date: Date, timezone?: string): [Date, Date] {
-    if (timezone) {
-      const parts: TimezoneDateParts = getDateTimePartsInTimezone(date, timezone);
-      const dayStartWallClock: Date = new Date(parts.year, parts.month - 1, parts.day, 0, 0, 0, 0);
-      const nextDayStartWallClock: Date = new Date(parts.year, parts.month - 1, parts.day + 1, 0, 0, 0, 0);
-
-      return [
-        fromWallClockDateInTimezone(dayStartWallClock, timezone),
-        fromWallClockDateInTimezone(nextDayStartWallClock, timezone),
-      ];
-    }
-
-    const [year, month, day] = getDateParts(date);
-    const dayStart: Date = new Date(year, month, day, 0, 0, 0, 0);
-    const nextDayStart: Date = new Date(year, month, day + 1, 0, 0, 0, 0);
-
-    return [dayStart, nextDayStart];
   }
 
   private getTimeLogOverlapSeconds(timeLog: TimeLog, rangeStart: Date, rangeEnd: Date): number {

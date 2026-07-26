@@ -3,8 +3,6 @@ set -e
 set -o pipefail
 
 PROJECT_NAME="jira-logger"
-ASSETS_VOLUME_NAME="${PROJECT_NAME}_assetsData"
-ASSETS_MARKER_PATH="/assets/.assets-version"
 HOST_LOG_DIR=".logs/${PROJECT_NAME}"
 HOST_LOG_ARCHIVE_DIR="${HOST_LOG_DIR}/archive"
 DOCKER_ENV_FILE="./.docker/.env"
@@ -114,16 +112,6 @@ else
   COMPOSE_FILES+=(./.docker/docker-compose.no-traefik.yml)
 fi
 
-TRAEFIK_ARGS=()
-if [[ "$TRAEFIK_MODE" == "off" ]]; then
-  TRAEFIK_ARGS=(-t off)
-fi
-
-LOGGING_ARGS=()
-if [[ "$LOGGING_MODE" == "on" ]]; then
-  LOGGING_ARGS=(-l on)
-fi
-
 compose_cmd() {
   ensure_docker_env_file
   if [[ "${TRAEFIK_MODE}" == "on" ]]; then
@@ -200,35 +188,18 @@ rotate_host_logs() {
   local active
   local base
   local rotated
-  local -a files=(
-    "log-php-fpm-error.log"
-    "log-php-fpm-access.log"
-    "log-php-fpm-slow.log"
-    "log-symfony-main.log"
-    "log-symfony-deprecation.log"
-    "log-symfony-jira-api-service.log"
-    "log-nginx-access.log"
-    "log-nginx-error.log"
-    "log-postgres.log"
-    "log-traefik.log"
-    "log-traefik-access.log"
-    "log-assets-init.log"
-    "log-migrate.log"
-  )
 
   ensure_host_log_dir
   stamp="$(date +%F_%H%M%S)"
 
   # Migrate any legacy rotated files from root log dir into archive dir.
-  find "${HOST_LOG_DIR}" -maxdepth 1 -type f -name 'log-*.*.log' -exec mv {} "${HOST_LOG_ARCHIVE_DIR}/" \; 2>/dev/null || true
+  find "${HOST_LOG_DIR}" -maxdepth 1 -type f \
+    -name 'log-*.[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9][0-9][0-9][0-9][0-9].log' \
+    -exec mv {} "${HOST_LOG_ARCHIVE_DIR}/" \; 2>/dev/null || true
 
-  for file in "${files[@]}"; do
-    active="${HOST_LOG_DIR}/${file}"
-    if [[ ! -f "${active}" ]]; then
-      touch "${active}"
-      continue
-    fi
-
+  for active in "${HOST_LOG_DIR}"/log-*.log; do
+    [[ -f "${active}" ]] || continue
+    file="${active##*/}"
     base="${file%.log}"
     rotated="${HOST_LOG_ARCHIVE_DIR}/${base}.${stamp}.log"
     if [[ -f "${rotated}" ]]; then
@@ -241,113 +212,22 @@ rotate_host_logs() {
   find "${HOST_LOG_ARCHIVE_DIR}" -maxdepth 1 -type f -name 'log-*.*.log' -mtime +7 -delete
 }
 
-is_interactive_tty() {
-  [[ -t 0 && -t 1 ]]
-}
-
-prompt_yes_no_default_yes() {
-  local prompt="$1"
-  local answer
-  read -r -p "${prompt} [Y/n] " answer
-  case "${answer:-Y}" in
-    [Yy]|[Yy][Ee][Ss]) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-get_expected_assets_version() {
-  local digest
-  local commit
-
-  digest="$(docker image inspect jira-logger-assets-init:latest --format '{{index .RepoDigests 0}}' 2>/dev/null || true)"
-  if [[ -n "$digest" ]]; then
-    echo "$digest"
-    return 0
-  fi
-
-  commit="$(git rev-parse HEAD 2>/dev/null || true)"
-  if [[ -n "$commit" ]]; then
-    echo "commit:${commit}"
-    return 0
-  fi
-
-  echo "unknown"
-}
-
-get_assets_marker() {
-  if ! docker volume inspect "${ASSETS_VOLUME_NAME}" >/dev/null 2>&1; then
-    return 2
-  fi
-
-  docker run --rm -v "${ASSETS_VOLUME_NAME}:/assets:ro" alpine:3.20 sh -lc "cat ${ASSETS_MARKER_PATH} 2>/dev/null || true"
-}
-
-run_assets_init() {
-  local assets_version="$1"
-  echo "Initializing shared assets volume (${ASSETS_VOLUME_NAME}) with version: ${assets_version}"
-  run_with_log "log-assets-init.log" compose_cmd run --rm -e "ASSETS_VERSION=${assets_version}" assets-init
-}
-
-compose_up_with_assets_version() {
-  local assets_version="$1"
-  shift
-
-  ASSETS_VERSION="${assets_version}" compose_cmd up "$@" --remove-orphans
-}
-
 build_images() {
   echo "Building docker images"
-  generate_certificates
   export COMPOSE_BAKE=true
   compose_cmd build
 }
 
-build_runtime_artifacts() {
+build_stack() {
   build_images
-  run_assets_init "$(get_expected_assets_version)"
+  prepare_db
+  seed_db
 }
 
-preflight_assets_marker_for_start() {
-  local expected marker
-
-  expected="$(get_expected_assets_version)"
-  marker="$(get_assets_marker || true)"
-
-  if [[ -z "$marker" ]]; then
-    if is_interactive_tty; then
-      echo "Assets marker is missing."
-      if prompt_yes_no_default_yes "Run build now?"; then
-        bash "$0" -a build "${TRAEFIK_ARGS[@]}" "${LOGGING_ARGS[@]}"
-      else
-        echo "Start aborted. Run: sh manager.sh -a build"
-        exit 1
-      fi
-    else
-      echo "Assets marker is missing. Running build automatically before start."
-      bash "$0" -a build "${TRAEFIK_ARGS[@]}" "${LOGGING_ARGS[@]}"
-    fi
-    return 0
-  fi
-
-  if [[ "$marker" != "$expected" ]]; then
-    if is_interactive_tty; then
-      echo "Assets version mismatch."
-      echo "  marker:   $marker"
-      echo "  expected: $expected"
-      if prompt_yes_no_default_yes "Run rebuild now?"; then
-        bash "$0" -a rebuild "${TRAEFIK_ARGS[@]}" "${LOGGING_ARGS[@]}"
-      else
-        echo "Start aborted. Run: sh manager.sh -a rebuild"
-        exit 1
-      fi
-    else
-      echo "Assets version mismatch in non-interactive mode."
-      echo "  marker:   $marker"
-      echo "  expected: $expected"
-      echo "Run: sh manager.sh -a rebuild"
-      exit 1
-    fi
-  fi
+start_stack() {
+  generate_certificates
+  rotate_host_logs
+  compose_cmd up "$@" --remove-orphans
 }
 
 prepare_db() {
@@ -374,10 +254,11 @@ cleanup_compose_residuals() {
   docker ps -aq --filter "label=com.docker.compose.project=${PROJECT_NAME}" --filter "label=com.docker.compose.oneoff=True" | xargs -r docker rm -f >/dev/null 2>&1 || true
 }
 
-stop_stack() {
+stop_stack() (
+  append_compose_file_once "./.docker/docker-compose-traefik.yml"
   compose_cmd down --remove-orphans
   cleanup_compose_residuals
-}
+)
 
 wait_for_db_ready() {
   local db_container="$1"
@@ -437,7 +318,6 @@ dump_db_to_file() {
 upgrade_stack() {
   local dump_path
   local upgrade_background="${BACKGROUND:--d}"
-  local assets_version
 
   ensure_docker_env_file
   warn_legacy_backend_env
@@ -446,62 +326,40 @@ upgrade_stack() {
   dump_db_to_file "${dump_path}"
 
   echo "Stopping existing stack before upgrade"
-  append_compose_file_once "./.docker/docker-compose-traefik.yml"
   stop_stack
 
-  build_runtime_artifacts
+  build_images
   prepare_db
-  assets_version="$(get_expected_assets_version)"
 
   echo "Starting upgraded stack"
-  rotate_host_logs
-  compose_up_with_assets_version "${assets_version}" ${upgrade_background}
+  start_stack ${upgrade_background}
 
   if [[ -z "${BACKGROUND}" ]]; then
     echo "Upgrade finished. Stack started in background by default."
   fi
 }
 
-run_post_build_sequence() {
-  prepare_db
-  seed_db
-}
-
 case "$ACTION" in
   build)
     echo "Running action $ACTION"
-    build_runtime_artifacts
-    run_post_build_sequence
+    build_stack
     ;;
-  start)
+  start|start-with-init)
     echo "Running action $ACTION"
-    generate_certificates
-    rotate_host_logs
-    preflight_assets_marker_for_start
-    assets_version=""
-    assets_version="$(get_expected_assets_version)"
-    compose_up_with_assets_version "${assets_version}" $BACKGROUND
-    ;;
-  start-with-init)
-    echo "Running action $ACTION"
-    echo "Action 'start-with-init' is now an alias for 'start'."
-    prepare_db
-    generate_certificates
-    rotate_host_logs
-    preflight_assets_marker_for_start
-    assets_version=""
-    assets_version="$(get_expected_assets_version)"
-    compose_up_with_assets_version "${assets_version}" $BACKGROUND
+    if [[ "$ACTION" == "start-with-init" ]]; then
+      echo "Preparing the database before start."
+      prepare_db
+    fi
+    start_stack $BACKGROUND
     ;;
   down)
     echo "Running action $ACTION"
-    append_compose_file_once "./.docker/docker-compose-traefik.yml"
     stop_stack
     ;;
   rebuild)
     echo "Running action $ACTION"
-    bash "$0" -a down "${TRAEFIK_ARGS[@]}" "${LOGGING_ARGS[@]}"
-    bash "$0" -a build "${TRAEFIK_ARGS[@]}" "${LOGGING_ARGS[@]}"
+    stop_stack
+    build_stack
     ;;
   db-remove)
     echo "Removing database data volume 'jira-logger_dbData'..."

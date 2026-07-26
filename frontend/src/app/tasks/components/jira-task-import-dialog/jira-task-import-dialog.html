@@ -1,0 +1,146 @@
+<div class="dialog-title"
+     mat-dialog-title>
+    <h2>Import from Jira</h2>
+
+    <button (click)="close()"
+            aria-label="Close Jira task import dialog"
+            mat-icon-button
+            type="button">
+        <mat-icon>close</mat-icon>
+    </button>
+</div>
+
+<mat-dialog-content>
+    <fieldset class="criteria">
+        <legend>Jira search criteria</legend>
+
+        <mat-checkbox [formField]="criteriaForm.assignedToMe">
+            Assigned to me
+        </mat-checkbox>
+
+        <mat-checkbox [formField]="criteriaForm.reportedByMe">
+            Reported by me
+        </mat-checkbox>
+
+        <mat-form-field>
+            <mat-label>Resolution</mat-label>
+
+            <mat-select [formField]="criteriaForm.resolution"
+                        aria-label="Jira issue resolution">
+                <mat-option value="all">All</mat-option>
+                <mat-option value="unresolved">Unresolved</mat-option>
+                <mat-option value="resolved">Resolved</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <mat-form-field class="projects">
+            <mat-label>Project keys</mat-label>
+
+            <mat-chip-grid #projectGrid
+                           aria-label="Jira project keys">
+                @for (project of criteriaModel().projects; track project) {
+                    <mat-chip-row (removed)="removeProject(project)">
+                        {{ project }}
+
+                        <button [attr.aria-label]="'Remove project ' + project"
+                                matChipRemove
+                                type="button">
+                            <mat-icon>cancel</mat-icon>
+                        </button>
+                    </mat-chip-row>
+                }
+
+                <input (matChipInputTokenEnd)="addProject($event)"
+                       [matChipInputFor]="projectGrid"
+                       [matChipInputSeparatorKeyCodes]="separatorKeys"
+                       aria-label="Add Jira project key"
+                       placeholder="Add project key"/>
+            </mat-chip-grid>
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>Result limit</mat-label>
+
+            <mat-select [formField]="criteriaForm.limit"
+                        aria-label="Maximum Jira tasks to fetch">
+                @for (limit of resultLimits; track limit) {
+                    <mat-option [value]="limit">{{ limit }}</mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+
+        <button (click)="fetch()"
+                [disabled]="!hasEffectiveCriteria() || criteriaForm().invalid() || isFetching()"
+                aria-label="Fetch missing Jira tasks"
+                mat-raised-button
+                type="button">
+            {{ isFetching() ? 'Fetching…' : 'Fetch' }}
+        </button>
+    </fieldset>
+
+    @if (truncated()) {
+        <p class="warning"
+           role="status">
+            Only the first {{ resultLimit() }} missing Jira tasks are shown. Narrow the search to see more.
+        </p>
+    }
+
+    @if (rows().length > 0) {
+        <div class="results"
+             aria-label="Missing Jira tasks">
+            <shared-shared-table (rowAction)="onRowAction($event)"
+                                 (selectionChange)="onSelectionChange($event)"
+                                 [configuration]="tableConfiguration()"/>
+        </div>
+    }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    <button (click)="close()"
+            mat-button
+            type="button">
+        Close
+    </button>
+
+    <button (click)="importSelected()"
+            [disabled]="selectedCount() === 0 || isImporting()"
+            aria-label="Import selected Jira tasks"
+            mat-raised-button
+            type="button">
+        {{ isImporting() ? 'Importing…' : 'Import selected' }}
+    </button>
+</mat-dialog-actions>
+
+<ng-template #tagEditor>
+    <h2 mat-dialog-title>Edit tags for {{ editingRow()?.key }}</h2>
+
+    <mat-dialog-content>
+        <mat-form-field class="tag-editor">
+            <mat-label>Tags</mat-label>
+
+            <mat-select (valueChange)="editingTags.set($event)"
+                        [compareWith]="isSameTag"
+                        [value]="editingTags()"
+                        [attr.aria-label]="'Tags for Jira task ' + editingRow()?.key"
+                        multiple>
+                @for (tag of tags(); track tag.id) {
+                    <mat-option [value]="tag">{{ tag.name }}</mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end">
+        <button [mat-dialog-close]="undefined"
+                mat-button
+                type="button">
+            Cancel
+        </button>
+
+        <button [mat-dialog-close]="editingTags()"
+                mat-raised-button
+                type="button">
+            Save
+        </button>
+    </mat-dialog-actions>
+</ng-template>

@@ -9,7 +9,7 @@ import { TimeLog } from '@shared/models/time-log.model';
 import type { TimeLogModalResponse } from '@tasks/interfaces/time-log-modal-response.interface';
 import type { TimeLogPersistenceAdapter } from '@tasks/interfaces/time-log-persistence-adapter.interface';
 import type { TimeLogsModalResponse } from '@tasks/interfaces/time-logs-modal-response.interface';
-import type { TimeLogEditService } from '@tasks/services/time-log-edit.service';
+import type { TimeLogEdit } from '@tasks/services/time-log-edit';
 import { TimeLogEditTransaction } from '@tasks/utilities/time-log-edit-transaction.utility';
 
 export interface TimeLogEditSessionSaveResult {
@@ -34,7 +34,7 @@ export class TimeLogEditSession {
 
   public edit(
     timeLog: TimeLog,
-    editService: TimeLogEditService,
+    editService: TimeLogEdit,
   ): void {
     editService
       .openTimeLogDialog(timeLog)
@@ -43,7 +43,7 @@ export class TimeLogEditSession {
   }
 
   public add(
-    editService: TimeLogEditService,
+    editService: TimeLogEdit,
   ): void {
     const timeLog: TimeLog = new TimeLog({
       startTime: new Date(),

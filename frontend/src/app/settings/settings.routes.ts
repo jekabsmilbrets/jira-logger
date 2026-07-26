@@ -6,8 +6,8 @@ export const settingsRoutes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () => import('./views/settings/settings.component')
-          .then(m => m.SettingsComponent),
+        loadComponent: () => import('./views/settings/settings')
+          .then(m => m.Settings),
       },
       {
         path: '**',

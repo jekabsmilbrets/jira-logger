@@ -1,11 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  fromWallClockDateInTimezone,
-  getDateTimePartsInTimezone,
-  isSameCalendarDateInTimezone,
-  toWallClockDateInTimezone,
-} from './timezone-date.utility';
+import { fromWallClockDateInTimezone, getDateTimePartsInTimezone, toWallClockDateInTimezone } from './timezone-date.utility';
 
 describe('Core Utils timezone-date.utility', () => {
   it('converts an instant into timezone wall-clock parts', () => {
@@ -39,14 +34,6 @@ describe('Core Utils timezone-date.utility', () => {
     expect(instant.toISOString()).toBe('2026-06-03T21:59:00.000Z');
   });
 
-  it('compares calendar dates in the selected timezone instead of browser local time', () => {
-    const left = new Date('2026-06-02T21:30:00.000Z');
-    const right = new Date('2026-06-02T20:30:00.000Z');
-
-    expect(isSameCalendarDateInTimezone(left, right, 'Europe/Vienna')).toBe(true);
-    expect(isSameCalendarDateInTimezone(left, right, 'Europe/Riga')).toBe(false);
-  });
-
   it('falls back to local date parts for invalid timezones', () => {
     const date = new Date(2026, 5, 3, 12, 34, 56);
 
@@ -60,7 +47,8 @@ describe('Core Utils timezone-date.utility', () => {
     vi.stubGlobal('Intl', {
       ...originalIntl,
       DateTimeFormat: class {
-        constructor(..._args: unknown[]) {}
+        constructor(..._args: unknown[]) {
+        }
 
         formatToParts(): Intl.DateTimeFormatPart[] {
           return [

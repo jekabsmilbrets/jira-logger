@@ -12,9 +12,9 @@ use Doctrine\Persistence\ManagerRegistry;
  * @extends ServiceEntityRepository<JiraWorkLog>
  *
  * @method JiraWorkLog|null find($id, $lockMode = null, $lockVersion = null)
- * @method JiraWorkLog|null findOneBy(array $criteria, array $orderBy = null)
+ * @method JiraWorkLog|null findOneBy(array<string, mixed> $criteria, array<string, string>|null $orderBy = null)
  * @method JiraWorkLog[]    findAll()
- * @method JiraWorkLog[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method JiraWorkLog[]    findBy(array<string, mixed> $criteria, array<string, string>|null $orderBy = null, $limit = null, $offset = null)
  *
  * @noinspection MethodShouldBeFinalInspection
  */

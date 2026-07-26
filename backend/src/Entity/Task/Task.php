@@ -20,15 +20,6 @@ use Symfony\Component\Serializer\Attribute\MaxDepth;
 
 #[
     ORM\Entity(repositoryClass: TaskRepository::class),
-    ORM\Table(
-        uniqueConstraints: [
-            new ORM\UniqueConstraint(
-                columns: [
-                    'name',
-                ]
-            ),
-        ]
-    ),
     ORM\HasLifecycleCallbacks,
 ]
 class Task implements EntityBaseInterface
@@ -59,6 +50,7 @@ class Task implements EntityBaseInterface
     ]
     private ?string $description = null;
 
+    /** @var Collection<int, TimeLog> */
     #[
         Groups([Group::LIST]),
         MaxDepth(1),
@@ -81,6 +73,7 @@ class Task implements EntityBaseInterface
     ]
     private Collection $timeLogs;
 
+    /** @var Collection<int, Tag> */
     #[
         Groups([Group::LIST]),
         MaxDepth(1),
@@ -93,15 +86,9 @@ class Task implements EntityBaseInterface
             items: new OA\Items(ref: '#/components/schemas/TagModel')
         )
     ]
-    private ?Collection $tags;
+    private Collection $tags;
 
-    #[
-        Groups([Group::LIST]),
-        MaxDepth(1),
-        OA\Property(ref: '#/components/schemas/TimeLogModel')
-    ]
-    private ?TimeLog $lastTimeLog = null;
-
+    /** @var Collection<int, JiraWorkLog> */
     #[
         Groups([Group::LIST]),
         MaxDepth(1),
@@ -187,11 +174,13 @@ class Task implements EntityBaseInterface
         return $this;
     }
 
+    /** @return Collection<int, TimeLog> */
     final public function getTimeLogs(): Collection
     {
         return $this->timeLogs;
     }
 
+    /** @param Collection<int, TimeLog> $timeLogs */
     final public function setTimeLogs(Collection $timeLogs): self
     {
         $this->timeLogs = $timeLogs;
@@ -199,11 +188,17 @@ class Task implements EntityBaseInterface
         return $this;
     }
 
+    /** @return Collection<int, Tag> */
     final public function getTags(): Collection
     {
         return $this->tags;
     }
 
+    #[
+        Groups([Group::LIST]),
+        MaxDepth(1),
+        OA\Property(ref: '#/components/schemas/TimeLogModel')
+    ]
     final public function getLastTimeLog(): ?TimeLog
     {
         $timeLogs = $this->timeLogs->toArray();
@@ -230,6 +225,7 @@ class Task implements EntityBaseInterface
         return $timeLogs[0] ?? null;
     }
 
+    /** @return Collection<int, JiraWorkLog> */
     final public function getJiraWorkLogs(): Collection
     {
         return $this->jiraWorkLogs;
@@ -257,6 +253,17 @@ class Task implements EntityBaseInterface
         return $this;
     }
 
+    /**
+     * @return array{
+     *     id: string,
+     *     name: ?string,
+     *     description: ?string,
+     *     timeLogs: Collection<int, TimeLog>,
+     *     tags: Collection<int, Tag>,
+     *     lastTimeLog: ?TimeLog,
+     *     jiraWorkLogs: Collection<int, JiraWorkLog>
+     * }
+     */
     final public function toArray(): array
     {
         return [

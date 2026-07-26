@@ -6,7 +6,6 @@ namespace App\Service\Tag;
 
 use App\Dto\Tag\TagRequest;
 use App\Entity\Tag\Tag;
-use App\Factory\Tag\TagFactory;
 use App\Repository\Tag\TagRepository;
 use DomainException;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -35,20 +34,6 @@ class TagService
         return new ArrayCollection($tags);
     }
 
-    /**
-     * @param string[] $ids
-     *
-     * @return ArrayCollection<int, Tag>
-     */
-    final public function findByIds(array $ids): ArrayCollection
-    {
-        if ([] === $ids) {
-            return new ArrayCollection([]);
-        }
-
-        return new ArrayCollection($this->tagRepository->findBy(['id' => $ids]));
-    }
-
     final public function show(
         string $id
     ): ?Tag {
@@ -67,7 +52,7 @@ class TagService
         }
 
         if ($tagRequest && !$tag) {
-            $tag = TagFactory::create($tagRequest);
+            $tag = $this->applyRequest($tagRequest);
         }
 
         $this->tagRepository->save(
@@ -95,10 +80,7 @@ class TagService
                     return null;
                 }
 
-                $tag = TagFactory::create(
-                    tagRequest: $tagRequest,
-                    tag: $tag
-                );
+                $tag = $this->applyRequest($tagRequest, $tag);
                 break;
         }
 
@@ -129,5 +111,14 @@ class TagService
         );
 
         return true;
+    }
+
+    private function applyRequest(TagRequest $request, ?Tag $tag = null): Tag
+    {
+        $tag ??= new Tag();
+
+        $tag->setName($request->getName());
+
+        return $tag;
     }
 }

@@ -1,0 +1,152 @@
+import { formatDate } from '@angular/common';
+import { inject, Service } from '@angular/core';
+
+import type { TimezoneDateParts } from '@core/interfaces/timezone-date-parts.interface';
+import { Locale } from '@core/services/locale';
+import { Timezone } from '@core/services/timezone';
+import { formatDateInTimezone } from '@core/utilities/format-date-in-timezone.utility';
+import { fromWallClockDateInTimezone, getDateTimePartsInTimezone, toWallClockDateInTimezone } from '@core/utilities/timezone-date.utility';
+
+import { JiraWorkLog } from '@shared/models/jira-work-log.model';
+import { Task } from '@shared/models/task.model';
+
+@Service()
+export class ReportDateCalendar {
+  private readonly localeService: Locale = inject(Locale);
+  private readonly timezoneService: Timezone = inject(Timezone);
+
+  public todayRouteLink(): string {
+    return `/report/date/${ this.formatRequestDate(new Date()) }`;
+  }
+
+  public todayReportDate(): Date {
+    return this.startOfReportDate(new Date());
+  }
+
+  public parseRouteDate(
+    value: string | null,
+  ): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    const match: RegExpMatchArray | null = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (!match) {
+      return null;
+    }
+
+    const year: number = Number(match[1]);
+    const month: number = Number(match[2]);
+    const day: number = Number(match[3]);
+    const wallClockDate: Date = new Date(year, month - 1, day, 0, 0, 0, 0);
+
+    if (
+      wallClockDate.getFullYear() !== year ||
+      wallClockDate.getMonth() !== month - 1 ||
+      wallClockDate.getDate() !== day
+    ) {
+      return null;
+    }
+
+    return fromWallClockDateInTimezone(wallClockDate, this.timezoneService.timezone);
+  }
+
+  public formatRequestDate(
+    date: Date,
+  ): string {
+    return formatDateInTimezone(date, 'yyyy-MM-dd', this.localeService.locale, this.timezoneService.timezone);
+  }
+
+  public datesInRange(
+    startDate: Date,
+    endDate: Date,
+  ): Date[] {
+    const dates: Date[] = [];
+    const startParts: TimezoneDateParts = getDateTimePartsInTimezone(startDate, this.timezoneService.timezone);
+    const endTime: number = this.startOfReportDate(endDate).getTime();
+    const currentDate: Date = new Date(startParts.year, startParts.month - 1, startParts.day, 0, 0, 0, 0);
+
+    while (fromWallClockDateInTimezone(currentDate, this.timezoneService.timezone).getTime() <= endTime) {
+      dates.push(fromWallClockDateInTimezone(currentDate, this.timezoneService.timezone));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return dates;
+  }
+
+  public isWeekend(
+    date: Date,
+  ): boolean {
+    return [0, 6].includes(toWallClockDateInTimezone(date, this.timezoneService.timezone).getDay());
+  }
+
+  public visibleDatesInRange(
+    startDate: Date,
+    endDate: Date,
+    showWeekends: boolean,
+  ): Date[] {
+    return this.datesInRange(startDate, endDate)
+      .filter((date: Date) => showWeekends || !this.isWeekend(date));
+  }
+
+  public formatColumnHeader(
+    date: Date,
+  ): string {
+    return formatDate(
+      date,
+      'd. MMM',
+      this.localeService.locale,
+      this.timezoneService.timezone,
+    );
+  }
+
+  public startOfReportDate(
+    date: Date,
+  ): Date {
+    const parts: TimezoneDateParts = getDateTimePartsInTimezone(date, this.timezoneService.timezone);
+
+    return fromWallClockDateInTimezone(
+      new Date(parts.year, parts.month - 1, parts.day, 0, 0, 0, 0),
+      this.timezoneService.timezone,
+    );
+  }
+
+  public endOfReportDate(
+    date: Date,
+  ): Date {
+    return new Date(this.startOfNextReportDate(date).getTime() - 1);
+  }
+
+  public accountTask(
+    task: Task,
+    date: Date,
+  ) {
+    const timeLogged: number = task.calcTimeLoggedBetween(
+      this.startOfReportDate(date),
+      this.startOfNextReportDate(date),
+    );
+    const reportDate: string = this.formatRequestDate(date);
+    const jiraWorkLog: JiraWorkLog | undefined = task.jiraWorkLogs.find(
+      (workLog: JiraWorkLog) => this.formatRequestDate(workLog.startTime) === reportDate,
+    );
+    const timeSynced: number = jiraWorkLog?.timeSpentSeconds ?? 0;
+
+    return {
+      timeLogged,
+      timeSynced,
+      isSynced: timeLogged > 0 && timeLogged === timeSynced,
+    } as const;
+  }
+
+  private startOfNextReportDate(
+    date: Date,
+  ): Date {
+    const parts: TimezoneDateParts = getDateTimePartsInTimezone(date, this.timezoneService.timezone);
+
+    return fromWallClockDateInTimezone(
+      new Date(parts.year, parts.month - 1, parts.day + 1, 0, 0, 0, 0),
+      this.timezoneService.timezone,
+    );
+  }
+}

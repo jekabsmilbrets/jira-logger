@@ -4,48 +4,106 @@ declare(strict_types=1);
 
 namespace App\Service\Task\JiraSync;
 
+use App\Dto\Task\JiraTaskSearchRequest;
 use App\Entity\JiraWorkLog\JiraWorkLog;
 use App\Entity\Task\Task;
+use App\Entity\Task\TimeLog\TimeLog;
 use App\Exception\JiraApiServiceException;
 use App\Repository\JiraWorkLog\JiraWorkLogRepository;
+use App\Repository\Task\TaskRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
+use App\Service\DateTime\UserTimezoneResolver;
 use App\Service\JiraApi\JiraApiService;
-use JiraRestApi\Issue\Worklog;
+use App\Service\Task\Sync\TaskSyncResult;
+use App\Utility\TimeLog\TimeLogDuration;
+use App\Utility\TimeLog\TimeLogRange;
+use Doctrine\Common\Collections\Collection;
 
-class JiraTaskSyncService implements TaskJiraSyncAdapter
+class JiraTaskSyncService
 {
     public function __construct(
         private readonly JiraApiService $jiraApiService,
         private readonly JiraWorkLogRepository $jiraWorkLogRepository,
         private readonly TaskFilterDateRangeResolver $taskFilterDateRangeResolver,
-        private readonly JiraSyncTimeLogAggregation $timeLogAggregation,
+        private readonly UserTimezoneResolver $userTimezoneResolver,
+        private readonly TaskRepository $taskRepository,
     ) {
     }
 
-    /**
-     * @throws TaskJiraSyncException
-     */
-    final public function syncTask(Task $task, string $date): bool
+    public function syncTask(string $id, string $date): TaskSyncResult
     {
-        try {
-            $this->jiraApiService->init();
+        $task = $this->taskRepository->find($id);
 
-            return $this->sync($task, $date);
-        } catch (JiraApiServiceException $e) {
-            throw new TaskJiraSyncException(message: $e->getMessage(), code: $e->getCode(), previous: $e);
+        if (!$task instanceof Task) {
+            return TaskSyncResult::notFound();
         }
+
+        try {
+            $this->sync($task, $date);
+        } catch (JiraApiServiceException $e) {
+            return TaskSyncResult::failed($e->getMessage());
+        }
+
+        return TaskSyncResult::synced();
+    }
+
+    /**
+     * @return array{
+     *     data: list<array{key: string, summary: string, status: string, issueType: string, updated: ?string}>,
+     *     truncated: bool
+     * }
+     *
+     * @throws JiraApiServiceException
+     */
+    public function findMissingTasks(JiraTaskSearchRequest $request): array
+    {
+        $knownKeys = [];
+
+        foreach ($this->taskRepository->findAll() as $task) {
+            $issueKey = strtoupper($this->jiraApiService->getIssueKeyFromTask($task));
+            if (1 === preg_match('/^[A-Z][A-Z0-9_]*-\d+$/', $issueKey)) {
+                $knownKeys[$issueKey] = true;
+            }
+        }
+
+        $missing = [];
+        foreach ($this->jiraApiService->searchIssues($request) as $candidate) {
+            $normalizedKey = strtoupper(trim($candidate['key']));
+            if ('' === $normalizedKey || isset($knownKeys[$normalizedKey])) {
+                continue;
+            }
+
+            $knownKeys[$normalizedKey] = true;
+            $missing[] = $candidate;
+
+            if (\count($missing) > $request->getLimit()) {
+                return [
+                    'data' => \array_slice($missing, 0, $request->getLimit()),
+                    'truncated' => true,
+                ];
+            }
+        }
+
+        return [
+            'data' => $missing,
+            'truncated' => false,
+        ];
     }
 
     /**
      * @throws JiraApiServiceException
      */
-    final public function sync(Task $task, string $date): bool
+    private function sync(Task $task, string $date): void
     {
-        $syncDates = $this->taskFilterDateRangeResolver->resolveJiraSyncDate($date);
-        $syncDate = $syncDates['syncDate'];
-        $startDate = $syncDates['startDate'];
-        $endDate = $syncDates['endDate'];
-        $jiraStartDateTime = $syncDates['jiraStartDateTime'];
+        $dateRange = $this->taskFilterDateRangeResolver->resolve(date: $date);
+        if (null === $dateRange) {
+            throw new \InvalidArgumentException('Sync date could not be resolved.');
+        }
+
+        $userTimezone = new \DateTimeZone($this->userTimezoneResolver->resolveCurrentUserTimezone());
+        $canonicalDate = $dateRange['startDate']->setTimezone($userTimezone)->format('Y-m-d');
+        $syncDate = (new \DateTime($canonicalDate))->setTime(0, 0, 0);
+        $jiraStartDateTime = (new \DateTime($canonicalDate, $userTimezone))->setTime(17, 0, 0);
 
         $jiraWorkLog = $this->jiraWorkLogRepository->findOneBy(
             [
@@ -59,10 +117,10 @@ class JiraTaskSyncService implements TaskJiraSyncAdapter
             $jiraWorkLog->setTask($task);
         }
 
-        [$timeSpentSeconds, $descriptions] = $this->timeLogAggregation->summarize(
+        [$timeSpentSeconds, $descriptions] = $this->summarize(
             timeLogs: $task->getTimeLogs(),
-            startDate: $startDate,
-            endDate: $endDate
+            startDate: $dateRange['startDate'],
+            endDate: $dateRange['endDate'],
         );
         $workLogId = $jiraWorkLog->getWorkLogId();
 
@@ -70,12 +128,12 @@ class JiraTaskSyncService implements TaskJiraSyncAdapter
             $descriptions = [trim(explode('-#-', $taskName)[1])];
         }
 
-        $jiraApiWorkLog = $this->createUpdateRecreateWorkLogWithTimeSpent(
-            jiraWorkLog: $jiraWorkLog,
+        $jiraApiWorkLog = $this->jiraApiService->syncWorkLog(
             task: $task,
-            startDate: $jiraStartDateTime,
+            workLogId: $jiraWorkLog->getWorkLogId() ? (int) $jiraWorkLog->getWorkLogId() : null,
+            startTime: $jiraStartDateTime,
             timeSpentSeconds: $timeSpentSeconds,
-            descriptions: $descriptions,
+            description: implode(', ', $descriptions),
         );
 
         $jiraWorkLog->setTimeSpentSeconds($timeSpentSeconds);
@@ -86,53 +144,43 @@ class JiraTaskSyncService implements TaskJiraSyncAdapter
             jiraWorkLog: $jiraWorkLog,
             workLogId: $workLogId
         );
-
-        return true;
     }
 
     /**
-     * @param string[] $descriptions
+     * @param Collection<int, TimeLog> $timeLogs
      *
-     * @throws JiraApiServiceException
+     * @return array{int, string[]}
      */
-    private function createUpdateRecreateWorkLogWithTimeSpent(
-        JiraWorkLog $jiraWorkLog,
-        Task $task,
-        \DateTime $startDate,
-        int $timeSpentSeconds,
-        array $descriptions,
-    ): Worklog {
-        $descriptionsConcatenated = implode(', ', $descriptions);
+    private function summarize(
+        Collection $timeLogs,
+        \DateTimeInterface $startDate,
+        \DateTimeInterface $endDate,
+    ): array {
+        $timeSpentSeconds = 0;
+        $descriptions = [];
 
-        if (!empty($workLogId = $jiraWorkLog->getWorkLogId())) {
-            try {
-                $workLog = $this->jiraApiService->updateWorkLogWithTimeSpent(
-                    task: $task,
-                    workLogId: (int) $workLogId,
-                    startTime: $startDate,
-                    timeSpentSeconds: $timeSpentSeconds,
-                    description: $descriptionsConcatenated,
-                );
-            } catch (JiraApiServiceException) {
-                $workLog = $this->jiraApiService->createWorkLogWithTimeSpent(
-                    task: $task,
-                    startTime: $startDate,
-                    timeSpentSeconds: $timeSpentSeconds,
-                    description: $descriptionsConcatenated,
-                );
+        /** @var TimeLog $timeLog */
+        foreach ($timeLogs->toArray() as $timeLog) {
+            $logStart = $timeLog->getStartTime();
+            $logEnd = $timeLog->getEndTime();
 
-                $jiraWorkLog->setWorkLogId((string) $workLog->id);
+            if (!TimeLogRange::overlaps($startDate, $endDate, $logStart, $logEnd)) {
+                continue;
             }
-        } else {
-            $workLog = $this->jiraApiService->createWorkLogWithTimeSpent(
-                task: $task,
-                startTime: $startDate,
-                timeSpentSeconds: $timeSpentSeconds,
-                description: $descriptionsConcatenated,
+
+            $timeSpentSeconds += TimeLogDuration::clippedSecondsInRange(
+                rangeStart: $startDate,
+                rangeEnd: $endDate,
+                logStart: $logStart,
+                logEnd: $logEnd,
             );
+
+            if (!empty($description = $timeLog->getDescription())) {
+                $descriptions[] = $description;
+            }
         }
 
-        return $workLog;
+        return [$timeSpentSeconds, $descriptions];
     }
 
     private function createUpdateJiraWorkLog(
@@ -148,5 +196,4 @@ class JiraTaskSyncService implements TaskJiraSyncAdapter
             $this->jiraWorkLogRepository->flush();
         }
     }
-
 }

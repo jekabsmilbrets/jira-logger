@@ -1,0 +1,217 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { computed, inject, injectAsync, Service, type Signal, signal, type WritableSignal } from '@angular/core';
+
+import { catchError, map, type Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+
+import { LoaderState } from '@core/services/loader-state';
+
+import { adaptTaskRequest, adaptTasks } from '@shared/adapters/task.adapter';
+import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
+import type { ResourceRequestHandle } from '@shared/interfaces/resource-request-handle.interface';
+import type { TaskListFilter } from '@shared/interfaces/task-list-filter.interface';
+import { Task } from '@shared/models/task.model';
+import { ApiRequest } from '@shared/services/api-request';
+import type { ErrorDialog } from '@shared/services/error-dialog';
+import { TaskQuery } from '@shared/services/task-query';
+import type { AsyncLoader } from '@shared/types/async-loader.type';
+import { openLoadErrorDialog } from '@shared/utilities/open-load-error-dialog.utility';
+
+@Service()
+export class Tasks {
+  public readonly loaderStateService: LoaderState = inject(LoaderState);
+
+  private readonly apiRequestService: ApiRequest = inject(ApiRequest);
+  private readonly taskQueryService: TaskQuery = inject(TaskQuery);
+  private readonly taskResource: ResourceRequestHandle = this.apiRequestService.resource('task');
+  private readonly loadErrorDialogService: AsyncLoader<ErrorDialog> = injectAsync(
+    () => import('@shared/services/error-dialog')
+      .then((m) => m.ErrorDialog),
+  );
+
+  private readonly tasksSignal: WritableSignal<Task[]> = signal<Task[]>([]);
+  private readonly allTasksSignal: WritableSignal<Task[]> = signal<Task[]>([]);
+
+  public readonly isLoading: Signal<boolean> = this.taskResource.isLoading;
+  public readonly tasks: Signal<Task[]> = this.tasksSignal.asReadonly();
+  public readonly recentTasks: Signal<Task[]> = computed(() => [
+      ...this.tasksSignal(),
+    ].sort(
+      (a: Task, b: Task) =>
+        (b.lastTimeLogStartTime?.getTime() ?? -1) - (a.lastTimeLogStartTime?.getTime() ?? -1),
+    ),
+  );
+  public readonly allTasks: Signal<Task[]> = this.allTasksSignal.asReadonly();
+
+  public init(): void {
+    this.loaderStateService.addLoader(
+      this.isLoading,
+      'Tasks',
+    );
+  }
+
+  public list(): Observable<Task[]> {
+    return this.taskResource.listRequest<ApiTask>()
+      .pipe(
+        catchError((error: HttpErrorResponse) => this.processError(error)),
+        map((tasks: ApiTask[]) => adaptTasks(tasks)),
+        tap((tasks: Task[]) => {
+          this.tasksSignal.set(tasks);
+          this.allTasksSignal.set(tasks);
+        }),
+      );
+  }
+
+  public loadVisibleTasks(
+    filter: TaskListFilter,
+  ): Observable<Task[]> {
+    return this.taskQueryService.query(filter)
+      .pipe(
+        tap((tasks: Task[]) => {
+          this.tasksSignal.set(tasks);
+
+          if (Object.keys(filter).length === 0) {
+            this.allTasksSignal.set(tasks);
+          }
+        }),
+      );
+  }
+
+  public create(
+    task: Task,
+    skipReload: boolean = false,
+  ): Observable<Task> {
+    return this.saveTask(
+      task,
+      '',
+      'post',
+      skipReload,
+    );
+  }
+
+  public update(
+    task: Task,
+    skipReload: boolean = false,
+  ): Observable<Task> {
+    return this.saveTask(
+      task,
+      `/${ task.id }`,
+      'patch',
+      skipReload,
+    );
+  }
+
+  public delete(
+    task: Task,
+  ): Observable<void> {
+    const url: string = `/${ task.id }`;
+
+    return this.taskResource.request<void>(
+      url,
+      'delete',
+      null,
+      (error: unknown) => this.processError(error),
+    )
+      .pipe(
+        switchMap(
+          () => this.list().pipe(take(1)),
+        ),
+        map(() => undefined),
+      );
+  }
+
+  public taskExist(
+    name: string,
+  ): Observable<null> {
+    const url: string = `/exist/${ name }`;
+
+    return this.taskResource.request<void>(
+      url,
+      'get',
+    )
+      .pipe(
+        catchError((error: unknown) => {
+          if (this.isConflictError(error)) {
+            return throwError(() => error);
+          }
+
+          return this.processError(error);
+        }),
+        map(() => null),
+      );
+  }
+
+  private isConflictError(
+    error: unknown,
+  ): boolean {
+    return this.getErrorStatus(error) === 409;
+  }
+
+  private getErrorStatus(
+    error: unknown,
+  ): number | undefined {
+    if (error instanceof HttpErrorResponse) {
+      return error.status;
+    }
+
+    return typeof error === 'object'
+    && error !== null
+    && 'status' in error
+    && typeof error.status === 'number' ?
+      error.status :
+      undefined;
+  }
+
+  private processError(
+    error: unknown,
+  ): Observable<never> {
+    return openLoadErrorDialog(
+      this.loadErrorDialogService,
+      error,
+      this.tasks(),
+    );
+  }
+
+  private saveTask(
+    task: Task,
+    url: string,
+    method: 'post' | 'patch',
+    skipReload: boolean,
+  ): Observable<Task> {
+    return this.taskResource.request(
+      url,
+      method,
+      adaptTaskRequest(task),
+      (error: unknown) => this.processError(error),
+    )
+      .pipe(
+        switchMap(() => this.reloadList(skipReload)),
+        map((tasks: Task[]) => this.findTask(tasks, task)),
+      );
+  }
+
+  private reloadList(
+    skipReload: boolean = false,
+  ): Observable<Task[]> {
+    return (
+      skipReload ?
+        of(this.tasks()) :
+        this.list()
+    )
+      .pipe(take(1));
+  }
+
+  private findTask(
+    tasks: Task[],
+    task: Task,
+  ): Task {
+    const foundTask: Task | undefined = tasks.find(
+      (t: Task) => (task.id && t.id === task.id) || t.name === task.name,
+    );
+
+    if (!foundTask) {
+      throw new Error(`Problems creating task "${ task.name }"!`);
+    }
+
+    return foundTask;
+  }
+}

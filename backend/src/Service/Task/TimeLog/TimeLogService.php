@@ -7,11 +7,10 @@ namespace App\Service\Task\TimeLog;
 use App\Dto\Task\TimeLog\TimeLogRequest;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
-use App\Factory\Task\TimeLog\TimeLogFactory;
+use App\Repository\Task\TaskRepository;
 use App\Repository\Task\TimeLog\TimeLogRepository;
 use App\Service\DateTime\DateInputParser;
 use App\Service\DateTime\UserTimezoneResolver;
-use App\Service\Task\TaskService;
 use App\Utility\TimeLog\TimeLogDuration;
 use Doctrine\DBAL\Exception;
 
@@ -21,7 +20,7 @@ class TimeLogService
 
     public function __construct(
         private readonly TimeLogRepository $timeLogRepository,
-        private readonly TaskService $taskService,
+        private readonly TaskRepository $taskRepository,
         private readonly DateInputParser $dateInputParser,
         private readonly UserTimezoneResolver $userTimezoneResolver,
     ) {
@@ -74,10 +73,9 @@ class TimeLogService
         }
 
         try {
-            $timeLog = TimeLogFactory::create(
-                timeLogRequest: $timeLogRequest,
+            $timeLog = $this->applyRequest(
+                request: $timeLogRequest,
                 task: $task,
-                dateInputParser: $this->dateInputParser()
             );
             $this->timeLogRepository->save(
                 timeLog: $timeLog,
@@ -117,10 +115,9 @@ class TimeLogService
         }
 
         try {
-            $timeLog = TimeLogFactory::create(
-                timeLogRequest: $timeLogRequest,
+            $timeLog = $this->applyRequest(
+                request: $timeLogRequest,
                 task: $task,
-                dateInputParser: $this->dateInputParser(),
                 timeLog: $timeLog
             );
 
@@ -275,14 +272,33 @@ class TimeLogService
         return $this->timeLogRepository->stopAllRunningTimeLogs();
     }
 
-    private function task(string $taskId): ?Task
-    {
-        return $this->taskService->show($taskId);
+    private function applyRequest(
+        TimeLogRequest $request,
+        Task $task,
+        ?TimeLog $timeLog = null,
+    ): TimeLog {
+        $timeLog ??= new TimeLog();
+
+        if (null !== ($startTime = $this->dateInputParser->parseDateTimeObject($request->getStartTime()))) {
+            $timeLog->setStartTime($startTime);
+        }
+
+        if (null !== ($endTime = $this->dateInputParser->parseDateTimeObject($request->getEndTime()))) {
+            $timeLog->setEndTime($endTime);
+        }
+
+        if (null !== ($description = $request->getDescription())) {
+            $timeLog->setDescription($description);
+        }
+
+        $timeLog->setTask($task);
+
+        return $timeLog;
     }
 
-    private function dateInputParser(): DateInputParser
+    private function task(string $taskId): ?Task
     {
-        return $this->dateInputParser;
+        return $this->taskRepository->find($taskId);
     }
 
     /**

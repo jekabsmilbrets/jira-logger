@@ -4,17 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Service\Task\TimeLog;
 
+use App\Dto\Task\TimeLog\TimeLogRequest;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
 use App\Repository\Task\TaskRepository;
 use App\Repository\Task\TimeLog\TimeLogRepository;
 use App\Service\DateTime\DateInputParser;
-use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\DateTime\UserTimezoneResolver;
-use App\Service\Task\Filter\TaskFilterCriteriaFactory;
-use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
-use App\Service\Task\Projection\TaskListProjection;
-use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
 use App\Service\Task\TimeLog\TimeLogWriteStatus;
 use Doctrine\ORM\EntityManagerInterface;
@@ -28,22 +24,77 @@ class TimeLogServiceTest extends TestCase
         $reflectionProperty->setValue($entity, $id);
     }
 
-    private function serviceWithTask(TimeLogRepository $timeLogRepository, ?Task $task): TimeLogService
+    private function serviceWithTask(
+        TimeLogRepository $timeLogRepository,
+        ?Task $task,
+        ?DateInputParser $dateInputParser = null,
+    ): TimeLogService
     {
         $taskRepository = $this->createMock(TaskRepository::class);
         $taskRepository->method('find')->willReturn($task);
 
         return new TimeLogService(
             $timeLogRepository,
-            new TaskService(
-                $taskRepository,
-                new TaskFilterCriteriaFactory($this->createMock(TaskFilterDateRangeResolver::class)),
-                $this->createMock(TaskJiraSyncAdapter::class),
-                new TaskListProjection(),
-            ),
-            $this->createMock(DateInputParser::class),
+            $taskRepository,
+            $dateInputParser ?? $this->createMock(DateInputParser::class),
             $this->timezoneResolver(),
         );
+    }
+
+    public function testCreateMapsRequestToTimeLog(): void
+    {
+        $task = (new Task())->setName('TASK');
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $entityManager->expects(self::once())->method('persist');
+        $repository = $this->getMockBuilder(TimeLogRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getEntityManager'])
+            ->getMock();
+        $repository->method('getEntityManager')->willReturn($entityManager);
+        $request = (new TimeLogRequest())
+            ->setTask('task-id')
+            ->setStartTime('2026-05-01 10:00:00')
+            ->setEndTime('2026-05-01 11:00:00')
+            ->setDescription('work');
+
+        $result = $this->serviceWithTask($repository, $task, $this->dateInputParser('UTC'))->create($request, false);
+
+        self::assertSame(TimeLogWriteStatus::Created, $result->status);
+        self::assertSame($task, $result->timeLog?->getTask());
+        self::assertSame('work', $result->timeLog?->getDescription());
+        self::assertInstanceOf(\DateTimeImmutable::class, $result->timeLog?->getStartTime());
+        self::assertInstanceOf(\DateTimeImmutable::class, $result->timeLog?->getEndTime());
+    }
+
+    public function testCreateNormalizesFlexibleDateInputs(): void
+    {
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $repository = $this->getMockBuilder(TimeLogRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getEntityManager'])
+            ->getMock();
+        $repository->method('getEntityManager')->willReturn($entityManager);
+        $request = (new TimeLogRequest())
+            ->setTask('task-id')
+            ->setStartTime('1780434000000')
+            ->setEndTime('2026-06-03 23:59:00');
+
+        $result = $this->serviceWithTask(
+            $repository,
+            new Task(),
+            $this->dateInputParser('Europe/Vienna'),
+        )->create($request, false);
+
+        self::assertSame('2026-06-02T21:00:00+00:00', $result->timeLog?->getStartTime()?->format(\DateTimeInterface::ATOM));
+        self::assertSame('2026-06-03T21:59:00+00:00', $result->timeLog?->getEndTime()?->format(\DateTimeInterface::ATOM));
+    }
+
+    private function dateInputParser(string $timezone): DateInputParser
+    {
+        $resolver = $this->createMock(UserTimezoneResolver::class);
+        $resolver->method('resolveCurrentUserTimezone')->willReturn($timezone);
+
+        return new DateInputParser($resolver, 'UTC');
     }
 
     private function timezoneResolver(string $timezone = 'Europe/Riga'): UserTimezoneResolver

@@ -8,15 +8,14 @@ use App\Controller\API\Task\TaskController;
 use App\Dto\Task\TaskListFilterRequest;
 use App\Entity\Task\Task;
 use App\Entity\Task\TimeLog\TimeLog;
+use App\Repository\Tag\TagRepository;
 use App\Repository\Task\TaskRepository;
 use App\Repository\Task\TimeLog\TimeLogRepository;
 use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\DateTime\UserTimezoneResolver;
-use App\Service\Tag\TagService;
-use App\Service\Task\Filter\TaskFilterCriteriaFactory;
-use App\Service\Task\Input\TaskInputFactory;
-use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
-use App\Service\Task\Projection\TaskListProjection;
+use App\Service\Task\JiraSync\JiraTaskSyncService;
+use App\Service\Task\ReportedTask\ReportedTaskQuery;
+use App\Service\Task\Sync\TaskSyncResult;
 use App\Service\Task\TaskService;
 use App\Service\Task\TimeLog\TimeLogService;
 use App\Service\DateTime\DateInputParser;
@@ -37,12 +36,16 @@ class TaskControllerTest extends TestCase
         TaskService $taskService,
         SerializerInterface $serializer,
         ?ValidatorInterface $validator = null,
-        ?TaskInputFactory $taskInputFactory = null,
+        ?JiraTaskSyncService $jiraTaskSyncService = null,
+        ?ReportedTaskQuery $reportedTaskQuery = null,
     ): TaskController
     {
         $controller = new TaskController(
             $taskService,
-            $taskInputFactory ?? new TaskInputFactory($this->createMock(TagService::class)),
+            $reportedTaskQuery ?? $this->reportedTaskQueryWith(
+                $this->getMockBuilder(TaskRepository::class)->disableOriginalConstructor()->getMock(),
+            ),
+            $jiraTaskSyncService ?? $this->createMock(JiraTaskSyncService::class),
             $validator ?? $this->createMock(ValidatorInterface::class),
             $serializer
         );
@@ -56,16 +59,19 @@ class TaskControllerTest extends TestCase
 
     private function taskServiceWith(
         ?TaskRepository $taskRepository = null,
-        ?TaskFilterDateRangeResolver $taskFilterDateRangeResolver = null,
     ): TaskService {
-        $taskFilterDateRangeResolver ??= $this->createMock(TaskFilterDateRangeResolver::class);
-
         return new TaskService(
             $taskRepository ?? $this->getMockBuilder(TaskRepository::class)->disableOriginalConstructor()->getMock(),
-            new TaskFilterCriteriaFactory($taskFilterDateRangeResolver),
-            $this->createMock(TaskJiraSyncAdapter::class),
-            new TaskListProjection(),
+            $this->createMock(TagRepository::class),
         );
+    }
+
+    private function reportedTaskQueryWith(TaskRepository $taskRepository): ReportedTaskQuery
+    {
+        $dateRangeResolver = $this->createMock(TaskFilterDateRangeResolver::class);
+        $dateRangeResolver->method('resolve')->willReturn(null);
+
+        return new ReportedTaskQuery($taskRepository, $dateRangeResolver);
     }
 
     private function timeLogServiceWith(TimeLogRepository $timeLogRepository): TimeLogService
@@ -75,7 +81,7 @@ class TaskControllerTest extends TestCase
 
         return new TimeLogService(
             $timeLogRepository,
-            $this->taskServiceWith(),
+            $this->createMock(TaskRepository::class),
             $this->createMock(DateInputParser::class),
             $timezoneResolver,
         );
@@ -86,6 +92,7 @@ class TaskControllerTest extends TestCase
         $serializer = new class implements SerializerInterface {
             public function serialize(mixed $data, string $format, array $context = []): string { return ''; }
             public function deserialize(mixed $data, string $type, string $format, array $context = []): mixed { return null; }
+
             public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): mixed
             {
                 throw new UnexpectedValueException('bad');
@@ -214,7 +221,12 @@ class TaskControllerTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Repository unavailable');
 
-        $this->controllerWith($taskService, $serializer, $validator)
+        $this->controllerWith(
+            $taskService,
+            $serializer,
+            $validator,
+            reportedTaskQuery: $this->reportedTaskQueryWith($taskRepository),
+        )
             ->list(new Request(['name' => 'backend']));
     }
 
@@ -334,5 +346,22 @@ class TaskControllerTest extends TestCase
 
         self::assertSame('date', $dateParameter->getName());
         self::assertSame('string', (string) $dateParameter->getType());
+    }
+
+    public function testSyncWithJiraPreservesHttpStatusMapping(): void
+    {
+        $jiraTaskSyncService = $this->createMock(JiraTaskSyncService::class);
+        $jiraTaskSyncService
+            ->method('syncTask')
+            ->with('task-id', '2026-06-23')
+            ->willReturn(TaskSyncResult::synced());
+
+        $response = $this->controllerWith(
+            $this->taskServiceWith(),
+            $this->createMock(SerializerInterface::class),
+            jiraTaskSyncService: $jiraTaskSyncService,
+        )->syncWithJira('task-id', '2026-06-23');
+
+        self::assertSame(204, $response->getStatusCode());
     }
 }

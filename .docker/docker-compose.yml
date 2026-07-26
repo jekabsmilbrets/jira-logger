@@ -5,12 +5,10 @@ services:
       context: ./../
       dockerfile: ./.docker/assets-init/Dockerfile
     environment:
-      - ASSETS_VERSION=${ASSETS_VERSION:-unknown}
       - API_HOST=${API_HOST:-https://jira-logger.io}
       - API_BASE=${API_BASE:-/api}
     volumes:
       - assetsData:/assets:rw
-    command: ["/usr/local/bin/assets-init.sh"]
     restart: "no"
     labels:
       - "traefik.enable=false"
@@ -57,9 +55,6 @@ services:
       - APP_INTERNAL_TIMEZONE=${APP_INTERNAL_TIMEZONE:?APP_INTERNAL_TIMEZONE is required}
       - APP_DEFAULT_USER_TIMEZONE=${APP_DEFAULT_USER_TIMEZONE:?APP_DEFAULT_USER_TIMEZONE is required}
       - CORS_ALLOW_ORIGIN=${CORS_ALLOW_ORIGIN:?CORS_ALLOW_ORIGIN is required}
-      - API_AUTH_USERNAME=${API_AUTH_USERNAME:?API_AUTH_USERNAME is required}
-      - API_AUTH_PASSWORD=${API_AUTH_PASSWORD:?API_AUTH_PASSWORD is required}
-      - JIRA_PERSONAL_ACCESS_TOKEN=${JIRA_PERSONAL_ACCESS_TOKEN-}
     volumes:
       - assetsData:/var/www/public/ng:ro
     healthcheck:
@@ -81,11 +76,6 @@ services:
         condition: service_completed_successfully
       php-fpm:
         condition: service_healthy
-      db:
-        condition: service_healthy
-    environment:
-      - API_HOST=${API_HOST:-https://jira-logger.io}
-      - API_BASE=${API_BASE:-/api}
     volumes:
       - assetsData:/var/www/public/ng:ro
     healthcheck:
@@ -109,9 +99,6 @@ services:
       - APP_INTERNAL_TIMEZONE=${APP_INTERNAL_TIMEZONE:?APP_INTERNAL_TIMEZONE is required}
       - APP_DEFAULT_USER_TIMEZONE=${APP_DEFAULT_USER_TIMEZONE:?APP_DEFAULT_USER_TIMEZONE is required}
       - CORS_ALLOW_ORIGIN=${CORS_ALLOW_ORIGIN:?CORS_ALLOW_ORIGIN is required}
-      - API_AUTH_USERNAME=${API_AUTH_USERNAME:?API_AUTH_USERNAME is required}
-      - API_AUTH_PASSWORD=${API_AUTH_PASSWORD:?API_AUTH_PASSWORD is required}
-      - JIRA_PERSONAL_ACCESS_TOKEN=${JIRA_PERSONAL_ACCESS_TOKEN-}
     command:
       - sh
       - -c

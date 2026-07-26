@@ -1,0 +1,63 @@
+@if (!isSmallerThanDesktop()) {
+    <ng-template [ngTemplateOutlet]="menuItems"/>
+} @else {
+    <ng-template [ngTemplateOutlet]="smallScreen"/>
+}
+
+<ng-template #smallScreen>
+    <button (click)="onSmallScreenMenuToggle()"
+            aria-label="Open tasks menu"
+            mat-icon-button
+            matTooltip="Open tasks menu"
+            type="button">
+        <mat-icon>list</mat-icon>
+    </button>
+</ng-template>
+
+<ng-template #menuItems>
+    <form (submit)="onCreate($event)">
+        <mat-form-field>
+            <input [formField]="taskFormSession.form.name"
+                   matInput
+                   placeholder="Task name"/>
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-select (valueChange)="onTagsChange($event)"
+                        [compareWith]="isSameTag"
+                        [value]="taskFormSession.draft().tags"
+                        multiple
+                        placeholder="Tags">
+                @for (tag of tags(); track tag.id) {
+                    <mat-option [value]="tag">
+                        {{ tag.name }}
+                    </mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+
+        <button [disabled]="!taskFormSession.form().valid() || isLoading()"
+                mat-raised-button
+                type="submit">
+            Create
+        </button>
+    </form>
+</ng-template>
+
+<tasks-settings-toggle (openSettingsDialog)="onOpenSettingsDialog()"/>
+
+@if (jiraEnabled()) {
+    <button (click)="onOpenJiraImportDialog()"
+            aria-label="Import tasks from Jira"
+            mat-icon-button
+            matTooltip="Import tasks from Jira"
+            type="button">
+        <mat-icon>cloud_download</mat-icon>
+    </button>
+}
+
+<ng-template #smallScreenDialog>
+    <div class="tasks-menu-dialog">
+        <ng-template [ngTemplateOutlet]="menuItems"/>
+    </div>
+</ng-template>

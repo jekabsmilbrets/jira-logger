@@ -218,28 +218,24 @@ class JiraWorkLogController extends BaseApiController
     ): JsonResponse
     {
         try {
-            $jiraWorkLogRequest = $serializer->deserialize(
-                data: $request->getContent(),
+            $jiraWorkLogRequest = $this->deserializeJsonRequest(
+                serializer: $serializer,
+                request: $request,
                 type: JiraWorkLogRequest::class,
-                format: 'json'
             );
         } catch (UnexpectedValueException) {
-            return $this->jsonApi(
-                errors: [self::BAD_REQUEST],
-                status: 400
-            );
+            return $this->badRequestJsonApi();
         }
 
-        $errors = $validator->validate(
-            value: $jiraWorkLogRequest,
-            groups: ['create']
+        $validationError = $this->validateRequestDto(
+            validator: $validator,
+            requestDto: $jiraWorkLogRequest,
+            group: 'create',
+            status: 406,
         );
 
-        if (\count($errors) > 0) {
-            return $this->validationErrorJsonApi(
-                constraintViolationList: $errors,
-                status: 406
-            );
+        if ($validationError instanceof JsonResponse) {
+            return $validationError;
         }
 
         return $this->writeResultResponse(
@@ -330,28 +326,24 @@ class JiraWorkLogController extends BaseApiController
     ): JsonResponse
     {
         try {
-            $jiraWorkLogRequest = $serializer->deserialize(
-                data: $request->getContent(),
+            $jiraWorkLogRequest = $this->deserializeJsonRequest(
+                serializer: $serializer,
+                request: $request,
                 type: JiraWorkLogRequest::class,
-                format: 'json'
             );
         } catch (UnexpectedValueException) {
-            return $this->jsonApi(
-                errors: [self::BAD_REQUEST],
-                status: 400
-            );
+            return $this->badRequestJsonApi();
         }
 
-        $errors = $validator->validate(
-            value: $jiraWorkLogRequest,
-            groups: ['update']
+        $validationError = $this->validateRequestDto(
+            validator: $validator,
+            requestDto: $jiraWorkLogRequest,
+            group: 'update',
+            status: 406,
         );
 
-        if (\count($errors) > 0) {
-            return $this->validationErrorJsonApi(
-                constraintViolationList: $errors,
-                status: 406
-            );
+        if ($validationError instanceof JsonResponse) {
+            return $validationError;
         }
 
         return $this->writeResultResponse(

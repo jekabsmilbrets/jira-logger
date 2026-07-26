@@ -1,0 +1,22 @@
+<tasks-view-header/>
+
+@if (pagedTasks(); as taskList) {
+    <div class="task-list">
+        @for (task of taskList; track task.id) {
+            <tasks-task (action)="onAction($event)"
+                        (remove)="onRemove($event)"
+                        (timeLogsSaved)="onTimeLogsSaved()"
+                        (update)="onUpdate($event)"
+                        [isLoading]="isLoading()"
+                        [task]="task"/>
+        }
+    </div>
+
+    <mat-paginator (page)="onPageChange($event)"
+                   [length]="tasks().length"
+                   [pageIndex]="pageIndex()"
+                   [pageSize]="pageSize()"
+                   [pageSizeOptions]="pageSizeOptions"
+                   aria-label="Select tasks page"
+                   showFirstLastButtons/>
+}

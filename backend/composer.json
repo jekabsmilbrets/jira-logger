@@ -4,7 +4,7 @@
     "name": "Jēkabs Milbrets",
     "email": "jekabs.milbrets@me.com"
   },
-  "version": "0.7.0",
+  "version": "1.0.0",
   "type": "project",
   "license": "MIT",
   "minimum-stability": "stable",
@@ -33,7 +33,6 @@
     "symfony/property-access": "*",
     "symfony/property-info": "*",
     "symfony/runtime": "*",
-    "symfony/security-bundle": "*",
     "symfony/serializer": "*",
     "symfony/twig-bundle": "*",
     "symfony/validator": "*",
@@ -43,7 +42,7 @@
   },
   "require-dev": {
     "friendsofphp/php-cs-fixer": "^3.9",
-    "phpstan/phpstan": "^1.8",
+    "phpstan/phpstan": "^2.1",
     "phpunit/phpunit": "^9.6",
     "roave/security-advisories": "dev-latest",
     "symfony/browser-kit": "*",

@@ -106,24 +106,4 @@ class TaskListFilterRequest
 
         return $this;
     }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function toFilterArray(): array
-    {
-        $filter = [
-            'tags' => $this->tags,
-            'name' => $this->name,
-            'date' => $this->date,
-            'startDate' => $this->startDate,
-            'endDate' => $this->endDate,
-            'hideUnreported' => $this->hideUnreported,
-        ];
-
-        return array_filter(
-            $filter,
-            static fn ($value): bool => null !== $value
-        );
-    }
 }

@@ -1,0 +1,127 @@
+<form (submit)="onUpdate($event)">
+    <mat-card [ngClass]="getCardClassMap()"
+              class="task-card">
+        <mat-card-header [style.display]="getViewModeDisplay()">
+            <mat-card-title>
+                <div class="card-title-row">
+                    <span class="card-title"
+                          [matTooltipDisabled]="task().name.length < 20"
+                          [matTooltip]="task().name">
+                        {{ task().name }}
+                    </span>
+
+                    @if (jiraIssueUrl(); as issueUrl) {
+                        <a [href]="issueUrl"
+                           aria-label="Open task in Jira"
+                           mat-icon-button
+                           matTooltip="Open task in Jira"
+                           rel="noopener noreferrer"
+                           class="jira-link"
+                           target="_blank">
+                            <mat-icon>open_in_new</mat-icon>
+                        </a>
+                    }
+                </div>
+
+                <mat-chip-listbox aria-label="Task tags"
+                                  disabled>
+                    @for (tag of task().tags; track tag.id) {
+                        <mat-chip-option>{{ tag.name }}</mat-chip-option>
+                    }
+                </mat-chip-listbox>
+            </mat-card-title>
+        </mat-card-header>
+
+        <mat-card-content [style.display]="getEditModeDisplay()">
+            <mat-form-field class="input-form-field">
+                <mat-label>Task</mat-label>
+
+                <input [formField]="taskFormSession.form.name"
+                       matInput/>
+
+                <mat-error [style.display]="hasNameError() ? '' : 'none'">Task name is required.</mat-error>
+            </mat-form-field>
+
+            <mat-form-field class="input-form-field">
+                <mat-label>Tags</mat-label>
+
+                <mat-select (valueChange)="onTagsChange($event)"
+                            [compareWith]="isSameTag"
+                            [value]="taskFormSession.draft().tags"
+                            multiple>
+                    @for (tag of tags(); track tag.id) {
+                        <mat-option [value]="tag">
+                            {{ tag.name }}
+                        </mat-option>
+                    }
+                </mat-select>
+            </mat-form-field>
+
+            <mat-form-field class="input-form-field">
+                <mat-label>Description</mat-label>
+
+                <textarea [formField]="taskFormSession.form.description"
+                          matInput></textarea>
+            </mat-form-field>
+        </mat-card-content>
+
+        <mat-card-actions class="task-card-actions">
+            <div class="card-task-info">
+                <span>{{ getTaskDescription() }}</span>
+
+                <span>Total Time Worked: {{ getTotalTimeWorked() | readableTime }}</span>
+            </div>
+
+            <button (click)="onToggleTimeLogging()"
+                    [disabled]="isViewActionDisabled()"
+                    [attr.aria-label]="getTimerActionLabel()"
+                    [matTooltip]="getTimerActionLabel()"
+                    class="play-pause-button"
+                    color="primary"
+                    mat-icon-button
+                    type="button">
+                <mat-icon>timer</mat-icon>
+                <mat-icon>{{ getTimerActionIcon() }}</mat-icon>
+            </button>
+
+            <button (click)="onOpenTimeLogsModal()"
+                    [disabled]="isViewActionDisabled()"
+                    aria-label="View time log history"
+                    color="warn"
+                    mat-icon-button
+                    matTooltip="View time log history"
+                    type="button">
+                <mat-icon>history</mat-icon>
+            </button>
+
+            <button (click)="onToggleEditMode()"
+                    [disabled]="!editMode() && isLoading()"
+                    [attr.aria-label]="getEditButtonLabel()"
+                    [matTooltip]="getEditButtonLabel()"
+                    mat-icon-button
+                    type="button">
+                <mat-icon>{{ getEditButtonIcon() }}</mat-icon>
+            </button>
+
+            <button [disabled]="isSaveDisabled()"
+                    [style.display]="getEditModeDisplay()"
+                    aria-label="Save task"
+                    mat-icon-button
+                    color="primary"
+                    matTooltip="Save task"
+                    type="submit">
+                <mat-icon>save</mat-icon>
+            </button>
+
+            <button (click)="onRemove()"
+                    [disabled]="isRemoveDisabled()"
+                    aria-label="Remove task"
+                    color="warn"
+                    mat-icon-button
+                    matTooltip="Remove task"
+                    type="button">
+                <mat-icon>delete</mat-icon>
+            </button>
+        </mat-card-actions>
+    </mat-card>
+</form>

@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller\API;
 
-use App\Dto\JsonApi\JsonApi;
-use App\Serializer\Normalizer\ModelNormalizer;
+use App\Serializer\Normalizer\JsonApiResponseNormalizer;
 use App\Service\DateTime\UserTimezoneResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Contracts\Service\Attribute\Required;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\DependencyInjection\Attribute\Required;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
@@ -100,6 +99,9 @@ class BaseApiController extends AbstractController
     }
 
     /**
+     * @param array<string, string|string[]> $headers
+     * @param array<string, mixed>           $context
+     *
      * @throws ExceptionInterface
      */
     final public function jsonApi(
@@ -110,27 +112,18 @@ class BaseApiController extends AbstractController
         array $headers = [],
         array $context = []
     ): JsonResponse {
-        $jsonApi = new JsonApi();
-
-        if ($data) {
-            $resolvedTimezone = $this->userTimezoneResolver?->resolveCurrentUserTimezone();
-            $normalizer = new ModelNormalizer();
-            $normalizedData = $normalizer->normalize(
-                object: $data,
-                context: [
-                    'groups' => ['list'],
-                    'timezone' => $resolvedTimezone,
-                ]
-            );
-
-            $jsonApi->setData($normalizedData);
-        }
-
-        $jsonApi->setMeta($meta);
-        $jsonApi->setErrors($errors);
+        $resolvedTimezone = $data
+            ? $this->userTimezoneResolver?->resolveCurrentUserTimezone()
+            : null;
+        $response = (new JsonApiResponseNormalizer())->normalize(
+            data: $data,
+            errors: $errors,
+            meta: $meta,
+            timezone: $resolvedTimezone,
+        );
 
         return $this->json(
-            data: $jsonApi->jsonSerialize(),
+            data: $response,
             status: $status,
             headers: $headers,
             context: $context
