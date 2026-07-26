@@ -1,7 +1,7 @@
 import { concat, map, type Observable, of, toArray } from 'rxjs';
 
 import { Tag } from '@shared/models/tag.model';
-import { TagsService } from '@shared/services/tags.service';
+import { Tags } from '@shared/services/tags';
 
 import type { ImportTagInput, ImportTaskInput } from '@tasks/interfaces/import-task-input.interface';
 
@@ -50,7 +50,7 @@ export class TaskImportExecutionPlan {
   }
 
   public createMissingTags(
-    tagsService: TagsService,
+    tagsService: Tags,
   ): Observable<TaskImportExecutionPlan> {
     if (this.missingTags.length === 0) {
       return of(this);

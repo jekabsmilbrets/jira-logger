@@ -1,0 +1,25 @@
+import { ChangeDetectionStrategy, Component, input, type InputSignal, output, type OutputEmitterRef } from '@angular/core';
+import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/slide-toggle';
+
+@Component({
+  selector: 'shared-report-hide-unreported-tasks',
+  templateUrl: './report-hide-unreported-tasks.html',
+  styleUrls: ['./report-hide-unreported-tasks.scss'],
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    MatSlideToggleModule,
+  ],
+})
+export class ReportHideUnreportedTasks {
+  public readonly disabled: InputSignal<boolean> = input<boolean>(false);
+  public readonly hideUnreportedTasks: InputSignal<boolean> = input.required<boolean>();
+
+  protected readonly hideUnreportedTasksChange: OutputEmitterRef<boolean> = output<boolean>();
+
+  protected onHideUnreportedTasksChange(
+    hideUnreportedTasks: MatSlideToggleChange,
+  ): void {
+    this.hideUnreportedTasksChange.emit(hideUnreportedTasks.checked);
+  }
+}

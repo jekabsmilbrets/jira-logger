@@ -8,8 +8,8 @@ export const routes: Routes = [
   },
   {
     path: '',
-    loadComponent: () => import('@layout/views/layout/layout.component')
-      .then(m => m.LayoutComponent),
+    loadComponent: () => import('@layout/views/layout/layout')
+      .then(m => m.Layout),
     children: [
       {
         path: 'tasks',

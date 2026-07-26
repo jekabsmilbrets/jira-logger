@@ -8,16 +8,16 @@ import { provideServiceWorker } from '@angular/service-worker';
 import { environment } from '@environments/environment';
 
 import { runtimeConfigInitializer } from '@core/config/runtime-config.initializer';
-import { MaterialLocaleBridgeService } from '@core/services/material-locale-bridge.service';
-import { MonitorService } from '@core/services/monitor.service';
-import { SettingsService } from '@core/services/settings.service';
-import { StorageService } from '@core/services/storage.service';
+import { MaterialLocaleBridge } from '@core/services/material-locale-bridge';
+import { Monitor } from '@core/services/monitor';
+import { Settings } from '@core/services/settings';
+import { Storage } from '@core/services/storage';
 
-import { TagsService } from '@shared/services/tags.service';
-import { TasksService } from '@shared/services/tasks.service';
-import { TimeLogsService } from '@shared/services/time-logs.service';
+import { Tags } from '@shared/services/tags';
+import { Tasks } from '@shared/services/tasks';
+import { TimeLogs } from '@shared/services/time-logs';
 
-import { TaskBackupService } from '@tasks/services/task-backup/task-backup.service';
+import { TaskBackup } from '@tasks/services/task-backup/task-backup';
 
 import { routes } from './app.routes';
 
@@ -35,17 +35,17 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => runtimeConfigInitializer()),
     provideAppInitializer(() => {
       [
-        inject(TasksService),
-        inject(TimeLogsService),
-        inject(MonitorService),
-        inject(StorageService),
-        inject(TaskBackupService),
-        inject(SettingsService),
-        inject(TagsService),
+        inject(Tasks),
+        inject(TimeLogs),
+        inject(Monitor),
+        inject(Storage),
+        inject(TaskBackup),
+        inject(Settings),
+        inject(Tags),
       ].forEach((service) => service.init());
     }),
     provideAppInitializer(() => {
-      inject(MaterialLocaleBridgeService);
+      inject(MaterialLocaleBridge);
     }),
     {
       provide: LOCALE_ID,

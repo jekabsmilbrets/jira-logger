@@ -2,10 +2,7 @@ import type { Column } from '@shared/interfaces/column.interface';
 import type { Searchable } from '@shared/interfaces/searchable.interface';
 import type { TableRowAction } from '@shared/interfaces/table-row-action.interface';
 
-import type {
-  JiraApiTaskIntakeCriteria,
-  JiraApiTaskIntakeRow,
-} from '@tasks/interfaces/jira-api-task-intake.interface';
+import type { JiraApiTaskIntakeCriteria, JiraApiTaskIntakeRow } from '@tasks/interfaces/jira-api-task-intake.interface';
 
 export const RESULT_LIMITS: number[] = [
   50,
