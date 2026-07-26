@@ -118,20 +118,3 @@ export const fromWallClockDateInTimezone: (
 
   return new Date(utcMs);
 };
-
-export const isSameCalendarDateInTimezone: (
-  left: Date,
-  right: Date,
-  timezone: string,
-) => boolean = (
-  left: Date,
-  right: Date,
-  timezone: string,
-): boolean => {
-  const leftParts: TimezoneDateParts = getDateTimePartsInTimezone(left, timezone);
-  const rightParts: TimezoneDateParts = getDateTimePartsInTimezone(right, timezone);
-
-  return leftParts.year === rightParts.year &&
-    leftParts.month === rightParts.month &&
-    leftParts.day === rightParts.day;
-};

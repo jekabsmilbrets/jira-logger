@@ -1,11 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  fromWallClockDateInTimezone,
-  getDateTimePartsInTimezone,
-  isSameCalendarDateInTimezone,
-  toWallClockDateInTimezone,
-} from './timezone-date.utility';
+import { fromWallClockDateInTimezone, getDateTimePartsInTimezone, toWallClockDateInTimezone } from './timezone-date.utility';
 
 describe('Core Utils timezone-date.utility', () => {
   it('converts an instant into timezone wall-clock parts', () => {
@@ -37,14 +32,6 @@ describe('Core Utils timezone-date.utility', () => {
     const instant = fromWallClockDateInTimezone(wallClockDate, 'Europe/Vienna');
 
     expect(instant.toISOString()).toBe('2026-06-03T21:59:00.000Z');
-  });
-
-  it('compares calendar dates in the selected timezone instead of browser local time', () => {
-    const left = new Date('2026-06-02T21:30:00.000Z');
-    const right = new Date('2026-06-02T20:30:00.000Z');
-
-    expect(isSameCalendarDateInTimezone(left, right, 'Europe/Vienna')).toBe(true);
-    expect(isSameCalendarDateInTimezone(left, right, 'Europe/Riga')).toBe(false);
   });
 
   it('falls back to local date parts for invalid timezones', () => {
