@@ -3,7 +3,7 @@ import { firstValueFrom, of, throwError } from 'rxjs';
 import { Task } from '@shared/models/task.model';
 import { TimeLog } from '@shared/models/time-log.model';
 
-import type { TimeLogEditService } from '@tasks/services/time-log-edit.service';
+import type { TimeLogEdit } from '@tasks/services/time-log-edit';
 import { TimeLogEditSession } from '@tasks/services/time-log-edit-session';
 
 describe('Tasks Service TimeLogEditSession', () => {
@@ -15,7 +15,7 @@ describe('Tasks Service TimeLogEditSession', () => {
 
   const buildEditService = () => ({
     openTimeLogDialog: vi.fn(() => of({ responseType: 'cancel' })),
-  }) as unknown as TimeLogEditService & {
+  }) as unknown as TimeLogEdit & {
     openTimeLogDialog: ReturnType<typeof vi.fn>;
   };
   const buildAdapter = (timeLogs: TimeLog[] = []) => ({

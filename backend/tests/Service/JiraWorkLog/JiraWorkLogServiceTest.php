@@ -8,13 +8,8 @@ use App\Dto\JiraWorkLog\JiraWorkLogRequest;
 use App\Entity\Task\Task;
 use App\Repository\JiraWorkLog\JiraWorkLogRepository;
 use App\Repository\Task\TaskRepository;
-use App\Service\DateTime\TaskFilterDateRangeResolver;
 use App\Service\JiraWorkLog\JiraWorkLogService;
 use App\Service\JiraWorkLog\JiraWorkLogWriteStatus;
-use App\Service\Task\Filter\TaskFilterCriteriaFactory;
-use App\Service\Task\JiraSync\TaskJiraSyncAdapter;
-use App\Service\Task\Projection\TaskListProjection;
-use App\Service\Task\TaskService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -30,12 +25,7 @@ class JiraWorkLogServiceTest extends TestCase
 
         $service = new JiraWorkLogService(
             $this->createMock(JiraWorkLogRepository::class),
-            new TaskService(
-                $taskRepository,
-                new TaskFilterCriteriaFactory($this->createMock(TaskFilterDateRangeResolver::class)),
-                $this->createMock(TaskJiraSyncAdapter::class),
-                new TaskListProjection(),
-            )
+            $taskRepository,
         );
 
         self::assertSame(JiraWorkLogWriteStatus::NotFound, $service->new($request, flush: false)->status);
@@ -43,10 +33,12 @@ class JiraWorkLogServiceTest extends TestCase
 
     public function testNewReturnsCreatedWhenTaskExists(): void
     {
+        $task = new Task();
         $taskRepository = $this->createMock(TaskRepository::class);
-        $taskRepository->method('find')->willReturn(new Task());
+        $taskRepository->method('find')->willReturn($task);
         $request = (new JiraWorkLogRequest())
             ->setTask('5640e2d4-eff2-4f53-8e71-8cd305530f7f')
+            ->setDescription('note')
             ->setTimeSpentSeconds(120);
         $entityManager = $this->createMock(EntityManagerInterface::class);
         $entityManager->expects(self::once())->method('persist');
@@ -58,17 +50,15 @@ class JiraWorkLogServiceTest extends TestCase
 
         $service = new JiraWorkLogService(
             $repository,
-            new TaskService(
-                $taskRepository,
-                new TaskFilterCriteriaFactory($this->createMock(TaskFilterDateRangeResolver::class)),
-                $this->createMock(TaskJiraSyncAdapter::class),
-                new TaskListProjection(),
-            )
+            $taskRepository,
         );
 
         $result = $service->new($request, flush: false);
 
         self::assertSame(JiraWorkLogWriteStatus::Created, $result->status);
         self::assertNotNull($result->jiraWorkLog);
+        self::assertSame('note', $result->jiraWorkLog->getDescription());
+        self::assertSame(120, $result->jiraWorkLog->getTimeSpentSeconds());
+        self::assertSame($task, $result->jiraWorkLog->getTask());
     }
 }

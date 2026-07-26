@@ -11,18 +11,10 @@ use App\Utility\Traits\BaseEntityTrait;
 use Doctrine\ORM\Mapping as ORM;
 use OpenApi\Attributes as OA;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Serializer\Attribute\Ignore;
 
 #[
     ORM\Entity(repositoryClass: SettingRepository::class),
-    ORM\Table(
-        uniqueConstraints: [
-            new ORM\UniqueConstraint(
-                columns: [
-                    'name',
-                ]
-            ),
-        ]
-    ),
     ORM\HasLifecycleCallbacks,
 ]
 class Setting implements EntityBaseInterface
@@ -42,7 +34,6 @@ class Setting implements EntityBaseInterface
     private ?string $name = null;
 
     #[
-        Groups([Group::LIST]),
         ORM\Column(
             length: 512,
             unique: true
@@ -53,6 +44,9 @@ class Setting implements EntityBaseInterface
     ]
     private ?string $value = null;
 
+    /**
+     * @return array{id: string, name: ?string}
+     */
     final public function toArray(): array
     {
         return [
@@ -73,6 +67,7 @@ class Setting implements EntityBaseInterface
         return $this;
     }
 
+    #[Ignore]
     final public function getValue(): ?string
     {
         return $this->value;

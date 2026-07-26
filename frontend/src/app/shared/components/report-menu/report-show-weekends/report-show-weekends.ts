@@ -1,0 +1,25 @@
+import { ChangeDetectionStrategy, Component, input, type InputSignal, output, type OutputEmitterRef } from '@angular/core';
+import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/slide-toggle';
+
+@Component({
+  selector: 'shared-report-show-weekends',
+  templateUrl: './report-show-weekends.html',
+  styleUrls: ['./report-show-weekends.scss'],
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    MatSlideToggleModule,
+  ],
+})
+export class ReportShowWeekends {
+  public readonly disabled: InputSignal<boolean> = input<boolean>(false);
+  public readonly showWeekends: InputSignal<boolean> = input.required<boolean>();
+
+  protected readonly showWeekendsChange: OutputEmitterRef<boolean> = output<boolean>();
+
+  protected onShowWeekendsChange(
+    showWeekends: MatSlideToggleChange,
+  ): void {
+    this.showWeekendsChange.emit(showWeekends.checked);
+  }
+}

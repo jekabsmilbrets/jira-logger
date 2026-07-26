@@ -8,6 +8,7 @@ export interface TableRowAction {
   header: string;
   icon: string;
   ariaLabel: string;
+  cell?: (row: Searchable) => string;
   color?: ThemePalette;
   tooltip?: string;
   isDisabled?: (row: Searchable) => boolean;

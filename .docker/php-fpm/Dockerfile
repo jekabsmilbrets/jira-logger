@@ -51,6 +51,8 @@ RUN set -eux; \
 
 WORKDIR /var/www
 
+ENV APP_RUNTIME_OPTIONS='{"disable_dotenv":true}'
+
 COPY backend/ ./
 COPY --from=composer_deps /app/vendor ./vendor
 COPY .docker/php-fpm/docker-entrypoint.sh /usr/local/bin/php-fpm-entrypoint.sh

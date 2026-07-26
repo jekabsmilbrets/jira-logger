@@ -51,13 +51,21 @@ db_dump.sql
 # Root
 /CONTEXT.md
 /docs/adr/
+/docs/plans/
+/docs/superpowers/
 .grill/
+artifacts/
 
 # Frontend
 /frontend/CONTEXT.md
 /frontend/docs/adr/
+/frontend/docs/plans/
+/frontend/docs/superpowers/
 
 # Backend
 /backend/CONTEXT.md
 /backend/docs/adr/
+/backend/docs/plans/
+/backend/docs/superpowers/
 
+.codebase-memory

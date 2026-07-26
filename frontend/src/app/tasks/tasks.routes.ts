@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 
 import { HEADER_MENU_ROUTE_DATA_KEY } from '@layout/interfaces/header-menu-route-data.interface';
 
-import { TasksMenuComponent } from './components/tasks-menu/tasks-menu.component';
+import { TasksMenu } from './components/tasks-menu/tasks-menu';
 
 export const tasksRoutes: Routes = [
   {
@@ -10,7 +10,7 @@ export const tasksRoutes: Routes = [
     data: {
       [HEADER_MENU_ROUTE_DATA_KEY]: {
         menuId: 'tasks',
-        menuComponent: TasksMenuComponent,
+        menuComponent: TasksMenu,
       },
     },
     children: [
@@ -21,8 +21,8 @@ export const tasksRoutes: Routes = [
       },
       {
         path: 'list',
-        loadComponent: () => import('./views/tasks/tasks-view.component')
-          .then(m => m.TasksViewComponent),
+        loadComponent: () => import('./views/tasks/tasks-view')
+          .then(m => m.TasksView),
       },
       {
         path: '**',

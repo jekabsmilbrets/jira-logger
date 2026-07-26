@@ -13,9 +13,9 @@ use Doctrine\Persistence\ManagerRegistry;
  * @extends ServiceEntityRepository<TimeLog>
  *
  * @method TimeLog|null find($id, $lockMode = null, $lockVersion = null)
- * @method TimeLog|null findOneBy(array $criteria, array $orderBy = null)
+ * @method TimeLog|null findOneBy(array<string, mixed> $criteria, array<string, string>|null $orderBy = null)
  * @method TimeLog[]    findAll()
- * @method TimeLog[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method TimeLog[]    findBy(array<string, mixed> $criteria, array<string, string>|null $orderBy = null, $limit = null, $offset = null)
  *
  * @noinspection MethodShouldBeFinalInspection
  */

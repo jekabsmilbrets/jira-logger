@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Repository\Task;
 
 use App\Entity\Task\Task;
-use App\Service\Task\Filter\TaskFilterCriteria;
+use App\Service\Task\ReportedTask\ReportedTaskCriteria;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -13,9 +13,9 @@ use Doctrine\Persistence\ManagerRegistry;
  * @extends ServiceEntityRepository<Task>
  *
  * @method Task|null find($id, $lockMode = null, $lockVersion = null)
- * @method Task|null findOneBy(array $criteria, array $orderBy = null)
+ * @method Task|null findOneBy(array<string, mixed> $criteria, array<string, string>|null $orderBy = null)
  * @method Task[]    findAll()
- * @method Task[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method Task[]    findBy(array<string, mixed> $criteria, array<string, string>|null $orderBy = null, $limit = null, $offset = null)
  *
  * @noinspection MethodShouldBeFinalInspection
  */
@@ -56,7 +56,7 @@ class TaskRepository extends ServiceEntityRepository
      *
      * @throws \Exception
      */
-    final public function findByFilters(TaskFilterCriteria $criteria): array
+    final public function findByFilters(ReportedTaskCriteria $criteria): array
     {
         $queryBuilder = $this->createQueryBuilder('t')
             ->leftJoin('t.timeLogs', 'l')

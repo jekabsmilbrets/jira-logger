@@ -1,15 +1,15 @@
 import { from, type Observable, switchMap, take, throwError } from 'rxjs';
 
-import type { ErrorDialogService } from '@shared/services/error-dialog.service';
+import type { ErrorDialog } from '@shared/services/error-dialog';
 import type { AsyncLoader } from '@shared/types/async-loader.type';
 import type { ErrorDialogIdbData } from '@shared/types/error-dialog-idb-data.type';
 
 export const openLoadErrorDialog: (
-  loadErrorDialogService: AsyncLoader<ErrorDialogService>,
+  loadErrorDialogService: AsyncLoader<ErrorDialog>,
   error: unknown,
   idbData: ErrorDialogIdbData,
 ) => Observable<never> = (
-  loadErrorDialogService: AsyncLoader<ErrorDialogService>,
+  loadErrorDialogService: AsyncLoader<ErrorDialog>,
   error: unknown,
   idbData: ErrorDialogIdbData,
 ): Observable<never> => {

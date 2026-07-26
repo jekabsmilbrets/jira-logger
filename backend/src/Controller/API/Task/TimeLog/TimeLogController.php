@@ -18,7 +18,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -225,28 +224,26 @@ class TimeLogController extends BaseApiController
     ): JsonResponse {
         try {
             $timeLogRequest = (new TimeLogRequest())->setTask($taskId);
-            $timeLogRequest = $serializer->deserialize(
-                data: $request->getContent(),
+            $timeLogRequest = $this->deserializeJsonRequest(
+                serializer: $serializer,
+                request: $request,
                 type: TimeLogRequest::class,
-                format: 'json',
-                context: [
-                    AbstractNormalizer::OBJECT_TO_POPULATE => $timeLogRequest,
-                ]
+                populate: $timeLogRequest,
             );
+            $timeLogRequest->setTask($taskId);
         } catch (UnexpectedValueException) {
             return $this->badRequestJsonApi();
         }
 
-        $errors = $validator->validate(
-            value: $timeLogRequest,
-            groups: ['create']
+        $validationError = $this->validateRequestDto(
+            validator: $validator,
+            requestDto: $timeLogRequest,
+            group: 'create',
+            status: Response::HTTP_NOT_ACCEPTABLE,
         );
 
-        if (\count($errors) > 0) {
-            return $this->validationErrorJsonApi(
-                constraintViolationList: $errors,
-                status: Response::HTTP_NOT_ACCEPTABLE
-            );
+        if ($validationError instanceof JsonResponse) {
+            return $validationError;
         }
 
         return $this->writeResultResponse(
@@ -339,28 +336,26 @@ class TimeLogController extends BaseApiController
     ): JsonResponse {
         try {
             $timeLogRequest = (new TimeLogRequest())->setTask($taskId);
-            $timeLogRequest = $serializer->deserialize(
-                data: $request->getContent(),
+            $timeLogRequest = $this->deserializeJsonRequest(
+                serializer: $serializer,
+                request: $request,
                 type: TimeLogRequest::class,
-                format: 'json',
-                context: [
-                    AbstractNormalizer::OBJECT_TO_POPULATE => $timeLogRequest,
-                ]
+                populate: $timeLogRequest,
             );
+            $timeLogRequest->setTask($taskId);
         } catch (UnexpectedValueException) {
             return $this->badRequestJsonApi();
         }
 
-        $errors = $validator->validate(
-            value: $timeLogRequest,
-            groups: ['update']
+        $validationError = $this->validateRequestDto(
+            validator: $validator,
+            requestDto: $timeLogRequest,
+            group: 'update',
+            status: Response::HTTP_NOT_ACCEPTABLE,
         );
 
-        if (\count($errors) > 0) {
-            return $this->validationErrorJsonApi(
-                constraintViolationList: $errors,
-                status: Response::HTTP_NOT_ACCEPTABLE
-            );
+        if ($validationError instanceof JsonResponse) {
+            return $validationError;
         }
 
         return $this->writeResultResponse(
