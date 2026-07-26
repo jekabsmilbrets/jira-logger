@@ -76,11 +76,6 @@ services:
         condition: service_completed_successfully
       php-fpm:
         condition: service_healthy
-      db:
-        condition: service_healthy
-    environment:
-      - API_HOST=${API_HOST:-https://jira-logger.io}
-      - API_BASE=${API_BASE:-/api}
     volumes:
       - assetsData:/var/www/public/ng:ro
     healthcheck:

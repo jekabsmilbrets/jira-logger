@@ -54,6 +54,7 @@ db_dump.sql
 /docs/plans/
 /docs/superpowers/
 .grill/
+artifacts/
 
 # Frontend
 /frontend/CONTEXT.md
