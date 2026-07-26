@@ -5,12 +5,10 @@ services:
       context: ./../
       dockerfile: ./.docker/assets-init/Dockerfile
     environment:
-      - ASSETS_VERSION=${ASSETS_VERSION:-unknown}
       - API_HOST=${API_HOST:-https://jira-logger.io}
       - API_BASE=${API_BASE:-/api}
     volumes:
       - assetsData:/assets:rw
-    command: ["/usr/local/bin/assets-init.sh"]
     restart: "no"
     labels:
       - "traefik.enable=false"

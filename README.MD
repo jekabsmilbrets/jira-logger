@@ -10,15 +10,16 @@ To run in docker mode you need to have Docker and Docker Compose installed.
 ## Setup
 
 1) Prepare `./.docker/.env` from `./.docker/.env.example` (source of truth template).
-2) Start containers: `sh manager.sh -a start`
+2) Build images and initialize the database: `sh manager.sh -a build`
+3) Start containers: `sh manager.sh -a start`
 
 Notes:
 - `manager.sh` now runs with `./.docker/docker-compose.yml` and `./.docker/docker-compose.dev.yml` by default.
-- On a fresh checkout, `manager.sh -a start` will trigger the required build flow automatically if the shared frontend assets volume is missing.
+- On a fresh checkout, run `manager.sh -a build` once before `start`; Compose then populates the shared frontend assets volume during startup.
 - Backend env variables are loaded from `./.docker/.env` via `docker-compose.yml`.
 - `manager.sh` creates the shared Docker `traefik` network automatically when it is missing.
 - Host log persistence is disabled by default. Use `docker compose logs` or `sh manager.sh -a start` attached output for normal use. Pass `-l on` only when you explicitly need debug log files in `./.logs/jira-logger/`.
-- Use `manager.sh` for compose startup so the required env file, compose overlays, assets marker checks, and optional Traefik mode are applied consistently.
+- Use `manager.sh` for compose startup so the required env file, compose overlays, and optional Traefik mode are applied consistently.
 
 ## Basic Usage
 
@@ -33,7 +34,7 @@ Notes:
    When Traefik is disabled, add a local host mapping such as `127.0.0.1 jira-logger.io` and open `http://jira-logger.io` or `https://jira-logger.io`.
    To enable persisted host logs for debugging:
    `sh manager.sh -a start -b -l on`
-4) Runtime containers are copy-only (no backend/frontend bind mounts), so source code changes require image rebuild + restart (`sh manager.sh -a build` then `sh manager.sh -a start`), or `sh manager.sh -a rebuild`.
+4) Runtime containers are copy-only (no backend/frontend bind mounts), so source code changes require image rebuild + restart (`sh manager.sh -a build` then `sh manager.sh -a start`), or `sh manager.sh -a rebuild` followed by `sh manager.sh -a start`.
 5) To fully **rebuild** the stack (down + build, including DB prepare and seed):
    `sh manager.sh -a rebuild`
 6) To **remove all database data** (dangerous, deletes all data!):
@@ -53,10 +54,7 @@ Notes:
   - open: `https://traefik.jira-logger.io/dashboard/`
 - Frontend assets are stored in a shared Docker volume populated by `assets-init`, which is part of the default stack startup.
 - `assets-init` is the only container that writes `runtime-config.json` into the shared frontend assets volume.
-- The `.assets-version` marker now tracks the `assets-init` image version that produced the shared frontend assets.
-- On `start`, assets marker preflight rules are enforced:
-  - Missing marker: interactive mode prompts to run `build`; non-interactive mode runs `build` automatically.
-  - Marker mismatch against the current `assets-init` image version: interactive mode prompts to run `rebuild`; non-interactive mode fails fast with a rebuild command.
+- Nginx starts only after Compose reports that `assets-init` completed successfully.
 - Runtime logs are available by default through `docker compose logs` and `sh manager.sh -a start` attached output.
 - Persisted host logs are a debug-only path. For normal startup, leave `-l` off and use `docker compose logs`.
 - To re-enable persisted host logs for debugging, pass `-l on` to `manager.sh`.
@@ -72,15 +70,13 @@ Notes:
   - `log-postgres.log`
   - `log-traefik.log`
   - `log-traefik-access.log`
-  - `log-assets-init.log`
   - `log-migrate.log`
-- When `-l on` is used, `assets-init` output is appended to `log-assets-init.log` during `build`/`rebuild`.
 - When `-l on` is used, migration output is appended to `log-migrate.log` during `prepare-db` and `migrate`.
 - When `-l on` is used, runtime log cap is enforced by `log-governor` container:
   - per-file hard cap: `50MB` (`52428800` bytes)
   - scan interval: `30s`
   - behavior: keeps newest content by size-based trim when a file exceeds cap
-  - applies to all `log-*.log` files listed above, including `log-assets-init.log` and `log-migrate.log`
+  - applies to all `log-*.log` files listed above, including `log-migrate.log`
 - When `-l on` is used, log rotation/cleanup runs on every `start`/`start-with-init`:
   - active `log-*.log` files are rotated to `./.logs/jira-logger/archive/log-*.YYYY-MM-DD_HHMMSS.log`
   - archived logs older than 7 days are deleted
