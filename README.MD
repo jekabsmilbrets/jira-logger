@@ -58,25 +58,13 @@ Notes:
 - Runtime logs are available by default through `docker compose logs` and `sh manager.sh -a start` attached output.
 - Persisted host logs are a debug-only path. For normal startup, leave `-l` off and use `docker compose logs`.
 - To re-enable persisted host logs for debugging, pass `-l on` to `manager.sh`.
-- When `-l on` is used, all core runtime logs are available on host in `./.logs/jira-logger/`:
-  - `log-php-fpm-error.log`
-  - `log-php-fpm-access.log`
-  - `log-php-fpm-slow.log`
-  - `log-symfony-main.log`
-  - `log-symfony-deprecation.log`
-  - `log-symfony-jira-api-service.log`
-  - `log-nginx-access.log`
-  - `log-nginx-error.log`
-  - `log-postgres.log`
-  - `log-traefik.log`
-  - `log-traefik-access.log`
-  - `log-migrate.log`
+- When `-l on` is used, persisted producers write `log-*.log` files under `./.logs/jira-logger/`; new files following that convention are discovered automatically.
 - When `-l on` is used, migration output is appended to `log-migrate.log` during `prepare-db` and `migrate`.
 - When `-l on` is used, runtime log cap is enforced by `log-governor` container:
   - per-file hard cap: `50MB` (`52428800` bytes)
   - scan interval: `30s`
   - behavior: keeps newest content by size-based trim when a file exceeds cap
-  - applies to all `log-*.log` files listed above, including `log-migrate.log`
+  - applies to every `log-*.log` file in the host log directory
 - When `-l on` is used, log rotation/cleanup runs on every `start`/`start-with-init`:
   - active `log-*.log` files are rotated to `./.logs/jira-logger/archive/log-*.YYYY-MM-DD_HHMMSS.log`
   - archived logs older than 7 days are deleted

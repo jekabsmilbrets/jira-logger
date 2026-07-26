@@ -188,34 +188,18 @@ rotate_host_logs() {
   local active
   local base
   local rotated
-  local -a files=(
-    "log-php-fpm-error.log"
-    "log-php-fpm-access.log"
-    "log-php-fpm-slow.log"
-    "log-symfony-main.log"
-    "log-symfony-deprecation.log"
-    "log-symfony-jira-api-service.log"
-    "log-nginx-access.log"
-    "log-nginx-error.log"
-    "log-postgres.log"
-    "log-traefik.log"
-    "log-traefik-access.log"
-    "log-migrate.log"
-  )
 
   ensure_host_log_dir
   stamp="$(date +%F_%H%M%S)"
 
   # Migrate any legacy rotated files from root log dir into archive dir.
-  find "${HOST_LOG_DIR}" -maxdepth 1 -type f -name 'log-*.*.log' -exec mv {} "${HOST_LOG_ARCHIVE_DIR}/" \; 2>/dev/null || true
+  find "${HOST_LOG_DIR}" -maxdepth 1 -type f \
+    -name 'log-*.[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9][0-9][0-9][0-9][0-9].log' \
+    -exec mv {} "${HOST_LOG_ARCHIVE_DIR}/" \; 2>/dev/null || true
 
-  for file in "${files[@]}"; do
-    active="${HOST_LOG_DIR}/${file}"
-    if [[ ! -f "${active}" ]]; then
-      touch "${active}"
-      continue
-    fi
-
+  for active in "${HOST_LOG_DIR}"/log-*.log; do
+    [[ -f "${active}" ]] || continue
+    file="${active##*/}"
     base="${file%.log}"
     rotated="${HOST_LOG_ARCHIVE_DIR}/${base}.${stamp}.log"
     if [[ -f "${rotated}" ]]; then
