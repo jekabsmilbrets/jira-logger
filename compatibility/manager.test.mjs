@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, copyFileSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, copyFileSync, writeFileSync, readFileSync, rmSync, utimesSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -14,6 +14,14 @@ function run(action, options = [], failReady = false) {
     copyFileSync(resolve('manager.sh'), join(root, 'manager.sh'));
     writeFileSync(join(root, '.docker/.env'), '# fixture; never used by Docker\n');
     writeFileSync(join(root, '.docker/certs/cert.sh'), 'exit 0\n');
+    const logs = join(root, '.logs/jira-logger');
+    if (options.includes('-l')) {
+      mkdirSync(join(logs, 'archive'), { recursive: true });
+      writeFileSync(join(logs, 'log-node.log'), 'rotation fixture\n');
+      writeFileSync(join(logs, 'archive/log-old.2000-01-01_000000.log'), 'expired');
+      utimesSync(join(logs, 'archive/log-old.2000-01-01_000000.log'), new Date(0), new Date(0));
+      writeFileSync(join(logs, 'archive/log-recent.2026-09-19_000000.log'), 'recent');
+    }
     const log = join(root, 'calls');
     writeFileSync(join(root, 'bin/docker'), `#!/bin/sh
 printf '%s\\n' "$*" >> "$CALLS"
@@ -30,7 +38,13 @@ exit 0
       cwd: root, encoding: 'utf8', env: { ...process.env, PATH: join(root, 'bin') + ':' + process.env.PATH, CALLS: log, FAIL_READY: failReady ? '1' : '0' },
     });
     let calls = ''; try { calls = readFileSync(log, 'utf8'); } catch {}
-    return { ...result, calls };
+    const rotation = options.includes('-l') ? {
+      expiredExists: existsSync(join(logs, 'archive/log-old.2000-01-01_000000.log')),
+      recentExists: existsSync(join(logs, 'archive/log-recent.2026-09-19_000000.log')),
+      writable: Boolean(statSync(join(logs, 'log-node.log')).mode & 0o002),
+      contents: readdirSync(join(logs, 'archive')).map(name => readFileSync(join(logs, 'archive', name), 'utf8')),
+    } : undefined;
+    return { ...result, calls, rotation };
   } finally { rmSync(root, { recursive: true, force: true }); }
 }
 
@@ -62,6 +76,11 @@ test('all manager actions select exactly one backend and preserve action semanti
       if (action !== 'db-remove') assert.ok(!result.calls.includes('volume rm'));
     }
   }
+});
+test('host log rotation preserves content, write permissions and seven-day retention', () => {
+  const result = run('start', ['-b', '-l', 'on']);
+  assert.equal(result.status, 0);
+  assert.deepEqual(result.rotation, { expiredExists: false, recentExists: true, writable: true, contents: ['rotation fixture\n', 'recent'] });
 });
 test('default selection resets, -B preserves -b, and failed readiness keeps ingress down', () => {
   assert.ok(run('seed', ['-B', 'php']).calls.includes('run --rm php-fpm'));
