@@ -24,6 +24,7 @@ services:
     labels:
       - "traefik.enable=false"
   nginx:
+    image: ${COMPOSE_PROJECT_NAME:-jira-logger}-nginx-node
     build:
       dockerfile: ./.docker/nginx/Dockerfile.node
     depends_on:

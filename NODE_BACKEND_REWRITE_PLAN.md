@@ -972,6 +972,13 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
 ### Definition of done
 
 Additional acceptance investigation:
+- Switching without rebuilding exposed Compose's shared default nginx image tag:
+  PHP could reuse an image without its front controller. Backend overlays now use
+  distinct project-scoped nginx image names. The real manager matrix passes
+  Node-to-PHP-to-Node switches without rebuilding, failed database readiness with
+  ingress stopped, and isolated Traefik HTTPS monitor/assets/deep-link checks.
+  Traefik provider discovery can lag process health; its fixture waits up to ten
+  seconds for the route to appear. No deployed containers or volumes were touched.
 - Combined timer validation failures revealed that Node returned only the
   description length error. PHP validates start, end, description and task together
   for both create and update. Node now preserves that aggregation; the extended

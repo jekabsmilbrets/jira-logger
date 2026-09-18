@@ -26,6 +26,7 @@ services:
     labels:
       - "traefik.enable=false"
   nginx:
+    image: ${COMPOSE_PROJECT_NAME:-jira-logger}-nginx-php
     depends_on:
       php-fpm:
         condition: service_healthy
