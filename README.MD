@@ -14,7 +14,7 @@ To run in docker mode you need to have Docker and Docker Compose installed.
 3) Start containers: `sh manager.sh -a start`
 
 Notes:
-- `manager.sh` now runs with `./.docker/docker-compose.yml` and `./.docker/docker-compose.dev.yml` by default.
+- `manager.sh` uses the shared Compose files plus the selected backend overlay. Node is the default on every invocation; use `-B php` or `--backend php` explicitly for PHP.
 - On a fresh checkout, run `manager.sh -a build` once before `start`; Compose then populates the shared frontend assets volume during startup.
 - Backend env variables are loaded from `./.docker/.env` via `docker-compose.yml`.
 - `manager.sh` creates the shared Docker `traefik` network automatically when it is missing.
@@ -41,7 +41,7 @@ Notes:
    `sh manager.sh -a db-remove`
 7) To **dump the database** to a single SQL file (`db_dump.sql`):
    `sh manager.sh -a db-dump`
-8) To run DB migrations using the `release` profile:
+8) To run DB migrations using the selected backend:
    `sh manager.sh -a migrate`
 9) To **upgrade an existing checkout** from the old stack layout to the new one:
    `sh manager.sh -a upgrade`
@@ -77,6 +77,63 @@ The import dialog can search by assignee, reporter, resolution, project keys, an
 
 Select the issues to import. Use the tag action on a result row to review or change its local tags, then import the selected issues.
 
+## Selecting the backend
+
+Both implementations use the same database, migration ledger and frontend assets.
+The frontend does not need rebuilding specifically to change backend selection.
+Build the selected backend images before starting that selection:
+
+```sh
+# Default Node backend
+sh manager.sh -a build
+sh manager.sh -a start -b
+
+# Retained PHP backend
+sh manager.sh --backend php -a build
+sh manager.sh --backend php -a start -b
+
+# Return to Node; selection never persists between manager invocations
+sh manager.sh -a build
+sh manager.sh -a start -b
+```
+
+`start` stops ingress, drains the old backend, waits for the selected backend to
+be healthy, then starts ingress and removes obsolete services. A readiness failure
+leaves ingress stopped. Re-run the desired selection after correcting the failure.
+Normal `down`, rebuild and switching preserve database volumes. `db-remove` is
+the explicit destructive operation.
+
+`build` and `rebuild` prepare the database and load missing seed settings/tags.
+`start-with-init` prepares it without seeding. `upgrade` first backs up the database,
+then builds, migrates and starts without seeding. Supply `--backend php` to each
+action when retaining PHP, including `upgrade`, `prepare-db`, `migrate` and `seed`.
+
+Node maintenance runs without PHP. For additional maintenance commands:
+
+```sh
+docker compose --env-file .docker/.env \
+  -p jira-logger -f .docker/docker-compose.yml \
+  -f .docker/docker-compose.dev.yml -f .docker/docker-compose.node.yml \
+  run --rm node node dist/cli.js app:audit:jira-sync-data
+```
+
+Other Node CLI commands are `prepare-db`, `migrate`, `migrations:status`,
+`seed:setting`, `seed:tag`, `seed:load setting`, `seed:load tag`,
+`seed:unload setting` and `seed:unload tag`. Unloading deletes seed names, including
+edited seed records. Audit is read-only and reports duplicate Jira records and
+invalid timer ranges. Use `app:migrate` for PHP so both runtimes acquire the same
+database advisory lock; direct Doctrine migration invocation bypasses that lock.
+
+Node uses the existing `DATABASE_URL`, `APP_INTERNAL_TIMEZONE`,
+`APP_DEFAULT_USER_TIMEZONE` and `CORS_ALLOW_ORIGIN` settings. Jira credentials stay
+in the shared settings table and are redacted by the API. Node readiness is internal
+to the container; `/api/monitor` remains the public monitor and `/api/doc` documents
+the API. With `-l on`, Node writes `log-node.log` under the existing log policy.
+
+Compatibility checks and isolated Docker fixtures are described in
+[compatibility/README.md](compatibility/README.md). Full rewrite acceptance is
+tracked in [NODE_BACKEND_REWRITE_PLAN.md](NODE_BACKEND_REWRITE_PLAN.md).
+
 ## Upgrading Older Checkouts
 
 If you are updating from an older checkout that still used `backend/.env` or bind-mounted frontend assets, run:
@@ -97,6 +154,7 @@ which should be imported into your system's root certificates to allow SSL for A
 ## Project Specification
 
 ### API
+* Node.js 24 / TypeScript / Fastify 5 (default)
 * Symfony 8
 * Doctrine
 * PostgreSQL
