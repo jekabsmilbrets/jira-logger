@@ -972,6 +972,10 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
 ### Definition of done
 
 Additional acceptance investigation:
+- Real 60-second mid-body stalls produce the same framework 500 for work-log
+  writes on PHP and Node, without retry or local persistence. An interrupted
+  legacy search instead maps to PHP's 502 search response; a focused socket-close
+  fixture exposed Node's former 500, now corrected and covered by the search matrix.
 - Switching without rebuilding exposed Compose's shared default nginx image tag:
   PHP could reuse an image without its front controller. Backend overlays now use
   distinct project-scoped nginx image names. The real manager matrix passes

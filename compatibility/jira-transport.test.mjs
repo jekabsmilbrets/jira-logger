@@ -12,10 +12,12 @@ test('Jira accepts fixture TLS only in its client and enforces the 60-second tim
   const key = join(directory, 'key.pem'), cert = join(directory, 'cert.pem');
   assert.equal(spawnSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', key, '-out', cert, '-subj', '/CN=localhost', '-days', '1'], { stdio: 'ignore' }).status, 0);
   let stall = false, calls = 0;
+  const partial = process.env.JIRA_STALL_BODY === '1';
   const server = createServer({ key: readFileSync(key), cert: readFileSync(cert) }, async (request, response) => {
     for await (const _ of request) {}
     calls++;
     if (!stall) { response.setHeader('Content-Type', 'application/json'); response.end('{"id":"TLS-1"}'); }
+    else if (partial) { response.setHeader('Content-Type', 'application/json'); response.write('{"id":'); }
   });
   await new Promise(resolve => server.listen(18446, '127.0.0.1', resolve));
   const db = new pg.Client({ connectionString: 'postgresql://compatibility:disposable@127.0.0.1:55439/compatibility' });
@@ -42,11 +44,15 @@ test('Jira accepts fixture TLS only in its client and enforces the 60-second tim
       const elapsed = Date.now() - started;
       const body = await response.json();
       console.log(JSON.stringify({ port, elapsed, status: response.status, error: body.errors?.[1] }));
-      assert.equal(response.status, 409);
+      assert.equal(response.status, partial ? 500 : 409);
       assert.equal(calls, 1, 'no write retries');
       assert.ok(elapsed >= 59000 && elapsed < 70000);
-      assert.equal(body.errors[0], 'Problems syncing with JIRA!');
-      assert.match(body.errors[1], /^CURL Error: http response=0, Operation timed out after \d+ milliseconds with 0 bytes received$/);
+      if (partial) {
+        assert.deepEqual(body, { type: 'https://tools.ietf.org/html/rfc2616#section-10', title: 'An error occurred', status: 500, detail: 'Internal Server Error' });
+      } else {
+        assert.equal(body.errors[0], 'Problems syncing with JIRA!');
+        assert.match(body.errors[1], /^CURL Error: http response=0, Operation timed out after \d+ milliseconds with 0 bytes received$/);
+      }
       assert.equal((await db.query('SELECT * FROM jira_work_log WHERE task_id=$1', [task])).rowCount, 0);
     }
   } finally {

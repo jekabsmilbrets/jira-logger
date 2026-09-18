@@ -29,7 +29,13 @@ async function client() {
         ? `Operation timed out after ${Date.now() - started} milliseconds with 0 bytes received`
         : 'Jira request failed'));
     }
-    const raw = await response.text();
+    let raw;
+    try { raw = await response.text(); }
+    catch (error) {
+      // PHP legacy search translates an interrupted/empty response into its search error.
+      if (path === '/search') throw new JiraError('Jira issue search failed.');
+      throw error;
+    }
     if (raw && ![200, 201].includes(response.status)) throw new JiraError(`CURL HTTP Request Failed: Status Code : ${response.status}, URL:${url}\nError Message : ${raw}`, response.status);
     if (!raw) {
       if (![200, 201, 204].includes(response.status)) throw new JiraError(`CURL Error: http response=${response.status}, `);

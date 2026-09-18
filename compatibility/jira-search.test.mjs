@@ -18,6 +18,7 @@ test('Jira search pagination, truncation, malformed responses and fallback match
       response.statusCode = Number(mode.slice(8)); response.end('{"error":"unsupported"}'); return;
     }
     if (mode === 'failure') { response.statusCode = 503; response.end('{"error":"fixture"}'); return; }
+    if (mode === 'interrupted') { response.write('{"issues":'); setTimeout(() => response.destroy(), 25); return; }
     if (mode === 'empty') { response.end(''); return; }
     if (mode === 'malformed') { response.end('{'); return; }
     if (mode === 'scalar') { response.end('123'); return; }
@@ -35,7 +36,7 @@ test('Jira search pagination, truncation, malformed responses and fallback match
       await db.query('INSERT INTO setting VALUES($1,$2,$3,NOW(),NOW())', [crypto.randomUUID(), name, value]);
     }
     const differences = [];
-    for (mode of ['pagination', 'truncate', 'fallback404', 'fallback405', 'fallback410', 'failure', 'empty', 'malformed', 'scalar', 'null', 'missing', 'emptyIssues']) {
+    for (mode of ['pagination', 'truncate', 'fallback404', 'fallback405', 'fallback410', 'failure', 'interrupted', 'empty', 'malformed', 'scalar', 'null', 'missing', 'emptyIssues']) {
       const results = [];
       for (const port of [18081, 18082]) {
         calls = [];
