@@ -1,86 +1,47 @@
-import { Agent, fetch } from 'undici';
 import { DateTime } from 'luxon';
 import { randomUUID } from 'node:crypto';
-import { db } from './db.js';
-import { parseDate, storedDate, userTimezone } from './dates.js';
-import { getTask } from './tasks.js';
-import { ApiError, envelope, queryParams, uuid, type Route } from './http.js';
+import { parseDate, DateCodec, type TimezoneProvider } from './dates.js';
+import type { TasksService } from './tasks.js';
+import type { TasksStore } from './tasks.repository.js';
+import type { TimersStore } from './timers.repository.js';
+import type { JiraWorkLogsStore } from './jira-work-logs.repository.js';
+import { boolean, record, JiraError, type JiraTransport } from './jira-client.js';
+import { ApiError, capture, envelope, queryParams, uuid, type Route } from './http.js';
 
-export const jiraDispatcher = new Agent({ connect: { rejectUnauthorized: false, timeout: 60_000 } });
-class JiraError extends Error { constructor(message: string, public status = 0) { super(message); } }
-const boolean = (value: string) => /^(1|true|yes|on)$/i.test(value.trim());
-async function client() {
-  const settings = Object.fromEntries((await db.query("SELECT name,value FROM setting WHERE name IN ('jira.enabled','jira.host','jira.personal-access-token')")).rows.map(row => [row.name, row.value]));
-  if (!boolean(settings['jira.enabled'] ?? '')) throw new JiraError('JIRA sync not enabled!');
-  const host = settings['jira.host'];
-  const token = settings['jira.personal-access-token'];
-  if (!host || host === '0' || !token || token === '0') throw new JiraError('No host or personal access token found!');
-  return async (path: string, payload: unknown, method = 'POST'): Promise<Record<string, any>> => {
-    const url = host.replace(/\/$/, '') + '/rest/api/2' + path;
-    let response;
-    const started = Date.now();
-    try {
-      response = await fetch(url, { method, body: JSON.stringify(payload), dispatcher: jiraDispatcher, signal: AbortSignal.timeout(60_000), headers: {
-        Accept: '*/*', 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check', 'X-ExperimentalApi': 'opt-in', Authorization: `Bearer ${token}`,
-      } });
-    } catch (error) {
-      const timedOut = error instanceof Error && error.name === 'TimeoutError';
-      throw new JiraError('CURL Error: http response=0, ' + (timedOut
-        ? `Operation timed out after ${Date.now() - started} milliseconds with 0 bytes received`
-        : 'Jira request failed'));
-    }
-    let raw;
-    try { raw = await response.text(); }
-    catch (error) {
-      // PHP legacy search translates an interrupted/empty response into its search error.
-      if (path === '/search') throw new JiraError('Jira issue search failed.');
-      throw error;
-    }
-    if (raw && ![200, 201].includes(response.status)) throw new JiraError(`CURL HTTP Request Failed: Status Code : ${response.status}, URL:${url}\nError Message : ${raw}`, response.status);
-    if (!raw) {
-      if (![200, 201, 204].includes(response.status)) throw new JiraError(`CURL Error: http response=${response.status}, `);
-      if (path === '/search') throw new JiraError('Jira issue search failed.');
-      throw new TypeError('Empty upstream body');
-    }
-    let result;
-    try { result = JSON.parse(raw); }
-    catch {
-      if (path.startsWith('/search')) throw new JiraError('Jira issue search failed.');
-      throw new TypeError('Invalid upstream work-log body');
-    }
-    if (result === null || typeof result !== 'object') {
-      if (path === '/search') throw new JiraError('Jira issue search failed.');
-      throw new TypeError('Invalid upstream body');
-    }
-    return result;
-  };
+export interface JiraSearchResult {
+  issues: { key: string; summary: string; status: string; issueType: string; updated: string | null }[];
+  meta: { limit: number; truncated: boolean };
 }
+export class JiraService {
+  constructor(private readonly tasks: Pick<TasksService, 'get'>, private readonly taskRepository: Pick<TasksStore, 'names'>,
+    private readonly timers: Pick<TimersStore, 'forTask'>, private readonly logs: Pick<JiraWorkLogsStore, 'forDate' | 'saveRemote'>,
+    private readonly timezone: TimezoneProvider, private readonly dates: DateCodec, private readonly client: JiraTransport) {}
 
-async function sync(id: string, date: string) {
-  const task = await getTask(id);
-  const zone = await userTimezone();
+async sync(id: string, date: string): Promise<void> {
+  const task = await this.tasks.get(id);
+  const zone = await this.timezone.userTimezone();
   const day = parseDate(date, zone)!.startOf('day');
   const end = day.endOf('day').startOf('second');
   const canonical = day.toISODate();
-  const existing = (await db.query('SELECT * FROM jira_work_log WHERE task_id=$1 AND start_time=$2 LIMIT 1', [id, canonical])).rows[0];
-  const timers = (await db.query('SELECT * FROM time_log WHERE task_id=$1', [id])).rows;
+  const existing = await this.logs.forDate(id, canonical);
+  const timers = await this.timers.forTask(id);
   let seconds = 0;
   let descriptions = [];
   for (const timer of timers) {
-    const start = storedDate(timer.start_time);
-    const finish = timer.end_time ? storedDate(timer.end_time) : end;
+    const start = this.dates.storedDate(timer.start_time);
+    const finish = timer.end_time ? this.dates.storedDate(timer.end_time) : end;
     if (+start > +end || +finish < +day) continue;
     seconds += Math.max(0, Math.floor(Math.min(+finish, +end) / 1000) - Math.floor(Math.max(+start, +day) / 1000));
     if (timer.description && timer.description !== '0') descriptions.push(timer.description);
   }
   const pieces = task.name.split('-#-');
-  if (pieces.length > 1) descriptions = [pieces[1].trim()];
+  if (pieces.length > 1) descriptions = [(pieces[1] ?? '').trim()];
   let remote;
   try {
-    const request = await client();
+    const request = await this.client.session();
     if (seconds < 60) throw new JiraError('Cannot report less than 60 second!');
     const payload = { id: null, self: null, author: null, updateAuthor: null, updated: null, timeSpent: null, comment: descriptions.join(', '), started: day.set({ hour: 17 }).toFormat("yyyy-MM-dd'T'HH:mm:ss'.000'ZZZ"), timeSpentSeconds: seconds, visibility: null };
-    const path = `/issue/${pieces[0].trim()}/worklog`;
+    const path = `/issue/${(pieces[0] ?? '').trim()}/worklog`;
     if (existing?.work_log_id && existing.work_log_id !== '0') {
       try { remote = await request(`${path}/${parseInt(existing.work_log_id, 10) || 0}`, payload, 'PUT'); }
       catch (error) { if (!(error instanceof JiraError)) throw error; }
@@ -91,11 +52,10 @@ async function sync(id: string, date: string) {
     throw error;
   }
   // Remote success is deliberately not compensated if the following local write fails.
-  if (existing) await db.query("UPDATE jira_work_log SET work_log_id=$2,time_spent_seconds=$3,start_time=$4,updated_at=date_trunc('second',CURRENT_TIMESTAMP) WHERE id=$1", [existing.id, String(remote.id ?? ''), seconds, canonical]);
-  else await db.query("INSERT INTO jira_work_log (id,task_id,work_log_id,time_spent_seconds,start_time,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,date_trunc('second',CURRENT_TIMESTAMP),date_trunc('second',CURRENT_TIMESTAMP))", [randomUUID(), id, String(remote.id ?? ''), seconds, canonical]);
+  await this.logs.saveRemote({ id: existing?.id ?? randomUUID(), taskId: id, remoteId: String(remote.id ?? ''), seconds, date: canonical }, Boolean(existing));
 }
 
-async function missing(query: URLSearchParams) {
+async missing(query: URLSearchParams): Promise<JiraSearchResult> {
   const fields = ['assignedToMe', 'reportedByMe', 'resolution', 'projects', 'limit'];
   for (const key of query.keys()) if (fields.some(field => key.startsWith(field + '['))) throw new ApiError(400, ['Bad Request']);
   const flag = (key: string, fallback: string) => {
@@ -121,10 +81,10 @@ async function missing(query: URLSearchParams) {
   if (resolution !== 'all') clauses.push(`resolution IS ${resolution === 'resolved' ? 'NOT ' : ''}EMPTY`);
   if (projects) clauses.push(`project IN (${[...new Set(projects.toUpperCase().split(',').map(key => key.trim()))].map(key => `"${key}"`).join(', ')})`);
   const jql = clauses.join(' AND ') + ' ORDER BY updated DESC';
-  const known = new Set((await db.query('SELECT name FROM task')).rows.map(row => row.name.split('-#-')[0].trim().toUpperCase()).filter(key => /^[A-Z][A-Z0-9_]*-\d+$/.test(key)));
+  const known = new Set((await this.taskRepository.names()).map(name => (name.split('-#-')[0] ?? '').trim().toUpperCase()).filter(key => /^[A-Z][A-Z0-9_]*-\d+$/.test(key)));
   const result = [];
   try {
-    const request = await client();
+    const request = await this.client.session();
     let enhanced = false;
     let startAt = 0;
     let nextPageToken = '';
@@ -139,27 +99,36 @@ async function missing(query: URLSearchParams) {
       const issues = Array.isArray(page.issues) ? page.issues : [];
       for (const issue of issues) {
         if (!issue || typeof issue !== 'object') continue;
-        const key = String(issue.key ?? '');
+        const key = String(record(issue).key ?? '');
         const normalized = key.trim().toUpperCase();
         if (!normalized || known.has(normalized)) continue;
         known.add(normalized);
-        const f = issue.fields ?? {};
+        const f = record(record(issue).fields);
         const updated = typeof f.updated === 'string' ? DateTime.fromISO(f.updated, { setZone: true }) : null;
-        result.push({ key, summary: String(f.summary ?? ''), status: String(f.status?.name ?? ''), issueType: String(f.issuetype?.name ?? ''), updated: updated?.isValid ? updated.toFormat("yyyy-MM-dd'T'HH:mm:ssZZ") : null });
-        if (result.length > limit) return envelope(result.slice(0, limit), undefined, { limit, truncated: true });
+        result.push({ key, summary: String(f.summary ?? ''), status: String(record(f.status).name ?? ''), issueType: String(record(f.issuetype).name ?? ''), updated: updated?.isValid ? updated.toFormat("yyyy-MM-dd'T'HH:mm:ssZZ") : null });
+        if (result.length > limit) return { issues: result.slice(0, limit), meta: { limit, truncated: true } };
       }
-      if (enhanced) { nextPageToken = page.nextPageToken ?? ''; if (!nextPageToken) break; }
-      else { startAt += issues.length; if (!issues.length || !Number.isInteger(page.total) || startAt >= page.total) break; }
+      if (enhanced) { nextPageToken = String(page.nextPageToken ?? ''); if (!nextPageToken) break; }
+      else { startAt += issues.length; if (!issues.length || !Number.isInteger(page.total) || startAt >= Number(page.total)) break; }
     }
   } catch (error) {
     if (!(error instanceof JiraError)) throw error;
     throw new ApiError(502, ['Unable to search Jira.']);
   }
-  return envelope(result, undefined, { limit, truncated: false });
+  return { issues: result, meta: { limit, truncated: false } };
 }
-export const jiraRoutes: Route[] = [
-  { path: /^\/api\/task\/jira\/missing$/, methods: { GET: async request => missing(queryParams(request.url)) } },
-  { path: new RegExp(`^/api/task/(${uuid})/([0-9]{4}-(?:0[1-9]|1[012])-(?:0[1-9]|[12][0-9]|(?<!02-)3[01]))$`), methods: {
-    POST: async (_request, reply, match) => { await sync(match[1], match[2]); return reply.code(204).send(); },
-  } },
-];
+}
+export class JiraController {
+  constructor(private readonly service: JiraService) {}
+  routes(): Route[] {
+    return [
+      { path: /^\/api\/task\/jira\/missing$/, methods: { GET: async request => {
+        const result = await this.service.missing(queryParams(request.url));
+        return envelope(result.issues, undefined, result.meta);
+      } } },
+      { path: new RegExp(`^/api/task/(${uuid})/([0-9]{4}-(?:0[1-9]|1[012])-(?:0[1-9]|[12][0-9]|(?<!02-)3[01]))$`), methods: {
+        POST: async (_request, reply, match) => { await this.service.sync(capture(match, 1), capture(match, 2)); return reply.code(204).send(); },
+      } },
+    ];
+  }
+}

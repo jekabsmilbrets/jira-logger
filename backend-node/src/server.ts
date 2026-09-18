@@ -1,3 +1,5 @@
+import { JiraClient } from './jira-client.js';
+import { JiraWorkLogsRepository } from './jira-work-logs.repository.js';
 import { TimersRepository } from './timers.repository.js';
 import { DateCodec } from './dates.js';
 import { TasksRepository } from './tasks.repository.js';
@@ -16,8 +18,8 @@ import { SettingsController, SettingsService } from './settings.js';
 import { TagsController, TagsService } from './tags.js';
 import { TasksController, TasksService } from './tasks.js';
 import { TimersController, TimersService } from './timers.js';
-import { jiraRoutes, jiraDispatcher } from './jira.js';
-import { jiraWorkLogRoutes } from './jira-work-logs.js';
+import { JiraController, JiraService } from './jira.js';
+import { JiraWorkLogsController, JiraWorkLogsService } from './jira-work-logs.js';
 import { DateTime } from 'luxon';
 import { userTimezone } from './dates.js';
 import { fileLogStream } from './logging.js';
@@ -40,6 +42,10 @@ export function buildServer() {
   const tasks = new TasksService(tasksRepository, new TagsRepository(db), timezone, new ResponseMapper());
   const taskRoutes = new TasksController(tasks, new ReportService(tasksRepository, tasks, timezone)).routes();
   const timerRoutes = new TimersController(new TimersService(new TimersRepository(db), tasks, timezone, new DateCodec(config.internalTimezone))).routes();
+  const jiraClient = new JiraClient(settings);
+  const logs = new JiraWorkLogsRepository(db);
+  const jiraRoutes = new JiraController(new JiraService(tasks, tasksRepository, new TimersRepository(db), logs, timezone, new DateCodec(config.internalTimezone), jiraClient)).routes();
+  const jiraWorkLogRoutes = new JiraWorkLogsController(new JiraWorkLogsService(logs, tasksRepository, timezone)).routes();
   const routes: Route[] = [...settingsRoutes, ...tagRoutes, ...taskRoutes, ...timerRoutes, ...jiraRoutes, ...jiraWorkLogRoutes,
     { path: /^\/api\/doc$/, methods: { GET: async (_request, reply) => reply.type('text/html; charset=UTF-8').send(documentation) } },
     { path: /^\/api\/monitor$/, methods: { GET: async () => envelope({ time: DateTime.now().setZone(await userTimezone()).toFormat("yyyy-MM-dd'T'HH:mm:ssZZ"), message: 'Welcome to Jira-logger API!' }) } },
@@ -80,7 +86,7 @@ export function buildServer() {
     }
     return reply.type('text/html; charset=UTF-8').send(await readFile(`${config.assets}/index.html`));
   });
-  app.addHook('onClose', async () => { await db.end(); await jiraDispatcher.close(); });
+  app.addHook('onClose', async () => { await db.end(); await jiraClient.close(); });
   return app;
 }
 
