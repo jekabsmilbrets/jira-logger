@@ -835,8 +835,6 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
 - Framework HTML, complete routing/CORS parity, and remaining subsystem acceptance
   scenarios still require comparison. The HTTP foundation is not final acceptance.
 
-### Definition of done
-
 ### Implementation notes — tasks, tags, timers, and reports
 
 - Read task/tag/timer controllers, DTOs, services, repositories, entities,
@@ -857,6 +855,24 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
 - Remaining edge-case matrices, frontend execution, Jira, and operating integration
   remain pending. These tests are representative compatibility evidence, not a
   waiver of the full acceptance list.
+
+### Implementation notes — Jira increment
+
+- Read JiraApiService, JiraTaskSyncService, request DTO, local work-log service,
+  controller, and installed PHP transport/work-log/search implementations.
+- Executed a controlled HTTP stub with a context path and disposable settings.
+  PHP and Node both pass the fixture covering exact null-bearing work-log payload,
+  bearer authentication, first suffix override, 17:00 timestamp, update-to-create
+  fallback, legacy 410 to enhanced search, local-key deduplication, and remote
+  success followed by local failure (500, one remote write, no local record).
+- Discovered stale pre-existing local prod route cache during the PHP search
+  probe. The fixture now uses an isolated cache. All seven PHP fixtures were
+  rerun successfully against the current source before accepting Jira results.
+- Node closes the Jira-specific dispatcher on shutdown; TLS relaxation is scoped
+  to that dispatcher. Timeout/error edge cases and pagination matrices remain
+  pending, as do the Docker/manager and final acceptance phases.
+
+### Definition of done
 
 The rewrite is complete only when:
 

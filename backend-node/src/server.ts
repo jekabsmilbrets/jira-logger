@@ -7,12 +7,18 @@ import { settingsRoutes } from './settings.js';
 import { tagRoutes } from './tags.js';
 import { taskRoutes } from './tasks.js';
 import { timerRoutes } from './timers.js';
+import { jiraRoutes, jiraDispatcher } from './jira.js';
+import { jiraWorkLogRoutes } from './jira-work-logs.js';
+import { DateTime } from 'luxon';
+import { userTimezone } from './dates.js';
 
 export function buildServer() {
   const app = Fastify({ logger: { redact: ['req.headers.authorization'] }, exposeHeadRoutes: false });
   app.removeAllContentTypeParsers();
   app.addContentTypeParser('*', { parseAs: 'string' }, (_request, value, done) => done(null, value));
-  const routes: Route[] = [...settingsRoutes, ...tagRoutes, ...taskRoutes, ...timerRoutes];
+  const routes: Route[] = [...settingsRoutes, ...tagRoutes, ...taskRoutes, ...timerRoutes, ...jiraRoutes, ...jiraWorkLogRoutes,
+    { path: /^\/api\/monitor$/, methods: { GET: async () => envelope({ time: DateTime.now().setZone(await userTimezone()).toFormat("yyyy-MM-dd'T'HH:mm:ssZZ"), message: 'Welcome to Jira-logger API!' }) } },
+  ];
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ApiError) return reply.code(error.status).send(envelope(undefined, error.errors));
     request.log.error({ error: error instanceof Error ? error.name : 'Error' }, 'Request failed');
@@ -47,7 +53,7 @@ export function buildServer() {
     }
     return reply.type('text/html; charset=UTF-8').send(await readFile(`${config.assets}/index.html`));
   });
-  app.addHook('onClose', async () => { await db.end(); });
+  app.addHook('onClose', async () => { await db.end(); await jiraDispatcher.close(); });
   return app;
 }
 
