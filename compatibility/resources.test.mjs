@@ -23,6 +23,10 @@ test('task tags, omitted/null updates, unknown associations, and in-use deletion
     assert.equal(task.body.data.tags.length, 1);
     assert.equal((await request('GET', `task/exist/${name}`)).status, 409);
     assert.equal((await request('GET', `tag/${tagId}`)).body.data.isUsed, true);
+    assert.equal((await request('GET', 'tag')).status, 200);
+    const renamed = await request('PATCH', `tag/${tagId}`, { name: name + '-renamed' });
+    assert.equal(renamed.status, 200);
+    assert.equal(renamed.body.data.name, name + '-renamed');
     assert.deepEqual(await request('DELETE', `tag/${tagId}`), { status: 409, body: { errors: ['Tag is used by existing tasks'] } });
     const edited = await request('PATCH', `task/${id}`, { name, description: null });
     assert.equal(edited.body.data.description, 'original');
@@ -51,6 +55,9 @@ test('timer dates, reversed intervals, scoping, null update, and lifecycle statu
     assert.equal(edited.body.data.description, 'retained');
     assert.equal((await request('GET', `task/${crypto.randomUUID()}/time-log/${logId}`)).status, 404);
     assert.equal((await request('POST', `${path}/start`)).status, 204);
+    assert.equal((await request('GET', 'task/active')).body.data.id, id);
+    assert.equal((await request('GET', 'task/today/seconds')).status, 200);
+    assert.equal((await request('GET', path)).body.data.length, 2);
     assert.equal((await request('POST', `${path}/stop`)).status, 204);
     assert.equal((await request('POST', `${path}/stop`)).status, 409);
     assert.equal((await request('DELETE', `${path}/${logId}`)).status, 204);

@@ -33,6 +33,12 @@ test('local Jira CRUD validation, immutable fields and no-op persistence match P
       catch { differences.push({ method, input, php: results[0], node: results[1] }); }
     }
     assert.deepEqual(differences, []);
+    for (const port of [18081, 18082]) {
+      if (port === 18082) await db.query("INSERT INTO jira_work_log(id,task_id,work_log_id,time_spent_seconds,start_time,created_at,updated_at) VALUES($1,$2,'123',60,'2026-06-06',NOW(),NOW())", [id, task]);
+      assert.equal((await fetch(`http://127.0.0.1:${port}/api/jira-work-log`, { headers: { Accept: 'application/json' } })).status, 200);
+      assert.equal((await fetch(`http://127.0.0.1:${port}/api/jira-work-log/${id}`, { method: 'DELETE' })).status, 204);
+      assert.equal((await fetch(`http://127.0.0.1:${port}/api/jira-work-log/${id}`, { headers: { Accept: 'application/json' } })).status, 404);
+    }
   } finally {
     await db.query('DELETE FROM jira_work_log WHERE id=$1', [id]);
     await db.query('DELETE FROM task WHERE id=$1', [task]);
