@@ -12,9 +12,15 @@ export async function getTask(id: string) {
 async function save(input: Record<string, unknown>, id?: string) {
   stringFields(input, ['name']);
   if (input.description != null) stringFields(input, ['description']);
-  if ('tags' in input && (!Array.isArray(input.tags) || input.tags.some(tag => typeof tag !== 'string'))) throw new ApiError(400, ['Bad Request']);
-  lengths(input, { name: [3, 255], ...(input.description != null ? { description: [0, 255] as [number, number] } : {}) });
-  if (!input.name) throw new ApiError(406, { name: 'This value should not be blank.' });
+  if ('tags' in input && !Array.isArray(input.tags)) throw new ApiError(400, ['Bad Request']);
+  const errors: Record<string, string> = {};
+  if (!input.name) errors.name = 'This value should not be blank.';
+  try { lengths(input, { name: [3, 255], ...(input.description != null ? { description: [0, 255] as [number, number] } : {}) }); }
+  catch (error) { if (error instanceof ApiError) Object.assign(errors, error.errors); else throw error; }
+  if (Array.isArray(input.tags)) input.tags.forEach((tag, index) => {
+    if (tag !== null && typeof tag !== 'string') errors[`tags[${index}]`] = 'This value should be of type string.';
+  });
+  if (Object.keys(errors).length) throw new ApiError(406, errors);
   const old = id ? await getTask(id) : undefined;
   // PHP resolves associations outside the write exception handler.
   const tags = 'tags' in input ? (await db.query('SELECT id FROM tag WHERE id=ANY($1::uuid[])', [input.tags])).rows : undefined;

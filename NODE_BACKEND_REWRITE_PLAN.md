@@ -872,6 +872,22 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
   to that dispatcher. Timeout/error edge cases and pagination matrices remain
   pending, as do the Docker/manager and final acceptance phases.
 
+### Implementation notes — HTTP edge cases and logging
+
+- Executed a 152-case PHP/Node input and method matrix. Corrected task tag-element
+  validation to aggregate Symfony-style field errors and removed extra HEAD from
+  Allow headers. The matrix now passes against both isolated services.
+- Eight CORS combinations confirmed that disallowed-origin preflight still returns
+  200 with method/header metadata but without allowing the origin. Expose-Headers
+  applies to ordinary allowed-origin responses, not preflight responses.
+- Traced Symfony preferred-format selection and error rendering. Eight negotiated
+  error fixtures now compare status, content type, Vary and full response content,
+  including HTML, JSON and XML. These pass alongside the input and CORS matrix.
+- Added local API documentation and file logging that reopens the path per record
+  so manager rotation does not strand output on a renamed inode. Date, logging,
+  manager and Docker acceptance validation continue below; full acceptance remains
+  pending until the operational and remaining subsystem checks are complete.
+
 ### Definition of done
 
 The rewrite is complete only when:
