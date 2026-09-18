@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { db, transaction } from './db.js';
 import { taskView } from './projections.js';
-import { ApiError, body, envelope, lengths, stringFields, uuid, type Route } from './http.js';
+import { ApiError, body, envelope, lengths, queryParams, stringFields, uuid, type Route } from './http.js';
 import { listTasks } from './reports.js';
 
 export async function getTask(id: string) {
@@ -43,7 +43,7 @@ async function save(input: Record<string, unknown>, id?: string) {
 }
 export const taskRoutes: Route[] = [
   { path: /^\/api\/task$/, methods: {
-    GET: async request => envelope(await listTasks(new URL(request.url, 'http://localhost').searchParams)),
+    GET: async request => envelope(await listTasks(queryParams(request.url))),
     POST: async request => save(body(request)),
   } },
   { path: /^\/api\/task\/exist\/(.+)$/, methods: {

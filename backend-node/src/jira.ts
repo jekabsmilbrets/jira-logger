@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { db } from './db.js';
 import { parseDate, storedDate, userTimezone } from './dates.js';
 import { getTask } from './tasks.js';
-import { ApiError, envelope, uuid, type Route } from './http.js';
+import { ApiError, envelope, queryParams, uuid, type Route } from './http.js';
 
 export const jiraDispatcher = new Agent({ connect: { rejectUnauthorized: false, timeout: 60_000 } });
 class JiraError extends Error { constructor(message: string, public status = 0) { super(message); } }
@@ -18,11 +18,17 @@ async function client() {
   return async (path: string, payload: unknown, method = 'POST'): Promise<Record<string, any>> => {
     const url = host.replace(/\/$/, '') + '/rest/api/2' + path;
     let response;
+    const started = Date.now();
     try {
       response = await fetch(url, { method, body: JSON.stringify(payload), dispatcher: jiraDispatcher, signal: AbortSignal.timeout(60_000), headers: {
         Accept: '*/*', 'Content-Type': 'application/json', 'X-Atlassian-Token': 'no-check', 'X-ExperimentalApi': 'opt-in', Authorization: `Bearer ${token}`,
       } });
-    } catch { throw new JiraError('CURL Error: http response=0, Jira request failed'); }
+    } catch (error) {
+      const timedOut = error instanceof Error && error.name === 'TimeoutError';
+      throw new JiraError('CURL Error: http response=0, ' + (timedOut
+        ? `Operation timed out after ${Date.now() - started} milliseconds with 0 bytes received`
+        : 'Jira request failed'));
+    }
     const raw = await response.text();
     if (raw && ![200, 201].includes(response.status)) throw new JiraError(`CURL HTTP Request Failed: Status Code : ${response.status}, URL:${url}\nError Message : ${raw}`, response.status);
     if (!raw) {
@@ -146,7 +152,7 @@ async function missing(query: URLSearchParams) {
   return envelope(result, undefined, { limit, truncated: false });
 }
 export const jiraRoutes: Route[] = [
-  { path: /^\/api\/task\/jira\/missing$/, methods: { GET: async request => missing(new URL(request.url, 'http://localhost').searchParams) } },
+  { path: /^\/api\/task\/jira\/missing$/, methods: { GET: async request => missing(queryParams(request.url)) } },
   { path: new RegExp(`^/api/task/(${uuid})/([0-9]{4}-(?:0[1-9]|1[012])-(?:0[1-9]|[12][0-9]|(?<!02-)3[01]))$`), methods: {
     POST: async (_request, reply, match) => { await sync(match[1], match[2]); return reply.code(204).send(); },
   } },

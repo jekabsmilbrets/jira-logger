@@ -1,6 +1,10 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 export const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[13-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
+export function queryParams(url: string): URLSearchParams {
+  // PHP query parsing retains the last value of repeated scalar keys.
+  return new URLSearchParams(Object.fromEntries(new URL(url, 'http://localhost').searchParams));
+}
 export class ApiError extends Error {
   constructor(public status: number, public errors: string[] | Record<string, string>) { super('API error'); }
 }

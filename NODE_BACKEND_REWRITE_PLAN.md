@@ -943,6 +943,32 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
 - TLS scope, transport timeouts, additional frontend failure/retry workflows and
   operating acceptance remain under investigation; no live Jira writes were made.
 
+### Implementation notes — operating matrix, transport and live Jira
+
+- Real manager acceptance now passes in a copied temporary project with isolated
+  identities, ports and volumes: build, start, dump, migrate, prepare, seed,
+  start-with-init, upgrade, rebuild, down and explicit database removal. Both
+  backends were exercised; a task written by Node survived PHP edits and the
+  return switch to Node. The first run reused a stale HTTP keep-alive connection
+  after synchronous container recreation; fresh fixture connections resolved it.
+- Log checks verify startup and periodic 30-second enforcement of the 50 MiB cap,
+  seven-day archive retention, preservation of rotated content and write permissions.
+- Controlled self-signed Jira HTTPS succeeds for both backends while ordinary
+  verified fetch rejects it. Actual stalled requests terminate around 60 seconds,
+  make one upstream attempt, return 409 and leave no local work log. Node now
+  retains the PHP timeout diagnostic, with measured milliseconds naturally varying.
+  macOS PHP's built-in server terminated in its execution timer during this test;
+  the successful PHP timeout measurement used the retained Linux Docker image.
+- At the user's request, a one-day PAT was created on jira.demo.almworks.com.
+  Both Docker backends created and updated labeled work logs on INI-1, verified
+  the remote 120-second duration and 17:00 timestamp, and searched missing tasks.
+  The fixture removed its remote work logs and revoked its PAT. The initial PAT
+  name exceeded Jira's accepted length; shortening it resolved that fixture error.
+- The report matrix passes across UTC, Europe/Riga and America/New_York, including
+  tag OR filtering, running timers, equal boundaries, normalization and clipping.
+  Repeated scalar query keys now use PHP's last-value semantics. Extended routing
+  fixtures verify HEAD, invalid UUIDs and synchronization date constraints.
+
 ### Definition of done
 
 The rewrite is complete only when:

@@ -16,6 +16,12 @@ for (const query of ['date=invalid', 'date[]=2026-06-06', 'name[]=a', 'tags[]=a'
 for (const path of ['/api/task', `/api/task/${missing}`, '/api/tag', '/api/setting', '/api/no-such-route']) {
   for (const method of ['PUT', 'OPTIONS']) cases.push({ method, path });
 }
+for (const path of ['/api/task', `/api/task/${missing}`, '/api/task/not-a-uuid', '/api/no-such-route', '/api/task/active', '/api/task/today/seconds', '/api/task/exist/name/with/slashes']) {
+  cases.push({ method: 'HEAD', path });
+}
+for (const date of ['2026-02-30', '2026-02-31', '2026-04-31', '2026-01-01', '2026-13-01', '1780000000', '2026-01-01T00:00:00Z']) {
+  cases.push({ method: 'POST', path: `/api/task/${missing}/${date}` });
+}
 
 test('PHP/Node input and error matrix', async () => {
   const differences = [];
