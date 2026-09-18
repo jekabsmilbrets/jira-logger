@@ -930,6 +930,19 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
   shared data, ingress readiness and fixture execution. Full acceptance remains
   pending, including broader Jira transport/search cases and real manager actions.
 
+### Implementation notes — Jira search and upstream response matrices
+
+- Controlled search fixtures compare response bodies and outbound requests for
+  offset/token pagination, duplicate issues, 51-result truncation, empty results,
+  malformed/scalar/null responses and legacy 404/405/410 fallback. Corrected legacy
+  empty/scalar/null response mapping from framework 500 to the PHP search 502.
+- Work-log fixtures compare eight upstream status/body combinations, local writes,
+  outbound call counts and rejection at 59 seconds without any remote call.
+  Malformed work-log JSON now preserves PHP's framework 500 rather than incorrectly
+  becoming a synchronization conflict. All three new Jira matrix suites pass.
+- TLS scope, transport timeouts, additional frontend failure/retry workflows and
+  operating acceptance remain under investigation; no live Jira writes were made.
+
 ### Definition of done
 
 The rewrite is complete only when:

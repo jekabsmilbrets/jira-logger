@@ -27,11 +27,19 @@ async function client() {
     if (raw && ![200, 201].includes(response.status)) throw new JiraError(`CURL HTTP Request Failed: Status Code : ${response.status}, URL:${url}\nError Message : ${raw}`, response.status);
     if (!raw) {
       if (![200, 201, 204].includes(response.status)) throw new JiraError(`CURL Error: http response=${response.status}, `);
+      if (path === '/search') throw new JiraError('Jira issue search failed.');
       throw new TypeError('Empty upstream body');
     }
     let result;
-    try { result = JSON.parse(raw); } catch { throw new JiraError('Jira issue search failed.'); }
-    if (result === null || typeof result !== 'object') throw new TypeError('Invalid upstream body');
+    try { result = JSON.parse(raw); }
+    catch {
+      if (path.startsWith('/search')) throw new JiraError('Jira issue search failed.');
+      throw new TypeError('Invalid upstream work-log body');
+    }
+    if (result === null || typeof result !== 'object') {
+      if (path === '/search') throw new JiraError('Jira issue search failed.');
+      throw new TypeError('Invalid upstream body');
+    }
     return result;
   };
 }
