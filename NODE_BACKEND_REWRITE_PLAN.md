@@ -781,6 +781,24 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
 
 ### Definition of done
 
+### Implementation notes — compatibility baseline
+
+- Inspected revision: `73b3cca2`; initial working tree clean. No repository-local
+  AGENTS.md files were found; the supplied session instructions apply.
+- Added a separate Compose project with PostgreSQL 13 on tmpfs and loopback port
+  55439. Existing application containers and volumes are not test targets.
+- Executed both PHP migrations successfully on that empty fixture database.
+- Settings investigation: controller deserializes before validation; create/update
+  validation groups omit NotNull. Missing typed fields therefore produce framework
+  errors. Update first looks up the entity, then accesses request values. Unknown
+  properties are ignored. Create maps unique violations to `Duplicate Setting name`;
+  update uses its generic update error. Each write flushes before returning.
+- Settings fixtures exercise create/read/update/delete, unknown properties,
+  uniqueness, case-insensitive secret-name redaction, rejected redaction markers,
+  null/numeric inputs, short strings, missing records, and the empty-object error.
+  `node --test compatibility/settings.test.mjs`: 2 tests passed against PHP.
+- Remaining phases and acceptance scenarios are not yet verified.
+
 The rewrite is complete only when:
 
 - PHP remains present and operational.

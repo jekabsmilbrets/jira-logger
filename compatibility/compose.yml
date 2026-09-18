@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_USER: compatibility
+      POSTGRES_PASSWORD: disposable
+      POSTGRES_DB: compatibility
+    ports:
+      - '127.0.0.1:55439:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U compatibility']
+      interval: 1s
+      timeout: 3s
+      retries: 30
