@@ -779,8 +779,6 @@ The working tree remained clean. No backend rewrite, database migration, or depl
 
 These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-runtime parity. Those are implementation acceptance requirements.
 
-### Definition of done
-
 ### Implementation notes — compatibility baseline
 
 - Inspected revision: `73b3cca2`; initial working tree clean. No repository-local
@@ -818,6 +816,26 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
 - The existing Docker context is an allowlist; Node paths were added explicitly.
 - Lock contention, failed migrations, HTTP foundation, dates, and later phases
   remain to be validated; this increment does not establish phase 2 completion.
+
+### Implementation notes — HTTP, settings, and date foundation
+
+- Settings fixtures pass unchanged against PHP and Node (2 tests each). PHP probes
+  confirm `{}`, `[]`, `null`, numeric and string roots yield framework 500; malformed
+  JSON yields controller 400. Frontend Settings and SettingsChange were traced:
+  values are stringified, writes finish before reload, and seeded records are
+  needed for the skip-reload path. No frontend changes were made.
+- Date helpers preserve epoch zero, millisecond flooring, invalid-calendar
+  normalization, ATOM output, and whole-second persistence. Ten date fixtures pass.
+  Additional PHP overlap probes in London and Lord Howe confirmed that the offset
+  at the UTC interpretation of the wall clock selects the observed overlap branch.
+- Task/tag/timer PHP fixtures pass (2 tests). Null descriptions and timer ends
+  retain values; omitted tags retain associations, explicit empty tags clear them,
+  unknown valid tag UUIDs are ignored, in-use tag deletion is 409. Reversed timers
+  are accepted; start/stop use 204 and repeated stop uses 409.
+- Framework HTML, complete routing/CORS parity, and remaining subsystem acceptance
+  scenarios still require comparison. The HTTP foundation is not final acceptance.
+
+### Definition of done
 
 The rewrite is complete only when:
 
