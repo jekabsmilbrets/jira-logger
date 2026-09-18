@@ -6,11 +6,25 @@ export function databaseUrl(value: string): string {
   return url.toString();
 }
 
-export const config = {
-  database: databaseUrl(process.env.DATABASE_URL ?? 'postgresql://localhost/jira_logger'),
-  internalTimezone: process.env.APP_INTERNAL_TIMEZONE ?? 'UTC',
-  userTimezone: process.env.APP_DEFAULT_USER_TIMEZONE ?? 'Europe/Riga',
-  port: Number(process.env.PORT ?? 3000),
-  assets: process.env.ASSETS_PATH ?? '/var/www/public/ng',
-  corsOrigin: process.env.CORS_ALLOW_ORIGIN ?? '^https?://localhost$',
-};
+export class Configuration {
+  readonly database: string;
+  readonly internalTimezone: string;
+  readonly userTimezone: string;
+  readonly port: number;
+  readonly assets: string;
+  readonly corsOrigin: string;
+  readonly logFile: string | undefined;
+
+  constructor(environment: NodeJS.ProcessEnv = process.env) {
+    this.database = databaseUrl(environment.DATABASE_URL ?? 'postgresql://localhost/jira_logger');
+    this.internalTimezone = environment.APP_INTERNAL_TIMEZONE ?? 'UTC';
+    this.userTimezone = environment.APP_DEFAULT_USER_TIMEZONE ?? 'Europe/Riga';
+    this.port = Number(environment.PORT ?? 3000);
+    this.assets = environment.ASSETS_PATH ?? '/var/www/public/ng';
+    this.corsOrigin = environment.CORS_ALLOW_ORIGIN ?? '^https?://localhost$';
+    this.logFile = environment.LOG_FILE;
+  }
+}
+
+// Removed when the composition root owns all feature dependencies.
+export const config = new Configuration();
