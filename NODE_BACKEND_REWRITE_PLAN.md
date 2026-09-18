@@ -969,9 +969,8 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
   Repeated scalar query keys now use PHP's last-value semantics. Extended routing
   fixtures verify HEAD, invalid UUIDs and synchronization date constraints.
 
-### Definition of done
+### Implementation notes — final acceptance investigation
 
-Additional acceptance investigation:
 - Real 60-second mid-body stalls produce the same framework 500 for work-log
   writes on PHP and Node, without retry or local persistence. An interrupted
   legacy search instead maps to PHP's 502 search response; a focused socket-close
@@ -991,7 +990,43 @@ Additional acceptance investigation:
   trigger failing the second update once. The dialog stayed open on failure;
   retry succeeded and database audit rows confirmed each edit persisted once.
 
-The rewrite is complete only when:
+### Final validation — 2026-09-19
+
+- All seven implementation phases are complete. `compatibility/OPERATIONS.md`
+  records all 33 operations; `/api/doc` is served separately.
+- Final host HTTP suites: 7 passed on PHP and 7 on Node. Differential suites:
+  7 passed, including the expanded input, report, CORS and Jira matrices; the
+  subsequent interrupted-search regression and Jira error suites also passed.
+- Node tests: 6 passed, covering dates, logging and database maintenance. Audit
+  findings preserve data and exit successfully. Shared migration fixture passed
+  for fresh/legacy databases, rollback, idempotency and PHP/Node lock contention.
+- Docker HTTP suites: 5 passed on each backend. Final image is Node v24.21.0,
+  UID 1000. Assets, runtime config, deep links and `/api/doc` return 200;
+  `/internal/ready` and `/index.php` are not publicly exposed. The final-image
+  in-flight Jira shutdown/persistence test passed.
+- Real manager action matrix passed for both backends, including no-rebuild
+  switching, explicit removal, backups, readiness failure and Traefik HTTPS.
+  Manager stub tests (3) and startup/periodic log rotation/retention checks passed.
+- The unchanged frontend suite passed all 554 tests under `TZ=Europe/Riga`.
+  It includes Jira intake partial failure/retry, synchronization restart failure,
+  task backup, settings and timer transaction checks. Browser verification covered
+  task editing, timers and reports on both backends, partial timer-save retry on
+  Node, and PHP-written data after switching back to Node.
+- Controlled Jira fixtures and the authorized live demo checks passed. Temporary
+  remote work logs and PAT were removed. No production Jira writes were used.
+- No intentional application compatibility exceptions were introduced. Existing
+  timezone-dependent frontend testing requires Europe/Riga. The macOS built-in
+  PHP server is unsuitable for the 60-second transport test; use the documented
+  Docker PHP fixture. Timeout elapsed milliseconds naturally vary by runtime.
+- Commits are local only. Frontend application code is unchanged; PHP remains
+  available, with only its shared migration-lock entry point added.
+- Disposable acceptance/compatibility containers and volumes, host fixture
+  servers and the temporary browser tab were cleaned up after validation.
+  Existing deployed containers and data were not changed.
+
+### Definition of done
+
+The following requirements are satisfied:
 
 - PHP remains present and operational.
 - Node runs in Docker and is the launcher default.

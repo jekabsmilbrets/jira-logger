@@ -46,10 +46,11 @@ resources and reports also accept `COMPATIBILITY_URL=http://127.0.0.1:18084`.
 
 Executed rewrite evidence: all 554 frontend tests pass with `TZ=Europe/Riga`.
 Without that timezone, one existing calendar-hour assertion fails (553 pass).
-Five HTTP fixtures pass through Docker nginx on each backend. Browser checks on
-Node covered task editing, timer start/stop, history and daily report rendering.
-See the plan's implementation notes for remaining acceptance work; these results
-are not a claim of full completion.
+Five HTTP fixtures pass through Docker nginx on each backend. Browser checks
+covered task editing, timer start/stop and daily reports on both backends, plus
+Node timer history and partial-save retry. PHP-written edits and totals remained
+visible after returning to Node. The frontend source is unchanged.
+The route/validation/side-effect inventory is in [OPERATIONS.md](OPERATIONS.md).
 
 Additional differential suites are `jira-local.test.mjs`, `jira-search.test.mjs`,
 `jira-errors.test.mjs` and `report-matrix.test.mjs`. Run them sequentially because
@@ -58,6 +59,23 @@ they temporarily replace fixture settings. `jira-transport.test.mjs` measures re
 port 18086 and set `PHP_TRANSPORT_PORT=18086`: the host PHP execution timer can
 terminate its built-in server while cURL waits. The container must use the same
 fixture database via `host.docker.internal:55439`.
+Set `JIRA_STALL_BODY=1` to test the separate mid-body timeout contract (framework
+500 for work-log writes). Both modes passed on PHP and Node. Interrupted legacy
+search is covered separately by `jira-search.test.mjs` and returns 502.
+
+`RUN_DOCKER_SHUTDOWN=1 node --test compatibility/shutdown.test.mjs` stops and
+restarts only the acceptance Node container during an in-flight controlled Jira
+write, verifies persistence, and restores settings. For the browser retry check,
+run `node compatibility/browser-save-fixture.mjs prepare`, edit both fixture timer
+descriptions to `retry-first-edited` and `retry-second-edited` through their start
+time cells, save, then retry the expected failure. Run the script with `verify`
+to assert one persisted update per row and `cleanup` to remove its data/trigger.
+Always run cleanup, including after an interrupted browser check.
+
+The real manager matrix also verifies switching without rebuilding, separate
+backend nginx images, failed readiness with ingress stopped, and HTTPS routing
+through a private Traefik network. It removes its own persistent volumes only
+during the explicit removal action and final test cleanup.
 
 `jira-demo.test.mjs` is explicitly opt-in and targets only the user-authorized
 `https://jira.demo.almworks.com`. Set `RUN_LIVE_JIRA_DEMO=1`, `JIRA_DEMO_USER` and
