@@ -4,12 +4,15 @@ import { config } from './config.js';
 import { db } from './db.js';
 import { ApiError, envelope, frameworkError, type Route } from './http.js';
 import { settingsRoutes } from './settings.js';
+import { tagRoutes } from './tags.js';
+import { taskRoutes } from './tasks.js';
+import { timerRoutes } from './timers.js';
 
 export function buildServer() {
   const app = Fastify({ logger: { redact: ['req.headers.authorization'] }, exposeHeadRoutes: false });
   app.removeAllContentTypeParsers();
   app.addContentTypeParser('*', { parseAs: 'string' }, (_request, value, done) => done(null, value));
-  const routes: Route[] = [...settingsRoutes];
+  const routes: Route[] = [...settingsRoutes, ...tagRoutes, ...taskRoutes, ...timerRoutes];
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ApiError) return reply.code(error.status).send(envelope(undefined, error.errors));
     request.log.error({ error: error instanceof Error ? error.name : 'Error' }, 'Request failed');

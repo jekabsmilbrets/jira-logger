@@ -1,0 +1,50 @@
+import { DateTime } from 'luxon';
+import { db } from './db.js';
+import { parseDate, userTimezone } from './dates.js';
+import { ApiError } from './http.js';
+import { lastTimer, taskView } from './projections.js';
+
+export async function listTasks(query: URLSearchParams, allowEmpty = false) {
+  const zone = await userTimezone();
+  for (const key of query.keys()) if (/^(tags|name|date|startDate|endDate|hideUnreported)\[/.test(key)) throw new ApiError(400, ['Bad Request']);
+  const dates: Record<string, DateTime | null> = {};
+  const errors: Record<string, string> = {};
+  for (const field of ['date', 'startDate', 'endDate']) {
+    try { dates[field] = parseDate(query.get(field), zone); }
+    catch { errors[field] = `This value is not a valid ${field === 'date' ? 'date' : 'date-time'} format.`; }
+  }
+  if (Object.keys(errors).length) throw new ApiError(406, errors);
+  let range: [DateTime, DateTime] | undefined;
+  const onlyDate = (value: string) => !/^\d+$/.test(value.trim()) && !/[:T]/.test(value);
+  if (query.has('date') || (query.has('startDate') && query.has('endDate'))) {
+    const start = dates.date ?? dates.startDate ?? DateTime.now().setZone(zone);
+    const end = dates.date ?? dates.endDate ?? DateTime.now().setZone(zone);
+    range = [query.has('date') || onlyDate(query.get('startDate') ?? '') ? start.startOf('day') : start.startOf('second'), query.has('date') || onlyDate(query.get('endDate') ?? '') ? end.endOf('day').startOf('second') : end.startOf('second')];
+  }
+  const conditions: string[] = [];
+  const values: unknown[] = [];
+  const bind = (value: unknown) => { values.push(value); return `$${values.length}`; };
+  const tags = (query.get('tags') ?? '').split(',').map(tag => tag.trim()).filter(tag => /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(tag));
+  if (tags.length) conditions.push(`EXISTS(SELECT 1 FROM tag_task j WHERE j.task_id=t.id AND j.tag_id=ANY(${bind(tags)}::uuid[]))`);
+  const name = query.get('name')?.trim();
+  if (name) conditions.push(`lower(t.name) LIKE lower(${bind(`%${name}%`)})`);
+  if (range) conditions.push(`EXISTS(SELECT 1 FROM time_log l WHERE l.task_id=t.id AND l.start_time<=${bind(range[1].toISO())} AND (l.end_time IS NULL OR l.end_time>=${bind(range[0].toISO())}))`);
+  const rows = (await db.query('SELECT t.* FROM task t' + (conditions.length ? ' WHERE ' + conditions.join(' AND ') : ''), values)).rows;
+  const tasks = [];
+  for (const row of rows) {
+    const task = await taskView(row, zone);
+    if (range) {
+      const [start, end] = range;
+      task.timeLogs = task.timeLogs.filter(timer => Date.parse(timer.startTime!) <= +end && (timer.endTime === null || Date.parse(timer.endTime) >= +start));
+      for (const timer of task.timeLogs) {
+        if (Date.parse(timer.startTime!) < +start) { timer.originalStartTime = timer.startTime; timer.startTime = start.toFormat("yyyy-MM-dd'T'HH:mm:ssZZ"); timer.manuallyModified = true; }
+        if (timer.endTime && Date.parse(timer.endTime) > +end) { timer.originalEndTime = timer.endTime; timer.endTime = end.toFormat("yyyy-MM-dd'T'HH:mm:ssZZ"); timer.manuallyModified = true; }
+      }
+    }
+    task.lastTimeLog = lastTimer(task.timeLogs);
+    if (/^(1|true|on|yes)$/i.test((query.get('hideUnreported') ?? '').trim()) && !task.timeLogs.length) continue;
+    tasks.push(task);
+  }
+  if (!tasks.length && !allowEmpty) throw new ApiError(404, ['Tasks not found']);
+  return tasks;
+}

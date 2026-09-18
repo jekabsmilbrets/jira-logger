@@ -837,6 +837,27 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
 
 ### Definition of done
 
+### Implementation notes — tasks, tags, timers, and reports
+
+- Read task/tag/timer controllers, DTOs, services, repositories, entities,
+  ReportedTaskQuery/View, filter DTO and date-range resolver. Timer modification
+  flags and originals are transient projection properties, not database columns.
+- Task writes synchronize only supplied tag associations and preserve null
+  descriptions. Task deletion removes dependent timers, Jira records, and joins.
+  Tag isUsed is calculated from associations; seed unloading remains separate.
+- Report queries preserve name LIKE behavior, tag OR semantics, inclusive overlap,
+  date precedence, incomplete-range behavior, and 23:59:59 report boundaries.
+  Clipping changes only response timestamps and recalculates lastTimeLog.
+- Six HTTP fixtures now pass against each implementation: settings (2), resources
+  (2), reports (1), and timer insertion failure (1). The failure test installs a
+  temporary trigger in the disposable database and confirms old timers remain
+  stopped with their original updated_at after the new insertion fails.
+- The first failure-fixture execution exposed a fixture SQL parameter type error;
+  corrected separate UUID/text parameters, then reran successfully on both backends.
+- Remaining edge-case matrices, frontend execution, Jira, and operating integration
+  remain pending. These tests are representative compatibility evidence, not a
+  waiver of the full acceptance list.
+
 The rewrite is complete only when:
 
 - PHP remains present and operational.
