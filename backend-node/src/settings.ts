@@ -1,51 +1,60 @@
 import { randomUUID } from 'node:crypto';
-import { db } from './db.js';
-import { ApiError, body, envelope, lengths, stringFields, uuid, type Route } from './http.js';
+import { errorCode } from './db.js';
+import type { SettingsStore } from './settings.repository.js';
+import type { SettingRow } from './models.js';
+import { ApiError, body, capture, envelope, lengths, stringFields, uuid, type Route } from './http.js';
 
 const redacted = '***REDACTED***';
 function disclose(row: { id: string; name: string; value: string }) {
   return { id: row.id, name: row.name, value: /token|password|secret|key/i.test(row.name) ? redacted : row.value };
 }
-async function get(id: string) {
-  const row = (await db.query('SELECT id,name,value FROM setting WHERE id=$1', [id])).rows[0];
+export class SettingsService {
+  constructor(private readonly repository: SettingsStore) {}
+  async get(id: string): Promise<SettingRow> {
+  const row = await this.repository.find(id);
   if (!row) throw new ApiError(404, ['Setting not found']);
   return row;
 }
-async function save(input: Record<string, unknown>, id?: string) {
+async save(input: Record<string, unknown>, id?: string): Promise<SettingRow> {
   stringFields(input, ['name', 'value']);
   lengths(input, { name: [3, 255], value: [3, 512] });
-  const old = id ? await get(id) : undefined;
+  const old = id ? await this.get(id) : undefined;
   // PHP reads value before name and lets missing typed fields escape to the framework.
-  if (!('value' in input)) throw new Error('Missing value');
+  if (typeof input.value !== 'string') throw new Error('Missing value');
   if (input.value === redacted) throw new ApiError(400, ['Redacted setting values cannot be stored.']);
-  if (!('name' in input)) throw new Error('Missing name');
+  if (typeof input.name !== 'string') throw new Error('Missing name');
   try {
-    if (old && old.name === input.name && old.value === input.value) return envelope(disclose(old));
-    const result = id
-      ? await db.query("UPDATE setting SET name=$2,value=$3,updated_at=date_trunc('second',CURRENT_TIMESTAMP) WHERE id=$1 RETURNING id,name,value", [id, input.name, input.value])
-      : await db.query("INSERT INTO setting (id,name,value,created_at,updated_at) VALUES ($1,$2,$3,date_trunc('second',CURRENT_TIMESTAMP),date_trunc('second',CURRENT_TIMESTAMP)) RETURNING id,name,value", [randomUUID(), input.name, input.value]);
-    return envelope(disclose(result.rows[0]));
+    if (old && old.name === input.name && old.value === input.value) return disclose(old);
+    return disclose(await this.repository.save({ id: id ?? randomUUID(), name: input.name, value: input.value }, Boolean(id)));
   } catch (error) {
-    throw new ApiError(400, [!id && (error as { code?: string }).code === '23505' ? 'Duplicate Setting name' : `Can not ${id ? 'Update' : 'Create'} Setting`]);
+    throw new ApiError(400, [!id && errorCode(error) === '23505' ? 'Duplicate Setting name' : `Can not ${id ? 'Update' : 'Create'} Setting`]);
   }
 }
-export const settingsRoutes: Route[] = [
-  { path: /^\/api\/setting$/, methods: {
-    GET: async () => {
-      const rows = (await db.query('SELECT id,name,value FROM setting')).rows;
-      if (!rows.length) throw new ApiError(404, ['Settings not found']);
-      return envelope(rows.map(disclose));
-    },
-    POST: async request => save(body(request)),
-  } },
-  { path: new RegExp(`^/api/setting/(${uuid})$`), methods: {
-    GET: async (_request, _reply, match) => envelope(disclose(await get(match[1]))),
-    PATCH: async (request, _reply, match) => save(body(request), match[1]),
-    DELETE: async (_request, reply, match) => {
-      await get(match[1]);
-      try { await db.query('DELETE FROM setting WHERE id=$1', [match[1]]); }
-      catch { throw new ApiError(400, ['Can not Delete Setting']); }
-      return reply.code(204).send();
-    },
-  } },
-];
+  async list(): Promise<SettingRow[]> {
+    const rows = await this.repository.list();
+    if (!rows.length) throw new ApiError(404, ['Settings not found']);
+    return rows.map(disclose);
+  }
+  async show(id: string): Promise<SettingRow> { return disclose(await this.get(id)); }
+  async delete(id: string): Promise<void> {
+    await this.get(id);
+    try { await this.repository.delete(id); }
+    catch { throw new ApiError(400, ['Can not Delete Setting']); }
+  }
+}
+export class SettingsController {
+  constructor(private readonly service: SettingsService) {}
+  routes(): Route[] {
+    return [
+      { path: /^\/api\/setting$/, methods: {
+        GET: async () => envelope(await this.service.list()),
+        POST: async request => envelope(await this.service.save(body(request))),
+      } },
+      { path: new RegExp(`^/api/setting/(${uuid})$`), methods: {
+        GET: async (_request, _reply, match) => envelope(await this.service.show(capture(match, 1))),
+        PATCH: async (request, _reply, match) => envelope(await this.service.save(body(request), capture(match, 1))),
+        DELETE: async (_request, reply, match) => { await this.service.delete(capture(match, 1)); return reply.code(204).send(); },
+      } },
+    ];
+  }
+}

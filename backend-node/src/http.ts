@@ -77,4 +77,9 @@ h2 { font-size: 18px; }</style>
 </html>`);
 }
 export type Handler = (request: FastifyRequest, reply: FastifyReply, match: RegExpMatchArray) => Promise<unknown>;
+export function capture(match: RegExpMatchArray, index: number): string {
+  const value = match[index];
+  if (value === undefined) throw new Error('Missing route capture');
+  return value;
+}
 export type Route = { path: RegExp; methods: Record<string, Handler> };

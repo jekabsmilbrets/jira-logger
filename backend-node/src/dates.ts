@@ -1,6 +1,16 @@
 import { DateTime } from 'luxon';
 import { config } from './config.js';
 import { db } from './db.js';
+import type { SettingsStore } from './settings.repository.js';
+
+export interface TimezoneProvider { userTimezone(): Promise<string>; }
+export class TimezoneService implements TimezoneProvider {
+  constructor(private readonly settings: Pick<SettingsStore, 'value'>, private readonly fallback: string) {}
+  async userTimezone(): Promise<string> {
+    const value = await this.settings.value('jira.user-time-zone');
+    return typeof value === 'string' && value.trim() && DateTime.now().setZone(value).isValid ? value : this.fallback;
+  }
+}
 
 export async function userTimezone(): Promise<string> {
   const value = (await db.query("SELECT value FROM setting WHERE name='jira.user-time-zone'")).rows[0]?.value;

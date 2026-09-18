@@ -1,10 +1,13 @@
+import { SettingsRepository } from './settings.repository.js';
+import { TagsRepository } from './tags.repository.js';
+import { TimezoneService } from './dates.js';
 import Fastify from 'fastify';
 import { readFile } from 'node:fs/promises';
 import { config } from './config.js';
 import { db } from './db.js';
 import { ApiError, envelope, frameworkError, type Route } from './http.js';
-import { settingsRoutes } from './settings.js';
-import { tagRoutes } from './tags.js';
+import { SettingsController, SettingsService } from './settings.js';
+import { TagsController, TagsService } from './tags.js';
 import { taskRoutes } from './tasks.js';
 import { timerRoutes } from './timers.js';
 import { jiraRoutes, jiraDispatcher } from './jira.js';
@@ -23,6 +26,10 @@ export function buildServer() {
     if (String(reply.getHeader('content-type')).startsWith('application/json')) reply.header('content-type', 'application/json');
     return payload;
   });
+  const settings = new SettingsRepository(db);
+  const timezone = new TimezoneService(settings, config.userTimezone);
+  const settingsRoutes = new SettingsController(new SettingsService(settings)).routes();
+  const tagRoutes = new TagsController(new TagsService(new TagsRepository(db), timezone)).routes();
   const routes: Route[] = [...settingsRoutes, ...tagRoutes, ...taskRoutes, ...timerRoutes, ...jiraRoutes, ...jiraWorkLogRoutes,
     { path: /^\/api\/doc$/, methods: { GET: async (_request, reply) => reply.type('text/html; charset=UTF-8').send(documentation) } },
     { path: /^\/api\/monitor$/, methods: { GET: async () => envelope({ time: DateTime.now().setZone(await userTimezone()).toFormat("yyyy-MM-dd'T'HH:mm:ssZZ"), message: 'Welcome to Jira-logger API!' }) } },
