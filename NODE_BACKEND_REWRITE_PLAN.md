@@ -971,6 +971,15 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
 
 ### Definition of done
 
+Additional acceptance investigation:
+- Combined timer validation failures revealed that Node returned only the
+  description length error. PHP validates start, end, description and task together
+  for both create and update. Node now preserves that aggregation; the extended
+  input matrix passes against both running implementations.
+- The unchanged browser timer editor was exercised with a disposable database
+  trigger failing the second update once. The dialog stayed open on failure;
+  retry succeeded and database audit rows confirmed each edit persisted once.
+
 The rewrite is complete only when:
 
 - PHP remains present and operational.

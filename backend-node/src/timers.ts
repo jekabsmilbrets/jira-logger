@@ -4,7 +4,7 @@ import { db } from './db.js';
 import { parseDate, sqlDate, storedDate, userTimezone } from './dates.js';
 import { timerView, taskView } from './projections.js';
 import { getTask } from './tasks.js';
-import { ApiError, body, envelope, lengths, stringFields, uuid, type Route } from './http.js';
+import { ApiError, body, envelope, stringFields, uuid, type Route } from './http.js';
 
 function scalar(value: unknown): string { return value === true ? '1' : value === false || value === null || typeof value === 'object' ? '' : String(value); }
 async function get(taskId: string, id: string, message = 'TimeLog not found') {
@@ -14,7 +14,6 @@ async function get(taskId: string, id: string, message = 'TimeLog not found') {
 }
 async function save(input: Record<string, unknown>, taskId: string, id?: string) {
   if (input.description != null) stringFields(input, ['description']);
-  if (input.description != null) lengths(input, { description: [0, 255] });
   const zone = await userTimezone();
   const errors: Record<string, string> = {};
   let start: DateTime | null = null;
@@ -23,6 +22,7 @@ async function save(input: Record<string, unknown>, taskId: string, id?: string)
   if (!startInput) errors.startTime = 'This value should not be blank.';
   try { start = parseDate(startInput, zone); } catch { errors.startTime = 'This value is not a valid date-time format.'; }
   try { end = parseDate('endTime' in input ? scalar(input.endTime) : null, zone); } catch { errors.endTime = 'This value is not a valid date-time format.'; }
+  if (typeof input.description === 'string' && [...input.description].length > 255) errors.description = 'This value is too long. It should have 255 characters or less.';
   if (!new RegExp(`^${uuid}$`, 'i').test(taskId)) errors.task = 'This is not a valid UUID.';
   if (Object.keys(errors).length) throw new ApiError(406, errors);
   const old = id ? await get(taskId, id) : undefined;

@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 
 const missing = '11111111-1111-4111-8111-111111111111';
 const cases = [];
+for (const method of ['POST', 'PATCH']) {
+  cases.push({ method, path: `/api/task/invalid/time-log${method === 'PATCH' ? '/' + missing : ''}`, body: JSON.stringify({ description: 'x'.repeat(256), endTime: 'invalid' }) });
+}
 for (const resource of ['task', 'tag', 'setting', 'jira-work-log', `task/${missing}/time-log`]) {
   for (const body of ['', '{', '{}', '[]', 'null', '1', '"text"', '{"unknown":true}', '{"name":null}', '{"name":1}', '{"name":""}', '{"name":"ab"}', '{"name":[]}', '{"description":1}', '{"description":null}', '{"tags":null}', '{"tags":[1]}', '{"startTime":null}', '{"startTime":[]}', '{"startTime":"garbage"}', '{"startTime":0}']) {
     cases.push({ method: 'POST', path: `/api/${resource}`, body });
