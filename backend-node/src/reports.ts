@@ -1,11 +1,14 @@
 import { DateTime } from 'luxon';
-import { db } from './db.js';
-import { parseDate, userTimezone } from './dates.js';
+import type { TasksStore } from './tasks.repository.js';
+import type { TasksService } from './tasks.js';
+import { parseDate, type TimezoneProvider } from './dates.js';
 import { ApiError } from './http.js';
-import { lastTimer, taskView } from './projections.js';
+import { lastTimer, type TaskResponse } from './projections.js';
 
-export async function listTasks(query: URLSearchParams, allowEmpty = false) {
-  const zone = await userTimezone();
+export class ReportService {
+  constructor(private readonly repository: TasksStore, private readonly tasks: Pick<TasksService, 'project'>, private readonly timezone: TimezoneProvider) {}
+  async list(query: URLSearchParams, allowEmpty = false): Promise<TaskResponse[]> {
+  const zone = await this.timezone.userTimezone();
   for (const key of query.keys()) if (/^(tags|name|date|startDate|endDate|hideUnreported)\[/.test(key)) throw new ApiError(400, ['Bad Request']);
   const dates: Record<string, DateTime | null> = {};
   const errors: Record<string, string> = {};
@@ -21,18 +24,11 @@ export async function listTasks(query: URLSearchParams, allowEmpty = false) {
     const end = dates.date ?? dates.endDate ?? DateTime.now().setZone(zone);
     range = [query.has('date') || onlyDate(query.get('startDate') ?? '') ? start.startOf('day') : start.startOf('second'), query.has('date') || onlyDate(query.get('endDate') ?? '') ? end.endOf('day').startOf('second') : end.startOf('second')];
   }
-  const conditions: string[] = [];
-  const values: unknown[] = [];
-  const bind = (value: unknown) => { values.push(value); return `$${values.length}`; };
   const tags = (query.get('tags') ?? '').split(',').map(tag => tag.trim()).filter(tag => /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(tag));
-  if (tags.length) conditions.push(`EXISTS(SELECT 1 FROM tag_task j WHERE j.task_id=t.id AND j.tag_id=ANY(${bind(tags)}::uuid[]))`);
-  const name = query.get('name')?.trim();
-  if (name) conditions.push(`lower(t.name) LIKE lower(${bind(`%${name}%`)})`);
-  if (range) conditions.push(`EXISTS(SELECT 1 FROM time_log l WHERE l.task_id=t.id AND l.start_time<=${bind(range[1].toISO())} AND (l.end_time IS NULL OR l.end_time>=${bind(range[0].toISO())}))`);
-  const rows = (await db.query('SELECT t.* FROM task t' + (conditions.length ? ' WHERE ' + conditions.join(' AND ') : ''), values)).rows;
+  const rows = await this.repository.list({ tags, name: query.get('name')?.trim(), range: range ? [range[0].toISO(), range[1].toISO()] : undefined });
   const tasks = [];
   for (const row of rows) {
-    const task = await taskView(row, zone);
+    const task = await this.tasks.project(row, zone);
     if (range) {
       const [start, end] = range;
       task.timeLogs = task.timeLogs.filter(timer => Date.parse(timer.startTime!) <= +end && (timer.endTime === null || Date.parse(timer.endTime) >= +start));
@@ -47,4 +43,5 @@ export async function listTasks(query: URLSearchParams, allowEmpty = false) {
   }
   if (!tasks.length && !allowEmpty) throw new ApiError(404, ['Tasks not found']);
   return tasks;
+}
 }
