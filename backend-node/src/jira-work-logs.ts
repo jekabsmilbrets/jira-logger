@@ -11,9 +11,10 @@ async function get(id: string) {
 async function save(input: Record<string, unknown>, id?: string) {
   if (input.description != null) stringFields(input, ['description']);
   if (input.timeSpentSeconds != null && !Number.isInteger(input.timeSpentSeconds)) throw new ApiError(400, ['Bad Request']);
-  if (input.description != null) lengths(input, { description: [0, 255] });
   const task = input.task == null || typeof input.task === 'object' ? '' : input.task === true ? '1' : input.task === false ? '' : String(input.task);
   const errors: Record<string, string> = {};
+  try { if (input.description != null) lengths(input, { description: [0, 255] }); }
+  catch (error) { if (error instanceof ApiError) Object.assign(errors, error.errors); else throw error; }
   if (!task) errors.task = 'This value should not be blank.';
   else if (!new RegExp(`^${uuid}$`, 'i').test(task)) errors.task = 'This is not a valid UUID.';
   if (input.timeSpentSeconds == null) errors.timeSpentSeconds = 'This value should not be blank.';

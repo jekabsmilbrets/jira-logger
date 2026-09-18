@@ -909,6 +909,27 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
   readiness ingress. Actual manager action integration, broader operational failure
   scenarios and remaining compatibility cases still require completion.
 
+### Implementation notes — migration contention and frontend verification
+
+- Migration fixtures now create a unique disposable database, force an initial
+  schema collision, verify transactional rollback and an empty ledger, load a
+  legacy first-version schema, and verify winter/summer Riga-to-UTC conversion.
+  Columns and indexes match the PHP-created fixture schema. Both Node and PHP
+  migration commands were observed waiting on the same advisory lock and then
+  completed without replay. The fixture initially assumed Date objects despite
+  the configured pg string parser, then omitted Doctrine's serverVersion URL
+  parameter; both fixture errors were corrected and the full test passed.
+- Local Jira work-log parity covers existing records, unsupported create fields,
+  null retention, zero/negative durations, strict integer input, missing tasks and
+  aggregated validation. Corrected Node to include all validation field errors.
+- Executed the unchanged frontend suite: 554 tests pass with TZ=Europe/Riga.
+  With the host's Vienna timezone, one existing calendar-hour assertion fails.
+  Browser checks against Docker Node verified task editing, timer start/stop,
+  persisted timer history and daily report rendering.
+- Operating documentation now describes backend selection, maintenance commands,
+  shared data, ingress readiness and fixture execution. Full acceptance remains
+  pending, including broader Jira transport/search cases and real manager actions.
+
 ### Definition of done
 
 The rewrite is complete only when:
