@@ -799,6 +799,26 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
   `node --test compatibility/settings.test.mjs`: 2 tests passed against PHP.
 - Remaining phases and acceptance scenarios are not yet verified.
 
+### Implementation notes — maintenance increment
+
+- Read both migrations, Doctrine configuration, seed manager and commands, audit
+  queries, datetime parser, timezone resolver, and timestamp lifecycle callbacks.
+- Node preserves the historical SQL identifiers, UUID comments, constraints,
+  migration versions, and Europe/Riga conversion. It uses one transaction per
+  migration and a session advisory lock shared with PHP `app:migrate`.
+- Seeds flush as one transaction; name-based unload does not use the HTTP tag
+  guard. Existing values are retained. Unsupported seed selection exits 2.
+- Strict TypeScript compilation passed. Three Node maintenance tests passed on
+  the PHP-initialized disposable database, including repeated migration commands,
+  seed idempotency, edited seed preservation, unload, and empty audit results.
+- Built the non-root Node 24 multi-stage Docker image without PHP. Its `prepare-db`
+  initialized a separate empty database; PHP `app:migrate` then recognized both
+  ledger entries without replaying either migration. PHP shared-lock command also
+  passed on the PHP-initialized database.
+- The existing Docker context is an allowlist; Node paths were added explicitly.
+- Lock contention, failed migrations, HTTP foundation, dates, and later phases
+  remain to be validated; this increment does not establish phase 2 completion.
+
 The rewrite is complete only when:
 
 - PHP remains present and operational.
