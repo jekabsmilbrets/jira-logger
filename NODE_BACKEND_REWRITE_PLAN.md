@@ -888,6 +888,27 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
   manager and Docker acceptance validation continue below; full acceptance remains
   pending until the operational and remaining subsystem checks are complete.
 
+### Implementation notes — Docker and backend selection
+
+- Split backend-specific Compose services and ingress configuration into Node/PHP
+  overlays. Shared project and volume identities remain unchanged. Node is the
+  manager default on each invocation; explicit `-B php` / `--backend php` selects PHP.
+- Manager fixtures exercise all eleven actions for both selections, background
+  flag compatibility, invalid-backend rejection, default reset and readiness
+  failure. They use a recording Docker stub, not a real engine.
+- Built both real Docker backends in the separate `jira-logger-acceptance` project,
+  with disposable volumes and localhost ports 18084/18443. Node reports v24.21.0,
+  UID 1000. Node database preparation and both seed commands completed. An initial
+  mistyped `seed:setting:load` probe correctly exited 2; supported `seed:setting`
+  and `seed:tag` commands then succeeded.
+- Real Node → PHP → Node switching kept the database and assets volumes. PHP
+  `app:migrate` recognized the Node migration ledger without replay. A Node-created
+  task remained readable in PHP and after returning to Node. Five HTTP fixtures
+  (settings, task/tag, timer, report) passed through nginx on each backend.
+- Verified Node API, documentation, frontend fallback, denied PHP paths and private
+  readiness ingress. Actual manager action integration, broader operational failure
+  scenarios and remaining compatibility cases still require completion.
+
 ### Definition of done
 
 The rewrite is complete only when:

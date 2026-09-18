@@ -34,16 +34,6 @@ services:
       - -c
       - log_truncate_on_rotation=off
 
-  php-fpm:
-    volumes:
-      - ./../.logs/jira-logger:/var/www/var/log:rw
-      - ./../.logs/jira-logger:/var/log/php-fpm:rw
-
   nginx:
     volumes:
       - ./../.logs/jira-logger:/var/log/nginx:rw
-
-  migrate:
-    volumes:
-      - ./../.logs/jira-logger:/var/www/var/log:rw
-      - ./../.logs/jira-logger:/var/log/php-fpm:rw

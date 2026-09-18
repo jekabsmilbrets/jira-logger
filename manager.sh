@@ -1,4 +1,5 @@
 #!/bin/bash
+[ -n "${BASH_VERSION:-}" ] || exec bash "$0" "$@"
 set -e
 set -o pipefail
 
@@ -32,6 +33,7 @@ Usage:
 Options:
   -a  Action [start|start-with-init|down|build|rebuild|db-remove|db-dump|migrate|prepare-db|seed|upgrade]
   -b  Run docker containers in background
+  -B, --backend  Backend [node|php] (default: node on every invocation)
   -l  Host log persistence [on|off] (default: off)
   -t  Traefik mode [on|off] (default: on)
   -h  Show help
@@ -49,9 +51,18 @@ BACKGROUND=""
 COMPOSE_FILES=(./.docker/docker-compose.yml)
 COMPOSE_FILES+=(./.docker/docker-compose.dev.yml)
 TRAEFIK_MODE="on"
+BACKEND="node"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    -B|--backend)
+      BACKEND="${2:-}"
+      if [[ "$BACKEND" != "node" && "$BACKEND" != "php" ]]; then
+        echo "Invalid backend '$BACKEND' (allowed: node|php)"
+        exit 1
+      fi
+      shift 2
+      ;;
     -a)
       ACTION="${2:-}"
       shift 2
@@ -88,6 +99,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+COMPOSE_FILES+=("./.docker/docker-compose.${BACKEND}.yml")
+BACKEND_SERVICE="node"
+if [[ "$BACKEND" == "php" ]]; then BACKEND_SERVICE="php-fpm"; fi
+
 if [[ "$TRAEFIK_MODE" != "on" && "$TRAEFIK_MODE" != "off" ]]; then
   echo "Invalid value for -t: '$TRAEFIK_MODE' (allowed: on|off)"
   exit 1
@@ -101,6 +116,7 @@ fi
 if [[ "${LOGGING_MODE}" == "on" ]]; then
   HOST_LOG_PERSISTENCE="true"
   COMPOSE_FILES+=(./.docker/docker-compose.host-logs.yml)
+  COMPOSE_FILES+=("./.docker/docker-compose.${BACKEND}.host-logs.yml")
 fi
 
 if [[ "$TRAEFIK_MODE" == "on" ]]; then
@@ -137,6 +153,8 @@ run_with_log() {
 ensure_host_log_dir() {
   mkdir -p "${HOST_LOG_DIR}"
   mkdir -p "${HOST_LOG_ARCHIVE_DIR}"
+  touch "${HOST_LOG_DIR}/log-node.log"
+  chmod a+rw "${HOST_LOG_DIR}/log-node.log"
 }
 
 ensure_docker_env_file() {
@@ -207,6 +225,7 @@ rotate_host_logs() {
     fi
     mv "${active}" "${rotated}"
     touch "${active}"
+    chmod a+rw "${active}"
   done
 
   find "${HOST_LOG_ARCHIVE_DIR}" -maxdepth 1 -type f -name 'log-*.*.log' -mtime +7 -delete
@@ -226,26 +245,47 @@ build_stack() {
 
 start_stack() {
   generate_certificates
+  # Stop ingress first, then drain either backend before changing its selection.
+  compose_cmd stop -t 135 nginx
+  local container
+  for service in node php-fpm; do
+    for container in $(docker ps -q --filter "label=com.docker.compose.project=${PROJECT_NAME}" --filter "label=com.docker.compose.service=${service}"); do
+      docker stop -t 135 "$container"
+    done
+  done
   rotate_host_logs
-  compose_cmd up "$@" --remove-orphans
+  compose_cmd up -d --wait "$BACKEND_SERVICE"
+  compose_cmd up -d --wait --remove-orphans
+  if [[ "${1:-}" != "-d" ]]; then compose_cmd up; fi
 }
 
 prepare_db() {
   echo "Preparing database (create if missing + migrations)"
-  # Drop stale migration container/network bindings from previous compose runs.
-  compose_cmd rm -fsv migrate >/dev/null 2>&1 || true
-  run_with_log "log-migrate.log" compose_cmd --profile release up --force-recreate --remove-orphans migrate
+  if [[ "$BACKEND" == "node" ]]; then
+    run_with_log "log-migrate.log" compose_cmd run --rm node node dist/cli.js prepare-db
+  else
+    run_with_log "log-migrate.log" compose_cmd run --rm php-fpm sh -c 'php bin/console doctrine:database:create --if-not-exists --no-interaction && php bin/console app:migrate --no-interaction'
+  fi
 }
 
 migrate_db() {
   echo "Running database migrations"
-  run_with_log "log-migrate.log" compose_cmd run --rm php-fpm php bin/console doctrine:migrations:migrate --no-interaction
+  if [[ "$BACKEND" == "node" ]]; then
+    run_with_log "log-migrate.log" compose_cmd run --rm node node dist/cli.js migrate
+  else
+    run_with_log "log-migrate.log" compose_cmd run --rm php-fpm php bin/console app:migrate --no-interaction
+  fi
 }
 
 seed_db() {
   echo "Seeding database"
-  compose_cmd run --rm php-fpm php bin/console seed:setting
-  compose_cmd run --rm php-fpm php bin/console seed:tag
+  if [[ "$BACKEND" == "node" ]]; then
+    compose_cmd run --rm node node dist/cli.js seed:setting
+    compose_cmd run --rm node node dist/cli.js seed:tag
+  else
+    compose_cmd run --rm php-fpm php bin/console seed:setting
+    compose_cmd run --rm php-fpm php bin/console seed:tag
+  fi
 }
 
 cleanup_compose_residuals() {
@@ -329,7 +369,7 @@ upgrade_stack() {
   stop_stack
 
   build_images
-  prepare_db
+  migrate_db
 
   echo "Starting upgraded stack"
   start_stack ${upgrade_background}

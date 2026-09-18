@@ -1,0 +1,12 @@
+services:
+  assets-init:
+    container_name: jira-logger-acceptance-assets
+  db:
+    container_name: jira-logger-acceptance-db
+    ports: !override
+      - '127.0.0.1:15540:5432'
+  nginx:
+    container_name: jira-logger-acceptance-nginx
+    ports: !override
+      - '127.0.0.1:18084:80'
+      - '127.0.0.1:18443:443'

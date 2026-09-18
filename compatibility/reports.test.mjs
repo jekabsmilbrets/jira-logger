@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 const base = process.env.COMPATIBILITY_URL ?? 'http://127.0.0.1:18081';
-if (!/^http:\/\/127\.0\.0\.1:1808[12]$/.test(base)) throw new Error('Isolated server required');
+if (!/^http:\/\/127\.0\.0\.1:1808[124]$/.test(base)) throw new Error('Isolated server required');
 async function request(method, path, body) {
   const response = await fetch(base + '/api/' + path, {
     method, headers: { Accept: 'application/json', 'Content-Type': 'application/json' },

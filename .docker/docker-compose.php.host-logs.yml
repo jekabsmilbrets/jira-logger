@@ -1,0 +1,5 @@
+services:
+  php-fpm:
+    volumes:
+      - ./../.logs/jira-logger:/var/www/var/log:rw
+      - ./../.logs/jira-logger:/var/log/php-fpm:rw

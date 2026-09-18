@@ -1,0 +1,3 @@
+services:
+  php-fpm:
+    container_name: jira-logger-acceptance-php

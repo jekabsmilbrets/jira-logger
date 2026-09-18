@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 const base = process.env.COMPATIBILITY_URL ?? 'http://127.0.0.1:18081';
-if (!/^http:\/\/127\.0\.0\.1:1808[12]$/.test(base)) {
+if (!/^http:\/\/127\.0\.0\.1:1808[124]$/.test(base)) {
   throw new Error('Only isolated compatibility servers are allowed');
 }
 async function request(method, path, body) {
