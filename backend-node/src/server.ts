@@ -1,3 +1,5 @@
+import { TimersRepository } from './timers.repository.js';
+import { DateCodec } from './dates.js';
 import { TasksRepository } from './tasks.repository.js';
 import { ResponseMapper } from './projections.js';
 import { ReportService } from './reports.js';
@@ -13,7 +15,7 @@ import { ApiError, envelope, frameworkError, type Route } from './http.js';
 import { SettingsController, SettingsService } from './settings.js';
 import { TagsController, TagsService } from './tags.js';
 import { TasksController, TasksService } from './tasks.js';
-import { timerRoutes } from './timers.js';
+import { TimersController, TimersService } from './timers.js';
 import { jiraRoutes, jiraDispatcher } from './jira.js';
 import { jiraWorkLogRoutes } from './jira-work-logs.js';
 import { DateTime } from 'luxon';
@@ -37,6 +39,7 @@ export function buildServer() {
   const tasksRepository = new TasksRepository(new Database(db));
   const tasks = new TasksService(tasksRepository, new TagsRepository(db), timezone, new ResponseMapper());
   const taskRoutes = new TasksController(tasks, new ReportService(tasksRepository, tasks, timezone)).routes();
+  const timerRoutes = new TimersController(new TimersService(new TimersRepository(db), tasks, timezone, new DateCodec(config.internalTimezone))).routes();
   const routes: Route[] = [...settingsRoutes, ...tagRoutes, ...taskRoutes, ...timerRoutes, ...jiraRoutes, ...jiraWorkLogRoutes,
     { path: /^\/api\/doc$/, methods: { GET: async (_request, reply) => reply.type('text/html; charset=UTF-8').send(documentation) } },
     { path: /^\/api\/monitor$/, methods: { GET: async () => envelope({ time: DateTime.now().setZone(await userTimezone()).toFormat("yyyy-MM-dd'T'HH:mm:ssZZ"), message: 'Welcome to Jira-logger API!' }) } },

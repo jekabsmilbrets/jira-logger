@@ -45,8 +45,16 @@ export function parseDate(value: string | null | undefined, zone: string): DateT
 }
 export function sqlDate(value: DateTime): string { return value.toUTC().startOf('second').toISO()!; }
 export function storedDate(value: string): DateTime {
-  return DateTime.fromSQL(value, { zone: config.internalTimezone });
+  return new DateCodec(config.internalTimezone).storedDate(value);
 }
 export function atom(value: string | null, zone: string): string | null {
   return value === null ? null : storedDate(value).setZone(zone).toFormat("yyyy-MM-dd'T'HH:mm:ssZZ");
+}
+
+export class DateCodec {
+  constructor(private readonly internalTimezone: string) {}
+  storedDate(value: string): DateTime { return DateTime.fromSQL(value, { zone: this.internalTimezone }); }
+  atom(value: string | null, zone: string): string | null {
+    return value === null ? null : this.storedDate(value).setZone(zone).toFormat("yyyy-MM-dd'T'HH:mm:ssZZ");
+  }
 }
