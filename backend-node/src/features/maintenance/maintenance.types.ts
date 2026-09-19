@@ -1,5 +1,5 @@
 import type { TimerRow } from '../../database/records.types.js';
-import type { MaintenanceRepository } from '../../maintenance.repository.js';
+import type { MaintenanceRepository } from './maintenance.repository.js';
 
 export interface AuditResult {
   duplicates: { task_id: string; start_time: string; work_log_id: string; duplicate_count: string }[];

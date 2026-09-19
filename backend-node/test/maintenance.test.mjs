@@ -2,12 +2,12 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { Database } from '../dist/db.js';
-import { createPool } from '../dist/db.js';
-import { databaseUrl } from '../dist/config.js';
-import { MigrationRepository } from '../dist/migrations.js';
-import { MaintenanceService } from '../dist/maintenance.js';
-import { MaintenanceRepository } from '../dist/maintenance.repository.js';
+import { Database } from '../dist/database/database.js';
+import { createPool } from '../dist/database/postgres-pool.js';
+import { databaseUrl } from '../dist/application/configuration.js';
+import { MigrationRepository } from '../dist/features/maintenance/migration.repository.js';
+import { MaintenanceService } from '../dist/features/maintenance/maintenance.service.js';
+import { MaintenanceRepository } from '../dist/features/maintenance/maintenance.repository.js';
 
 if (!process.env.DATABASE_URL?.includes('@127.0.0.1:55439/compatibility')) throw new Error('Disposable database required');
 const db = new Database(createPool(databaseUrl(process.env.DATABASE_URL)));

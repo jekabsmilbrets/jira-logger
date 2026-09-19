@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
-import type { DatabaseAccess } from './database/database.types.js';
-import { errorCode } from './db.js';
-import type { AuditResult } from './features/maintenance/maintenance.types.js';
+import { errorCode } from '../../database/database.helpers.js';
+import type { DatabaseAccess } from '../../database/database.types.js';
+import type { AuditResult } from './maintenance.types.js';
 
 export class MaintenanceRepository {
   constructor(private readonly database: DatabaseAccess, private readonly connectionString: string) { }

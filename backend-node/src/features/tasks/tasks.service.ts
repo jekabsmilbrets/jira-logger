@@ -1,15 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import type { TaskRow } from './database/records.types.js';
-import { errorCode } from './db.js';
-import type { TagsStore } from './features/tags/tags.types.js';
-import type { TasksStore } from './features/tasks/tasks.types.js';
-import { ApiError, body, capture, envelope, lengths, queryParams, stringFields } from './http.js';
-import { uuid } from './http/http.constants.js';
-import type { Route } from './http/http.types.js';
-import type { ResponseMapper } from './projections.js';
-import type { ReportService } from './reports.js';
-import type { TaskResponse } from './shared/responses.types.js';
-import type { TimezoneProvider } from './time/time.types.js';
+import { errorCode } from '../../database/database.helpers.js';
+import type { TaskRow } from '../../database/records.types.js';
+import { ApiError } from '../../http/api-error.js';
+import type { ResponseMapper } from '../../shared/response-mapper.js';
+import type { TaskResponse } from '../../shared/responses.types.js';
+import { lengths, stringFields } from '../../shared/validation.js';
+import type { TimezoneProvider } from '../../time/time.types.js';
+import type { TagsStore } from '../tags/tags.types.js';
+import type { TasksStore } from './tasks.types.js';
 
 export class TasksService {
   constructor(private readonly repository: TasksStore, private readonly tags: TagsStore, private readonly timezone: TimezoneProvider, private readonly mapper: ResponseMapper) { }
@@ -53,31 +51,5 @@ export class TasksService {
     await this.get(id);
     try { await this.repository.delete(id); }
     catch { throw new ApiError(400, ['Can not Delete Task']); }
-  }
-}
-
-export class TasksController {
-  constructor(private readonly service: TasksService, private readonly reports: ReportService) { }
-  routes(): Route[] {
-    return [
-      {
-        path: /^\/api\/task$/, methods: {
-          GET: async request => envelope(await this.reports.list(queryParams(request.url))),
-          POST: async request => envelope(await this.service.save(body(request))),
-        }
-      },
-      {
-        path: /^\/api\/task\/exist\/(.+)$/, methods: {
-          GET: async (_request, reply, match) => reply.code(await this.service.exists(decodeURIComponent(capture(match, 1)).trim()) ? 409 : 204).send([]),
-        }
-      },
-      {
-        path: new RegExp(`^/api/task/(${uuid})$`), methods: {
-          GET: async (_request, _reply, match) => envelope(await this.service.show(capture(match, 1))),
-          PATCH: async (request, _reply, match) => envelope(await this.service.save(body(request), capture(match, 1))),
-          DELETE: async (_request, reply, match) => { await this.service.delete(capture(match, 1)); return reply.code(204).send(); },
-        }
-      },
-    ];
   }
 }

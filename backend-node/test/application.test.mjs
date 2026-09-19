@@ -5,9 +5,9 @@ import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { request as httpsRequest } from 'node:https';
-import { Application } from '../dist/application.js';
-import { Configuration } from '../dist/config.js';
-import { Database } from '../dist/db.js';
+import { Application } from '../dist/application/application.js';
+import { Configuration } from '../dist/application/configuration.js';
+import { Database } from '../dist/database/database.js';
 import { buildServer } from '../dist/server.js';
 import { startServer } from '../dist/server.js';
 

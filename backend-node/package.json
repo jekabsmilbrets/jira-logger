@@ -6,6 +6,7 @@
     "node": ">=24 <25"
   },
   "scripts": {
+    "prebuild": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true });\"",
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "node --test test/*.test.mjs"

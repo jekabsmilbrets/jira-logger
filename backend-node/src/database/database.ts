@@ -1,5 +1,5 @@
 import pg from 'pg';
-import type { DatabaseAccess, DatabasePool, DatabaseSession, QueryExecutor } from './database/database.types.js';
+import type { DatabaseAccess, DatabasePool, DatabaseSession, QueryExecutor } from './database.types.js';
 
 export class Database implements DatabaseAccess {
   constructor(private readonly pool: DatabasePool) { }
@@ -26,24 +26,4 @@ export class Database implements DatabaseAccess {
       client.release();
     }
   }
-}
-
-export function createPool(connectionString: string): pg.Pool {
-  // Parsers belong to this pool; importing the module never mutates pg's globals.
-  return new pg.Pool({
-    connectionString, types: {
-      getTypeParser: (oid: number, format?: 'text' | 'binary') =>
-        [1082, 1114, 1184].includes(oid) && format !== 'binary' ? (value: string) => value : pg.types.getTypeParser(oid, format),
-    }
-  });
-}
-
-export function requiredRow<T>(rows: T[]): T {
-  const row = rows[0];
-  if (!row) throw new Error('Expected a database row');
-  return row;
-}
-
-export function errorCode(error: unknown): unknown {
-  return error !== null && typeof error === 'object' && 'code' in error ? error.code : undefined;
 }

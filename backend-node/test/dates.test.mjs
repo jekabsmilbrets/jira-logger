@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseDate } from '../dist/dates.js';
+import { parseDate } from '../dist/time/date.helpers.js';
 
 test('explicit date normalization and PHP daylight-saving choices', () => {
   for (const [input, zone, expected] of [

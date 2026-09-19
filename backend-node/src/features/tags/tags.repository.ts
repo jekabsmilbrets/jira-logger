@@ -1,7 +1,7 @@
-import type { QueryExecutor } from './database/database.types.js';
-import type { TagRow } from './database/records.types.js';
-import { requiredRow } from './db.js';
-import { select } from './features/tags/tags.repository.constants.js';
+import { requiredRow } from '../../database/database.helpers.js';
+import type { QueryExecutor } from '../../database/database.types.js';
+import type { TagRow } from '../../database/records.types.js';
+import { select } from './tags.repository.constants.js';
 
 export class TagsRepository {
   constructor(private readonly database: QueryExecutor) { }

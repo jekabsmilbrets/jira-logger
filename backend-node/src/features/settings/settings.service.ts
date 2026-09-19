@@ -1,11 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import type { SettingRow } from './database/records.types.js';
-import { errorCode } from './db.js';
-import { redacted } from './features/settings/settings.constants.js';
-import type { SettingsStore } from './features/settings/settings.types.js';
-import { ApiError, body, capture, envelope, lengths, stringFields } from './http.js';
-import { uuid } from './http/http.constants.js';
-import type { Route } from './http/http.types.js';
+import { errorCode } from '../../database/database.helpers.js';
+import type { SettingRow } from '../../database/records.types.js';
+import { ApiError } from '../../http/api-error.js';
+import { lengths, stringFields } from '../../shared/validation.js';
+import { redacted } from './settings.constants.js';
+import type { SettingsStore } from './settings.types.js';
 
 function disclose(row: SettingRow): SettingRow {
   return { id: row.id, name: row.name, value: /token|password|secret|key/i.test(row.name) ? redacted : row.value };
@@ -43,26 +42,5 @@ export class SettingsService {
     await this.get(id);
     try { await this.repository.delete(id); }
     catch { throw new ApiError(400, ['Can not Delete Setting']); }
-  }
-}
-
-export class SettingsController {
-  constructor(private readonly service: SettingsService) { }
-  routes(): Route[] {
-    return [
-      {
-        path: /^\/api\/setting$/, methods: {
-          GET: async () => envelope(await this.service.list()),
-          POST: async request => envelope(await this.service.save(body(request))),
-        }
-      },
-      {
-        path: new RegExp(`^/api/setting/(${uuid})$`), methods: {
-          GET: async (_request, _reply, match) => envelope(await this.service.show(capture(match, 1))),
-          PATCH: async (request, _reply, match) => envelope(await this.service.save(body(request), capture(match, 1))),
-          DELETE: async (_request, reply, match) => { await this.service.delete(capture(match, 1)); return reply.code(204).send(); },
-        }
-      },
-    ];
   }
 }

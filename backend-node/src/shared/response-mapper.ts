@@ -1,12 +1,8 @@
-import type { JiraWorkLogRow, TagRow, TaskRow, TimerRow, Timestamps } from './database/records.types.js';
-import type { DateCodec } from './dates.js';
-import type { TaskRelations } from './features/tasks/tasks.types.js';
-import type { JiraWorkLogResponse, TagResponse, TaskResponse, TimerOrdering, TimerResponse, TimestampResponse } from './shared/responses.types.js';
-
-export function lastTimer<T extends TimerOrdering>(timers: T[]): T | null {
-  const sorted = [...timers].sort((a, b) => Date.parse(b.startTime ?? '') - Date.parse(a.startTime ?? '') || Date.parse(b.createdAt ?? '') - Date.parse(a.createdAt ?? ''));
-  return sorted.find(timer => timer.endTime === null) ?? sorted[0] ?? null;
-}
+import type { JiraWorkLogRow, TagRow, TaskRow, TimerRow, Timestamps } from '../database/records.types.js';
+import type { TaskRelations } from '../features/tasks/tasks.types.js';
+import type { DateCodec } from '../time/date-codec.js';
+import type { JiraWorkLogResponse, TagResponse, TaskResponse, TimerResponse, TimestampResponse } from './responses.types.js';
+import { lastTimer } from './timer.helpers.js';
 
 export class ResponseMapper {
   constructor(private readonly dates: DateCodec) { }

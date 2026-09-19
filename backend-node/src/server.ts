@@ -6,10 +6,11 @@ import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { pathToFileURL } from 'node:url';
-import { Application } from './application.js';
-import { ApiError, envelope, frameworkError } from './http.js';
+import { Application } from './application/application.js';
+import { ApiError } from './http/api-error.js';
 import { documentation } from './http/documentation.constants.js';
 import type { Route } from './http/http.types.js';
+import { envelope, frameworkError } from './http/response.helpers.js';
 import { fileLogStream } from './logging.js';
 
 export function buildServer(application = new Application()): FastifyInstance {

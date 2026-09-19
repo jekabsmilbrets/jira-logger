@@ -1,6 +1,6 @@
-import type { DatabaseAccess } from './database/database.types.js';
-import type { JiraWorkLogRow, TagRow, TaskRow, TaskWrite, TimerRow } from './database/records.types.js';
-import type { TaskFilter, TaskRelations } from './features/tasks/tasks.types.js';
+import type { DatabaseAccess } from '../../database/database.types.js';
+import type { JiraWorkLogRow, TagRow, TaskRow, TaskWrite, TimerRow } from '../../database/records.types.js';
+import type { TaskFilter, TaskRelations } from './tasks.types.js';
 
 export class TasksRepository {
   constructor(private readonly database: DatabaseAccess) { }

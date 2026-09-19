@@ -1,6 +1,6 @@
-import type { QueryExecutor } from './database/database.types.js';
-import type { TimerRow, TimerWrite } from './database/records.types.js';
-import { requiredRow } from './db.js';
+import { requiredRow } from '../../database/database.helpers.js';
+import type { QueryExecutor } from '../../database/database.types.js';
+import type { TimerRow, TimerWrite } from '../../database/records.types.js';
 
 export class TimersRepository {
   constructor(private readonly database: QueryExecutor) { }

@@ -1,6 +1,6 @@
-import type { AuditResult, MaintenanceStore, MigrationVersion } from './features/maintenance/maintenance.types.js';
-import { settingSeeds, tagSeeds } from './features/maintenance/seeds.constants.js';
-import type { MigrationRepository } from './migrations.js';
+import type { AuditResult, MaintenanceStore, MigrationVersion } from './maintenance.types.js';
+import type { MigrationRepository } from './migration.repository.js';
+import { settingSeeds, tagSeeds } from './seeds.constants.js';
 
 export class MaintenanceService {
   constructor(private readonly repository: MaintenanceStore, private readonly migrations: Pick<MigrationRepository, 'migrate' | 'status'>) { }

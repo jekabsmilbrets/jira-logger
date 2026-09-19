@@ -1,14 +1,4 @@
 import { DateTime } from 'luxon';
-import type { SettingsStore } from './features/settings/settings.types.js';
-import type { TimezoneProvider } from './time/time.types.js';
-
-export class TimezoneService implements TimezoneProvider {
-  constructor(private readonly settings: Pick<SettingsStore, 'value'>, private readonly fallback: string) { }
-  async userTimezone(): Promise<string> {
-    const value = await this.settings.value('jira.user-time-zone');
-    return typeof value === 'string' && value.trim() && DateTime.now().setZone(value).isValid ? value : this.fallback;
-  }
-}
 
 export function parseDate(value: string | null | undefined, zone: string): DateTime | null {
   if (value == null || !value.trim()) return null;
@@ -40,11 +30,3 @@ export function parseDate(value: string | null | undefined, zone: string): DateT
 }
 
 export function sqlDate(value: DateTime): string { return value.toUTC().startOf('second').toISO()!; }
-
-export class DateCodec {
-  constructor(private readonly internalTimezone: string) { }
-  storedDate(value: string): DateTime { return DateTime.fromSQL(value, { zone: this.internalTimezone }); }
-  atom(value: string | null, zone: string): string | null {
-    return value === null ? null : this.storedDate(value).setZone(zone).toFormat("yyyy-MM-dd'T'HH:mm:ssZZ");
-  }
-}

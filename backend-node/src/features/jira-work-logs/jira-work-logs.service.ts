@@ -1,12 +1,12 @@
-import type { JiraWorkLogRow } from './database/records.types.js';
-import type { JiraWorkLogsStore } from './features/jira-work-logs/jira-work-logs.types.js';
-import type { TasksStore } from './features/tasks/tasks.types.js';
-import { ApiError, body, capture, envelope, lengths, stringFields } from './http.js';
-import { uuid } from './http/http.constants.js';
-import type { Route } from './http/http.types.js';
-import type { ResponseMapper } from './projections.js';
-import type { JiraWorkLogResponse } from './shared/responses.types.js';
-import type { TimezoneProvider } from './time/time.types.js';
+import type { JiraWorkLogRow } from '../../database/records.types.js';
+import { ApiError } from '../../http/api-error.js';
+import { uuid } from '../../http/http.constants.js';
+import type { ResponseMapper } from '../../shared/response-mapper.js';
+import type { JiraWorkLogResponse } from '../../shared/responses.types.js';
+import { lengths, stringFields } from '../../shared/validation.js';
+import type { TimezoneProvider } from '../../time/time.types.js';
+import type { TasksStore } from '../tasks/tasks.types.js';
+import type { JiraWorkLogsStore } from './jira-work-logs.types.js';
 
 export class JiraWorkLogsService {
   constructor(private readonly repository: JiraWorkLogsStore, private readonly tasks: Pick<TasksStore, 'find'>, private readonly timezone: TimezoneProvider, private readonly mapper: ResponseMapper) { }
@@ -47,26 +47,5 @@ export class JiraWorkLogsService {
     await this.get(id);
     try { await this.repository.delete(id); }
     catch { throw new ApiError(400, ['Can not Delete JiraWorkLog']); }
-  }
-}
-
-export class JiraWorkLogsController {
-  constructor(private readonly service: JiraWorkLogsService) { }
-  routes(): Route[] {
-    return [
-      {
-        path: /^\/api\/jira-work-log$/, methods: {
-          GET: async () => envelope(await this.service.list()),
-          POST: async request => envelope(await this.service.save(body(request))),
-        }
-      },
-      {
-        path: new RegExp(`^/api/jira-work-log/(${uuid})$`), methods: {
-          GET: async (_request, _reply, match) => envelope(await this.service.show(capture(match, 1))),
-          PATCH: async (request, _reply, match) => envelope(await this.service.save(body(request), capture(match, 1))),
-          DELETE: async (_request, reply, match) => { await this.service.delete(capture(match, 1)); return reply.code(204).send(); },
-        }
-      },
-    ];
   }
 }

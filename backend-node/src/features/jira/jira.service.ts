@@ -1,17 +1,16 @@
 import { DateTime } from 'luxon';
 import { randomUUID } from 'node:crypto';
-import type { DateCodec } from './dates.js';
-import { parseDate } from './dates.js';
-import type { JiraWorkLogsStore } from './features/jira-work-logs/jira-work-logs.types.js';
-import type { JiraSearchResult, JiraTransport } from './features/jira/jira.types.js';
-import type { TasksStore } from './features/tasks/tasks.types.js';
-import type { TimersStore } from './features/timers/timers.types.js';
-import { ApiError, capture, envelope, queryParams } from './http.js';
-import { uuid } from './http/http.constants.js';
-import type { Route } from './http/http.types.js';
-import { boolean, JiraError, record } from './jira-client.js';
-import type { TasksService } from './tasks.js';
-import type { TimezoneProvider } from './time/time.types.js';
+import { ApiError } from '../../http/api-error.js';
+import { boolean, record } from '../../shared/coercion.js';
+import type { DateCodec } from '../../time/date-codec.js';
+import { parseDate } from '../../time/date.helpers.js';
+import type { TimezoneProvider } from '../../time/time.types.js';
+import type { JiraWorkLogsStore } from '../jira-work-logs/jira-work-logs.types.js';
+import type { TasksService } from '../tasks/tasks.service.js';
+import type { TasksStore } from '../tasks/tasks.types.js';
+import type { TimersStore } from '../timers/timers.types.js';
+import { JiraError } from './jira-error.js';
+import type { JiraSearchResult, JiraTransport } from './jira.types.js';
 
 export class JiraService {
   constructor(private readonly tasks: Pick<TasksService, 'get'>, private readonly taskRepository: Pick<TasksStore, 'names'>,
@@ -117,26 +116,5 @@ export class JiraService {
       throw new ApiError(502, ['Unable to search Jira.']);
     }
     return { issues: result, meta: { limit, truncated: false } };
-  }
-}
-
-export class JiraController {
-  constructor(private readonly service: JiraService) { }
-  routes(): Route[] {
-    return [
-      {
-        path: /^\/api\/task\/jira\/missing$/, methods: {
-          GET: async request => {
-            const result = await this.service.missing(queryParams(request.url));
-            return envelope(result.issues, undefined, result.meta);
-          }
-        }
-      },
-      {
-        path: new RegExp(`^/api/task/(${uuid})/([0-9]{4}-(?:0[1-9]|1[012])-(?:0[1-9]|[12][0-9]|(?<!02-)3[01]))$`), methods: {
-          POST: async (_request, reply, match) => { await this.service.sync(capture(match, 1), capture(match, 2)); return reply.code(204).send(); },
-        }
-      },
-    ];
   }
 }

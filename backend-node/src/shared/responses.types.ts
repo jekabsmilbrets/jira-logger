@@ -6,6 +6,7 @@ export interface TimerResponse extends TimestampResponse {
 }
 
 export type TimerOrdering = Pick<TimerResponse, 'startTime' | 'endTime' | 'createdAt'>;
+
 export interface TodayTotalResponse { totalSeconds: number; }
 
 export interface TagResponse extends TimestampResponse { name: string; isUsed: boolean; }

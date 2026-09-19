@@ -1,7 +1,7 @@
-import type { QueryExecutor } from './database/database.types.js';
-import type { JiraWorkLogRow } from './database/records.types.js';
-import { requiredRow } from './db.js';
-import type { RemoteWorkLogWrite } from './features/jira-work-logs/jira-work-logs.types.js';
+import { requiredRow } from '../../database/database.helpers.js';
+import type { QueryExecutor } from '../../database/database.types.js';
+import type { JiraWorkLogRow } from '../../database/records.types.js';
+import type { RemoteWorkLogWrite } from './jira-work-logs.types.js';
 
 export class JiraWorkLogsRepository {
   constructor(private readonly database: QueryExecutor) { }
