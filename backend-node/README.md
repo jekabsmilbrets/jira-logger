@@ -7,7 +7,7 @@ and compatibility fixture files remain unchanged.
 
 ## Ownership and dependencies
 
-`Application` in `src/application.ts` is the composition root. Each instance owns
+`Application` in `src/application/application.ts` is the composition root. Each instance owns
 its configuration, database pool, repositories, timezone provider, services,
 controllers and Jira transport. Constructor injection permits independent
 applications and replacement persistence/transport boundaries in tests.
@@ -15,29 +15,61 @@ applications and replacement persistence/transport boundaries in tests.
 - Controllers in the feature modules adapt Fastify requests and responses.
 - Services in those modules validate input and implement workflows. They have
   no SQL and accept data rather than Fastify requests or replies.
-- Feature repositories own SQL and return records from `src/models.ts`.
+- Feature repositories own SQL and return records from `src/database/records.types.ts`.
 - `ResponseMapper` maps supplied records to typed response DTOs without querying.
 - `TimezoneService` reads the current setting for each operation; `DateCodec`
   applies the instance's internal timezone. Date parsing retains PHP coercion,
   rollover and daylight-saving behavior.
 - `Database` owns transaction boundaries and pool-local PostgreSQL timestamp
-  parsers. `JiraClient` owns its Undici dispatcher. Neither creates global clients.
+  parsers. `JiraClient` owns its injected or default Undici dispatcher;
+  `JiraHttpSession` holds one snapshot of the host and token. Neither creates
+  global clients.
 - `MaintenanceService`, `MaintenanceRepository` and `MigrationRepository` share
   the same application resources as HTTP workflows. CLI applications create no
   Jira transport unless HTTP routes are constructed.
 
 Importing `server.js` or `cli.js` neither constructs clients nor reads runtime
 configuration. Their executable guards preserve the `dist/server.js` and
-`dist/cli.js` entry points. `buildServer(application)` connects Fastify to an
-application; `/internal/ready` checks its database. Fastify drains real HTTP
-requests before its close hook releases application resources. Application
-cleanup is idempotent and attempts both database and Jira cleanup even when one
-fails. SIGINT, SIGTERM and a failed listen close the server's resources.
+`dist/cli.js` entry points. `buildServer(application)` and
+`startServer(application)` remain compatibility adapters around `HttpServer`.
+It owns Fastify and a `HealthServer` bound to loopback on `HEALTH_PORT`.
+`GET /internal/ready` checks the database on that private listener; the public
+listener returns 404. Direct HTTPS, static assets under `/ng/`, SPA fallback and
+HSTS remain supported. `SystemController` serves documentation and monitoring.
+`FileLogStream` reopens the log on each append to follow manager log rotation.
+
+Fastify drains public requests, then the private readiness listener drains
+before application resources are released. Application cleanup is idempotent
+and attempts both database and Jira cleanup even when one fails. SIGINT,
+SIGTERM, failed readiness, failed listen and TLS setup failures close resources.
 
 The compiler retains strict mode and enables `noUncheckedIndexedAccess`,
 `exactOptionalPropertyTypes` and `noImplicitOverride`. External JSON is narrowed
 from `unknown`; database rows and HTTP projections have explicit types. The
 existing Fastify, PostgreSQL, Undici and Luxon dependencies are retained.
+
+## Source layout
+
+| Directory | Responsibility |
+| --- | --- |
+| `src/application/` | Composition root, runtime configuration and injectable resources |
+| `src/database/` | Pool construction, transactions and database record types |
+| `src/features/` | Settings, tags, tasks/reports, timers, Jira, Jira work logs and maintenance |
+| `src/http/` | Public/private listeners, system routes and HTTP adaptation helpers |
+| `src/logging/` | Rotation-compatible file log stream |
+| `src/time/` | Date conversion and timezone provider |
+| `src/shared/` | Stateless coercion/validation, response mapping and shared DTOs |
+
+Each feature keeps its controller, service and repository together. Declared
+types and interfaces live in `*.types.ts`; module constants live in
+`*.constants.ts` beside their owner. Repository SQL constants remain in the
+persistence layer. Small pure functions remain functions: parsing, validation,
+record mapping helpers and pool construction need no stateful utility class.
+The only root source files are the three compatibility entry points:
+`server.ts`, `cli.ts` and the migration export facade `migrations.ts`.
+
+`npm run build` clears generated `dist/` before compiling, so moved modules
+cannot leave obsolete JavaScript files that mask a broken import.
 
 ## Compatibility investigation and implementation notes
 
@@ -80,7 +112,8 @@ node backend-node/dist/cli.js app:audit:jira-sync-data
 
 Set `DATABASE_URL` for host execution. The existing environment variables also
 remain supported: `APP_INTERNAL_TIMEZONE`, `APP_DEFAULT_USER_TIMEZONE`, `PORT`,
-`ASSETS_PATH`, `CORS_ALLOW_ORIGIN` and `LOG_FILE`.
+`ASSETS_PATH`, `CORS_ALLOW_ORIGIN`, `LOG_FILE`, `HEALTH_PORT`, `TLS_CERT_FILE`
+and `TLS_KEY_FILE`. Configure both TLS files together for HTTPS.
 
 The existing manager builds and runs Node in Docker by default. PHP remains an
 explicit option, using the shared database:
@@ -112,10 +145,11 @@ The separate opt-in shutdown fixture requires the acceptance stack described in
 the compatibility documentation. Jira transport timeout probes require the
 Docker PHP fixture on port 18086 for consistent execution-time limits.
 
-Internal lifecycle tests cover independent injected application instances,
-imports without clients, cleanup failures and an in-flight HTTP request during
-shutdown. Real socket tests use ephemeral loopback ports: Fastify injection does
-not exercise Node's socket-draining behavior.
+Internal tests cover independent injected applications and Jira sessions,
+imports without clients, cleanup failures, TLS setup failure, private readiness
+contracts and in-flight public/private requests during shutdown. Real socket
+tests use ephemeral loopback ports: Fastify injection does not exercise Node's
+socket-draining behavior.
 
 Local run evidence is stored in ignored `.validation/` logs. Executed acceptance
 results for this refactor are recorded in `VALIDATION.md`.

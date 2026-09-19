@@ -71,3 +71,63 @@ runtime files. See [README.md](README.md) for architecture and operating command
 
 Architecture and final validation documentation are committed separately. No
 commits were pushed.
+
+## Follow-up: feature directories and remaining stateful closures
+
+Executed on 2026-09-19 after the user's direct HTTPS, static assets and private
+readiness changes. This increment starts at
+`9668786fe20a5b04fe7e6314d4a25efdf9966b47`, with a clean working tree. Those user
+changes were preserved. All subsequent edits remain inside `backend-node/`.
+
+Before extracting each owner, the current source and its callers were checked:
+Jira settings are read when a session is created, request failures retain their
+status/body distinctions, file logging reopens on each append, public ingress
+opens only after readiness, and private readiness binds only to loopback.
+Existing task/tag transactions, the separate timer stop commit and Jira remote
+write ordering were retained. Pure coercion, parsing and validation functions
+remain stateless helpers.
+
+| Check | Result | Local evidence in `.validation/` |
+| --- | --- | --- |
+| Clean build after relocation and HTTP extraction | Passed; root output contains only `server.js`, `cli.js`, `migrations.js` | `reorg-features-build.log`, `reorg-server-build.log` |
+| Strict unused-local/parameter audit | Passed | `reorg-type-audit.log` |
+| Internal suite | 19 passed, zero failed/skipped | `reorg-server-unit.log` |
+| Unchanged host HTTP fixtures | 7 passed | `reorg-server-http.log` |
+| Unchanged PHP/Node differential fixtures | 7 passed | `reorg-server-differential.log` |
+| Shared migrations after relocation | Passed with the same explicit timestamp preload | `reorg-features-migrations.log` |
+| Real manager Docker acceptance | Passed: builds, maintenance, upgrades/rebuilds, both switching directions, HTTPS/Traefik, failed readiness, logs and teardown | `reorg-manager-docker.log` |
+| Refactored Docker image and private readiness | Built and healthy | `reorg-docker-build.log`, `reorg-docker-start.log` |
+| HTTP fixtures through direct Docker Node | 5 passed | `reorg-docker-http.log` |
+| Controlled Jira write during Docker shutdown | Passed; work-log persistence completed before shutdown | `reorg-docker-shutdown.log` |
+| Jira TLS scope and header timeout | Passed on PHP and Node; 409 after 60.027s / 60.007s | `reorg-jira-transport-headers.log` |
+| Jira interrupted-body timeout | Passed on PHP and Node; framework 500 after 60.038s / 60.006s, no local work-log persistence | `reorg-jira-transport-body.log` |
+
+New internal checks exercise separate authenticated Jira sessions using an
+injected Undici `MockAgent`, private readiness success/failure and port conflict,
+draining an active private probe, and cleanup when a TLS file cannot be read
+during server construction. Existing HTTPS, static asset, rotation, independent
+application and public request-draining tests continue to pass.
+
+The native-source audit found 36 classes across 67 TypeScript files, all declared
+types/interfaces in `*.types.ts`, all module constants in `*.constants.ts`, no
+application `any`, no SQL in controllers/services and no runtime import cycles.
+Evaluated migration versions, SQL statements and advisory lock match the new
+baseline exactly. Source files all have corresponding emitted JavaScript, and
+the build no longer retains obsolete flat modules. No dependencies were added.
+
+Validation used isolated Docker projects and disposable PostgreSQL/Jira fixtures.
+One internal test invocation lacked sandbox socket access and the fixture
+database URL; it failed and was rerun with approved local socket access and the
+disposable URL. Only the successful complete rerun is counted above.
+The owned host fixture processes, acceptance/compatibility containers and
+disposable volumes were removed afterward. The deployed stack remains running.
+
+| Commit | Increment |
+| --- | --- |
+| `74c2ba07` | Separate contracts and constants |
+| `e10427a3` | Organize implementations and test imports by feature; clean generated output before builds |
+| `78d1e65e` | Encapsulate authenticated Jira sessions and verify transport injection |
+| `d7fbedad` | Own HTTP listeners and log streams; verify readiness and cleanup |
+
+Architecture and final validation notes are committed separately. No commits
+were pushed.
