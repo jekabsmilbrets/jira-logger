@@ -25,6 +25,3 @@ export class Configuration {
     this.logFile = environment.LOG_FILE;
   }
 }
-
-// Removed when the composition root owns all feature dependencies.
-export const config = new Configuration();

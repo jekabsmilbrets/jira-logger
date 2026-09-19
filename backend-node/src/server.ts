@@ -1,54 +1,24 @@
-import { JiraClient } from './jira-client.js';
-import { JiraWorkLogsRepository } from './jira-work-logs.repository.js';
-import { TimersRepository } from './timers.repository.js';
-import { DateCodec } from './dates.js';
-import { TasksRepository } from './tasks.repository.js';
-import { ResponseMapper } from './projections.js';
-import { ReportService } from './reports.js';
-import { Database } from './db.js';
-import { SettingsRepository } from './settings.repository.js';
-import { TagsRepository } from './tags.repository.js';
-import { TimezoneService } from './dates.js';
-import Fastify from 'fastify';
+import Fastify, { type FastifyInstance } from 'fastify';
 import { readFile } from 'node:fs/promises';
-import { config } from './config.js';
-import { db } from './db.js';
-import { ApiError, envelope, frameworkError, type Route } from './http.js';
-import { SettingsController, SettingsService } from './settings.js';
-import { TagsController, TagsService } from './tags.js';
-import { TasksController, TasksService } from './tasks.js';
-import { TimersController, TimersService } from './timers.js';
-import { JiraController, JiraService } from './jira.js';
-import { JiraWorkLogsController, JiraWorkLogsService } from './jira-work-logs.js';
-import { DateTime } from 'luxon';
-import { userTimezone } from './dates.js';
-import { fileLogStream } from './logging.js';
 import { pathToFileURL } from 'node:url';
+import { DateTime } from 'luxon';
+import { Application } from './application.js';
+import { ApiError, envelope, frameworkError, type Route } from './http.js';
+import { fileLogStream } from './logging.js';
 import { documentation } from './documentation.js';
 
-export function buildServer() {
-  const app = Fastify({ logger: { redact: ['req.headers.authorization'], ...(process.env.LOG_FILE ? { stream: fileLogStream(process.env.LOG_FILE) } : {}) }, exposeHeadRoutes: false });
+export function buildServer(application = new Application()): FastifyInstance {
+  const { config } = application;
+  const app = Fastify({ logger: { redact: ['req.headers.authorization'], ...(config.logFile ? { stream: fileLogStream(config.logFile) } : {}) }, exposeHeadRoutes: false });
   app.removeAllContentTypeParsers();
   app.addContentTypeParser('*', { parseAs: 'string' }, (_request, value, done) => done(null, value));
   app.addHook('onSend', async (_request, reply, payload) => {
     if (String(reply.getHeader('content-type')).startsWith('application/json')) reply.header('content-type', 'application/json');
     return payload;
   });
-  const settings = new SettingsRepository(db);
-  const timezone = new TimezoneService(settings, config.userTimezone);
-  const settingsRoutes = new SettingsController(new SettingsService(settings)).routes();
-  const tagRoutes = new TagsController(new TagsService(new TagsRepository(db), timezone)).routes();
-  const tasksRepository = new TasksRepository(new Database(db));
-  const tasks = new TasksService(tasksRepository, new TagsRepository(db), timezone, new ResponseMapper());
-  const taskRoutes = new TasksController(tasks, new ReportService(tasksRepository, tasks, timezone)).routes();
-  const timerRoutes = new TimersController(new TimersService(new TimersRepository(db), tasks, timezone, new DateCodec(config.internalTimezone))).routes();
-  const jiraClient = new JiraClient(settings);
-  const logs = new JiraWorkLogsRepository(db);
-  const jiraRoutes = new JiraController(new JiraService(tasks, tasksRepository, new TimersRepository(db), logs, timezone, new DateCodec(config.internalTimezone), jiraClient)).routes();
-  const jiraWorkLogRoutes = new JiraWorkLogsController(new JiraWorkLogsService(logs, tasksRepository, timezone)).routes();
-  const routes: Route[] = [...settingsRoutes, ...tagRoutes, ...taskRoutes, ...timerRoutes, ...jiraRoutes, ...jiraWorkLogRoutes,
+  const routes: Route[] = [...application.routes(),
     { path: /^\/api\/doc$/, methods: { GET: async (_request, reply) => reply.type('text/html; charset=UTF-8').send(documentation) } },
-    { path: /^\/api\/monitor$/, methods: { GET: async () => envelope({ time: DateTime.now().setZone(await userTimezone()).toFormat("yyyy-MM-dd'T'HH:mm:ssZZ"), message: 'Welcome to Jira-logger API!' }) } },
+    { path: /^\/api\/monitor$/, methods: { GET: async () => envelope({ time: DateTime.now().setZone(await application.timezone.userTimezone()).toFormat("yyyy-MM-dd'T'HH:mm:ssZZ"), message: 'Welcome to Jira-logger API!' }) } },
   ];
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ApiError) return reply.code(error.status).send(envelope(undefined, error.errors));
@@ -68,7 +38,7 @@ export function buildServer() {
     if (allowed) reply.header('Access-Control-Expose-Headers', '*');
   });
   app.get('/internal/ready', async (_request, reply) => {
-    try { await db.query('SELECT 1'); return { ready: true }; }
+    try { await application.ready(); return { ready: true }; }
     catch { return reply.code(503).send({ ready: false }); }
   });
   app.all('/*', async (request, reply) => {
@@ -86,12 +56,14 @@ export function buildServer() {
     }
     return reply.type('text/html; charset=UTF-8').send(await readFile(`${config.assets}/index.html`));
   });
-  app.addHook('onClose', async () => { await db.end(); await jiraClient.close(); });
+  app.addHook('onClose', async () => { await application.close(); });
   return app;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const app = buildServer();
+  const application = new Application();
+  const app = buildServer(application);
   for (const signal of ['SIGTERM', 'SIGINT'] as const) process.on(signal, () => { void app.close(); });
-  await app.listen({ host: '0.0.0.0', port: config.port });
+  try { await app.listen({ host: '0.0.0.0', port: application.config.port }); }
+  catch { await app.close(); console.error('Server startup failed'); process.exitCode = 1; }
 }
