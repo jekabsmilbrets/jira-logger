@@ -1,22 +1,13 @@
+import type { JiraWorkLogRow, TagRow, TaskRow, TimerRow, Timestamps } from './database/records.types.js';
 import type { DateCodec } from './dates.js';
-import type { Timestamps, TimerRow, TagRow, TaskRow, JiraWorkLogRow } from './models.js';
-import type { TaskRelations } from './tasks.repository.js';
+import type { TaskRelations } from './features/tasks/tasks.types.js';
+import type { JiraWorkLogResponse, TagResponse, TaskResponse, TimerOrdering, TimerResponse, TimestampResponse } from './shared/responses.types.js';
 
-export interface TimestampResponse { id: string; createdAt: string | null; updatedAt: string | null; }
-export interface TimerResponse extends TimestampResponse {
-  startTime: string | null; endTime: string | null; description: string | null;
-  manuallyModified: boolean; originalStartTime: string | null; originalEndTime: string | null;
-}
-export interface TagResponse extends TimestampResponse { name: string; isUsed: boolean; }
-export interface JiraWorkLogResponse extends TimestampResponse { workLogId: string; description: string | null; timeSpentSeconds: number; startTime: string | null; }
-export interface TaskResponse extends TimestampResponse {
-  name: string; description: string | null; timeLogs: TimerResponse[]; tags: TagResponse[];
-  jiraWorkLogs: JiraWorkLogResponse[]; lastTimeLog: TimerResponse | null;
-}
-export function lastTimer<T extends { startTime: string | null; endTime: string | null; createdAt: string | null }>(timers: T[]): T | null {
+export function lastTimer<T extends TimerOrdering>(timers: T[]): T | null {
   const sorted = [...timers].sort((a, b) => Date.parse(b.startTime ?? '') - Date.parse(a.startTime ?? '') || Date.parse(b.createdAt ?? '') - Date.parse(a.createdAt ?? ''));
   return sorted.find(timer => timer.endTime === null) ?? sorted[0] ?? null;
 }
+
 export class ResponseMapper {
   constructor(private readonly dates: DateCodec) { }
   private timestamps(row: Timestamps, zone: string): TimestampResponse {

@@ -1,13 +1,14 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-export const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[13-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
 export function queryParams(url: string): URLSearchParams {
   // PHP query parsing retains the last value of repeated scalar keys.
   return new URLSearchParams(Object.fromEntries(new URL(url, 'http://localhost').searchParams));
 }
+
 export class ApiError extends Error {
   constructor(public status: number, public errors: string[] | Record<string, string>) { super('API error'); }
 }
+
 export function envelope(data?: unknown, errors?: unknown, meta?: unknown) {
   const output: Record<string, unknown> = {};
   if (data && data !== '0' && !(Array.isArray(data) && data.length === 0)) output.data = data;
@@ -15,17 +16,20 @@ export function envelope(data?: unknown, errors?: unknown, meta?: unknown) {
   if (errors !== undefined && errors !== null) output.errors = errors;
   return Object.keys(output).length ? output : [];
 }
+
 export function body(request: FastifyRequest): Record<string, unknown> {
   let value: unknown;
   try { value = JSON.parse(String(request.body ?? '')); }
   catch { throw new ApiError(400, ['Bad Request']); }
   return value !== null && typeof value === 'object' ? value as Record<string, unknown> : {};
 }
+
 export function stringFields(input: Record<string, unknown>, fields: string[]) {
   for (const field of fields) {
     if (field in input && typeof input[field] !== 'string') throw new ApiError(400, ['Bad Request']);
   }
 }
+
 export function lengths(input: Record<string, unknown>, limits: Record<string, [number, number]>) {
   const errors: Record<string, string> = {};
   for (const [field, [min, max]] of Object.entries(limits)) {
@@ -36,6 +40,7 @@ export function lengths(input: Record<string, unknown>, limits: Record<string, [
   }
   if (Object.keys(errors).length) throw new ApiError(406, errors);
 }
+
 export function frameworkError(request: FastifyRequest, reply: FastifyReply, status = 500) {
   const detail = status === 405 ? 'Method Not Allowed' : 'Internal Server Error';
   reply.code(status).header('Vary', 'Accept');
@@ -76,10 +81,9 @@ h2 { font-size: 18px; }</style>
 </body>
 </html>`);
 }
-export type Handler = (request: FastifyRequest, reply: FastifyReply, match: RegExpMatchArray) => Promise<unknown>;
+
 export function capture(match: RegExpMatchArray, index: number): string {
   const value = match[index];
   if (value === undefined) throw new Error('Missing route capture');
   return value;
 }
-export type Route = { path: RegExp; methods: Record<string, Handler> };

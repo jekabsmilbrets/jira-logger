@@ -1,9 +1,10 @@
-import type { QueryExecutor } from './db.js';
+import type { QueryExecutor } from './database/database.types.js';
+import type { JiraWorkLogRow } from './database/records.types.js';
 import { requiredRow } from './db.js';
-import type { JiraWorkLogRow } from './models.js';
+import type { RemoteWorkLogWrite } from './features/jira-work-logs/jira-work-logs.types.js';
 
 export class JiraWorkLogsRepository {
-  constructor(private readonly database: QueryExecutor) {}
+  constructor(private readonly database: QueryExecutor) { }
   async list(): Promise<JiraWorkLogRow[]> { return (await this.database.query<JiraWorkLogRow>('SELECT * FROM jira_work_log')).rows; }
   async find(id: string): Promise<JiraWorkLogRow | undefined> {
     return (await this.database.query<JiraWorkLogRow>('SELECT * FROM jira_work_log WHERE id=$1', [id])).rows[0];
@@ -14,10 +15,9 @@ export class JiraWorkLogsRepository {
   async update(id: string, taskId: string, description: string | null, seconds: number): Promise<JiraWorkLogRow> {
     return requiredRow((await this.database.query<JiraWorkLogRow>("UPDATE jira_work_log SET task_id=$2,description=$3,time_spent_seconds=$4,updated_at=date_trunc('second',CURRENT_TIMESTAMP) WHERE id=$1 RETURNING *", [id, taskId, description, seconds])).rows);
   }
-  async saveRemote(input: { id: string; taskId: string; remoteId: string; seconds: number; date: string | null }, update: boolean): Promise<void> {
+  async saveRemote(input: RemoteWorkLogWrite, update: boolean): Promise<void> {
     if (update) await this.database.query("UPDATE jira_work_log SET work_log_id=$2,time_spent_seconds=$3,start_time=$4,updated_at=date_trunc('second',CURRENT_TIMESTAMP) WHERE id=$1", [input.id, input.remoteId, input.seconds, input.date]);
     else await this.database.query("INSERT INTO jira_work_log (id,task_id,work_log_id,time_spent_seconds,start_time,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,date_trunc('second',CURRENT_TIMESTAMP),date_trunc('second',CURRENT_TIMESTAMP))", [input.id, input.taskId, input.remoteId, input.seconds, input.date]);
   }
   async delete(id: string): Promise<void> { await this.database.query('DELETE FROM jira_work_log WHERE id=$1', [id]); }
 }
-export type JiraWorkLogsStore = Pick<JiraWorkLogsRepository, 'list' | 'find' | 'forDate' | 'update' | 'saveRemote' | 'delete'>;

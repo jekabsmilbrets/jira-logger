@@ -1,16 +1,5 @@
 import pg from 'pg';
-
-export interface QueryExecutor {
-  query<R extends pg.QueryResultRow>(text: string, values?: unknown[]): Promise<pg.QueryResult<R>>;
-}
-export interface DatabaseSession extends QueryExecutor { release(): void; }
-export interface DatabasePool extends QueryExecutor {
-  connect(): Promise<DatabaseSession>;
-  end(): Promise<void>;
-}
-export interface DatabaseAccess extends QueryExecutor {
-  transaction<T>(operation: (client: QueryExecutor) => Promise<T>): Promise<T>;
-}
+import type { DatabaseAccess, DatabasePool, DatabaseSession, QueryExecutor } from './database/database.types.js';
 
 export class Database implements DatabaseAccess {
   constructor(private readonly pool: DatabasePool) { }
@@ -54,6 +43,7 @@ export function requiredRow<T>(rows: T[]): T {
   if (!row) throw new Error('Expected a database row');
   return row;
 }
+
 export function errorCode(error: unknown): unknown {
   return error !== null && typeof error === 'object' && 'code' in error ? error.code : undefined;
 }

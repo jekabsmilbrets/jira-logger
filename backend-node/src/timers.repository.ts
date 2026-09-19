@@ -1,9 +1,9 @@
-import type { QueryExecutor } from './db.js';
+import type { QueryExecutor } from './database/database.types.js';
+import type { TimerRow, TimerWrite } from './database/records.types.js';
 import { requiredRow } from './db.js';
-import type { TimerRow, TimerWrite } from './models.js';
 
 export class TimersRepository {
-  constructor(private readonly database: QueryExecutor) {}
+  constructor(private readonly database: QueryExecutor) { }
   async find(taskId: string, id: string): Promise<TimerRow | undefined> {
     return (await this.database.query<TimerRow>('SELECT * FROM time_log WHERE task_id=$1 AND id=$2', [taskId, id])).rows[0];
   }
@@ -34,4 +34,3 @@ export class TimersRepository {
     return (await this.database.query<Pick<TimerRow, 'start_time' | 'end_time'>>('SELECT start_time,end_time FROM time_log WHERE start_time<=$2 AND (end_time IS NULL OR end_time>=$1) ORDER BY start_time ASC', [start, end])).rows;
   }
 }
-export type TimersStore = Pick<TimersRepository, 'find' | 'forTask' | 'save' | 'delete' | 'stopAll' | 'start' | 'latestRunning' | 'stop' | 'activeTask' | 'overlapping'>;

@@ -1,10 +1,9 @@
-import type { DatabaseAccess } from './db.js';
-import type { TaskRow, TaskWrite, TimerRow, TagRow, JiraWorkLogRow } from './models.js';
+import type { DatabaseAccess } from './database/database.types.js';
+import type { JiraWorkLogRow, TagRow, TaskRow, TaskWrite, TimerRow } from './database/records.types.js';
+import type { TaskFilter, TaskRelations } from './features/tasks/tasks.types.js';
 
-export interface TaskFilter { tags: string[]; name: string | undefined; range: [string | null, string | null] | undefined; }
-export interface TaskRelations { timers: TimerRow[]; tags: TagRow[]; logs: JiraWorkLogRow[]; }
 export class TasksRepository {
-  constructor(private readonly database: DatabaseAccess) {}
+  constructor(private readonly database: DatabaseAccess) { }
   async find(id: string): Promise<TaskRow | undefined> {
     return (await this.database.query<TaskRow>('SELECT * FROM task WHERE id=$1', [id])).rows[0];
   }
@@ -17,14 +16,14 @@ export class TasksRepository {
     return { timers, tags, logs };
   }
   async list(filter: TaskFilter): Promise<TaskRow[]> {
-  const conditions: string[] = [];
-  const values: unknown[] = [];
-  const bind = (value: unknown) => { values.push(value); return `$${values.length}`; };
-  const { tags, name, range } = filter;
-  if (tags.length) conditions.push(`EXISTS(SELECT 1 FROM tag_task j WHERE j.task_id=t.id AND j.tag_id=ANY(${bind(tags)}::uuid[]))`);
-  if (name) conditions.push(`lower(t.name) LIKE lower(${bind(`%${name}%`)})`);
-  if (range) conditions.push(`EXISTS(SELECT 1 FROM time_log l WHERE l.task_id=t.id AND l.start_time<=${bind(range[1])} AND (l.end_time IS NULL OR l.end_time>=${bind(range[0])}))`);
-  return (await this.database.query<TaskRow>('SELECT t.* FROM task t' + (conditions.length ? ' WHERE ' + conditions.join(' AND ') : ''), values)).rows;
+    const conditions: string[] = [];
+    const values: unknown[] = [];
+    const bind = (value: unknown) => { values.push(value); return `$${values.length}`; };
+    const { tags, name, range } = filter;
+    if (tags.length) conditions.push(`EXISTS(SELECT 1 FROM tag_task j WHERE j.task_id=t.id AND j.tag_id=ANY(${bind(tags)}::uuid[]))`);
+    if (name) conditions.push(`lower(t.name) LIKE lower(${bind(`%${name}%`)})`);
+    if (range) conditions.push(`EXISTS(SELECT 1 FROM time_log l WHERE l.task_id=t.id AND l.start_time<=${bind(range[1])} AND (l.end_time IS NULL OR l.end_time>=${bind(range[0])}))`);
+    return (await this.database.query<TaskRow>('SELECT t.* FROM task t' + (conditions.length ? ' WHERE ' + conditions.join(' AND ') : ''), values)).rows;
   }
   async save(input: TaskWrite, old: TaskRow | undefined, tags: string[] | undefined): Promise<void> {
     await this.database.transaction(async client => {
@@ -43,4 +42,3 @@ export class TasksRepository {
     });
   }
 }
-export type TasksStore = Pick<TasksRepository, 'find' | 'exists' | 'names' | 'relations' | 'list' | 'save' | 'delete'>;

@@ -1,14 +1,16 @@
-import Fastify, { type FastifyInstance } from 'fastify';
-import { readFile } from 'node:fs/promises';
-import { readFileSync } from 'node:fs';
-import { createServer } from 'node:http';
 import fastifyStatic from '@fastify/static';
-import { pathToFileURL } from 'node:url';
+import type { FastifyInstance } from 'fastify';
+import Fastify from 'fastify';
 import { DateTime } from 'luxon';
+import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import { pathToFileURL } from 'node:url';
 import { Application } from './application.js';
-import { ApiError, envelope, frameworkError, type Route } from './http.js';
+import { ApiError, envelope, frameworkError } from './http.js';
+import { documentation } from './http/documentation.constants.js';
+import type { Route } from './http/http.types.js';
 import { fileLogStream } from './logging.js';
-import { documentation } from './documentation.js';
 
 export function buildServer(application = new Application()): FastifyInstance {
   const { config } = application;
@@ -26,8 +28,8 @@ export function buildServer(application = new Application()): FastifyInstance {
     return payload;
   });
   const routes: Route[] = [...application.routes(),
-    { path: /^\/api\/doc$/, methods: { GET: async (_request, reply) => reply.type('text/html; charset=UTF-8').send(documentation) } },
-    { path: /^\/api\/monitor$/, methods: { GET: async () => envelope({ time: DateTime.now().setZone(await application.timezone.userTimezone()).toFormat("yyyy-MM-dd'T'HH:mm:ssZZ"), message: 'Welcome to Jira-logger API!' }) } },
+  { path: /^\/api\/doc$/, methods: { GET: async (_request, reply) => reply.type('text/html; charset=UTF-8').send(documentation) } },
+  { path: /^\/api\/monitor$/, methods: { GET: async () => envelope({ time: DateTime.now().setZone(await application.timezone.userTimezone()).toFormat("yyyy-MM-dd'T'HH:mm:ssZZ"), message: 'Welcome to Jira-logger API!' }) } },
   ];
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ApiError) return reply.code(error.status).send(envelope(undefined, error.errors));

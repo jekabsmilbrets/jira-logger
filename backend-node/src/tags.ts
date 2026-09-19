@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto';
+import type { TagRow } from './database/records.types.js';
 import { errorCode } from './db.js';
-import type { TagsStore } from './tags.repository.js';
-import type { TagRow } from './models.js';
-import type { TimezoneProvider } from './dates.js';
-import type { ResponseMapper, TagResponse } from './projections.js';
-import { ApiError, body, capture, envelope, lengths, stringFields, uuid, type Route } from './http.js';
+import type { TagsStore } from './features/tags/tags.types.js';
+import { ApiError, body, capture, envelope, lengths, stringFields } from './http.js';
+import { uuid } from './http/http.constants.js';
+import type { Route } from './http/http.types.js';
+import type { ResponseMapper } from './projections.js';
+import type { TagResponse } from './shared/responses.types.js';
+import type { TimezoneProvider } from './time/time.types.js';
 
 export class TagsService {
   constructor(private readonly repository: TagsStore, private readonly timezone: TimezoneProvider, private readonly mapper: ResponseMapper) { }
@@ -40,6 +43,7 @@ export class TagsService {
     catch { throw new ApiError(400, ['Can not Delete Tag']); }
   }
 }
+
 export class TagsController {
   constructor(private readonly service: TagsService) { }
   routes(): Route[] {

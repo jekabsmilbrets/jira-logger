@@ -1,14 +1,6 @@
-import type { MaintenanceStore, AuditResult } from './maintenance.repository.js';
-import type { MigrationRepository, MigrationVersion } from './migrations.js';
-
-export const settingSeeds = {
-  'jira.enabled': 'false',
-  'jira.host': 'https://jira.com',
-  'jira.personal-access-token': 'jira_personal_access_token',
-  'jira.user-time-zone': 'Europe/Riga',
-  'jira.locale': 'lv-LV',
-};
-export const tagSeeds = ['CAPEX', 'OPEX', 'OTHER'];
+import type { AuditResult, MaintenanceStore, MigrationVersion } from './features/maintenance/maintenance.types.js';
+import { settingSeeds, tagSeeds } from './features/maintenance/seeds.constants.js';
+import type { MigrationRepository } from './migrations.js';
 
 export class MaintenanceService {
   constructor(private readonly repository: MaintenanceStore, private readonly migrations: Pick<MigrationRepository, 'migrate' | 'status'>) { }

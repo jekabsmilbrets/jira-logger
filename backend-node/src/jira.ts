@@ -1,17 +1,18 @@
 import { DateTime } from 'luxon';
 import { randomUUID } from 'node:crypto';
-import { parseDate, type DateCodec, type TimezoneProvider } from './dates.js';
+import type { DateCodec } from './dates.js';
+import { parseDate } from './dates.js';
+import type { JiraWorkLogsStore } from './features/jira-work-logs/jira-work-logs.types.js';
+import type { JiraSearchResult, JiraTransport } from './features/jira/jira.types.js';
+import type { TasksStore } from './features/tasks/tasks.types.js';
+import type { TimersStore } from './features/timers/timers.types.js';
+import { ApiError, capture, envelope, queryParams } from './http.js';
+import { uuid } from './http/http.constants.js';
+import type { Route } from './http/http.types.js';
+import { boolean, JiraError, record } from './jira-client.js';
 import type { TasksService } from './tasks.js';
-import type { TasksStore } from './tasks.repository.js';
-import type { TimersStore } from './timers.repository.js';
-import type { JiraWorkLogsStore } from './jira-work-logs.repository.js';
-import { boolean, record, JiraError, type JiraTransport } from './jira-client.js';
-import { ApiError, capture, envelope, queryParams, uuid, type Route } from './http.js';
+import type { TimezoneProvider } from './time/time.types.js';
 
-export interface JiraSearchResult {
-  issues: { key: string; summary: string; status: string; issueType: string; updated: string | null }[];
-  meta: { limit: number; truncated: boolean };
-}
 export class JiraService {
   constructor(private readonly tasks: Pick<TasksService, 'get'>, private readonly taskRepository: Pick<TasksStore, 'names'>,
     private readonly timers: Pick<TimersStore, 'forTask'>, private readonly logs: Pick<JiraWorkLogsStore, 'forDate' | 'saveRemote'>,
@@ -118,6 +119,7 @@ export class JiraService {
     return { issues: result, meta: { limit, truncated: false } };
   }
 }
+
 export class JiraController {
   constructor(private readonly service: JiraService) { }
   routes(): Route[] {

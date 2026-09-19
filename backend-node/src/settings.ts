@@ -1,13 +1,16 @@
 import { randomUUID } from 'node:crypto';
+import type { SettingRow } from './database/records.types.js';
 import { errorCode } from './db.js';
-import type { SettingsStore } from './settings.repository.js';
-import type { SettingRow } from './models.js';
-import { ApiError, body, capture, envelope, lengths, stringFields, uuid, type Route } from './http.js';
+import { redacted } from './features/settings/settings.constants.js';
+import type { SettingsStore } from './features/settings/settings.types.js';
+import { ApiError, body, capture, envelope, lengths, stringFields } from './http.js';
+import { uuid } from './http/http.constants.js';
+import type { Route } from './http/http.types.js';
 
-const redacted = '***REDACTED***';
-function disclose(row: { id: string; name: string; value: string }) {
+function disclose(row: SettingRow): SettingRow {
   return { id: row.id, name: row.name, value: /token|password|secret|key/i.test(row.name) ? redacted : row.value };
 }
+
 export class SettingsService {
   constructor(private readonly repository: SettingsStore) { }
   private async get(id: string): Promise<SettingRow> {
@@ -42,6 +45,7 @@ export class SettingsService {
     catch { throw new ApiError(400, ['Can not Delete Setting']); }
   }
 }
+
 export class SettingsController {
   constructor(private readonly service: SettingsService) { }
   routes(): Route[] {

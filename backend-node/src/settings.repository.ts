@@ -1,6 +1,6 @@
-import type { QueryExecutor } from './db.js';
+import type { QueryExecutor } from './database/database.types.js';
+import type { SettingRow } from './database/records.types.js';
 import { requiredRow } from './db.js';
-import type { SettingRow } from './models.js';
 
 export class SettingsRepository {
   constructor(private readonly database: QueryExecutor) { }
@@ -23,4 +23,3 @@ export class SettingsRepository {
   }
   async delete(id: string): Promise<void> { await this.database.query('DELETE FROM setting WHERE id=$1', [id]); }
 }
-export type SettingsStore = Pick<SettingsRepository, 'list' | 'find' | 'value' | 'jiraConfiguration' | 'save' | 'delete'>;

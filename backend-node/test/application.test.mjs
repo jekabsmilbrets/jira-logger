@@ -8,7 +8,8 @@ import { request as httpsRequest } from 'node:https';
 import { Application } from '../dist/application.js';
 import { Configuration } from '../dist/config.js';
 import { Database } from '../dist/db.js';
-import { buildServer, startServer } from '../dist/server.js';
+import { buildServer } from '../dist/server.js';
+import { startServer } from '../dist/server.js';
 
 function fixture(name, options = {}) {
   const calls = { queries: 0, databaseClosed: 0, jiraClosed: 0 };

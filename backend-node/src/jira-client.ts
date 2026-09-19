@@ -1,13 +1,15 @@
 import { Agent, fetch } from 'undici';
-import type { SettingsStore } from './settings.repository.js';
+import type { JiraRequest, JiraTransport } from './features/jira/jira.types.js';
+import type { SettingsStore } from './features/settings/settings.types.js';
 
 export class JiraError extends Error { constructor(message: string, public readonly status = 0) { super(message); } }
+
 export const boolean = (value: string): boolean => /^(1|true|yes|on)$/i.test(value.trim());
+
 export function record(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === 'object' ? Object.fromEntries(Object.entries(value)) : {};
 }
-export type JiraRequest = (path: string, payload: unknown, method?: string) => Promise<Record<string, unknown>>;
-export interface JiraTransport { session(): Promise<JiraRequest>; close(): Promise<void>; }
+
 export class JiraClient implements JiraTransport {
   private readonly dispatcher = new Agent({ connect: { rejectUnauthorized: false, timeout: 60_000 } });
   constructor(private readonly settings: Pick<SettingsStore, 'jiraConfiguration'>) { }

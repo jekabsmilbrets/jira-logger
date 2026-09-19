@@ -1,9 +1,11 @@
 import { DateTime } from 'luxon';
-import type { TasksStore } from './tasks.repository.js';
-import type { TasksService } from './tasks.js';
-import { parseDate, type TimezoneProvider } from './dates.js';
+import { parseDate } from './dates.js';
+import type { TasksStore } from './features/tasks/tasks.types.js';
 import { ApiError } from './http.js';
-import { lastTimer, type TaskResponse } from './projections.js';
+import { lastTimer } from './projections.js';
+import type { TaskResponse } from './shared/responses.types.js';
+import type { TasksService } from './tasks.js';
+import type { TimezoneProvider } from './time/time.types.js';
 
 export class ReportService {
   constructor(private readonly repository: TasksStore, private readonly tasks: Pick<TasksService, 'project'>, private readonly timezone: TimezoneProvider) { }

@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Database, createPool } from '../dist/db.js';
+import { Database } from '../dist/db.js';
+import { createPool } from '../dist/db.js';
 import pg from 'pg';
 
 test('transactions preserve ordering, rollback and release with injected sessions', async () => {

@@ -1,13 +1,19 @@
-import { randomUUID } from 'node:crypto';
 import { DateTime } from 'luxon';
-import type { TimersStore } from './timers.repository.js';
-import type { TimerRow } from './models.js';
-import { parseDate, sqlDate, type DateCodec, type TimezoneProvider } from './dates.js';
-import type { ResponseMapper, TimerResponse, TaskResponse } from './projections.js';
+import { randomUUID } from 'node:crypto';
+import type { TimerRow } from './database/records.types.js';
+import type { DateCodec } from './dates.js';
+import { parseDate, sqlDate } from './dates.js';
+import type { TimersStore } from './features/timers/timers.types.js';
+import { ApiError, body, capture, envelope, stringFields } from './http.js';
+import { uuid } from './http/http.constants.js';
+import type { Route } from './http/http.types.js';
+import type { ResponseMapper } from './projections.js';
+import type { TaskResponse, TimerResponse, TodayTotalResponse } from './shared/responses.types.js';
 import type { TasksService } from './tasks.js';
-import { ApiError, body, capture, envelope, stringFields, uuid, type Route } from './http.js';
+import type { TimezoneProvider } from './time/time.types.js';
 
 function scalar(value: unknown): string { return value === true ? '1' : value === false || value === null || typeof value === 'object' ? '' : String(value); }
+
 export class TimersService {
   constructor(private readonly repository: TimersStore, private readonly tasks: Pick<TasksService, 'get' | 'show'>, private readonly timezone: TimezoneProvider, private readonly dates: DateCodec, private readonly mapper: ResponseMapper) { }
   private async get(taskId: string, id: string, message = 'TimeLog not found'): Promise<TimerRow> {
@@ -73,7 +79,7 @@ export class TimersService {
     if (!id) throw new ApiError(404, ['Task not found']);
     return this.tasks.show(id);
   }
-  async today(): Promise<{ totalSeconds: number }> {
+  async today(): Promise<TodayTotalResponse> {
     const now = DateTime.now().setZone(await this.timezone.userTimezone());
     const start = now.startOf('day');
     const end = start.plus({ days: 1 });
@@ -82,6 +88,7 @@ export class TimersService {
     return { totalSeconds };
   }
 }
+
 export class TimersController {
   constructor(private readonly service: TimersService) { }
   routes(): Route[] {

@@ -1,12 +1,15 @@
 import { randomUUID } from 'node:crypto';
+import type { TaskRow } from './database/records.types.js';
 import { errorCode } from './db.js';
-import type { TasksStore } from './tasks.repository.js';
-import type { TagsStore } from './tags.repository.js';
-import type { TimezoneProvider } from './dates.js';
-import type { TaskRow } from './models.js';
-import type { ResponseMapper, TaskResponse } from './projections.js';
+import type { TagsStore } from './features/tags/tags.types.js';
+import type { TasksStore } from './features/tasks/tasks.types.js';
+import { ApiError, body, capture, envelope, lengths, queryParams, stringFields } from './http.js';
+import { uuid } from './http/http.constants.js';
+import type { Route } from './http/http.types.js';
+import type { ResponseMapper } from './projections.js';
 import type { ReportService } from './reports.js';
-import { ApiError, body, capture, envelope, lengths, queryParams, stringFields, uuid, type Route } from './http.js';
+import type { TaskResponse } from './shared/responses.types.js';
+import type { TimezoneProvider } from './time/time.types.js';
 
 export class TasksService {
   constructor(private readonly repository: TasksStore, private readonly tags: TagsStore, private readonly timezone: TimezoneProvider, private readonly mapper: ResponseMapper) { }
@@ -52,6 +55,7 @@ export class TasksService {
     catch { throw new ApiError(400, ['Can not Delete Task']); }
   }
 }
+
 export class TasksController {
   constructor(private readonly service: TasksService, private readonly reports: ReportService) { }
   routes(): Route[] {

@@ -1,27 +1,27 @@
-import { JiraClient } from './jira-client.js';
-import { JiraWorkLogsRepository } from './jira-work-logs.repository.js';
-import { TimersRepository } from './timers.repository.js';
+import type { ApplicationResources } from './application/application.types.js';
+import { Configuration } from './config.js';
 import { DateCodec, TimezoneService } from './dates.js';
-import { TasksRepository } from './tasks.repository.js';
+import { createPool, Database } from './db.js';
+import type { JiraTransport } from './features/jira/jira.types.js';
+import type { Route } from './http/http.types.js';
+import { JiraClient } from './jira-client.js';
+import { JiraWorkLogsController, JiraWorkLogsService } from './jira-work-logs.js';
+import { JiraWorkLogsRepository } from './jira-work-logs.repository.js';
+import { JiraController, JiraService } from './jira.js';
+import { MaintenanceService } from './maintenance.js';
+import { MaintenanceRepository } from './maintenance.repository.js';
+import { MigrationRepository } from './migrations.js';
 import { ResponseMapper } from './projections.js';
 import { ReportService } from './reports.js';
-import { SettingsRepository } from './settings.repository.js';
-import { TagsRepository } from './tags.repository.js';
 import { SettingsController, SettingsService } from './settings.js';
+import { SettingsRepository } from './settings.repository.js';
 import { TagsController, TagsService } from './tags.js';
+import { TagsRepository } from './tags.repository.js';
 import { TasksController, TasksService } from './tasks.js';
+import { TasksRepository } from './tasks.repository.js';
 import { TimersController, TimersService } from './timers.js';
-import { JiraController, JiraService } from './jira.js';
-import { JiraWorkLogsController, JiraWorkLogsService } from './jira-work-logs.js';
-import { Configuration } from './config.js';
-import { Database, createPool } from './db.js';
-import type { JiraTransport } from './jira-client.js';
-import { MigrationRepository } from './migrations.js';
-import { MaintenanceRepository } from './maintenance.repository.js';
-import { MaintenanceService } from './maintenance.js';
-import type { Route } from './http.js';
+import { TimersRepository } from './timers.repository.js';
 
-export interface ApplicationResources { database?: Database; jira?: JiraTransport; }
 export class Application {
   private readonly database: Database;
   private readonly settings: SettingsRepository;

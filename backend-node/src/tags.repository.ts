@@ -1,10 +1,10 @@
-import type { QueryExecutor } from './db.js';
+import type { QueryExecutor } from './database/database.types.js';
+import type { TagRow } from './database/records.types.js';
 import { requiredRow } from './db.js';
-import type { TagRow } from './models.js';
+import { select } from './features/tags/tags.repository.constants.js';
 
-const select = 'SELECT t.*, EXISTS(SELECT 1 FROM tag_task j WHERE j.tag_id=t.id) AS is_used FROM tag t';
 export class TagsRepository {
-  constructor(private readonly database: QueryExecutor) {}
+  constructor(private readonly database: QueryExecutor) { }
   async list(): Promise<TagRow[]> { return (await this.database.query<TagRow>(select)).rows; }
   async find(id: string): Promise<TagRow | undefined> { return (await this.database.query<TagRow>(`${select} WHERE t.id=$1`, [id])).rows[0]; }
   async resolve(ids: readonly (string | null)[]): Promise<string[]> {
@@ -18,4 +18,3 @@ export class TagsRepository {
   }
   async delete(id: string): Promise<void> { await this.database.query('DELETE FROM tag WHERE id=$1', [id]); }
 }
-export type TagsStore = Pick<TagsRepository, 'list' | 'find' | 'resolve' | 'save' | 'delete'>;

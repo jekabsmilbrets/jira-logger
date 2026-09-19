@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
-import type { SettingsStore } from './settings.repository.js';
+import type { SettingsStore } from './features/settings/settings.types.js';
+import type { TimezoneProvider } from './time/time.types.js';
 
-export interface TimezoneProvider { userTimezone(): Promise<string>; }
 export class TimezoneService implements TimezoneProvider {
   constructor(private readonly settings: Pick<SettingsStore, 'value'>, private readonly fallback: string) { }
   async userTimezone(): Promise<string> {
@@ -38,7 +38,9 @@ export function parseDate(value: string | null | undefined, zone: string): DateT
   if (!result.isValid) throw new Error('Invalid date input.');
   return result;
 }
+
 export function sqlDate(value: DateTime): string { return value.toUTC().startOf('second').toISO()!; }
+
 export class DateCodec {
   constructor(private readonly internalTimezone: string) { }
   storedDate(value: string): DateTime { return DateTime.fromSQL(value, { zone: this.internalTimezone }); }

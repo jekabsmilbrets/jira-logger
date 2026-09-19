@@ -19,6 +19,7 @@ export class MaintenanceCommand {
     }
   }
 }
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const application = new Application();
   try { await new MaintenanceCommand(application.maintenance).run(process.argv.slice(2)); }

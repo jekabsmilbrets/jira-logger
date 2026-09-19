@@ -1,15 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
-import type { DatabaseAccess } from './db.js';
+import type { DatabaseAccess } from './database/database.types.js';
 import { errorCode } from './db.js';
-import type { TimerRow } from './models.js';
+import type { AuditResult } from './features/maintenance/maintenance.types.js';
 
-export interface AuditResult {
-  duplicates: { task_id: string; start_time: string; work_log_id: string; duplicate_count: string }[];
-  invalidTimeLogs: Pick<TimerRow, 'id' | 'task_id' | 'start_time' | 'end_time'>[];
-}
 export class MaintenanceRepository {
-  constructor(private readonly database: DatabaseAccess, private readonly connectionString: string) {}
+  constructor(private readonly database: DatabaseAccess, private readonly connectionString: string) { }
   async seed(name: 'setting' | 'tag', entries: readonly (readonly [string, string | undefined])[], unload: boolean): Promise<void> {
     await this.database.transaction(async client => {
       if (unload) { await client.query(`DELETE FROM ${name} WHERE name = ANY($1)`, [entries.map(([key]) => key)]); return; }
@@ -43,4 +39,3 @@ export class MaintenanceRepository {
     return { duplicates: duplicates.rows, invalidTimeLogs: invalid.rows };
   }
 }
-export type MaintenanceStore = Pick<MaintenanceRepository, 'seed' | 'createDatabase' | 'audit'>;
