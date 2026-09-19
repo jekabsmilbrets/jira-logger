@@ -10,7 +10,7 @@ import { ApiError, body, capture, envelope, stringFields, uuid, type Route } fro
 function scalar(value: unknown): string { return value === true ? '1' : value === false || value === null || typeof value === 'object' ? '' : String(value); }
 export class TimersService {
   constructor(private readonly repository: TimersStore, private readonly tasks: Pick<TasksService, 'get' | 'show'>, private readonly timezone: TimezoneProvider, private readonly dates: DateCodec, private readonly mapper: ResponseMapper) { }
-  async get(taskId: string, id: string, message = 'TimeLog not found'): Promise<TimerRow> {
+  private async get(taskId: string, id: string, message = 'TimeLog not found'): Promise<TimerRow> {
     const row = await this.repository.find(taskId, id);
     if (!row) throw new ApiError(404, [message]);
     return row;

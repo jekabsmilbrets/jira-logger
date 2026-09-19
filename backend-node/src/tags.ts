@@ -8,7 +8,7 @@ import { ApiError, body, capture, envelope, lengths, stringFields, uuid, type Ro
 
 export class TagsService {
   constructor(private readonly repository: TagsStore, private readonly timezone: TimezoneProvider, private readonly mapper: ResponseMapper) { }
-  async get(id: string): Promise<TagRow> {
+  private async get(id: string): Promise<TagRow> {
     const row = await this.repository.find(id);
     if (!row) throw new ApiError(404, ['Tag not found']);
     return row;

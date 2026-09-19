@@ -46,6 +46,16 @@ test('cleanup closes Jira even when the database close fails', async () => {
   assert.equal(calls.jiraClosed, 1);
 });
 
+test('readiness reports an injected database failure without exposing its details', async () => {
+  const { application } = fixture('unavailable', { query: async () => { throw new Error('private connection details'); } });
+  const server = buildServer(application);
+  try {
+    const response = await server.inject('/internal/ready');
+    assert.equal(response.statusCode, 503);
+    assert.deepEqual(response.json(), { ready: false });
+  } finally { await server.close(); }
+});
+
 test('HTTP close drains an active request before releasing application resources', { timeout: 5000 }, async () => {
   let entered, release;
   const started = new Promise(resolve => { entered = resolve; });

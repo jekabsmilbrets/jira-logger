@@ -7,9 +7,6 @@ export class TagsRepository {
   constructor(private readonly database: QueryExecutor) {}
   async list(): Promise<TagRow[]> { return (await this.database.query<TagRow>(select)).rows; }
   async find(id: string): Promise<TagRow | undefined> { return (await this.database.query<TagRow>(`${select} WHERE t.id=$1`, [id])).rows[0]; }
-  async forTask(id: string): Promise<TagRow[]> {
-    return (await this.database.query<TagRow>('SELECT t.*,true AS is_used FROM tag t JOIN tag_task j ON j.tag_id=t.id WHERE j.task_id=$1', [id])).rows;
-  }
   async resolve(ids: readonly (string | null)[]): Promise<string[]> {
     return (await this.database.query<{ id: string }>('SELECT id FROM tag WHERE id=ANY($1::uuid[])', [ids])).rows.map(row => row.id);
   }
@@ -21,4 +18,4 @@ export class TagsRepository {
   }
   async delete(id: string): Promise<void> { await this.database.query('DELETE FROM tag WHERE id=$1', [id]); }
 }
-export type TagsStore = Pick<TagsRepository, 'list' | 'find' | 'forTask' | 'resolve' | 'save' | 'delete'>;
+export type TagsStore = Pick<TagsRepository, 'list' | 'find' | 'resolve' | 'save' | 'delete'>;

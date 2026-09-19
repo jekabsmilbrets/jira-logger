@@ -7,7 +7,7 @@ import { ApiError, body, capture, envelope, lengths, stringFields, uuid, type Ro
 
 export class JiraWorkLogsService {
   constructor(private readonly repository: JiraWorkLogsStore, private readonly tasks: Pick<TasksStore, 'find'>, private readonly timezone: TimezoneProvider, private readonly mapper: ResponseMapper) { }
-  async get(id: string): Promise<JiraWorkLogRow> {
+  private async get(id: string): Promise<JiraWorkLogRow> {
     const row = await this.repository.find(id);
     if (!row) throw new ApiError(404, ['JiraWorkLog not found']);
     return row;
