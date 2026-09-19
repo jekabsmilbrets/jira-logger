@@ -38,15 +38,15 @@ export class JiraService {
     if (pieces.length > 1) descriptions = [(pieces[1] ?? '').trim()];
     let remote;
     try {
-      const request = await this.client.session();
+      const session = await this.client.session();
       if (seconds < 60) throw new JiraError('Cannot report less than 60 second!');
       const payload = { id: null, self: null, author: null, updateAuthor: null, updated: null, timeSpent: null, comment: descriptions.join(', '), started: day.set({ hour: 17 }).toFormat("yyyy-MM-dd'T'HH:mm:ss'.000'ZZZ"), timeSpentSeconds: seconds, visibility: null };
       const path = `/issue/${(pieces[0] ?? '').trim()}/worklog`;
       if (existing?.work_log_id && existing.work_log_id !== '0') {
-        try { remote = await request(`${path}/${parseInt(existing.work_log_id, 10) || 0}`, payload, 'PUT'); }
+        try { remote = await session.request(`${path}/${parseInt(existing.work_log_id, 10) || 0}`, payload, 'PUT'); }
         catch (error) { if (!(error instanceof JiraError)) throw error; }
       }
-      remote ??= await request(path, payload);
+      remote ??= await session.request(path, payload);
     } catch (error) {
       if (error instanceof JiraError) throw new ApiError(409, ['Problems syncing with JIRA!', error.message]);
       throw error;
@@ -84,14 +84,14 @@ export class JiraService {
     const known = new Set((await this.taskRepository.names()).map(name => (name.split('-#-')[0] ?? '').trim().toUpperCase()).filter(key => /^[A-Z][A-Z0-9_]*-\d+$/.test(key)));
     const result = [];
     try {
-      const request = await this.client.session();
+      const session = await this.client.session();
       let enhanced = false;
       let startAt = 0;
       let nextPageToken: unknown = '';
       for (; ;) {
         let page;
         const common = { jql, maxResults: limit, fields: ['summary', 'status', 'issuetype', 'updated'] };
-        try { page = await request(enhanced ? '/search/jql' : '/search', enhanced ? { ...common, expand: '', reconcileIssues: [], ...(nextPageToken ? { nextPageToken } : {}) } : { ...common, startAt }); }
+        try { page = await session.request(enhanced ? '/search/jql' : '/search', enhanced ? { ...common, expand: '', reconcileIssues: [], ...(nextPageToken ? { nextPageToken } : {}) } : { ...common, startAt }); }
         catch (error) {
           if (!enhanced && error instanceof JiraError && [404, 405, 410].includes(error.status)) { enhanced = true; continue; }
           throw error;
