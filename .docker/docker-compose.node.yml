@@ -12,6 +12,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      assets-init:
+        condition: service_completed_successfully
     volumes:
       - assetsData:/var/www/public/ng:ro
     stop_grace_period: 135s
@@ -23,13 +25,3 @@ services:
       start_period: 5s
     labels:
       - "traefik.enable=false"
-  nginx:
-    image: ${COMPOSE_PROJECT_NAME:-jira-logger}-nginx-node
-    build:
-      dockerfile: ./.docker/nginx/Dockerfile.node
-    depends_on:
-      node:
-        condition: service_healthy
-    volumes:
-      - ./nginx/node-sites/:/etc/nginx/sites-available:ro
-      - ./nginx/node-upstream/:/etc/nginx/conf.d:ro

@@ -33,7 +33,3 @@ services:
       - log_filename=log-postgres.log
       - -c
       - log_truncate_on_rotation=off
-
-  nginx:
-    volumes:
-      - ./../.logs/jira-logger:/var/log/nginx:rw

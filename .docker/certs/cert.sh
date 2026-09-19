@@ -46,8 +46,7 @@ if [ ! -f "$DOMAIN_NAME.key" ]; then
     -sha256 \
     -days 3650
 
-  cat "$DOMAIN_NAME.crt" "$DOMAIN_NAME.key" \
-      | tee "$DOMAIN_NAME.pem"
+  cat "$DOMAIN_NAME.crt" "$DOMAIN_NAME.key" > "$DOMAIN_NAME.pem"
   echo "New TLS self-signed certificate created"
 
 else

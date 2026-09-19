@@ -1,4 +1,7 @@
 services:
+  nginx:
+    volumes:
+      - ./../.logs/jira-logger:/var/log/nginx:rw
   php-fpm:
     volumes:
       - ./../.logs/jira-logger:/var/www/var/log:rw

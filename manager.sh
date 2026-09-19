@@ -121,11 +121,12 @@ fi
 
 if [[ "$TRAEFIK_MODE" == "on" ]]; then
   COMPOSE_FILES+=(./.docker/docker-compose-traefik.yml)
+  COMPOSE_FILES+=("./.docker/docker-compose.${BACKEND}.traefik.yml")
   if [[ "${LOGGING_MODE}" == "on" ]]; then
     COMPOSE_FILES+=(./.docker/docker-compose-traefik.host-logs.yml)
   fi
 else
-  COMPOSE_FILES+=(./.docker/docker-compose.no-traefik.yml)
+  COMPOSE_FILES+=("./.docker/docker-compose.${BACKEND}.no-traefik.yml")
 fi
 
 compose_cmd() {
@@ -246,9 +247,12 @@ build_stack() {
 start_stack() {
   generate_certificates
   # Stop ingress first, then drain either backend before changing its selection.
-  compose_cmd stop -t 135 nginx
-  local container
-  for service in node php-fpm; do
+  ensure_docker_env_file
+  local container service
+  # Discover old services by project label: they may not exist in the new overlay.
+  for service in nginx traefik node php-fpm; do
+    # Shared Traefik may serve other projects; stop it only to release direct ports.
+    if [[ "$service" == "traefik" && "$TRAEFIK_MODE" == "on" ]]; then continue; fi
     for container in $(docker ps -q --filter "label=com.docker.compose.project=${PROJECT_NAME}" --filter "label=com.docker.compose.service=${service}"); do
       docker stop -t 135 "$container"
     done

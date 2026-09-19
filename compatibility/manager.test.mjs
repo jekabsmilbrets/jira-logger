@@ -26,6 +26,9 @@ function run(action, options = [], failReady = false) {
     writeFileSync(join(root, 'bin/docker'), `#!/bin/sh
 printf '%s\\n' "$*" >> "$CALLS"
 case "$*" in
+  'ps -q '*service=nginx*) echo old-nginx;;
+  'ps -q '*service=traefik*) echo old-traefik;;
+  'ps -q '*service=node*) echo old-node;;
   *'printenv POSTGRES_USER'*) echo compatibility;;
   *'printenv POSTGRES_DB'*) echo compatibility;;
   *'printenv POSTGRES_PASSWORD'*) echo disposable;;
@@ -90,6 +93,17 @@ test('default selection resets, -B preserves -b, and failed readiness keeps ingr
   assert.equal(invalid.calls, '');
   const failed = run('start', ['-b'], true);
   assert.equal(failed.status, 42);
-  assert.ok(failed.calls.includes('stop -t 135 nginx'));
+  assert.ok(failed.calls.includes('stop -t 135 old-nginx'));
+  assert.ok(failed.calls.indexOf('stop -t 135 old-traefik') < failed.calls.indexOf('stop -t 135 old-node'));
   assert.ok(!failed.calls.includes('up -d --wait --remove-orphans'));
+});
+
+test('manager selects backend-specific ingress overlays with and without Traefik', () => {
+  for (const backend of ['node', 'php']) for (const mode of ['on', 'off']) {
+    const result = run('start', ['-b', '--backend', backend, '-t', mode, '-l', 'on']);
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(result.calls.includes(`docker-compose.${backend}.${mode === 'on' ? 'traefik' : 'no-traefik'}.yml`));
+    assert.ok(!result.calls.includes('docker-compose.no-traefik.yml'));
+    assert.equal(result.calls.includes('stop -t 135 old-traefik'), mode === 'off');
+  }
 });

@@ -40,22 +40,6 @@ services:
     labels:
       - "traefik.enable=false"
 
-  nginx:
-    container_name: "jira-logger-nginx"
-    build:
-      context: ./../
-      dockerfile: ./.docker/nginx/Dockerfile
-    depends_on:
-      assets-init:
-        condition: service_completed_successfully
-    volumes:
-      - assetsData:/var/www/public/ng:ro
-    healthcheck:
-      test: ["CMD-SHELL", "nginx -t"]
-      interval: 60s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
 volumes:
   dbData:
   assetsData:

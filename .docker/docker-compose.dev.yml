@@ -2,10 +2,3 @@ services:
   db:
     ports:
       - "15432:5432"
-
-  nginx:
-    volumes:
-      - ./certs/:/etc/ssl/certs/
-      - ./nginx/sites/:/etc/nginx/sites-available
-      - ./nginx/conf.d/:/etc/nginx/conf.d
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
