@@ -1,5 +1,8 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { readFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import fastifyStatic from '@fastify/static';
 import { pathToFileURL } from 'node:url';
 import { DateTime } from 'luxon';
 import { Application } from './application.js';
@@ -9,10 +12,16 @@ import { documentation } from './documentation.js';
 
 export function buildServer(application = new Application()): FastifyInstance {
   const { config } = application;
-  const app = Fastify({ logger: { redact: ['req.headers.authorization'], ...(config.logFile ? { stream: fileLogStream(config.logFile) } : {}) }, exposeHeadRoutes: false });
+  const app = Fastify({
+    logger: { redact: ['req.headers.authorization'], ...(config.logFile ? { stream: fileLogStream(config.logFile) } : {}) },
+    exposeHeadRoutes: false,
+    ...(config.tlsCertificate ? { https: { cert: readFileSync(config.tlsCertificate), key: readFileSync(config.tlsKey!), minVersion: 'TLSv1.2' as const } } : {}),
+  });
+  app.register(fastifyStatic, { root: config.assets, prefix: '/ng/', dotfiles: 'ignore' });
   app.removeAllContentTypeParsers();
   app.addContentTypeParser('*', { parseAs: 'string' }, (_request, value, done) => done(null, value));
   app.addHook('onSend', async (_request, reply, payload) => {
+    if (config.tlsCertificate) reply.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     if (String(reply.getHeader('content-type')).startsWith('application/json')) reply.header('content-type', 'application/json');
     return payload;
   });
@@ -26,6 +35,8 @@ export function buildServer(application = new Application()): FastifyInstance {
     return frameworkError(request, reply);
   });
   app.addHook('onRequest', async (request, reply) => {
+    const path = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+    if (path === '/internal/ready' || /\.php(?:\/|$)/.test(path)) return reply.code(404).send();
     const origin = request.headers.origin;
     if (!origin) return;
     const allowed = new RegExp(config.corsOrigin).test(origin);
@@ -36,10 +47,6 @@ export function buildServer(application = new Application()): FastifyInstance {
         .header('Access-Control-Max-Age', '3600').code(200).send('');
     }
     if (allowed) reply.header('Access-Control-Expose-Headers', '*');
-  });
-  app.get('/internal/ready', async (_request, reply) => {
-    try { await application.ready(); return { ready: true }; }
-    catch { return reply.code(503).send({ ready: false }); }
   });
   app.all('/*', async (request, reply) => {
     const path = new URL(request.url, 'http://localhost').pathname;
@@ -60,10 +67,34 @@ export function buildServer(application = new Application()): FastifyInstance {
   return app;
 }
 
+export async function startServer(application = new Application()): Promise<FastifyInstance> {
+  const app = buildServer(application);
+  // A separate loopback listener keeps readiness private with or without a proxy.
+  const health = createServer(async (request, response) => {
+    if (request.method !== 'GET' || request.url !== '/internal/ready') { response.writeHead(404).end(); return; }
+    response.setHeader('Content-Type', 'application/json');
+    try { await application.ready(); response.end(JSON.stringify({ ready: true })); }
+    catch { response.writeHead(503).end(JSON.stringify({ ready: false })); }
+  });
+  app.addHook('onClose', async () => {
+    if (health.listening) await new Promise<void>((resolve, reject) => health.close(error => error ? reject(error) : resolve()));
+  });
+  try {
+    // Never open public ingress when startup readiness fails.
+    await application.ready();
+    await new Promise<void>((resolve, reject) => {
+      health.once('error', reject);
+      health.listen(application.config.healthPort, '127.0.0.1', resolve);
+    });
+    await app.listen({ host: '0.0.0.0', port: application.config.port });
+    return app;
+  } catch (error) { await app.close(); throw error; }
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const application = new Application();
-  const app = buildServer(application);
-  for (const signal of ['SIGTERM', 'SIGINT'] as const) process.on(signal, () => { void app.close(); });
-  try { await app.listen({ host: '0.0.0.0', port: application.config.port }); }
-  catch { await app.close(); console.error('Server startup failed'); process.exitCode = 1; }
+  try {
+    const app = await startServer(application);
+    for (const signal of ['SIGTERM', 'SIGINT'] as const) process.on(signal, () => { void app.close(); });
+  } catch { await application.close(); console.error('Server startup failed'); process.exitCode = 1; }
 }
