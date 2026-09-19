@@ -459,9 +459,9 @@ Do not assume that a successful Cloud request proves compatibility with the user
 
 Keep the shared infrastructure and add separate backend selections:
 
-- Shared Compose configuration for PostgreSQL, frontend assets, Nginx, and optional Traefik.
-- A PHP backend overlay.
-- A Node backend overlay.
+- Shared Compose configuration for PostgreSQL, frontend assets, and optional Traefik.
+- A PHP backend overlay including Nginx.
+- A Node backend overlay without Nginx.
 - Exactly one selected backend overlay per application launch.
 
 Preserve the Compose project identity and existing `dbData` and `assetsData` volumes. Selecting another backend must not create an empty parallel database or remove data.
@@ -471,8 +471,9 @@ Build Node using a multi-stage image:
 - Builder installs locked dependencies and compiles TypeScript.
 - Runtime contains compiled code and production dependencies.
 - Runtime executes as a non-root user.
-- Application HTTP is internal to the Compose network.
-- Existing public ports and URLs continue through Nginx.
+- With Traefik, Node HTTP is internal to the Compose network and Traefik terminates HTTPS.
+- Without Traefik, Node terminates HTTPS directly on host port 443 using the existing local certificate.
+- PHP continues to use Nginx for public HTTP/HTTPS and FastCGI.
 - Maintenance commands use the same selected backend image.
 
 Node builds, startup, database preparation, migrations, seeds, and audits must not build or launch PHP.
@@ -490,7 +491,9 @@ Preserve:
 - The current relationship between build base href `/ng/` and application base href `/`.
 - Optional Traefik and HTTPS behavior.
 
-Provide backend-specific Nginx site and upstream configuration together. Switching to Node must not leave references to PHP-FPM or stale PHP service names.
+Keep Nginx configuration in PHP-only overlays. Node serves frontend assets itself, with correct content types, HEAD, range and conditional requests. Node mode must neither build nor run Nginx. Traefik routes directly to Node when enabled.
+
+Node's readiness listener must bind to container loopback only, separate from the public HTTP/HTTPS listener. The public readiness path, PHP paths and dotfiles must not expose internal data. Direct HTTPS must load both certificate and key, fail closed on configuration errors, and run the application as the non-root Node user.
 
 Node configuration must never expose PHP source files as static content.
 
@@ -548,7 +551,7 @@ For an actual backend switch:
 2. Drain and stop the previously active backend.
 3. Preserve database and asset volumes.
 4. Start the selected backend and verify readiness.
-5. Start/reload the matching Nginx configuration.
+5. Start Traefik if selected, or PHP's Nginx. Node without Traefik serves HTTPS directly.
 
 If Node fails, report the failure. Do not silently launch PHP.
 
@@ -1023,6 +1026,33 @@ These checks do not establish live PostgreSQL, actual Jira-deployment, or Node-r
 - Disposable acceptance/compatibility containers and volumes, host fixture
   servers and the temporary browser tab were cleaned up after validation.
   Existing deployed containers and data were not changed.
+
+### Implementation notes — Node ingress without Nginx (2026-09-19)
+
+- The follow-up requirement replaces the earlier shared-Nginx arrangement:
+  Node runs without Nginx, Traefik routes directly to Node when enabled, and
+  Node terminates HTTPS itself on host port 443 when Traefik is disabled.
+  PHP retains Nginx in both modes.
+- Investigation confirmed Nginx previously supplied static assets, public-path
+  restrictions, standalone TLS, and ingress routing. Shared Compose/dev/logging
+  overlays could recreate Nginx implicitly, so its complete service definition
+  and mounts now belong to PHP-only overlays.
+- Node serves `/ng/` through the patched Fastify static plugin, preserving MIME,
+  HEAD, range and conditional requests while retaining Angular fallback routes.
+  PHP paths and dotfiles cannot expose source or private configuration.
+- Readiness moved to a separate container-loopback listener on port 3001.
+  Node checks database readiness before opening its public listener.
+  Standalone TLS loads the existing certificate; a short root initialization
+  stages its private key with restricted permissions before executing Node as
+  UID 1000. Certificate generation no longer prints the private key.
+- Manager switching discovers prior containers by project label rather than
+  assuming Nginx exists in the selected configuration. Shared Traefik remains
+  running when still enabled and stops when direct mode needs its public ports.
+- Validation covers 11 focused Node tests, four manager command tests, all eight
+  backend/Traefik/logging Compose combinations, and the isolated Docker manager
+  matrix with direct Node HTTPS, PHP/Nginx, both Traefik routes, non-root runtime,
+  static assets, startup failure, maintenance actions, and data-preserving
+  backend switches. Disposable test resources are separate from deployed data.
 
 ### Definition of done
 

@@ -31,7 +31,7 @@ Notes:
    `sh manager.sh -a start -b`
    To disable Traefik:
    `sh manager.sh -a start -b -t off`
-   When Traefik is disabled, add a local host mapping such as `127.0.0.1 jira-logger.io` and open `http://jira-logger.io` or `https://jira-logger.io`.
+   When Traefik is disabled, add a local host mapping such as `127.0.0.1 jira-logger.io` and open `https://jira-logger.io`. Node terminates HTTPS itself on port 443; PHP uses Nginx (ports 80 and 443).
    To enable persisted host logs for debugging:
    `sh manager.sh -a start -b -l on`
 4) Runtime containers are copy-only (no backend/frontend bind mounts), so source code changes require image rebuild + restart (`sh manager.sh -a build` then `sh manager.sh -a start`), or `sh manager.sh -a rebuild` followed by `sh manager.sh -a start`.
@@ -54,7 +54,7 @@ Notes:
   - open: `https://traefik.jira-logger.io/dashboard/`
 - Frontend assets are stored in a shared Docker volume populated by `assets-init`, which is part of the default stack startup.
 - `assets-init` is the only container that writes `runtime-config.json` into the shared frontend assets volume.
-- Nginx starts only after Compose reports that `assets-init` completed successfully.
+- The selected web server (Node or PHP's Nginx) starts only after Compose reports that `assets-init` completed successfully.
 - Runtime logs are available by default through `docker compose logs` and `sh manager.sh -a start` attached output.
 - Persisted host logs are a debug-only path. For normal startup, leave `-l` off and use `docker compose logs`.
 - To re-enable persisted host logs for debugging, pass `-l on` to `manager.sh`.
@@ -83,6 +83,20 @@ Both implementations use the same database, migration ledger and frontend assets
 The frontend does not need rebuilding specifically to change backend selection.
 Build the selected backend images before starting that selection:
 
+| Backend | With Traefik | Without Traefik (`-t off`) |
+|---|---|---|
+| Node | Traefik → Node HTTP; Traefik terminates HTTPS | Node serves HTTPS directly on port 443 |
+| PHP | Traefik → Nginx → PHP-FPM | Nginx serves HTTP/HTTPS → PHP-FPM |
+
+Node mode neither builds nor runs Nginx. Node serves the API, Angular assets under
+`/ng/`, and SPA deep links. Its container readiness listener binds only to
+`127.0.0.1:3001`; the public `/internal/ready` path remains unavailable.
+Direct HTTPS uses the existing `.docker/certs/jira-logger.io.crt` and `.key`.
+The entrypoint stages the private key with restricted permissions, then drops to
+the `node` user before starting the server. It never changes host key permissions.
+Direct Node mode publishes HTTPS only; set `API_HOST` to an HTTPS URL
+(the default is `https://jira-logger.io`).
+
 ```sh
 # Default Node backend
 sh manager.sh -a build
@@ -97,9 +111,13 @@ sh manager.sh -a build
 sh manager.sh -a start -b
 ```
 
-`start` stops ingress, drains the old backend, waits for the selected backend to
-be healthy, then starts ingress and removes obsolete services. A readiness failure
-leaves ingress stopped. Re-run the desired selection after correcting the failure.
+`start` stops old ingress and drains the old backend before selecting the new
+services. Node checks database readiness before opening its public listener;
+Traefik or PHP's Nginx starts after the selected backend is healthy. Obsolete
+services are removed, including Nginx when switching to Node. A startup readiness
+failure leaves ingress unavailable. Re-run the desired selection after correcting the failure.
+Shared Traefik stays running when it remains enabled; switching to direct mode
+stops it to release ports 80/443.
 Normal `down`, rebuild and switching preserve database volumes. `db-remove` is
 the explicit destructive operation.
 
@@ -148,7 +166,7 @@ What `upgrade` does:
 - does not run seed commands.
 - starts the upgraded stack in background by default; use `docker compose logs -f` or `sh manager.sh -a start` if you want attached logs afterward.
 
-After first start, a certificate will be generated at `.docker/nginx-selfsigned.crt`,
+After first start, a certificate will be generated at `.docker/certs/jira-logger.io.crt`,
 which should be imported into your system's root certificates to allow SSL for API calls and Angular PWA.
 
 ## Project Specification
@@ -159,7 +177,7 @@ which should be imported into your system's root certificates to allow SSL for A
 * Doctrine
 * PostgreSQL
 * PHP >=8.5.4 <9.0 / PHP-FPM
-* Nginx
+* Nginx (PHP mode only)
 
 ### FE
 * Angular 22

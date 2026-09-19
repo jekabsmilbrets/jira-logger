@@ -25,6 +25,7 @@ COMPATIBILITY_URL=http://127.0.0.1:18082 node --test --test-concurrency=1 compat
 node --test --test-concurrency=1 compatibility/matrix.test.mjs compatibility/cors.test.mjs compatibility/jira-local.test.mjs
 TZ=UTC node --test compatibility/migrations.test.mjs
 node --test compatibility/manager.test.mjs
+node --test compatibility/compose-config.test.mjs
 node --test compatibility/log-governor.test.mjs
 RUN_DOCKER_MANAGER_ACCEPTANCE=1 node --test compatibility/manager-docker.test.mjs
 TZ=Europe/Riga npm test --prefix frontend -- --watch=false
@@ -40,7 +41,10 @@ For real Docker testing, use project `jira-logger-acceptance`, the dummy environ
 `compatibility/docker.env`, shared and dev Compose files, a backend overlay,
 `compatibility/docker.yml`, and the matching `compatibility/docker.node.yml` or
 `compatibility/docker.php.yml`. These overrides isolate container names, volumes
-and ports (HTTP 18084, HTTPS 18443, PostgreSQL 15540). Never omit those overrides
+and ports (HTTP 18084, PHP HTTPS 18443, PostgreSQL 15540). The Node HTTP fixture
+deliberately exposes its direct HTTP listener on loopback for differential tests;
+production Node without Traefik uses HTTPS, covered by the real manager fixture.
+Never omit those overrides
 when operating the acceptance project. The three HTTP suites for settings,
 resources and reports also accept `COMPATIBILITY_URL=http://127.0.0.1:18084`.
 
@@ -72,9 +76,11 @@ time cells, save, then retry the expected failure. Run the script with `verify`
 to assert one persisted update per row and `cleanup` to remove its data/trigger.
 Always run cleanup, including after an interrupted browser check.
 
-The real manager matrix also verifies switching without rebuilding, separate
-backend nginx images, failed readiness with ingress stopped, and HTTPS routing
-through a private Traefik network. It removes its own persistent volumes only
+The real manager matrix also verifies switching without rebuilding, Nginx only
+in PHP mode, direct Node HTTPS using the fixture certificate, failed readiness
+with ingress closed, and both backends through a private Traefik network.
+The Compose configuration test covers all eight backend/Traefik/logging combinations.
+It removes its own persistent volumes only
 during the explicit removal action and final test cleanup.
 
 `jira-demo.test.mjs` is explicitly opt-in and targets only the user-authorized
