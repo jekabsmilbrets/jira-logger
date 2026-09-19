@@ -1,6 +1,9 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseDate } from '../dist/time/date.helpers.js';
+
+import { test } from 'vitest';
+
+import { parseDate } from './date.helpers.js';
+
 
 test('explicit date normalization and PHP daylight-saving choices', () => {
   for (const [input, zone, expected] of [
@@ -13,7 +16,10 @@ test('explicit date normalization and PHP daylight-saving choices', () => {
     ['2026-10-25 01:30:00', 'Europe/London', '2026-10-25T01:30:00.000Z'],
     ['2026-04-05 01:45:00', 'Australia/Lord_Howe', '2026-04-04T15:15:00.000Z'],
     ['0', 'UTC', '1970-01-01T00:00:00.000Z'],
-    ['1000000000999', 'UTC', '2001-09-09T01:46:40.000Z'],
-  ]) assert.equal(parseDate(input, zone).toUTC().toISO(), expected, `${zone} ${input}`);
+    ['1000000000999', 'UTC', '2001-09-09T01:46:40.000Z']
+  ]) {
+    assert.equal(parseDate(input, zone).toUTC().toISO(), expected, `${ zone } ${ input }`);
+  }
+
   assert.throws(() => parseDate('next Tuesday', 'UTC'));
 });
