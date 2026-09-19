@@ -24,6 +24,7 @@ import { TimersController } from '../features/timers/timers.controller.js';
 import { TimersRepository } from '../features/timers/timers.repository.js';
 import { TimersService } from '../features/timers/timers.service.js';
 import type { Route } from '../http/http.types.js';
+import { SystemController } from '../http/system.controller.js';
 import { ResponseMapper } from '../shared/response-mapper.js';
 import { DateCodec } from '../time/date-codec.js';
 import { TimezoneService } from '../time/timezone.service.js';
@@ -64,6 +65,7 @@ export class Application {
       ...new TimersController(new TimersService(timers, tasks, this.timezone, dates, mapper)).routes(),
       ...new JiraController(new JiraService(tasks, tasksRepository, timers, logs, this.timezone, dates, this.jiraClient)).routes(),
       ...new JiraWorkLogsController(new JiraWorkLogsService(logs, tasksRepository, this.timezone, mapper)).routes(),
+      ...new SystemController(this.timezone).routes(),
     ];
     return this.routeRegistry;
   }

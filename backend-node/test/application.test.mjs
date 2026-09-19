@@ -156,3 +156,15 @@ test('entry point imports create no clients and do not read runtime configuratio
   });
   assert.equal(result.status, 0, result.stderr);
 });
+
+test('unreadable TLS configuration closes resources when server construction fails', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'jira-missing-tls-'));
+  const { application, calls } = fixture('tls-failure', {
+    environment: { TLS_CERT_FILE: join(directory, 'missing.crt'), TLS_KEY_FILE: join(directory, 'missing.key') },
+  });
+  try {
+    await assert.rejects(startServer(application), { code: 'ENOENT' });
+    assert.equal(calls.databaseClosed, 1);
+    assert.equal(calls.jiraClosed, 1);
+  } finally { await application.close(); rmSync(directory, { recursive: true, force: true }); }
+});

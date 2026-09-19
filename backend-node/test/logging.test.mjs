@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileLogStream } from '../dist/logging.js';
+import { FileLogStream } from '../dist/logging/file-log-stream.js';
 
 test('host logging reopens the active file after rotation', () => {
   const dir = mkdtempSync(join(tmpdir(), 'jira-logging-'));
   try {
     const path = join(dir, 'log-node.log');
-    const stream = fileLogStream(path);
+    const stream = new FileLogStream(path);
     stream.write('before\n');
     renameSync(path, path + '.archive');
     writeFileSync(path, '');
