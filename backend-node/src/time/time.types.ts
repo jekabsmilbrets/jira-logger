@@ -1,1 +1,3 @@
-export interface TimezoneProvider { userTimezone(): Promise<string>; }
+export interface TimezoneProvider {
+  userTimezone(): Promise<string>;
+}

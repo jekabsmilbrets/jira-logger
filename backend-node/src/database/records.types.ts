@@ -4,11 +4,21 @@ export interface Timestamps {
   updated_at: string;
 }
 
-export interface SettingRow { id: string; name: string; value: string; }
+export interface SettingRow {
+  id: string;
+  name: string;
+  value: string;
+}
 
-export interface TagRow extends Timestamps { name: string; is_used?: boolean; }
+export interface TagRow extends Timestamps {
+  name: string;
+  is_used?: boolean;
+}
 
-export interface TaskRow extends Timestamps { name: string; description: string | null; }
+export interface TaskRow extends Timestamps {
+  name: string;
+  description: string | null;
+}
 
 export interface TimerRow extends Timestamps {
   task_id: string;

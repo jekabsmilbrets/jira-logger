@@ -9,8 +9,24 @@
     "noImplicitOverride": true,
     "outDir": "dist",
     "rootDir": "src",
+    "baseUrl": ".",
+    "paths": {
+      "@application/*": ["./src/application/*.ts"],
+      "@database/*": ["./src/database/*.ts"],
+      "@features/*": ["./src/features/*.ts"],
+      "@http/*": ["./src/http/*.ts"],
+      "@logging/*": ["./src/logging/*.ts"],
+      "@shared/*": ["./src/shared/*.ts"],
+      "@time/*": ["./src/time/*.ts"],
+      "@server": ["./src/server.ts"]
+    },
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.spec.ts"],
+  "tsc-alias": {
+    "resolveFullPaths": true,
+    "resolveFullExtension": ".js"
+  }
 }

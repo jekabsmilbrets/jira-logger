@@ -1,1 +1,1 @@
-export const redacted = '***REDACTED***';
+export const redacted: string = '***REDACTED***';

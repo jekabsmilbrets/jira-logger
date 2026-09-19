@@ -1,1 +1,1 @@
-export const JIRA_TIMEOUT_MS = 60_000;
+export const JIRA_TIMEOUT_MS: number = 60_000;

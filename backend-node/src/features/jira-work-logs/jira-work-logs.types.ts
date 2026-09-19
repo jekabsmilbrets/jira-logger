@@ -1,4 +1,5 @@
-import type { JiraWorkLogsRepository } from './jira-work-logs.repository.js';
+import type { JiraWorkLogsRepository } from '@features/jira-work-logs/jira-work-logs.repository';
+
 
 export interface RemoteWorkLogWrite {
   id: string;

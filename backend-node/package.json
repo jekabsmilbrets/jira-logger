@@ -7,9 +7,11 @@
   },
   "scripts": {
     "prebuild": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true });\"",
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "npm run lint -- --fix",
     "start": "node dist/server.js",
-    "test": "node --test test/*.test.mjs"
+    "test": "vitest run"
   },
   "dependencies": {
     "@fastify/static": "^10.1.4",
@@ -19,9 +21,17 @@
     "undici": "^7.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
     "@types/luxon": "^3.0.0",
     "@types/node": "^24.0.0",
     "@types/pg": "^8.0.0",
-    "typescript": "^5.0.0"
+    "eslint": "^10.11.0",
+    "eslint-plugin-simple-import-sort": "^14.0.0",
+    "globals": "^17.12.0",
+    "tsc-alias": "^1.9.5",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^5.0.1"
   }
 }

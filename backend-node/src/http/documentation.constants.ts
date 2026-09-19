@@ -1,4 +1,4 @@
-const operations = [
+const operations: string[][] = [
   ['GET, POST', '/api/task', 'List filtered task reports or create a task. Filters: tags, name, date, startDate, endDate, hideUnreported. Writes: name, description, tags.'],
   ['GET, PATCH, DELETE', '/api/task/{id}', 'Read, update, or delete a task and its dependent local records.'],
   ['GET', '/api/task/active', 'Read the task with the latest running timer; 404 means none.'],
@@ -16,15 +16,17 @@ const operations = [
   ['GET, PATCH, DELETE', '/api/setting/{id}', 'Read/update/delete a setting. Secret values are redacted; the redaction marker cannot be saved.'],
   ['GET, POST', '/api/jira-work-log', 'Local records only. Writes accept task, description, timeSpentSeconds. Creation retains the existing failure caused by unavailable mandatory remote identity/date fields.'],
   ['GET, PATCH, DELETE', '/api/jira-work-log/{id}', 'Read/update/delete a local Jira work log without making a Jira request.'],
-  ['GET', '/api/monitor', 'Return time and the API welcome message.'],
+  ['GET', '/api/monitor', 'Return time and the API welcome message.']
 ];
 
-export const documentation = `<!doctype html>
+export const documentation: string = `<!doctype html>
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Jira Logger API</title>
 <style>body{font:16px/1.5 system-ui;max-width:1100px;margin:3rem auto;padding:0 1rem;color:#182230}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:1rem;border-bottom:1px solid #ddd;vertical-align:top}code{overflow-wrap:anywhere}th{background:#f1f4f8}</style>
 <h1>Jira Logger API</h1><p>33 operations, shared by the PHP and Node backends. Successful resource writes return 200; deletions and timer lifecycle operations return 204. Empty resource collections return 404.</p>
 <p>JSON responses use <code>data</code>, <code>meta</code>, and <code>errors</code>. Falsy data is omitted. Controller validation uses 406 with property-keyed errors; malformed JSON uses 400. Framework failures negotiate JSON or HTML. Unsupported methods return 405 with Allow.</p>
 <p>Dates accept Unix seconds, thirteen-digit Unix milliseconds, ISO timestamps, year-first local dates/datetimes, and day-first dates. Natural-language relative dates are unsupported. Reports clip responses without modifying stored timers. A single date takes precedence over a complete range.</p>
-<table><thead><tr><th>Method</th><th>Path</th><th>Contract</th></tr></thead><tbody>${operations.map(([method, path, description]) => `<tr><td>${method}</td><td><code>${path}</code></td><td>${description}</td></tr>`).join('')}</tbody></table>
+<table><thead><tr><th>Method</th><th>Path</th><th>Contract</th></tr></thead><tbody>${ operations.map((
+  [method, path, description],
+) => `<tr><td>${ method }</td><td><code>${ path }</code></td><td>${ description }</td></tr>`).join('') }</tbody></table>
 <p>Unknown GET/HEAD paths serve the Angular application. A matched API handler's 404 remains JSON. Authentication and CORS follow the existing deployment configuration.</p></html>`;
