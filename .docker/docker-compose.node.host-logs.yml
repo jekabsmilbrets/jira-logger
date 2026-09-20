@@ -1,0 +1,6 @@
+services:
+  node:
+    environment:
+      LOG_FILE: /logs/log-node.log
+    volumes:
+      - ./../.logs/jira-logger:/logs:rw

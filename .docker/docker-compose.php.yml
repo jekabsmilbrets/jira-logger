@@ -1,0 +1,50 @@
+services:
+  php-fpm:
+    container_name: "jira-logger-php-fpm"
+    build:
+      context: ./../
+      dockerfile: ./.docker/php-fpm/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-prod}
+      APP_SECRET: ${APP_SECRET:?APP_SECRET is required}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      APP_INTERNAL_TIMEZONE: ${APP_INTERNAL_TIMEZONE:-UTC}
+      APP_DEFAULT_USER_TIMEZONE: ${APP_DEFAULT_USER_TIMEZONE:-Europe/Riga}
+      CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:?CORS_ALLOW_ORIGIN is required}
+    volumes:
+      - assetsData:/var/www/public/ng:ro
+    stop_grace_period: 135s
+    healthcheck:
+      test: ["CMD-SHELL", "php-fpm -t"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"
+  nginx:
+    container_name: "jira-logger-nginx"
+    image: ${COMPOSE_PROJECT_NAME:-jira-logger}-nginx-php
+    build:
+      context: ./../
+      dockerfile: ./.docker/nginx/Dockerfile
+    depends_on:
+      assets-init:
+        condition: service_completed_successfully
+      php-fpm:
+        condition: service_healthy
+    volumes:
+      - assetsData:/var/www/public/ng:ro
+      - ./certs/:/etc/ssl/certs/:ro
+      - ./nginx/sites/:/etc/nginx/sites-available:ro
+      - ./nginx/conf.d/:/etc/nginx/conf.d:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "nginx -t"]
+      interval: 60s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

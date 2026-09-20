@@ -1,0 +1,11 @@
+services:
+  node:
+    labels:
+      traefik.enable: true
+      traefik.http.routers.jira-logger-node.rule: Host(`jira-logger.io`)
+      traefik.http.routers.jira-logger-node.entrypoints: websecure
+      traefik.http.routers.jira-logger-node.tls: true
+      traefik.http.services.jira-logger-node.loadbalancer.server.port: 3000
+    networks:
+      - traefik
+      - default
