@@ -1,11 +1,13 @@
 import pg from 'pg';
 
+import { errorCode } from '@database/database.helpers';
+
 
 export function createPool(
   connectionString: string,
 ): pg.Pool {
   // Parsers belong to this pool; importing the module never mutates pg's globals.
-  return new pg.Pool({
+  const pool: pg.Pool = new pg.Pool({
     connectionString,
     types: {
       getTypeParser: (
@@ -17,4 +19,14 @@ export function createPool(
         ) => value : pg.types.getTypeParser(oid, format)
     }
   });
+  pool.on('error', (
+    error,
+  ) => {
+    const code: unknown = errorCode(error);
+    console.error('Idle PostgreSQL connection failed', {
+      code: typeof code === 'string' ? code : undefined
+    });
+  });
+
+  return pool;
 }
