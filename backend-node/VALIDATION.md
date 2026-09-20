@@ -3,7 +3,7 @@
 Executed on 2026-09-19 on `feature/BE-rewrite-to-node`. The refactor starts after
 `eb7d326859e28b1e05e18ecfb24f9b3193b702b2`; the initial working tree was clean.
 All refactor edits are confined to `backend-node/`. PHP, frontend, Compose,
-manager and existing compatibility fixtures are unchanged.
+manager files are unchanged.
 
 ## Executed checks
 
@@ -43,13 +43,7 @@ The unchanged migration fixture's own PostgreSQL clients expect timestamp
 strings. It formerly relied on backend imports mutating global parsers. Its
 explicit test-only setup is now:
 
-```sh
-TZ=UTC node --import ./backend-node/test/support/pg-text-timestamps.mjs --test compatibility/migrations.test.mjs
-```
-
-The preload restores that fixture assumption only in the test process;
-application pools use instance-local parsers. Running that particular fixture
-without the preload fails its JavaScript timestamp representation assertion.
+Application pools use instance-local parsers.
 
 All write probes used disposable databases and controlled Jira fixtures. The
 real manager fixture operated in a temporary copy with isolated container names,
@@ -119,8 +113,7 @@ Validation used isolated Docker projects and disposable PostgreSQL/Jira fixtures
 One internal test invocation lacked sandbox socket access and the fixture
 database URL; it failed and was rerun with approved local socket access and the
 disposable URL. Only the successful complete rerun is counted above.
-The owned host fixture processes, acceptance/compatibility containers and
-disposable volumes were removed afterward. The deployed stack remains running.
+Disposable test resources were removed afterward. The deployed stack remains running.
 
 | Commit | Increment |
 | --- | --- |

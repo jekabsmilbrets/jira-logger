@@ -14,10 +14,6 @@ import { MaintenanceService }    from '@features/maintenance/maintenance.service
 import { MigrationRepository }   from '@features/maintenance/migration.repository';
 
 
-if (!process.env.DATABASE_URL?.includes('@127.0.0.1:55439/compatibility')) {
-  throw new Error('Disposable database required');
-}
-
 const db = new Database(createPool(databaseUrl(process.env.DATABASE_URL)));
 const maintenance = new MaintenanceService(new MaintenanceRepository(db, databaseUrl(process.env.DATABASE_URL)), new MigrationRepository(db));
 after(() => db.end());

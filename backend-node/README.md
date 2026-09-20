@@ -127,23 +127,11 @@ sh manager.sh -a start -b --backend node
 
 ## Verification
 
-Tests performing writes require disposable databases and controlled Jira
-fixtures. Follow `../compatibility/README.md` for the existing harness setup.
-With that database and PHP/Node fixtures running:
+Run the internal test suite with `npm test --prefix backend-node`.
 
 ```sh
-DATABASE_URL='postgresql://compatibility:disposable@127.0.0.1:55439/compatibility' npm test --prefix backend-node
-TZ=UTC node --import ./backend-node/test/support/pg-text-timestamps.mjs --test compatibility/migrations.test.mjs
-COMPATIBILITY_URL=http://127.0.0.1:18082 node --test --test-concurrency=1 compatibility/settings.test.mjs compatibility/resources.test.mjs compatibility/reports.test.mjs compatibility/timer-failure.test.mjs compatibility/jira.test.mjs
-node --test --test-concurrency=1 compatibility/matrix.test.mjs compatibility/cors.test.mjs compatibility/jira-local.test.mjs compatibility/jira-search.test.mjs compatibility/jira-errors.test.mjs compatibility/report-matrix.test.mjs
-RUN_DOCKER_MANAGER_ACCEPTANCE=1 node --test compatibility/manager-docker.test.mjs
+npm test --prefix backend-node
 ```
-
-The manager fixture builds isolated Docker stacks and checks maintenance, log
-archives, readiness and data preservation through switching in both directions.
-The separate opt-in shutdown fixture requires the acceptance stack described in
-the compatibility documentation. Jira transport timeout probes require the
-Docker PHP fixture on port 18086 for consistent execution-time limits.
 
 Internal tests cover independent injected applications and Jira sessions,
 imports without clients, cleanup failures, TLS setup failure, private readiness

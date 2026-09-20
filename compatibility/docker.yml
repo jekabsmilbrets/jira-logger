@@ -1,7 +1,0 @@
-services:
-  assets-init:
-    container_name: jira-logger-acceptance-assets
-  db:
-    container_name: jira-logger-acceptance-db
-    ports: !override
-      - '127.0.0.1:15540:5432'

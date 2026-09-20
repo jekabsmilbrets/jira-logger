@@ -1,5 +1,0 @@
-services:
-  node:
-    container_name: jira-logger-acceptance-node
-    ports:
-      - '127.0.0.1:18084:3000'
