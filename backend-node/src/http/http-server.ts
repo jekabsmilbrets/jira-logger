@@ -1,6 +1,7 @@
 import { readFileSync }                                                          from 'node:fs';
 import { readFile }                                                              from 'node:fs/promises';
 
+import fastifyRateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 
@@ -40,6 +41,11 @@ export class HttpServer {
         }
       } : {})
     });
+    this.server.register(fastifyRateLimit, {
+      global: true,
+      max: 100,
+      timeWindow: '1 minute'
+    });
     this.health = new HealthServer(application, config.healthPort);
     this.routes = application.routes();
     this.configureContent();
@@ -49,7 +55,14 @@ export class HttpServer {
       request,
       reply,
     ) => this.handleError(error, request, reply));
-    this.server.all('/*', (
+    this.server.all('/*', {
+      config: {
+        rateLimit: {
+          max: 100,
+          timeWindow: '1 minute'
+        }
+      }
+    }, (
       request,
       reply,
     ) => this.dispatch(request, reply));
