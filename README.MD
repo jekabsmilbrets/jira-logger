@@ -1,186 +1,251 @@
-# JIRA-LOGGER
+# Jira Logger
 
-This is a JIRA time logger software for easy time logging.
-Project consists of API and Angular PWA.
+Jira Logger is a self-hosted time and task logger. It has an Angular PWA frontend, a Node.js/Fastify backend, PostgreSQL storage, and optional PHP/Nginx backend support.
 
-## Running docker mode
+## Requirements
 
-To run in docker mode you need to have Docker and Docker Compose installed.
+- Docker and Docker Compose
+- A local hostname for HTTPS, normally `jira-logger.io`
+- Jira URL and personal access token if Jira integration is needed
 
 ## Setup
 
-1) Prepare `./.docker/.env` from `./.docker/.env.example` (source of truth template).
-2) Build images and initialize the database: `sh manager.sh -a build`
-3) Start containers: `sh manager.sh -a start`
+1. Copy the Docker environment template:
 
-Notes:
-- `manager.sh` uses the shared Compose files plus the selected backend overlay. Node is the default on every invocation; use `-B php` or `--backend php` explicitly for PHP.
-- On a fresh checkout, run `manager.sh -a build` once before `start`; Compose then populates the shared frontend assets volume during startup.
-- Backend env variables are loaded from `./.docker/.env` via `docker-compose.yml`.
-- `manager.sh` creates the shared Docker `traefik` network automatically when it is missing.
-- Host log persistence is disabled by default. Use `docker compose logs` or `sh manager.sh -a start` attached output for normal use. Pass `-l on` only when you explicitly need debug log files in `./.logs/jira-logger/`.
-- Use `manager.sh` for compose startup so the required env file, compose overlays, and optional Traefik mode are applied consistently.
+   ```sh
+   cp .docker/.env.example .docker/.env
+   ```
 
-## Basic Usage
+2. Review `.docker/.env` before starting. At minimum, confirm the database URL, application secret, time zones, CORS origin, and any Traefik dashboard settings. Keep real credentials and production secrets out of committed files.
 
-1) To run with **console output**:
-   `sh manager.sh -a start`
-2) To run in **background**:
-   `sh manager.sh -a start -b`
-3) To run with **Traefik**:
-   `sh manager.sh -a start -b`
-   To disable Traefik:
-   `sh manager.sh -a start -b -t off`
-   When Traefik is disabled, add a local host mapping such as `127.0.0.1 jira-logger.io` and open `https://jira-logger.io`. Node terminates HTTPS itself on port 443; PHP uses Nginx (ports 80 and 443).
-   To enable persisted host logs for debugging:
-   `sh manager.sh -a start -b -l on`
-4) Runtime containers are copy-only (no backend/frontend bind mounts), so source code changes require image rebuild + restart (`sh manager.sh -a build` then `sh manager.sh -a start`), or `sh manager.sh -a rebuild` followed by `sh manager.sh -a start`.
-5) To fully **rebuild** the stack (down + build, including DB prepare and seed):
-   `sh manager.sh -a rebuild`
-6) To **remove all database data** (dangerous, deletes all data!):
-   `sh manager.sh -a db-remove`
-7) To **dump the database** to a single SQL file (`db_dump.sql`):
-   `sh manager.sh -a db-dump`
-8) To run DB migrations using the selected backend:
-   `sh manager.sh -a migrate`
-9) To **upgrade an existing checkout** from the old stack layout to the new one:
-   `sh manager.sh -a upgrade`
+3. Make the local application hostname resolve to this machine when using direct access or local Traefik routing:
 
-- Traefik is enabled by default. Use `-t off` to start without Traefik.
-- Traefik dashboard is exposed through HTTPS with basic auth:
-  - set `TRAEFIK_DASHBOARD_HOST` and `TRAEFIK_DASHBOARD_AUTH` in `./.docker/.env`
-  - default local dashboard host: `traefik.jira-logger.io`
-  - add host mapping in `/etc/hosts` for local setup (example): `127.0.0.1 traefik.jira-logger.io`
-  - open: `https://traefik.jira-logger.io/dashboard/`
-- Frontend assets are stored in a shared Docker volume populated by `assets-init`, which is part of the default stack startup.
-- `assets-init` is the only container that writes `runtime-config.json` into the shared frontend assets volume.
-- The selected web server (Node or PHP's Nginx) starts only after Compose reports that `assets-init` completed successfully.
-- Runtime logs are available by default through `docker compose logs` and `sh manager.sh -a start` attached output.
-- Persisted host logs are a debug-only path. For normal startup, leave `-l` off and use `docker compose logs`.
-- To re-enable persisted host logs for debugging, pass `-l on` to `manager.sh`.
-- When `-l on` is used, persisted producers write `log-*.log` files under `./.logs/jira-logger/`; new files following that convention are discovered automatically.
-- When `-l on` is used, migration output is appended to `log-migrate.log` during `prepare-db` and `migrate`.
-- When `-l on` is used, runtime log cap is enforced by `log-governor` container:
-  - per-file hard cap: `50MB` (`52428800` bytes)
-  - scan interval: `30s`
-  - behavior: keeps newest content by size-based trim when a file exceeds cap
-  - applies to every `log-*.log` file in the host log directory
-- When `-l on` is used, log rotation/cleanup runs on every `start`/`start-with-init`:
-  - active `log-*.log` files are rotated to `./.logs/jira-logger/archive/log-*.YYYY-MM-DD_HHMMSS.log`
-  - archived logs older than 7 days are deleted
+   ```text
+   127.0.0.1 jira-logger.io
+   ```
 
-## Importing Tasks from Jira
+   If the Traefik dashboard is enabled, add its configured hostname too, for example `traefik.jira-logger.io`.
 
-Enable Jira and configure its host and personal access token on the Settings page. The Jira import icon then appears in the Tasks toolbar.
+4. Build the images. This also prepares the database and seeds default settings and tags:
 
-The import dialog can search by assignee, reporter, resolution, project keys, and a result limit of 50, 100, 150, or 200. Results include only Jira issues that do not already exist as local tasks and can be sorted by key, summary, status, issue type, or updated time.
+   ```sh
+   sh manager.sh -a build
+   ```
 
-Select the issues to import. Use the tag action on a result row to review or change its local tags, then import the selected issues.
+5. Start the application:
 
-## Selecting the backend
+   ```sh
+   sh manager.sh -a start -b
+   ```
 
-Both implementations use the same database, migration ledger and frontend assets.
-The frontend does not need rebuilding specifically to change backend selection.
-Build the selected backend images before starting that selection:
+The first start generates `.docker/certs/jira-logger.io.crt` and `.docker/certs/jira-logger.io.key`. Trust the certificate locally if your browser reports an untrusted HTTPS connection. The `assets-init` service populates the shared frontend asset volume before the selected backend starts.
 
-| Backend | With Traefik | Without Traefik (`-t off`) |
-|---|---|---|
-| Node | Traefik → Node HTTP; Traefik terminates HTTPS | Node serves HTTPS directly on port 443 |
-| PHP | Traefik → Nginx → PHP-FPM | Nginx serves HTTP/HTTPS → PHP-FPM |
+## Run with Docker
 
-Node mode neither builds nor runs Nginx. Node serves the API, Angular assets under
-`/ng/`, and SPA deep links. Its container readiness listener binds only to
-`127.0.0.1:3001`; the public `/internal/ready` path remains unavailable.
-Direct HTTPS uses the existing `.docker/certs/jira-logger.io.crt` and `.key`.
-The entrypoint stages the private key with restricted permissions, then drops to
-the `node` user before starting the server. It never changes host key permissions.
-Direct Node mode publishes HTTPS only; set `API_HOST` to an HTTPS URL
-(the default is `https://jira-logger.io`).
+Create the runtime configuration:
 
 ```sh
-# Default Node backend
+cp .docker/.env.example .docker/.env
+```
+
+Edit `.docker/.env`, then build and start the default Node stack:
+
+```sh
+sh manager.sh -a build
+sh manager.sh -a start
+```
+
+The default backend is Node. Containers are copy-only, so source changes require a rebuild:
+
+```sh
+sh manager.sh -a build
+sh manager.sh -a start
+```
+
+Start in the background with `-b`:
+
+```sh
+sh manager.sh -a start -b
+```
+
+Traefik is enabled by default and terminates HTTPS. For direct local access, disable it and map the hostname to localhost:
+
+```sh
+sh manager.sh -a start -b -t off
+```
+
+Add this entry to `/etc/hosts` when using direct access:
+
+```text
+127.0.0.1 jira-logger.io
+```
+
+Then open [https://jira-logger.io](https://jira-logger.io). The local certificate is generated under `.docker/certs/` and may need to be trusted by your operating system.
+
+## Common operations
+
+```sh
+sh manager.sh -a rebuild   # stop, rebuild, prepare the database and seed defaults
+sh manager.sh -a migrate   # apply migrations
+sh manager.sh -a db-dump   # write db_dump.sql
+sh manager.sh -a db-remove # delete database data
+docker compose logs -f     # follow container logs
+```
+
+`db-remove` is destructive. Normal stop, rebuild, and backend switching preserve database volumes.
+
+Persist host logs only when debugging:
+
+```sh
+sh manager.sh -a start -b -l on
+```
+
+Without `-l on`, use Docker logs. Persisted logs are written under `.logs/jira-logger/` and rotated by the stack.
+
+## `manager.sh` reference
+
+`manager.sh` is the supported wrapper for starting and maintaining the Docker stack. Its general form is:
+
+```sh
+sh manager.sh -a ACTION [OPTIONS]
+```
+
+Options:
+
+| Option | Values | Default | Purpose |
+| --- | --- | --- | --- |
+| `-a` | action name | — | Selects the operation to run. Required for normal use. |
+| `-b` | flag | off | Starts containers in the background. Without it, `start` attaches to container output. |
+| `-B`, `--backend` | `node`, `php` | `node` | Selects the backend for this invocation only. |
+| `-l` | `on`, `off` | `off` | Enables or disables persisted host logs in `.logs/jira-logger/`. |
+| `-t` | `on`, `off` | `on` | Enables or disables the Traefik ingress container. |
+| `-h` | flag | — | Prints the built-in help. |
+
+Actions:
+
+| Action | Purpose |
+| --- | --- |
+| `start` | Generate certificates, start the selected backend and ingress, and wait for services to become ready. |
+| `start-with-init` | Prepare the database, then start the selected stack. Does not seed default records. |
+| `down` | Stop and remove the project containers and Compose network while preserving database volumes. |
+| `build` | Build images, prepare the database, and seed default settings and tags. |
+| `rebuild` | Stop the stack, then perform `build`. Existing database volumes are preserved. |
+| `db-remove` | Remove the `jira-logger_dbData` Docker volume. This permanently deletes database data. |
+| `db-dump` | Write a PostgreSQL dump to `./db_dump.sql`, starting the database temporarily if needed. |
+| `migrate` | Run database migrations using the selected backend. |
+| `prepare-db` | Start or prepare the database without seeding default settings and tags. |
+| `seed` | Seed the selected backend's default settings and tags. |
+| `upgrade` | Back up the database, stop the old stack, rebuild images, migrate, and start the upgraded stack. |
+
+Examples:
+
+```sh
+# Show all built-in options
+sh manager.sh -h
+
+# Start Node with Traefik in the background
+sh manager.sh -a start -b
+
+# Start Node directly without Traefik and persist logs
+sh manager.sh -a start -b -t off -l on
+
+# Run a database migration with PHP
+sh manager.sh -a migrate --backend php
+
+# Prepare the database without seed data
+sh manager.sh -a prepare-db
+
+# Seed defaults explicitly
+sh manager.sh -a seed
+
+# Upgrade an older checkout; creates db_dump.pre-upgrade.YYYY-MM-DD_HHMMSS.sql
+sh manager.sh -a upgrade
+```
+
+Backend selection is not persisted between invocations. Pass `--backend php` again for every PHP action. The wrapper also creates the shared `traefik` Docker network when it is missing and removes obsolete backend containers when switching between Node and PHP.
+
+## Jira import
+
+Configure the Jira host and personal access token from the Settings page. The Jira import action then appears in the Tasks toolbar.
+
+The importer can filter by assignee, reporter, resolution, project keys, and result limit. Select issues to create local tasks, and use the tag action to adjust tags before importing.
+
+## Backend selection
+
+Node is the default backend. PHP remains available for deployments that explicitly select it:
+
+```sh
+# Node
 sh manager.sh -a build
 sh manager.sh -a start -b
 
-# Retained PHP backend
+# PHP
 sh manager.sh --backend php -a build
 sh manager.sh --backend php -a start -b
-
-# Return to Node; selection never persists between manager invocations
-sh manager.sh -a build
-sh manager.sh -a start -b
 ```
 
-`start` stops old ingress and drains the old backend before selecting the new
-services. Node checks database readiness before opening its public listener;
-Traefik or PHP's Nginx starts after the selected backend is healthy. Obsolete
-services are removed, including Nginx when switching to Node. A startup readiness
-failure leaves ingress unavailable. Re-run the desired selection after correcting the failure.
-Shared Traefik stays running when it remains enabled; switching to direct mode
-stops it to release ports 80/443.
-Normal `down`, rebuild and switching preserve database volumes. `db-remove` is
-the explicit destructive operation.
+Backend selection applies per `manager.sh` invocation; it is not persisted. Both backends use the same PostgreSQL database and frontend assets.
 
-`build` and `rebuild` prepare the database and load missing seed settings/tags.
-`start-with-init` prepares it without seeding. `upgrade` first backs up the database,
-then builds, migrates and starts without seeding. Supply `--backend php` to each
-action when retaining PHP, including `upgrade`, `prepare-db`, `migrate` and `seed`.
+## Node development
 
-Node maintenance runs without PHP. For additional maintenance commands:
+The Node backend lives in `backend-node/` and uses TypeScript, Fastify, Vitest, and ESLint.
 
 ```sh
-docker compose --env-file .docker/.env \
-  -p jira-logger -f .docker/docker-compose.yml \
-  -f .docker/docker-compose.dev.yml -f .docker/docker-compose.node.yml \
-  run --rm node node dist/cli.js app:audit:jira-sync-data
+npm ci --prefix backend-node
+npm run build --prefix backend-node
+npm test --prefix backend-node
+npm run lint --prefix backend-node
+npm start --prefix backend-node
 ```
 
-Other Node CLI commands are `prepare-db`, `migrate`, `migrations:status`,
-`seed:setting`, `seed:tag`, `seed:load setting`, `seed:load tag`,
-`seed:unload setting` and `seed:unload tag`. Unloading deletes seed names, including
-edited seed records. Audit is read-only and reports duplicate Jira records and
-invalid timer ranges. Use `app:migrate` for PHP so both runtimes acquire the same
-database advisory lock; direct Doctrine migration invocation bypasses that lock.
+The frontend lives in `frontend/` and uses Angular.
 
-Node uses the existing `DATABASE_URL`, `APP_INTERNAL_TIMEZONE`,
-`APP_DEFAULT_USER_TIMEZONE` and `CORS_ALLOW_ORIGIN` settings. Jira credentials stay
-in the shared settings table and are redacted by the API. Node readiness is internal
-to the container; `/api/monitor` remains the public monitor and `/api/doc` documents
-the API. With `-l on`, Node writes `log-node.log` under the existing log policy.
+```sh
+npm ci --prefix frontend
+npm run build --prefix frontend
+npm test --prefix frontend -- --watch=false
+```
 
-Compatibility checks and isolated Docker fixtures are described in
-[compatibility/README.md](compatibility/README.md). Full rewrite acceptance is
-tracked in [NODE_BACKEND_REWRITE_PLAN.md](NODE_BACKEND_REWRITE_PLAN.md).
+## Repository layout
 
-## Upgrading Older Checkouts
+- `backend-node/` — default Node API, CLI, migrations, and tests
+- `backend/` — PHP/Symfony backend retained for explicit PHP mode
+- `frontend/` — Angular PWA
+- `.docker/` — Dockerfiles, Compose files, certificates, and environment templates
+- `manager.sh` — Docker lifecycle and backend-selection wrapper
 
-If you are updating from an older checkout that still used `backend/.env` or bind-mounted frontend assets, run:
+## Project specification
 
-`sh manager.sh -a upgrade`
+### Backend
 
-What `upgrade` does:
-- requires `./.docker/.env` to exist and treats it as the runtime config source of truth;
-- warns if `./backend/.env` is still present, because it is now legacy;
-- creates a timestamped pre-upgrade database backup such as `./db_dump.pre-upgrade.YYYY-MM-DD_HHMMSS.sql`;
-- stops the old stack, rebuilds images, refreshes shared assets, runs DB migrations, and starts the new stack;
-- does not run seed commands.
-- starts the upgraded stack in background by default; use `docker compose logs -f` or `sh manager.sh -a start` if you want attached logs afterward.
+- Node.js 24, TypeScript, Fastify 5, and Vitest — default runtime
+- Symfony 8, Doctrine, PHP-FPM, and Nginx — optional PHP runtime
+- PostgreSQL database shared by both backends
+- CLI maintenance commands for migrations, seed data, and Jira-sync audits
 
-After first start, a certificate will be generated at `.docker/certs/jira-logger.io.crt`,
-which should be imported into your system's root certificates to allow SSL for API calls and Angular PWA.
+### Frontend
 
-## Project Specification
+- Angular 22 PWA
+- Angular Material 22
+- Node.js 22.22.3 or newer for frontend development
+- npm 10.9.8 or newer for frontend development
 
-### API
-* Node.js 24 / TypeScript / Fastify 5 (default)
-* Symfony 8
-* Doctrine
-* PostgreSQL
-* PHP >=8.5.4 <9.0 / PHP-FPM
-* Nginx (PHP mode only)
+### Infrastructure
 
-### FE
-* Angular 22
-* Material 22
-* Node >=22.22.3
-* NPM >=10.9.8
+- Docker Compose for local and production-like orchestration
+- Traefik for optional HTTPS ingress and routing
+- Nginx only in PHP mode
+- Shared frontend asset volume initialized before the selected backend starts
+- Optional persisted log files with size caps and seven-day archive cleanup
+
+## Configuration
+
+Runtime configuration is read from `.docker/.env`. Important settings include:
+
+- `DATABASE_URL`
+- `APP_INTERNAL_TIMEZONE`
+- `APP_DEFAULT_USER_TIMEZONE`
+- `CORS_ALLOW_ORIGIN`
+- Jira connection settings stored through the application Settings page
+
+The public API exposes `/api/monitor` and `/api/doc`. Node's readiness endpoint is internal to its container.
