@@ -1,10 +1,10 @@
 {
-  "name": "jira-logger/be",
+  "name": "jira-logger/be-php",
   "author": {
     "name": "Jēkabs Milbrets",
     "email": "jekabs.milbrets@me.com"
   },
-  "version": "1.0.1",
+  "version": "2.0.0",
   "type": "project",
   "license": "MIT",
   "minimum-stability": "stable",

@@ -1,0 +1,27 @@
+services:
+  node:
+    container_name: "jira-logger-node"
+    build:
+      context: ./../
+      dockerfile: ./.docker/node/Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      APP_INTERNAL_TIMEZONE: ${APP_INTERNAL_TIMEZONE:-UTC}
+      APP_DEFAULT_USER_TIMEZONE: ${APP_DEFAULT_USER_TIMEZONE:-Europe/Riga}
+      CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:?CORS_ALLOW_ORIGIN is required}
+    depends_on:
+      db:
+        condition: service_healthy
+      assets-init:
+        condition: service_completed_successfully
+    volumes:
+      - assetsData:/var/www/public/ng:ro
+    stop_grace_period: 135s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/internal/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    labels:
+      - "traefik.enable=false"

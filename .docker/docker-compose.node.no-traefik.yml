@@ -1,0 +1,9 @@
+services:
+  node:
+    environment:
+      TLS_CERT_FILE: /run/node-tls/server.crt
+      TLS_KEY_FILE: /run/node-tls/server.key
+    volumes:
+      - ./certs/:/certs:ro
+    ports:
+      - "443:3000"

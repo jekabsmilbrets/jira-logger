@@ -7,6 +7,14 @@
 !.docker/nginx/**
 !.docker/php-fpm/
 !.docker/php-fpm/**
+!.docker/node/
+!.docker/node/**
+
+!backend-node/
+!backend-node/**
+backend-node/node_modules/
+backend-node/dist/
+backend-node/test/
 
 !backend/
 !backend/**
