@@ -1,143 +1,146 @@
-# Node backend architecture
+# Node backend
 
-This implementation preserves the PHP-compatible HTTP API, database schema,
-migration history, environment variables and maintenance commands. The OOP
-refactor changes only `backend-node/`. Existing PHP, frontend, Compose, manager
-and compatibility fixture files remain unchanged.
+TypeScript backend for Jira Logger, using Fastify, PostgreSQL (`pg`), Luxon and
+Undici. It provides settings, tags, tasks and reports, timers, Jira integration,
+and Jira work-log endpoints, plus database maintenance commands.
 
-## Ownership and dependencies
+## Requirements and setup
 
-`Application` in `src/application/application.ts` is the composition root. Each instance owns
-its configuration, database pool, repositories, timezone provider, services,
-controllers and Jira transport. Constructor injection permits independent
-applications and replacement persistence/transport boundaries in tests.
+- Node.js 24 (`>=24 <25` in `package.json`) and npm.
+- A reachable PostgreSQL server and credentials for the application database.
+- Built frontend assets if the backend should serve the UI.
 
-- Controllers in the feature modules adapt Fastify requests and responses.
-- Services in those modules validate input and implement workflows. They have
-  no SQL and accept data rather than Fastify requests or replies.
-- Feature repositories own SQL and return records from `src/database/records.types.ts`.
-- `ResponseMapper` maps supplied records to typed response DTOs without querying.
-- `TimezoneService` reads the current setting for each operation; `DateCodec`
-  applies the instance's internal timezone. Date parsing retains PHP coercion,
-  rollover and daylight-saving behavior.
-- `Database` owns transaction boundaries and pool-local PostgreSQL timestamp
-  parsers. `JiraClient` owns its injected or default Undici dispatcher;
-  `JiraHttpSession` holds one snapshot of the host and token. Neither creates
-  global clients.
-- `MaintenanceService`, `MaintenanceRepository` and `MigrationRepository` share
-  the same application resources as HTTP workflows. CLI applications create no
-  Jira transport unless HTTP routes are constructed.
+Run from the repository root:
 
-Importing `server.js` or `cli.js` neither constructs clients nor reads runtime
-configuration. Their executable guards preserve the `dist/server.js` and
-`dist/cli.js` entry points. `buildServer(application)` and
-`startServer(application)` remain compatibility adapters around `HttpServer`.
-It owns Fastify and a `HealthServer` bound to loopback on `HEALTH_PORT`.
-`GET /internal/ready` checks the database on that private listener; the public
-listener returns 404. Direct HTTPS, static assets under `/ng/`, SPA fallback and
-HSTS remain supported. `SystemController` serves documentation and monitoring.
-`FileLogStream` reopens the log on each append to follow manager log rotation.
+```sh
+npm ci --prefix backend-node
+npm run build --prefix backend-node
 
-Fastify drains public requests, then the private readiness listener drains
-before application resources are released. Application cleanup is idempotent
-and attempts both database and Jira cleanup even when one fails. SIGINT,
-SIGTERM, failed readiness, failed listen and TLS setup failures close resources.
+export DATABASE_URL='postgresql://localhost/jira_logger'
+node backend-node/dist/cli.js prepare-db
+node backend-node/dist/cli.js seed:load setting
+node backend-node/dist/cli.js seed:load tag
 
-The compiler retains strict mode and enables `noUncheckedIndexedAccess`,
-`exactOptionalPropertyTypes` and `noImplicitOverride`. External JSON is narrowed
-from `unknown`; database rows and HTTP projections have explicit types. The
-existing Fastify, PostgreSQL, Undici and Luxon dependencies are retained.
+npm start --prefix backend-node
+```
+
+Replace `DATABASE_URL` with your connection details. `prepare-db` creates the
+database if needed and runs migrations; it requires permission to create a
+database when one does not exist. Use `migrate` instead for an existing database.
+The HTTP server does not run migrations or seeds automatically.
+
+The build removes `dist/`, compiles TypeScript and resolves source path aliases
+with `tsc-alias`. The server entry point is `dist/server.js`; the maintenance
+entry point is `dist/cli.js`.
+
+## Configuration
+
+Configuration reads the process environment. Set these variables before starting
+the server or running maintenance commands.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | `postgresql://localhost/jira_logger` | PostgreSQL connection URL; `serverVersion` and `charset` query parameters are removed |
+| `APP_INTERNAL_TIMEZONE` | `UTC` | Internal date conversion timezone |
+| `APP_DEFAULT_USER_TIMEZONE` | `Europe/Riga` | Fallback user timezone |
+| `PORT` | `3000` | Public listener port on `0.0.0.0` |
+| `HEALTH_PORT` | `3001` | Private readiness listener port on `127.0.0.1` |
+| `ASSETS_PATH` | `/var/www/public/ng` | Directory containing frontend assets and `index.html` |
+| `CORS_ALLOW_ORIGIN` | `^https?://localhost$` | Regular expression used to match request origins |
+| `LOG_FILE` | Unset | Optional file destination for server logs |
+| `TLS_CERT_FILE` | Unset | Certificate file for direct HTTPS |
+| `TLS_KEY_FILE` | Unset | Private key file for direct HTTPS |
+
+Set both TLS variables together; supplying only one causes configuration to fail.
+Without them, the public listener uses HTTP. HTTPS responses include HSTS.
+The readiness listener uses HTTP independently of public TLS configuration.
+
+Jira configuration is stored in database settings: `jira.enabled`, `jira.host`,
+`jira.personal-access-token`, `jira.user-time-zone` and `jira.locale`.
+The setting seed disables Jira and supplies placeholder connection values.
+Configure those settings before using Jira integration. The tag seed contains
+`CAPEX`, `OPEX` and `OTHER`.
+
+## HTTP interface
+
+Feature controllers under `src/features/` define the API routes:
+
+| Area | Paths |
+| --- | --- |
+| Settings | `/api/setting`, `/api/setting/:id` |
+| Tags | `/api/tag`, `/api/tag/:id` |
+| Tasks and reports | `/api/task`, `/api/task/:id`, `/api/task/exist/:name` |
+| Timers | `/api/task/:id/time-log`, `/api/task/:id/time-log/:timerId`, `/api/task/:id/time-log/start`, `/api/task/:id/time-log/stop` |
+| Timer summaries | `/api/task/active`, `/api/task/today/seconds` |
+| Jira | `/api/task/jira/missing`, `/api/task/:id/:date` |
+| Jira work logs | `/api/jira-work-log`, `/api/jira-work-log/:id` |
+
+`GET /api/doc` serves the bundled HTML API documentation. `GET /api/monitor`
+returns a welcome message and the current time in the user timezone.
+
+`GET /internal/ready` checks database readiness on the private listener and
+returns 503 if the check fails. The same path returns 404 on the public listener.
+The server checks readiness before opening public ingress.
+
+Static assets are served under `/ng/`; the SPA fallback reads `index.html` from
+`ASSETS_PATH`. Set that path to your built frontend directory for local UI use.
+
+## Maintenance commands
+
+After building, run `node backend-node/dist/cli.js <command>` from the repository
+root.
+
+| Command | Action |
+| --- | --- |
+| `prepare-db` | Create the database if needed, then apply migrations |
+| `migrate` | Apply pending migrations |
+| `migrations:status` | Print migration status |
+| `seed:load setting` / `seed:load tag` | Load the named seed |
+| `seed:setting` / `seed:tag` | Aliases for loading the named seed |
+| `seed:unload setting` / `seed:unload tag` | Remove entries by seed name |
+| `app:audit:jira-sync-data` | Print the Jira sync data audit as JSON |
+
+Migration definitions live in
+`src/features/maintenance/migrations.constants.ts`. `src/migrations.ts` exports
+`migrations` and `migrationLock` for consumers of `dist/migrations.js`.
 
 ## Source layout
 
 | Directory | Responsibility |
 | --- | --- |
-| `src/application/` | Composition root, runtime configuration and injectable resources |
-| `src/database/` | Pool construction, transactions and database record types |
-| `src/features/` | Settings, tags, tasks/reports, timers, Jira, Jira work logs and maintenance |
-| `src/http/` | Public/private listeners, system routes and HTTP adaptation helpers |
-| `src/logging/` | Rotation-compatible file log stream |
-| `src/time/` | Date conversion and timezone provider |
-| `src/shared/` | Stateless coercion/validation, response mapping and shared DTOs |
+| `src/application/` | Application composition, environment configuration and injectable resources |
+| `src/database/` | PostgreSQL pool, transactions and database record types |
+| `src/features/` | Feature controllers, services, repositories and maintenance commands |
+| `src/http/` | Fastify server, private health server, system routes and HTTP helpers |
+| `src/logging/` | File log stream that reopens the file for each append |
+| `src/time/` | Date conversion and database-backed user timezone lookup |
+| `src/shared/` | Coercion, validation, response mapping and shared response types |
+| `test/` | Application, database, health server, maintenance and ESLint configuration tests |
+| `eslint-rules/` | Local ESLint rules |
 
-Each feature keeps its controller, service and repository together. Declared
-types and interfaces live in `*.types.ts`; module constants live in
-`*.constants.ts` beside their owner. Repository SQL constants remain in the
-persistence layer. Small pure functions remain functions: parsing, validation,
-record mapping helpers and pool construction need no stateful utility class.
-The only root source files are the three compatibility entry points:
-`server.ts`, `cli.ts` and the migration export facade `migrations.ts`.
+`Application` owns the database, settings repository, timezone service and
+maintenance service. It constructs feature routes and lazily creates the Jira
+client when routes are requested. Controllers adapt HTTP requests, services
+implement workflows, repositories own SQL, and `ResponseMapper` produces response
+DTOs from supplied records.
 
-`npm run build` clears generated `dist/` before compiling, so moved modules
-cannot leave obsolete JavaScript files that mask a broken import.
+`HttpServer` owns the public Fastify server and private readiness server.
+Shutdown drains those listeners before closing application resources.
+`src/server.ts` and `src/cli.ts` provide executable entry points guarded so that
+importing them does not start the application.
 
-## Compatibility investigation and implementation notes
+## Development checks
 
-Each extraction followed the existing PHP/Node flow, frontend use, SQL effects,
-validation order and failure handling before moving the implementation. Existing
-fixtures were rerun at the relevant increment. These details are intentional:
-
-| Subsystem | Preserved behavior | Focused evidence |
-| --- | --- | --- |
-| Infrastructure | Doctrine URL options are removed; timestamps remain strings within application pools; client construction and imports do not query | `test/database.test.mjs`, `test/application.test.mjs` |
-| Settings and tags | Validation/error ordering, token redaction, uniqueness messages and used-tag deletion rejection | Existing `settings`, `resources` and input `matrix` fixtures |
-| Tasks | Task and tag changes share one transaction; association lookup errors occur before the write exception handler; null description retains its previous value | Existing `resources` and input `matrix` fixtures |
-| Reports | Inclusive boundaries, clipped timer DTOs, original times, active-timer precedence, filter coercion and timezone overlaps | Existing `reports`, `report-matrix` and date tests |
-| Timers | Starting first commits stopping all running timers, then inserts separately; an insert failure leaves previous timers stopped | Existing `timer-failure`, `resources` and date fixtures |
-| Jira search | Legacy/enhanced search fallback, pagination, case-insensitive duplicate filtering, malformed payload and upstream error distinctions | Existing `jira-search`, `jira-errors` and `jira-transport` fixtures |
-| Jira sync | Remote write precedes local persistence; failed local persistence does not compensate remote success; PUT failure fallback and 60-second minimum remain | Existing `jira`, `jira-local`, `jira-errors` and shutdown fixtures |
-| Maintenance | Seed idempotency and edited values, unload-by-name, read-only audit, shared advisory lock, migration rollback and historical Riga timestamp conversion | `test/maintenance.test.mjs` and existing migration fixture |
-
-`migrations` and `migrationLock` remain exported by `dist/migrations.js` with the
-original SQL and versions. The existing migration fixture creates its own
-`pg.Client` and compares timestamp strings. It previously acquired text parsers
-as an accidental side effect of importing the backend. Run that unchanged
-fixture with the explicit test-only preload below. Application imports do not
-install those process-wide parsers.
-
-## Build and run
-
-From the repository root:
+Run from the repository root:
 
 ```sh
-npm ci --prefix backend-node
 npm run build --prefix backend-node
-node backend-node/dist/server.js
-node backend-node/dist/cli.js migrate
-node backend-node/dist/cli.js migrations:status
-node backend-node/dist/cli.js seed:load setting
-node backend-node/dist/cli.js seed:load tag
-node backend-node/dist/cli.js app:audit:jira-sync-data
-```
-
-Set `DATABASE_URL` for host execution. The existing environment variables also
-remain supported: `APP_INTERNAL_TIMEZONE`, `APP_DEFAULT_USER_TIMEZONE`, `PORT`,
-`ASSETS_PATH`, `CORS_ALLOW_ORIGIN`, `LOG_FILE`, `HEALTH_PORT`, `TLS_CERT_FILE`
-and `TLS_KEY_FILE`. Configure both TLS files together for HTTPS.
-
-The existing manager builds and runs Node in Docker by default. PHP remains an
-explicit option, using the shared database:
-
-```sh
-sh manager.sh -a build
-sh manager.sh -a start-with-init -b
-sh manager.sh -a start -b --backend php
-sh manager.sh -a start -b --backend node
-```
-
-## Verification
-
-Run the internal test suite with `npm test --prefix backend-node`.
-
-```sh
+npm run lint --prefix backend-node
 npm test --prefix backend-node
 ```
 
-Internal tests cover independent injected applications and Jira sessions,
-imports without clients, cleanup failures, TLS setup failure, private readiness
-contracts and in-flight public/private requests during shutdown. Real socket
-tests use ephemeral loopback ports: Fastify injection does not exercise Node's
-socket-draining behavior.
-
-Local run evidence is stored in ignored `.validation/` logs. Executed acceptance
-results for this refactor are recorded in `VALIDATION.md`.
+TypeScript uses strict checking, including `noUncheckedIndexedAccess`,
+`exactOptionalPropertyTypes` and `noImplicitOverride`. ESLint treats warnings as
+failures; `npm run lint:fix --prefix backend-node` applies automatic fixes.
+Vitest runs `src/**/*.spec.ts` and `test/**/*.spec.ts`. Some lifecycle tests open
+ephemeral loopback ports to exercise socket shutdown behavior.
