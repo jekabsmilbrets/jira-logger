@@ -1,5 +1,10 @@
 {
-  "name": "jira-logger-backend",
+  "name": "jira-logger/be-node",
+  "author": {
+    "name": "Jēkabs Milbrets",
+    "email": "jekabs.milbrets@me.com"
+  },
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "engines": {
