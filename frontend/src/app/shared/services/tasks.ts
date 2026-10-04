@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, injectAsync, Service, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { catchError, map, type Observable, of, switchMap, take, tap, throwError } from 'rxjs';
+import { catchError, map, type Observable, of, Subject, switchMap, take, tap, throwError } from 'rxjs';
 
 import { LoaderState } from '@core/services/loader-state';
 
@@ -18,6 +18,9 @@ import { openLoadErrorDialog } from '@shared/utilities/open-load-error-dialog.ut
 
 @Service()
 export class Tasks {
+  private readonly changedSubject: Subject<void> = new Subject<void>();
+  public readonly changed$: Observable<void> = this.changedSubject.asObservable();
+
   public readonly loaderStateService: LoaderState = inject(LoaderState);
 
   private readonly apiRequestService: ApiRequest = inject(ApiRequest);
@@ -115,6 +118,7 @@ export class Tasks {
         switchMap(
           () => this.list().pipe(take(1)),
         ),
+        tap(() => this.changedSubject.next()),
         map(() => undefined),
       );
   }
@@ -186,6 +190,7 @@ export class Tasks {
       .pipe(
         switchMap(() => this.reloadList(skipReload)),
         map((tasks: Task[]) => this.findTask(tasks, task)),
+        tap(() => this.changedSubject.next()),
       );
   }
 

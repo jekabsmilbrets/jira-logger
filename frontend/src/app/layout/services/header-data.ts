@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { computed, DestroyRef, inject, type ResourceRef, Service, type Signal } from '@angular/core';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -11,6 +12,7 @@ import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import type { ResourceRequestHandle } from '@shared/interfaces/resource-request-handle.interface';
 import { Task } from '@shared/models/task.model';
 import { ApiRequest } from '@shared/services/api-request';
+import { Tasks } from '@shared/services/tasks';
 import { TimeLogs } from '@shared/services/time-logs';
 
 interface TodaySecondsResponse {
@@ -19,8 +21,10 @@ interface TodaySecondsResponse {
 
 @Service()
 export class HeaderData {
+  private readonly document: Document = inject(DOCUMENT);
   private readonly apiRequestService: ApiRequest = inject(ApiRequest);
   private readonly destroyRef: DestroyRef = inject(DestroyRef);
+  private readonly tasksService: Tasks = inject(Tasks);
   private readonly timeLogsService: TimeLogs = inject(TimeLogs);
   private readonly taskResource: ResourceRequestHandle = this.apiRequestService.resource('task');
 
@@ -50,12 +54,28 @@ export class HeaderData {
 
   constructor() {
     merge(
+      this.tasksService.changed$,
       this.timeLogsService.taskStarted$,
       this.timeLogsService.taskFinished$,
       this.timeLogsService.timeLogChanged$,
     )
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.reloadActiveTask());
+      .subscribe(() => {
+        this.reloadActiveTask();
+        this.reloadTimeLoggedToday();
+      });
+
+    let wasHidden: boolean = this.document.hidden;
+    const onVisibilityChange: () => void = (): void => {
+      const hidden: boolean = this.document.hidden;
+      if (wasHidden && !hidden) {
+        this.reloadActiveTask();
+        this.reloadTimeLoggedToday();
+      }
+      wasHidden = hidden;
+    };
+    this.document.addEventListener('visibilitychange', onVisibilityChange);
+    this.destroyRef.onDestroy(() => this.document.removeEventListener('visibilitychange', onVisibilityChange));
 
     const intervalId: ReturnType<typeof setInterval> = setInterval(
       () => this.reloadTimeLoggedToday(),

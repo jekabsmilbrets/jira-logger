@@ -157,6 +157,66 @@ describe('Tasks Views tasks-view', () => {
     expect(fixture.debugElement.queryAll(By.css('tasks-task')).length).toBe(5);
   });
 
+  it('keeps the current page after refreshing the same tasks', async () => {
+    const { fixture, component, tasksState } = await setup();
+    const tasks = Array.from({ length: 6 }, () => buildTask());
+    tasksState.set(tasks);
+    await fixture.whenStable();
+    component['onPageChange']({ pageIndex: 1, previousPageIndex: 0, pageSize: 5, length: 6 });
+    await fixture.whenStable();
+    tasksState.set(tasks.map((task) => new Task({ ...task, description: 'Refreshed' })));
+    await fixture.whenStable();
+    expect(component['pageIndex']()).toBe(1);
+    expect(fixture.debugElement.queryAll(By.css('tasks-task')).length).toBe(1);
+  });
+
+  it('preserves an open task editor when authoritative task data is refreshed', async () => {
+    const { fixture, tasksState } = await setup();
+    const task = buildTask();
+    tasksState.set([task]);
+    await fixture.whenStable();
+    const editor = fixture.debugElement.query(By.css('tasks-task')).componentInstance;
+    editor.onToggleEditMode();
+    editor.taskFormSession.form.description().value.set('Unsaved edit');
+    await fixture.whenStable();
+
+    tasksState.set([new Task({ ...task, description: 'Changed in another tab' })]);
+    await fixture.whenStable();
+    const refreshedEditor = fixture.debugElement.query(By.css('tasks-task')).componentInstance;
+    expect(refreshedEditor).toBe(editor);
+    expect(refreshedEditor.editMode()).toBe(true);
+    expect(refreshedEditor.taskFormSession.draft().description).toBe('Unsaved edit');
+    expect(refreshedEditor.task().description).toBe('Changed in another tab');
+  });
+
+  it('keeps an unsaved editor mounted across page boundaries when timer sorting changes', async () => {
+    const { fixture, component, tasksState } = await setup();
+    const tasks = Array.from({ length: 6 }, () => buildTask());
+    tasksState.set(tasks);
+    await fixture.whenStable();
+    component['onPageChange']({ pageIndex: 1, previousPageIndex: 0, pageSize: 5, length: 6 });
+    await fixture.whenStable();
+    const editor = fixture.debugElement.query(By.css('tasks-task')).componentInstance;
+    editor.onToggleEditMode();
+    editor.taskFormSession.form.description().value.set('Unsaved across pages');
+    await fixture.whenStable();
+
+    const refreshed = new Task({ ...tasks[5], description: 'Server edit' });
+    refreshed.lastTimeLog = buildTimeLog('2026-03-02T10:00:00.000Z');
+    tasksState.set([...tasks.slice(0, 5), refreshed]);
+    await fixture.whenStable();
+    const cards = fixture.debugElement.queryAll(By.css('tasks-task')).map((card) => card.componentInstance);
+    expect(cards).toContain(editor);
+    expect(editor.taskFormSession.draft().description).toBe('Unsaved across pages');
+    expect(editor.task()).toBe(refreshed);
+    expect(component['pageIndex']()).toBe(1);
+
+    editor.onToggleEditMode();
+    await fixture.whenStable();
+    expect(fixture.debugElement.queryAll(By.css('tasks-task')).length).toBe(1);
+    expect(component['pagedTasks']()).not.toContain(refreshed);
+  });
+
   it('wires child tasks-task outputs to parent handlers', async () => {
     const { fixture, tasksState, component } = await setup();
     const task = buildTask([buildTimeLog('2026-03-02T10:00:00.000Z')]);

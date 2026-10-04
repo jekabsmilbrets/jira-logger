@@ -123,6 +123,7 @@ describe('Tasks Components tasks-menu', () => {
   afterEach(() => {
     vi.runOnlyPendingTimers();
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('filters tasks by name when name field changes', () => {
@@ -134,6 +135,40 @@ describe('Tasks Components tasks-menu', () => {
     vi.advanceTimersByTime(301);
 
     expect(tasksServiceMock.loadVisibleTasks).toHaveBeenLastCalledWith({ name: 'Build docs' });
+  });
+
+  it('refreshes the existing filter on return to the tab and preserves the unsaved draft', async () => {
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    const fixture = TestBed.createComponent(TasksMenu);
+    const component = fixture.componentInstance;
+    component['taskFormSession'].form.name().value.set('Draft task');
+    component['taskFormSession'].form.description().value.set('Unsaved description');
+    component['taskFormSession'].setTags([new Tag({ id: 'tag', name: 'Draft tag' })]);
+    TestBed.tick();
+    await vi.advanceTimersByTimeAsync(301);
+    TestBed.tick();
+    tasksServiceMock.loadVisibleTasks.mockClear();
+
+    hidden.mockReturnValue(true);
+    document.dispatchEvent(new Event('visibilitychange'));
+    TestBed.tick();
+    expect(tasksServiceMock.loadVisibleTasks).not.toHaveBeenCalled();
+    hidden.mockReturnValue(false);
+    document.dispatchEvent(new Event('visibilitychange'));
+    document.dispatchEvent(new Event('visibilitychange'));
+    TestBed.tick();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(tasksServiceMock.loadVisibleTasks).toHaveBeenCalledExactlyOnceWith({ name: 'Draft task' });
+    expect(component['taskFormSession'].draft()).toMatchObject({
+      name: 'Draft task', description: 'Unsaved description', tags: [{ id: 'tag' }],
+    });
+
+    fixture.destroy();
+    hidden.mockReturnValue(true);
+    document.dispatchEvent(new Event('visibilitychange'));
+    hidden.mockReturnValue(false);
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(tasksServiceMock.loadVisibleTasks).toHaveBeenCalledOnce();
   });
 
   it('clears the name filter when the field becomes empty', async () => {

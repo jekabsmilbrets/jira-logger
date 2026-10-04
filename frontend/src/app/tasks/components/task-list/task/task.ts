@@ -66,6 +66,7 @@ export class Task {
   public readonly task: InputSignal<TaskModel> = input.required<TaskModel>();
   public readonly isLoading: InputSignal<boolean> = input.required<boolean>();
 
+  protected readonly editingChange: OutputEmitterRef<boolean> = output<boolean>();
   protected readonly action: OutputEmitterRef<TaskModel> = output<TaskModel>();
   protected readonly update: OutputEmitterRef<TaskModel> = output<TaskModel>();
   protected readonly remove: OutputEmitterRef<TaskModel> = output<TaskModel>();
@@ -237,6 +238,7 @@ export class Task {
 
     this.update.emit(this.taskFormSession.toTask());
     this.editMode.set(false);
+    this.editingChange.emit(false);
   }
 
   protected async onRemove(): Promise<void> {
@@ -254,6 +256,7 @@ export class Task {
   protected onToggleEditMode(): void {
     const nextEditMode: boolean = !this.editMode();
     this.editMode.set(nextEditMode);
+    this.editingChange.emit(nextEditMode);
 
     if (nextEditMode) {
       this.taskFormSession.reset();

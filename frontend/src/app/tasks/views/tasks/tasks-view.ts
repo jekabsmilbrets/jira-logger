@@ -36,16 +36,24 @@ export class TasksView {
   protected readonly pageIndex: WritableSignal<number> = signal(0);
   protected readonly pageSizeOptions: number[] = [5, 10, 25, 50];
   protected readonly pageSize: WritableSignal<number> = signal(this.pageSizeOptions[0]);
+  private readonly editingTasks: WritableSignal<TaskModel[]> = signal([]);
   protected readonly pagedTasks: Signal<TaskModel[]> = computed(() => {
     const start: number = this.pageIndex() * this.pageSize();
 
-    return this.tasks().slice(start, start + this.pageSize());
+    const tasks: TaskModel[] = this.tasks();
+    const pageTasks: TaskModel[] = tasks.slice(start, start + this.pageSize());
+    const editingTasks: TaskModel[] = this.editingTasks()
+      .filter((editingTask: TaskModel) => !pageTasks.some((task: TaskModel) => task.id === editingTask.id))
+      .map((editingTask: TaskModel) => tasks.find((task: TaskModel) => task.id === editingTask.id) ?? editingTask);
+
+    // Keep open editors mounted even if refreshed timer order moves them to another page.
+    return [...pageTasks, ...editingTasks];
   });
 
   public constructor() {
     effect(() => {
-      this.tasks();
-      this.pageIndex.set(0);
+      const lastPageIndex: number = Math.max(0, Math.ceil(this.tasks().length / this.pageSize()) - 1);
+      this.pageIndex.update((pageIndex: number) => Math.min(pageIndex, lastPageIndex));
     });
 
     this.storageService.read<unknown>(this.pageSizeStorageKey, this.settingsStoreName)
@@ -56,6 +64,13 @@ export class TasksView {
       .subscribe((storedPageSize: unknown) => {
         this.pageSize.set(this.normalizePageSize(storedPageSize));
       });
+  }
+
+  protected onEditingChange(task: TaskModel, editing: boolean): void {
+    this.editingTasks.update((tasks: TaskModel[]) => editing ?
+      [...tasks.filter((item: TaskModel) => item.id !== task.id), task] :
+      tasks.filter((item: TaskModel) => item.id !== task.id),
+    );
   }
 
   protected onPageChange(
