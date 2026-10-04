@@ -13,15 +13,14 @@ export interface AuditResult {
   invalidTimeLogs: Pick<TimerRow, 'id' | 'task_id' | 'start_time' | 'end_time'>[];
 }
 
-export type MaintenanceStore = Pick<MaintenanceRepository, 'seed' | 'createDatabase' | 'audit'>;
+export type MaintenanceStore = Pick<MaintenanceRepository, 'seed' | 'audit'>;
 
 export interface MigrationVersion {
-  version: string;
-  executed_at: string | null;
-  execution_time: number | null;
+  version: number;
+  applied: boolean;
 }
 
 export interface Migration {
-  version: string;
-  sql: string[];
+  version: number;
+  sql: string;
 }

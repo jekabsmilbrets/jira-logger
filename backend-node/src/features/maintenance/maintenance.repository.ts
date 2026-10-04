@@ -1,8 +1,5 @@
-import { randomUUID }       from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 
-import pg from 'pg';
-
-import { errorCode }           from '@database/database.helpers';
 import type { DatabaseAccess } from '@database/database.types';
 
 import type { AuditResult } from '@features/maintenance/maintenance.types';
@@ -11,84 +8,51 @@ import type { AuditResult } from '@features/maintenance/maintenance.types';
 export class MaintenanceRepository {
   constructor(
     private readonly database: DatabaseAccess,
-    private readonly connectionString: string,
-  ) {
-  }
+  ) { }
 
   public async seed(
     name: 'setting' | 'tag',
     entries: readonly (readonly [string, string | undefined])[],
     unload: boolean,
   ): Promise<void> {
-    await this.database.transaction(async (
-      client,
-    ) => {
-      if (unload) {
-        await client.query(`DELETE
-                            FROM ${ name }
-                            WHERE name = ANY ($1)`, [entries.map((
-          [key],
-        ) => key)]);
+    this.database.transaction(
+      (
+        client,
+      ) => {
+        for (const [key, value] of entries
+        ) {
+          if (unload) {
+            client.query('DELETE FROM ' + name + ' WHERE name=$1', [key]);
+            continue;
+          }
 
-        return;
-      }
+          if (client.query('SELECT 1 FROM ' + name + ' WHERE name=$1', [key]).rowCount) {
+            continue;
+          }
 
-      for (const [key, value] of entries) {
-        if ((await client.query(`SELECT 1
-                                 FROM ${ name }
-                                 WHERE name = $1`, [key])).rowCount) {
-          continue;
-        }
-
-        const values: string[] = [randomUUID(), key];
-
-        if (name === 'setting') {
-          if (value === undefined) {
+          if (name === 'setting' && value === undefined) {
             throw new Error('Missing seed value');
           }
 
-          values.push(value);
+          const columns: string = name === 'setting' ? 'id,name,value,created_at,updated_at' : 'id,name,created_at,updated_at';
+          const bindings: string = name === 'setting' ? '$1,$2,$3,unixepoch()*1000,unixepoch()*1000' : '$1,$2,unixepoch()*1000,unixepoch()*1000';
+          client.query('INSERT INTO ' + name + ' (' + columns + ') VALUES (' + bindings + ')', name === 'setting' ? [randomUUID(), key, value] : [randomUUID(), key]);
         }
-
-        await client.query(`INSERT INTO ${ name } (id, name, ${ name === 'setting' ? 'value,' : '' } created_at, updated_at)
-                            VALUES ($1, $2, ${ name === 'setting' ? '$3,' : '' }date_trunc('second', CURRENT_TIMESTAMP),
-                                    date_trunc('second', CURRENT_TIMESTAMP))`, values);
-      }
-    });
-  }
-
-  public async createDatabase(): Promise<void> {
-    const url: URL = new URL(this.connectionString);
-    const name: string = decodeURIComponent(url.pathname.slice(1));
-    url.pathname = '/postgres';
-    const admin: pg.Client = new pg.Client({
-      connectionString: url.toString()
-    });
-
-    try {
-      await admin.connect();
-
-      if (!(await admin.query('SELECT 1 FROM pg_database WHERE datname=$1', [name])).rowCount) {
-        try {
-          await admin.query(`CREATE DATABASE "${ name.replaceAll('"', '""') }"`);
-        } catch (error) {
-          if (errorCode(error) !== '42P04') {
-            throw error;
-          }
-        }
-      }
-    } finally {
-      await admin.end();
-    }
+      });
   }
 
   public async audit(): Promise<AuditResult> {
-    const duplicates: pg.QueryResult<AuditResult['duplicates'][number]> = await this.database.query<AuditResult['duplicates'][number]>('SELECT task_id,start_time,work_log_id,COUNT(*) AS duplicate_count FROM jira_work_log GROUP BY task_id,start_time,work_log_id HAVING COUNT(*)>1 ORDER BY duplicate_count DESC,task_id ASC');
-    const invalid: pg.QueryResult<AuditResult['invalidTimeLogs'][number]> = await this.database.query<AuditResult['invalidTimeLogs'][number]>('SELECT id,task_id,start_time,end_time FROM time_log WHERE end_time IS NOT NULL AND end_time<=start_time ORDER BY task_id ASC,start_time ASC');
+    const duplicates: AuditResult['duplicates'] = this.database.query<AuditResult['duplicates'][number]>('SELECT task_id,start_time,work_log_id,CAST(COUNT(*) AS TEXT) AS duplicate_count FROM jira_work_log GROUP BY task_id,start_time,work_log_id HAVING COUNT(*)>1 ORDER BY COUNT(*) DESC,task_id ASC').rows;
+    const invalid: AuditResult['invalidTimeLogs'] = this.database.query<{
+      id: string;
+      task_id: string;
+      start_time: number;
+      end_time: number
+    }>('SELECT id,task_id,start_time,end_time FROM time_log WHERE end_time IS NOT NULL AND end_time<=start_time ORDER BY task_id ASC,start_time ASC').rows;
 
     return {
-      duplicates: duplicates.rows,
-      invalidTimeLogs: invalid.rows
+      duplicates,
+      invalidTimeLogs: invalid
     };
   }
 }

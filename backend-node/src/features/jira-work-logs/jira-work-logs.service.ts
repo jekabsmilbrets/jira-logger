@@ -83,7 +83,7 @@ export class JiraWorkLogsService {
       throw new ApiError(404, ['JiraWorkLog not found']);
     }
 
-    // PHP's DTO cannot populate the mandatory work_log_id/start_time columns.
+    // This endpoint cannot populate the mandatory work_log_id/start_time columns.
     if (!id || !old) {
       throw new ApiError(400, ['Can not Create JiraWorkLog']);
     }

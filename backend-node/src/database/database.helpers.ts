@@ -13,5 +13,9 @@ export function requiredRow<T>(
 export function errorCode(
   error: unknown,
 ): unknown {
+  if (error !== null && typeof error === 'object' && 'errcode' in error && [1555, 2067].includes(Number(error.errcode))) {
+return 'unique';
+}
+
   return error !== null && typeof error === 'object' && 'code' in error ? error.code : undefined;
 }

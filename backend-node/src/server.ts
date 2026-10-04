@@ -25,9 +25,10 @@ export async function startServer(
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const application: Application = new Application();
+  let application: Application | undefined;
 
   try {
+    application = new Application();
     const app: FastifyInstance = await startServer(application);
 
     for (const signal of ['SIGTERM', 'SIGINT'] as const) {
@@ -36,7 +37,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       });
     }
   } catch {
-    await application.close();
+    await application?.close();
     console.error('Server startup failed');
     process.exitCode = 1;
   }

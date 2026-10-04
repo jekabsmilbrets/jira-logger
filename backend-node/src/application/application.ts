@@ -2,7 +2,6 @@ import type { ApplicationResources } from '@application/application.types';
 import { Configuration }             from '@application/configuration';
 
 import { Database }               from '@database/database';
-import { createPool }             from '@database/postgres-pool';
 
 import { JiraController }        from '@features/jira/jira.controller';
 import { JiraService }           from '@features/jira/jira.service';
@@ -45,16 +44,17 @@ export class Application {
   private jiraClient: JiraTransport | undefined;
   private routeRegistry: Route[] | undefined;
   private closePromise: Promise<void> | undefined;
+  private initialization: Promise<void> | undefined;
 
   constructor(
     public readonly config: Configuration = new Configuration(),
     resources: ApplicationResources       = {},
   ) {
-    this.database = resources.database ?? new Database(createPool(config.database));
+    this.database = resources.database ?? new Database(config.database, true);
     this.settings = new SettingsRepository(this.database);
     this.timezone = new TimezoneService(this.settings, config.userTimezone);
     this.jiraClient = resources.jira;
-    this.maintenance = new MaintenanceService(new MaintenanceRepository(this.database, config.database), new MigrationRepository(this.database));
+    this.maintenance = new MaintenanceService(new MaintenanceRepository(this.database), new MigrationRepository(this.database), this.database);
   }
 
   public routes(): Route[] {
@@ -78,8 +78,8 @@ export class Application {
       ...new SettingsController(new SettingsService(this.settings)).routes(),
       ...new TagsController(new TagsService(tags, this.timezone, mapper)).routes(),
       ...new TasksController(tasks, new ReportService(tasksRepository, tasks, this.timezone)).routes(),
-      ...new TimersController(new TimersService(timers, tasks, this.timezone, dates, mapper)).routes(),
-      ...new JiraController(new JiraService(tasks, tasksRepository, timers, logs, this.timezone, dates, this.jiraClient)).routes(),
+      ...new TimersController(new TimersService(timers, tasks, this.timezone, mapper)).routes(),
+      ...new JiraController(new JiraService(tasks, tasksRepository, timers, logs, this.timezone, this.jiraClient)).routes(),
       ...new JiraWorkLogsController(new JiraWorkLogsService(logs, tasksRepository, this.timezone, mapper)).routes(),
       ...new SystemController(this.timezone).routes()
     ];
@@ -88,6 +88,13 @@ export class Application {
   }
 
   public async ready(): Promise<void> {
+    if (this.closePromise) {
+      throw new Error('Application is closed');
+    }
+
+    this.database.lock();
+    this.initialization ??= this.maintenance.prepareDatabase();
+    await this.initialization;
     await this.database.ping();
   }
 

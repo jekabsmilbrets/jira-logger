@@ -5,7 +5,7 @@ import { test } from 'vitest';
 import { parseDate } from './date.helpers.js';
 
 
-test('explicit date normalization and PHP daylight-saving choices', () => {
+test('explicit date normalization and established daylight-saving choices', () => {
   for (const [input, zone, expected] of [
     ['2026-02-30', 'Europe/Riga', '2026-03-01T22:00:00.000Z'],
     ['2026-04-31', 'Europe/Riga', '2026-04-30T21:00:00.000Z'],
