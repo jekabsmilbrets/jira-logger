@@ -40,9 +40,12 @@ BEGIN
         expression := format('%I',spec->>'name');
         IF layout='legacy-riga' THEN expression := expression || ' AT TIME ZONE ''Europe/Riga'''; END IF;
         expression := '(extract(epoch FROM (' || expression || '))*1000)';
-        EXECUTE format('SELECT EXISTS(SELECT 1 FROM public.%I WHERE %s IS NOT NULL AND (NOT isfinite(%I) OR %s <> trunc(%s) OR abs(%s)>8640000000000000))',source_table,format('%I',spec->>'name'),spec->>'name',expression,expression,expression) INTO bad;
-        IF bad THEN RAISE EXCEPTION 'Unrepresentable timestamp or fractional milliseconds in %.%',source_table,spec->>'name'; END IF;
-        expression := expression || '::bigint';
+        EXECUTE format('SELECT EXISTS(SELECT 1 FROM public.%I WHERE %s IS NOT NULL AND (NOT isfinite(%I) OR abs(%s)>8640000000000000))',source_table,format('%I',spec->>'name'),spec->>'name',expression) INTO bad;
+        IF bad THEN RAISE EXCEPTION 'Unrepresentable timestamp in %.%',source_table,spec->>'name'; END IF;
+        -- The previous timer writer used NOW(), which includes microseconds.
+        -- Match its JavaScript date decoding: discard sub-millisecond precision,
+        -- flooring epoch milliseconds even before 1970 instead of rounding bigint casts.
+        expression := 'floor(' || expression || ')::bigint';
       ELSE
         normalized := normalized || jsonb_build_array(spec);
         expression := format('%I',spec->>'name');
