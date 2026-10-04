@@ -41,8 +41,14 @@ testem.log
 .DS_Store
 Thumbs.db
 
-# Database dumps
+# Database snapshots contain settings, Jira credentials and user data.
 db_dump.sql
+*.sqlite
+*.sqlite-*
+*.sqlite.lock
+postgres-snapshot*.json
+.migration-backups/
+db_dump*.sql
 
 /.logs
 
@@ -69,3 +75,5 @@ artifacts/
 /backend/docs/superpowers/
 
 .codebase-memory
+# Locally retained legacy caches/dependencies are outside the SQLite source tree.
+/backend/
