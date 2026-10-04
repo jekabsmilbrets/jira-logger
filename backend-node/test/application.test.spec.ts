@@ -274,6 +274,45 @@ test('Node serves static assets and SPA routes without exposing private paths', 
   }
 });
 
+test('static assets do not consume application limits and throttled requests return 429', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'jira-static-limit-'));
+  writeFileSync(join(directory, 'main.js'), 'console.log("asset");');
+  const { application } = fixture('rate-limit', {
+    environment: {
+      ASSETS_PATH: directory
+    }
+  });
+  const server = buildServer(application);
+
+  try {
+    for (let index = 0; index < 105; index++) {
+      assert.equal((await server.inject('/ng/main.js')).statusCode, 200);
+    }
+
+    for (let index = 0; index < 1000; index++) {
+      assert.equal((await server.inject('/api/setting')).statusCode, 200);
+    }
+
+    const limited = await server.inject({
+      url: '/api/setting',
+      headers: {
+        Accept: 'application/json'
+      }
+    });
+    assert.equal(limited.statusCode, 429);
+    assert.equal(limited.json().status, 429);
+    assert.equal(limited.json().detail, 'Too Many Requests');
+    assert.ok(Number(limited.headers['retry-after']) > 0);
+    assert.equal((await server.inject('/ng/main.js')).statusCode, 200);
+  } finally {
+    await server.close();
+    rmSync(directory, {
+      recursive: true,
+      force: true
+    });
+  }
+});
+
 test('direct Node HTTPS serves assets using the configured certificate', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'jira-tls-'));
   const key = join(directory, 'server.key'), cert = join(directory, 'server.crt');

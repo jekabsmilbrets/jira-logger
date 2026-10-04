@@ -30,7 +30,7 @@ export function frameworkError(
   reply: FastifyReply,
   status = 500,
 ) {
-  const detail: string = status === 405 ? 'Method Not Allowed' : 'Internal Server Error';
+  const detail: string = status === 405 ? 'Method Not Allowed' : status === 429 ? 'Too Many Requests' : 'Internal Server Error';
   reply.code(status).header('Vary', 'Accept');
   const accepted: AcceptedMediaType[] = (request.headers.accept ?? '').split(',').map(
     (

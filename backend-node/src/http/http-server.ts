@@ -42,8 +42,8 @@ export class HttpServer {
       } : {})
     });
     this.server.register(fastifyRateLimit, {
-      global: true,
-      max: 100,
+      global: false,
+      max: 1000,
       timeWindow: '1 minute'
     });
     this.health = new HealthServer(application, config.healthPort);
@@ -55,17 +55,20 @@ export class HttpServer {
       request,
       reply,
     ) => this.handleError(error, request, reply));
-    this.server.all('/*', {
+    // Register after the plugins so the route-specific rate-limit hook is installed.
+    this.server.after(() => {
+      this.server.all('/*', {
       config: {
         rateLimit: {
-          max: 100,
+          max: 1000,
           timeWindow: '1 minute'
         }
       }
     }, (
       request,
       reply,
-    ) => this.dispatch(request, reply));
+      ) => this.dispatch(request, reply));
+    });
     this.server.addHook('onClose', async () => {
       try {
         await this.health.close();
@@ -145,6 +148,10 @@ export class HttpServer {
   ): FastifyReply {
     if (error instanceof ApiError) {
       return reply.code(error.status).send(envelope(undefined, error.errors));
+    }
+
+    if (error instanceof Error && 'statusCode' in error && error.statusCode === 429) {
+      return frameworkError(request, reply, 429);
     }
 
     request.log.error({
