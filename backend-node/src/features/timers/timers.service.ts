@@ -15,7 +15,6 @@ import type { TaskResponse, TimerResponse, TodayTotalResponse } from '@shared/re
 import { stringFields }                                         from '@shared/validation';
 
 import { parseDate, sqlDate }    from '@time/date.helpers';
-import type { DateCodec }                                       from '@time/date-codec';
 import type { TimezoneProvider } from '@time/time.types';
 
 
@@ -30,7 +29,6 @@ export class TimersService {
     private readonly repository: TimersStore,
     private readonly tasks: Pick<TasksService, 'get' | 'show'>,
     private readonly timezone: TimezoneProvider,
-    private readonly dates: DateCodec,
     private readonly mapper: ResponseMapper,
   ) {
   }
@@ -155,21 +153,7 @@ export class TimersService {
     await this.tasks.get(taskId);
 
     try {
-      if (action === 'start') {
-        // Deliberately separate commits: a failed insert must leave previous timers stopped.
-        await this.repository.stopAll();
-        await this.repository.start(taskId, randomUUID());
-      } else {
-        const id: string | undefined = await this.repository.latestRunning(taskId);
-
-        if (!id) {
-          return false;
-        }
-
-        await this.repository.stop(id);
-      }
-
-      return true;
+      return this.repository.changeRunning(taskId, randomUUID(), action);
     } catch {
       return false;
     }
@@ -191,11 +175,7 @@ export class TimersService {
     const end: DateTime = start.plus({
       days: 1
     });
-    const rows: Pick<TimerRow, 'start_time' | 'end_time'>[] = await this.repository.overlapping(start.toISO(), end.toISO());
-    const totalSeconds: number = rows.reduce((
-      total,
-      row,
-    ) => total + Math.max(0, Math.floor(Math.min(+(row.end_time ? this.dates.storedDate(row.end_time) : now), +end) / 1000) - Math.floor(Math.max(+this.dates.storedDate(row.start_time), +start) / 1000)), 0);
+    const totalSeconds: number = await this.repository.totalSeconds(start.toMillis(), end.toMillis(), now.toMillis());
 
     return {
       totalSeconds

@@ -109,7 +109,7 @@ export class TasksService {
     }
 
     const old: TaskRow | undefined = id ? await this.get(id) : undefined;
-    // PHP resolves associations outside the write exception handler.
+    // Resolve associations outside the write exception handler.
     const tagInput: (string | null)[] | undefined = Array.isArray(input.tags) ? input.tags.filter((
       tag,
     ): tag is string | null => tag === null || typeof tag === 'string') : undefined;
@@ -127,7 +127,7 @@ export class TasksService {
         description: typeof input.description === 'string' ? input.description : old?.description ?? null
       }, old, tags);
     } catch (error) {
-      throw new ApiError(400, [!id && errorCode(error) === '23505' ? 'Duplicate Task name' : `Can not ${ id ? 'Update' : 'Create' } Task`]);
+      throw new ApiError(400, [!id && errorCode(error) === 'unique' ? 'Duplicate Task name' : `Can not ${ id ? 'Update' : 'Create' } Task`]);
     }
 
     return this.show(taskId);

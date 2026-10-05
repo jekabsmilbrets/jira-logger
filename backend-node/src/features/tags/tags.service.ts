@@ -60,7 +60,7 @@ export class TagsService {
         is_used: old?.is_used ?? false
       }, await this.timezone.userTimezone());
     } catch (error) {
-      throw new ApiError(400, [!id && errorCode(error) === '23505' ? 'Duplicate Tag name' : `Can not ${ id ? 'Update' : 'Create' } Tag`]);
+      throw new ApiError(400, [!id && errorCode(error) === 'unique' ? 'Duplicate Tag name' : `Can not ${ id ? 'Update' : 'Create' } Tag`]);
     }
   }
 

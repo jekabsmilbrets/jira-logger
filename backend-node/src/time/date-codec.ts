@@ -8,15 +8,17 @@ export class DateCodec {
   }
 
   public storedDate(
-    value: string,
+    value: number | string,
   ): DateTime {
-    return DateTime.fromSQL(value, {
+    return typeof value === 'number' ? DateTime.fromMillis(value, {
+      zone: 'UTC'
+    }) : DateTime.fromSQL(value, {
       zone: this.internalTimezone
     });
   }
 
   public atom(
-    value: string | null,
+    value: number | string | null,
     zone: string,
   ): string | null {
     return value === null ? null : this.storedDate(value).setZone(zone).toFormat('yyyy-MM-dd\'T\'HH:mm:ssZZ');

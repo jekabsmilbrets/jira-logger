@@ -63,7 +63,11 @@ export class TasksRepository {
     const { tags, name, range } = filter;
 
     if (tags.length) {
-      conditions.push(`EXISTS(SELECT 1 FROM tag_task j WHERE j.task_id=t.id AND j.tag_id=ANY(${ bind(tags) }::uuid[]))`);
+      conditions.push(`EXISTS(SELECT 1 FROM tag_task j WHERE j.task_id=t.id AND j.tag_id IN (${ tags.map(
+        (
+          tag,
+        ) => bind(tag,
+      )).join(',') }))`);
     }
 
     if (name) {
@@ -82,20 +86,23 @@ export class TasksRepository {
     old: TaskRow | undefined,
     tags: string[] | undefined,
   ): Promise<void> {
-    await this.database.transaction(async (
+    await this.database.transaction((
       client,
     ) => {
       if (!old) {
-        await client.query('INSERT INTO task (id,name,description,created_at,updated_at) VALUES ($1,$2,$3,date_trunc(\'second\',CURRENT_TIMESTAMP),date_trunc(\'second\',CURRENT_TIMESTAMP))', [input.id, input.name, input.description]);
+        client.query('INSERT INTO task (id,name,description,created_at,updated_at) VALUES ($1,$2,$3,unixepoch()*1000,unixepoch()*1000)', [input.id, input.name, input.description]);
       } else if (old.name !== input.name || old.description !== input.description) {
-        await client.query('UPDATE task SET name=$2,description=$3,updated_at=date_trunc(\'second\',CURRENT_TIMESTAMP) WHERE id=$1', [input.id, input.name, input.description]);
+        client.query('UPDATE task SET name=$2,description=$3,updated_at=unixepoch()*1000 WHERE id=$1', [input.id, input.name, input.description]);
       }
 
       if (tags) {
-        await client.query('DELETE FROM tag_task WHERE task_id=$1 AND NOT(tag_id=ANY($2::uuid[]))', [input.id, tags]);
+        client.query('DELETE FROM tag_task WHERE task_id=$1' + (tags.length ? ' AND tag_id NOT IN (' + tags.map((
+          _,
+          index,
+        ) => '$' + (index + 2)).join(',') + ')' : ''), [input.id, ...tags]);
 
         for (const tag of tags) {
-          await client.query('INSERT INTO tag_task (tag_id,task_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [tag, input.id]);
+          client.query('INSERT INTO tag_task (tag_id,task_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [tag, input.id]);
         }
       }
     });
@@ -104,16 +111,16 @@ export class TasksRepository {
   public async delete(
     id: string,
   ): Promise<void> {
-    await this.database.transaction(async (
+    await this.database.transaction((
       client,
     ) => {
       for (const table of ['jira_work_log', 'time_log', 'tag_task']) {
-        await client.query(`DELETE
+        client.query(`DELETE
                             FROM ${ table }
                             WHERE task_id = $1`, [id]);
       }
 
-      await client.query('DELETE FROM task WHERE id=$1', [id]);
+      client.query('DELETE FROM task WHERE id=$1', [id]);
     });
   }
 }

@@ -1,7 +1,7 @@
 export interface Timestamps {
   id: string;
-  created_at: string;
-  updated_at: string;
+  created_at: number;
+  updated_at: number;
 }
 
 export interface SettingRow {
@@ -22,8 +22,8 @@ export interface TaskRow extends Timestamps {
 
 export interface TimerRow extends Timestamps {
   task_id: string;
-  start_time: string;
-  end_time: string | null;
+  start_time: number;
+  end_time: number | null;
   description: string | null;
 }
 
@@ -38,8 +38,8 @@ export interface JiraWorkLogRow extends Timestamps {
 export interface TimerWrite {
   id: string;
   taskId: string;
-  start: string | null;
-  end: string | null;
+  start: number | null;
+  end: number | null;
   description: string | null;
 }
 

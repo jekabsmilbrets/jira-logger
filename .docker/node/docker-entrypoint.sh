@@ -1,6 +1,10 @@
 #!/bin/sh
 set -eu
 
+mkdir -p /data
+chown node:node /data
+chmod 700 /data
+
 # Stage the bind-mounted private key without making the host key world-readable.
 # Only this initialization runs as root; the server and maintenance run as node.
 if [ "${1:-}" = node ] && [ "${2:-}" = dist/server.js ] && [ -n "${TLS_KEY_FILE:-}" ]; then

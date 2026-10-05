@@ -42,8 +42,8 @@ export class SettingsRepository {
     update: boolean,
   ): Promise<SettingRow> {
     const sql: string = update
-      ? 'UPDATE setting SET name=$2,value=$3,updated_at=date_trunc(\'second\',CURRENT_TIMESTAMP) WHERE id=$1 RETURNING id,name,value'
-      : 'INSERT INTO setting (id,name,value,created_at,updated_at) VALUES ($1,$2,$3,date_trunc(\'second\',CURRENT_TIMESTAMP),date_trunc(\'second\',CURRENT_TIMESTAMP)) RETURNING id,name,value';
+      ? 'UPDATE setting SET name=$2,value=$3,updated_at=unixepoch()*1000 WHERE id=$1 RETURNING id,name,value'
+      : 'INSERT INTO setting (id,name,value,created_at,updated_at) VALUES ($1,$2,$3,unixepoch()*1000,unixepoch()*1000) RETURNING id,name,value';
 
     return requiredRow((await this.database.query<SettingRow>(sql, [row.id, row.name, row.value])).rows);
   }

@@ -1,17 +1,5 @@
-export function databaseUrl(
-  value: string,
-): string {
-  const url: URL = new URL(value);
+import { resolve } from 'node:path';
 
-  if (!['postgres:', 'postgresql:'].includes(url.protocol)) {
-    throw new Error('PostgreSQL URL required');
-  }
-
-  url.searchParams.delete('serverVersion');
-  url.searchParams.delete('charset');
-
-  return url.toString();
-}
 
 export class Configuration {
   public readonly database: string;
@@ -28,11 +16,16 @@ export class Configuration {
   constructor(
     environment: NodeJS.ProcessEnv = process.env,
   ) {
-    this.database = databaseUrl(environment.DATABASE_URL ?? 'postgresql://localhost/jira_logger');
+    this.database = environment.SQLITE_PATH ?? './data/jira-logger.sqlite';
+
+    if (!this.database.trim() || this.database.includes('://')) {
+      throw new Error('SQLite file path required');
+    }
+
     this.internalTimezone = environment.APP_INTERNAL_TIMEZONE ?? 'UTC';
     this.userTimezone = environment.APP_DEFAULT_USER_TIMEZONE ?? 'Europe/Riga';
     this.port = Number(environment.PORT ?? 3000);
-    this.assets = environment.ASSETS_PATH ?? '/var/www/public/ng';
+    this.assets = resolve(environment.ASSETS_PATH ?? './public/ng');
     this.corsOrigin = environment.CORS_ALLOW_ORIGIN ?? '^https?://localhost$';
     this.logFile = environment.LOG_FILE;
     this.tlsCertificate = environment.TLS_CERT_FILE;

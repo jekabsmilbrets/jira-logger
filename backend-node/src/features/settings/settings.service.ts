@@ -50,7 +50,7 @@ export class SettingsService {
     });
     const old: SettingRow | undefined = id ? await this.get(id) : undefined;
 
-    // PHP reads value before name and lets missing typed fields escape to the framework.
+    // Preserve field evaluation order and existing framework errors for missing fields.
     if (typeof input.value !== 'string') {
       throw new Error('Missing value');
     }
@@ -74,7 +74,7 @@ export class SettingsService {
         value: input.value
       }, Boolean(id)));
     } catch (error) {
-      throw new ApiError(400, [!id && errorCode(error) === '23505' ? 'Duplicate Setting name' : `Can not ${ id ? 'Update' : 'Create' } Setting`]);
+      throw new ApiError(400, [!id && errorCode(error) === 'unique' ? 'Duplicate Setting name' : `Can not ${ id ? 'Update' : 'Create' } Setting`]);
     }
   }
 

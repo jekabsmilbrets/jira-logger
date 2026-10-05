@@ -13,6 +13,13 @@ export class MaintenanceCommand {
     const [command, name = ''] = args;
 
     switch (command) {
+      case 'db:backup':
+        if (!name) {
+throw new RangeError('Backup path required');
+}
+
+        await this.maintenance.backup(name);
+        break;
       case 'prepare-db':
         await this.maintenance.prepareDatabase();
         break;

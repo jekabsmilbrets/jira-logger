@@ -74,7 +74,7 @@ export class ReportService {
     const rows: TaskRow[] = await this.repository.list({
       tags,
       name: query.get('name')?.trim(),
-      range: range ? [range[0].toISO(), range[1].toISO()] : undefined
+      range: range ? [range[0].toMillis(), range[1].toMillis()] : undefined
     });
     const tasks: TaskResponse[] = [];
 

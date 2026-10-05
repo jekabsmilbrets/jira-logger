@@ -3,7 +3,8 @@
 @if (pagedTasks(); as taskList) {
     <div class="task-list">
         @for (task of taskList; track task.id) {
-            <tasks-task (action)="onAction($event)"
+            <tasks-task (editingChange)="onEditingChange(task, $event)"
+                        (action)="onAction($event)"
                         (remove)="onRemove($event)"
                         (timeLogsSaved)="onTimeLogsSaved()"
                         (update)="onUpdate($event)"
