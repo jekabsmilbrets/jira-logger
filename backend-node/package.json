@@ -4,7 +4,7 @@
     "name": "Jēkabs Milbrets",
     "email": "jekabs.milbrets@me.com"
   },
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -37,5 +37,8 @@
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.70.0",
     "vitest": "^5.0.1"
+  },
+  "allowScripts": {
+    "fsevents@2.3.3": true
   }
 }
