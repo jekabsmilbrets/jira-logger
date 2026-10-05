@@ -1,3 +1,26 @@
+import { closeSync, openSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
+
+export function acquireDatabaseLock(
+  path: string,
+): () => void {
+  const lockPath: string = path + '.lock';
+  closeSync(openSync(lockPath, 'a', 0o600));
+  const lock: DatabaseSync = new DatabaseSync(lockPath, {
+    timeout: 0
+  });
+
+  try {
+    // Keep the sidecar inode: SQLite releases ownership even after SIGKILL.
+    lock.exec('BEGIN EXCLUSIVE');
+  } catch (error) {
+    lock.close();
+    throw error;
+  }
+
+  return () => lock.close();
+}
+
 export function requiredRow<T>(
   rows: T[],
 ): T {

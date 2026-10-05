@@ -128,10 +128,15 @@ for later changes instead of editing an applied migration. Build scripts copy th
 SQL files into `dist/`.
 
 CLI operations acquire exclusive ownership except `db:backup`, `migrations:status`
-and `app:audit:jira-sync-data`, which can run alongside the server. A `.lock` file
-can remain after an abrupt kill. Remove it manually only after confirming that
-**all** server and maintenance owners are stopped; container PIDs do not reliably
-identify owners from the host. Never remove a lock to bypass an active owner.
+and `app:audit:jira-sync-data`, which can run alongside the server. Server, CLI
+writers and restore share a SQLite exclusive transaction on the `.lock` sidecar.
+The OS releases ownership after a crash or forced kill, allowing the next owner
+to start automatically. The sidecar remains on disk; never delete or replace it
+while an owner is running, since doing so breaks mutual exclusion.
+
+When upgrading from PID-file locks, stop **all** server and maintenance owners
+before clearing the old PID text from the `.lock` file once. Container PIDs do
+not reliably identify owners from the host. No lock cleanup is needed afterward.
 
 ## Source layout
 

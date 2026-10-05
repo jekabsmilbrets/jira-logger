@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -181,7 +183,7 @@ test('file database preserves records, backup restores and application lock excl
     db.lock();
     const second = new Database(path);
 
-    try { assert.throws(() => second.lock(), /EEXIST/); }
+    try { assert.throws(() => second.lock(), /database is locked/); }
     finally { await second.end(); }
 
     db.query('INSERT INTO tag VALUES ($1,$2,$3,$3)', ['one', 'One', 123]);
@@ -198,6 +200,44 @@ test('file database preserves records, backup restores and application lock excl
     } finally { await reopened.end(); await restored.end(); }
   } finally {
     await db.end(); rmSync(directory, {
+      recursive: true,
+      force: true
+    });
+  }
+});
+
+test('ownership recovers after a holder is killed without deleting its lock file', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'jira-sqlite-crash-'));
+  const path = join(directory, 'app.sqlite');
+  const holder = spawn(process.execPath, ['--input-type=module', '-e', `
+    import { DatabaseSync } from 'node:sqlite';
+    const lock = new DatabaseSync(process.argv[1]);
+    lock.exec('BEGIN EXCLUSIVE');
+    process.send('locked');
+    setInterval(() => {}, 1000);
+  `, path + '.lock'], {
+    stdio: ['ignore', 'ignore', 'inherit', 'ipc']
+  });
+
+  try {
+    await once(holder, 'message');
+    assert.throws(() => new Database(path, true), {
+      errcode: 5
+    });
+    const exited = once(holder, 'exit');
+    holder.kill('SIGKILL');
+    await exited;
+    const recovered = new Database(path, true);
+
+    try { await recovered.ping(); } finally { await recovered.end(); }
+  } finally {
+    if (holder.exitCode === null && holder.signalCode === null) {
+      const exited = once(holder, 'exit');
+      holder.kill('SIGKILL');
+      await exited;
+    }
+
+    rmSync(directory, {
       recursive: true,
       force: true
     });
