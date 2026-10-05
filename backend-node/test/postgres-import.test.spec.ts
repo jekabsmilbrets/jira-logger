@@ -5,6 +5,7 @@ import { DatabaseSync } from 'node:sqlite';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { Database } from '../src/database/database';
 import { importPostgres, type PostgresSnapshot, restoreBackup, sourceSchema } from '../src/database/postgres-import';
 
 const directories: string[] = [];
@@ -166,9 +167,11 @@ describe('PostgreSQL snapshot import', () => {
     const { directory, source, destination } = files();
     const backup = join(directory, 'backup.sqlite');
     await importPostgres(source, backup);
-    writeFileSync(destination + '.lock', 'busy');
-    expect(() => restoreBackup(backup, destination)).toThrow();
-    rmSync(destination + '.lock');
+    const owner = new Database(destination, true);
+
+    try { expect(() => restoreBackup(backup, destination)).toThrow('database is locked'); }
+    finally { await owner.end(); }
+
     restoreBackup(backup, destination);
     const restored = new DatabaseSync(destination);
 
@@ -207,6 +210,6 @@ describe('PostgreSQL snapshot import', () => {
     writeFileSync(destination, 'existing');
     expect(() => restoreBackup(backup, destination)).toThrow();
     expect(readFileSync(destination, 'utf8')).toBe('existing');
-    expect(readdirSync(directory).sort()).toEqual(['bad.sqlite', 'database.sqlite', 'snapshot.json']);
+    expect(readdirSync(directory).sort()).toEqual(['bad.sqlite', 'database.sqlite', 'database.sqlite.lock', 'snapshot.json']);
   });
 });
