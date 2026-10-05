@@ -5,17 +5,13 @@ services:
       context: ./../
       dockerfile: ./.docker/node/Dockerfile
     environment:
-      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      SQLITE_PATH: /data/jira-logger.sqlite
+      ASSETS_PATH: /app/public/ng
       APP_INTERNAL_TIMEZONE: ${APP_INTERNAL_TIMEZONE:-UTC}
       APP_DEFAULT_USER_TIMEZONE: ${APP_DEFAULT_USER_TIMEZONE:-Europe/Riga}
       CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:?CORS_ALLOW_ORIGIN is required}
-    depends_on:
-      db:
-        condition: service_healthy
-      assets-init:
-        condition: service_completed_successfully
     volumes:
-      - assetsData:/var/www/public/ng:ro
+      - sqliteData:/data:rw
     stop_grace_period: 135s
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/internal/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]

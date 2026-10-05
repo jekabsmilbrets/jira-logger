@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { DateTime }   from 'luxon';
 
-import type { JiraWorkLogRow, TaskRow, TimerRow } from '@database/records.types';
+import type { JiraWorkLogRow, TaskRow } from '@database/records.types';
 
 import type {
   JiraSearchRequest,
@@ -15,30 +15,46 @@ import { JiraError }                              from '@features/jira/jira-erro
 import type { JiraWorkLogsStore }                 from '@features/jira-work-logs/jira-work-logs.types';
 import type { TasksService } from '@features/tasks/tasks.service';
 import type { TasksStore }   from '@features/tasks/tasks.types';
-import type { TimersStore }  from '@features/timers/timers.types';
+import type { JiraTimerSummary, TimersStore }  from '@features/timers/timers.types';
 
 import { ApiError } from '@http/api-error';
 
 import { boolean, record } from '@shared/coercion';
 
 import { parseDate }             from '@time/date.helpers';
-import type { DateCodec }  from '@time/date-codec';
 import type { TimezoneProvider } from '@time/time.types';
 
 
 export class JiraService {
+  private readonly syncing: Map<string, Promise<void>> = new Map();
   constructor(
     private readonly tasks: Pick<TasksService, 'get'>,
     private readonly taskRepository: Pick<TasksStore, 'names'>,
-    private readonly timers: Pick<TimersStore, 'forTask'>,
+    private readonly timers: Pick<TimersStore, 'jiraSummary'>,
     private readonly logs: Pick<JiraWorkLogsStore, 'forDate' | 'saveRemote'>,
     private readonly timezone: TimezoneProvider,
-    private readonly dates: DateCodec,
     private readonly client: JiraTransport,
   ) {
   }
 
-  public async sync(
+  public sync(
+    id: string,
+    date: string,
+  ): Promise<void> {
+    const key: string = id.toLowerCase() + ':' + date;
+    const existing: Promise<void> | undefined = this.syncing.get(key);
+
+    if (existing) {
+return existing;
+}
+
+    const pending: Promise<void> = this.syncOnce(id, date).finally(() => this.syncing.delete(key));
+    this.syncing.set(key, pending);
+
+    return pending;
+  }
+
+  private async syncOnce(
     id: string,
     date: string,
   ): Promise<void> {
@@ -48,30 +64,10 @@ export class JiraService {
     const end: DateTime = day.endOf('day').startOf('second');
     const canonical: string | null = day.toISODate();
     const existing: JiraWorkLogRow | undefined = await this.logs.forDate(id, canonical);
-    const timers: TimerRow[] = await this.timers.forTask(id);
-    let seconds: number = 0;
-    let descriptions: string[] = [];
-
-    for (const timer of timers) {
-      const start: DateTime = this.dates.storedDate(timer.start_time);
-      const finish: DateTime = timer.end_time ? this.dates.storedDate(timer.end_time) : end;
-
-      if (+start > +end || +finish < +day) {
-        continue;
-      }
-
-      seconds += Math.max(0, Math.floor(Math.min(+finish, +end) / 1000) - Math.floor(Math.max(+start, +day) / 1000));
-
-      if (timer.description && timer.description !== '0') {
-        descriptions.push(timer.description);
-      }
-    }
-
+    const summary: JiraTimerSummary = await this.timers.jiraSummary(id, day.toMillis(), end.toMillis());
+    const seconds: number = summary.seconds;
     const pieces: string[] = task.name.split('-#-');
-
-    if (pieces.length > 1) {
-      descriptions = [(pieces[1] ?? '').trim()];
-    }
+    const comment: string = pieces.length > 1 ? (pieces[1] ?? '').trim() : summary.comment;
 
     let remote: Record<string, unknown> | undefined;
 
@@ -89,7 +85,7 @@ export class JiraService {
         updateAuthor: null,
         updated: null,
         timeSpent: null,
-        comment: descriptions.join(', '),
+        comment,
         started: day.set({
           hour: 17
         }).toFormat('yyyy-MM-dd\'T\'HH:mm:ss\'.000\'ZZZ'),
@@ -102,7 +98,7 @@ export class JiraService {
         try {
           remote = await session.request(`${ path }/${ parseInt(existing.work_log_id, 10) || 0 }`, payload, 'PUT');
         } catch (error) {
-          if (!(error instanceof JiraError)) {
+          if (!(error instanceof JiraError) || error.status !== 404) {
             throw error;
           }
         }

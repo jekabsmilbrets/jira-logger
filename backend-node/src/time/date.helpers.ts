@@ -56,7 +56,7 @@ export function parseDate(
         zone
       });
       // timelib's initial offset comes from interpreting the wall clock as UTC.
-      // Verified against PHP for Riga, New York, London, and Lord Howe overlaps.
+      // Preserve the established choice for Riga, New York, London, and Lord Howe overlaps.
       const preferredOffset: number = wall.setZone(zone).offset;
       result = result.getPossibleOffsets().find(
         (
@@ -75,6 +75,6 @@ export function parseDate(
 
 export function sqlDate(
   value: DateTime,
-): string {
-  return value.toUTC().startOf('second').toISO()!;
+): number {
+  return value.toUTC().startOf('second').toMillis();
 }

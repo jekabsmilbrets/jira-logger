@@ -1,8 +1,9 @@
-import { NgTemplateOutlet } from '@angular/common';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   inject,
   type ResourceRef,
   type Signal,
@@ -105,6 +106,21 @@ export class TasksMenu {
 
   constructor() {
     this.taskFilterRefresh();
+
+    const document: Document = inject(DOCUMENT);
+    const destroyRef: DestroyRef = inject(DestroyRef);
+    let wasHidden: boolean = document.hidden;
+    const onVisibilityChange: () => void = (): void => {
+      const hidden: boolean = document.hidden;
+
+      if (wasHidden && !hidden) {
+        this.taskFilterResource.reload();
+      }
+      wasHidden = hidden;
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    destroyRef.onDestroy(() => document.removeEventListener('visibilitychange', onVisibilityChange));
   }
 
   protected onOpenSettingsDialog(): void {

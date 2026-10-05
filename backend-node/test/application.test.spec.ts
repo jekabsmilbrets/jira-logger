@@ -1,6 +1,6 @@
 import assert                                               from 'node:assert/strict';
 import { spawnSync }                                        from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { request as httpsRequest }                          from 'node:https';
 import { tmpdir }                                           from 'node:os';
 import { join }                                             from 'node:path';
@@ -13,6 +13,8 @@ import { Configuration } from '@application/configuration';
 
 import { Database } from '@database/database';
 
+import { MigrationRepository } from '@features/maintenance/migration.repository';
+
 
 function fixture(
   name,
@@ -23,36 +25,52 @@ function fixture(
     databaseClosed: 0,
     jiraClosed: 0
   };
-  const pool = {
-    query: async (
-      sql,
-    ) => {
-      calls.queries++;
+  const database = new Database(':memory:');
+  new MigrationRepository(database).migrate();
+  const query = database.query.bind(database);
+  const end = database.end.bind(database);
 
-      if (options.query) {
-        return options.query(sql);
-      }
+  database.query = (
+    sql,
+    values,
+  ) => {
+    if (!/SELECT .*FROM setting\b/i.test(sql)) {
+      return query(sql, values);
+    }
 
-      return {
-        rows: [{
-          id: name,
-          name: 'fixture.name',
-          value: name
-        }],
-        rowCount: 1
-      };
-    },
-    connect: async () => {
-      throw new Error('Unexpected transaction');
-    },
-    end: async () => {
-      calls.databaseClosed++;
+    calls.queries++;
 
-      if (options.failClose) {
-        throw new Error('fixture close');
-      }
+    if (options.query) {
+      return options.query(sql);
+    }
+
+    return {
+      rows: [{
+        id: name,
+        name: 'fixture.name',
+        value: name
+      }],
+      rowCount: 1
+    };
+  };
+
+  database.ping = async () => {
+    if (options.query) {
+      await options.query('SELECT 1');
+    } else {
+      query('SELECT 1');
     }
   };
+
+  database.end = async () => {
+    calls.databaseClosed++;
+    await end();
+
+    if (options.failClose) {
+      throw new Error('fixture close');
+    }
+  };
+
   const jira = {
     session: async () => {
       throw new Error('Unexpected Jira request');
@@ -62,7 +80,7 @@ function fixture(
     }
   };
   const application = new Application(new Configuration(options.environment ?? {}), {
-    database: new Database(pool),
+    database,
     jira
   });
 
@@ -256,6 +274,45 @@ test('Node serves static assets and SPA routes without exposing private paths', 
   }
 });
 
+test('static assets do not consume application limits and throttled requests return 429', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'jira-static-limit-'));
+  writeFileSync(join(directory, 'main.js'), 'console.log("asset");');
+  const { application } = fixture('rate-limit', {
+    environment: {
+      ASSETS_PATH: directory
+    }
+  });
+  const server = buildServer(application);
+
+  try {
+    for (let index = 0; index < 105; index++) {
+      assert.equal((await server.inject('/ng/main.js')).statusCode, 200);
+    }
+
+    for (let index = 0; index < 1000; index++) {
+      assert.equal((await server.inject('/api/setting')).statusCode, 200);
+    }
+
+    const limited = await server.inject({
+      url: '/api/setting',
+      headers: {
+        Accept: 'application/json'
+      }
+    });
+    assert.equal(limited.statusCode, 429);
+    assert.equal(limited.json().status, 429);
+    assert.equal(limited.json().detail, 'Too Many Requests');
+    assert.ok(Number(limited.headers['retry-after']) > 0);
+    assert.equal((await server.inject('/ng/main.js')).statusCode, 200);
+  } finally {
+    await server.close();
+    rmSync(directory, {
+      recursive: true,
+      force: true
+    });
+  }
+});
+
 test('direct Node HTTPS serves assets using the configured certificate', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'jira-tls-'));
   const key = join(directory, 'server.key'), cert = join(directory, 'server.crt');
@@ -320,26 +377,37 @@ test('direct Node HTTPS serves assets using the configured certificate', async (
   }), /Both TLS/);
 });
 
-test('entry point imports create no clients and do not read runtime configuration', () => {
+test('entry point imports do not create a database or read runtime configuration', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'jira-import-'));
+  const databasePath = join(directory, 'not-created', 'database.sqlite');
   const script = `
     import assert from 'node:assert/strict';
-    import pg from 'pg';
-    let pools = 0;
-    const OriginalPool = pg.Pool;
-    pg.Pool = class extends OriginalPool { constructor(...args) { pools++; super(...args); } };
+    import { existsSync } from 'node:fs';
     await import('./dist/server.js');
     await import('./dist/cli.js');
-    assert.equal(pools, 0);
+    assert.equal(existsSync(process.env.SQLITE_PATH), false);
   `;
-  const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
-    cwd: new URL('../', import.meta.url),
-    encoding: 'utf8',
-    env: {
-      ...process.env,
-      DATABASE_URL: 'invalid-on-purpose'
+
+  try {
+    for (const path of [databasePath, 'invalid://database']) {
+      const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+        cwd: new URL('../', import.meta.url),
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          SQLITE_PATH: path
+        }
+      });
+      assert.equal(result.status, 0, result.stderr);
     }
-  });
-  assert.equal(result.status, 0, result.stderr);
+
+    assert.equal(existsSync(join(directory, 'not-created')), false);
+  } finally {
+    rmSync(directory, {
+      recursive: true,
+      force: true
+    });
+  }
 });
 
 test('unreadable TLS configuration closes resources when server construction fails', async () => {

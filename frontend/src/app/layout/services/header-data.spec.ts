@@ -6,6 +6,7 @@ import { vi } from 'vitest';
 import type { ApiTask } from '@shared/interfaces/api/api-task.interface';
 import { Task } from '@shared/models/task.model';
 import { ApiRequest } from '@shared/services/api-request';
+import { Tasks } from '@shared/services/tasks';
 import { TimeLogs } from '@shared/services/time-logs';
 import { createResourceRequestHandleMock } from '@shared/testing/resource-request-handle.mock';
 
@@ -13,6 +14,7 @@ import { HeaderData } from './header-data';
 
 describe('Layout Services header-data', () => {
   const apiRequestService = createResourceRequestHandleMock();
+  let taskChangedSubject: Subject<void>;
   let taskStartedSubject: Subject<Task>;
   let taskFinishedSubject: Subject<Task>;
   let timeLogChangedSubject: Subject<Task>;
@@ -34,6 +36,7 @@ describe('Layout Services header-data', () => {
   const configureService: () => Promise<HeaderData> = async () => {
     await TestBed.configureTestingModule({
       providers: [
+        { provide: Tasks, useValue: { changed$: taskChangedSubject.asObservable() } },
         { provide: ApiRequest, useValue: apiRequestService },
         {
           provide: TimeLogs,
@@ -58,6 +61,7 @@ describe('Layout Services header-data', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
+    taskChangedSubject = new Subject<void>();
     taskStartedSubject = new Subject<Task>();
     taskFinishedSubject = new Subject<Task>();
     timeLogChangedSubject = new Subject<Task>();
@@ -82,6 +86,7 @@ describe('Layout Services header-data', () => {
   afterEach(() => {
     vi.useRealTimers();
     TestBed.resetTestingModule();
+    vi.restoreAllMocks();
   });
 
   it('loads active task and today seconds from backend endpoints', async () => {
@@ -149,6 +154,54 @@ describe('Layout Services header-data', () => {
     await vi.advanceTimersByTimeAsync(0);
     await TestBed.tick();
     expect(service.activeTask()?.id).toBe('4');
+  });
+
+  it('refreshes authoritative timer and totals once when a hidden tab becomes visible', async () => {
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    const service = await configureService();
+    const reloadActive = vi.spyOn(service, 'reloadActiveTask');
+    const reloadSeconds = vi.spyOn(service, 'reloadTimeLoggedToday');
+    activeTaskResponse = apiTask('other-tab', 'Other tab');
+    secondsResponse = 90;
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    hidden.mockReturnValue(true);
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(reloadActive).not.toHaveBeenCalled();
+
+    hidden.mockReturnValue(false);
+    document.dispatchEvent(new Event('visibilitychange'));
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(0);
+    await TestBed.tick();
+    expect(reloadActive).toHaveBeenCalledOnce();
+    expect(reloadSeconds).toHaveBeenCalledOnce();
+    expect(service.activeTask()?.id).toBe('other-tab');
+    expect(service.timeLoggedToday()).toBe(90);
+
+    TestBed.resetTestingModule();
+    hidden.mockReturnValue(true);
+    document.dispatchEvent(new Event('visibilitychange'));
+    hidden.mockReturnValue(false);
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(reloadActive).toHaveBeenCalledOnce();
+  });
+
+  it('refreshes totals immediately after timer and task mutations', async () => {
+    const service = await configureService();
+    secondsResponse = 75;
+    taskFinishedSubject.next(new Task({ id: 'task', name: 'Task' }));
+    await vi.advanceTimersByTimeAsync(0);
+    await TestBed.tick();
+    expect(service.timeLoggedToday()).toBe(75);
+
+    activeTaskResponse = null;
+    secondsResponse = 0;
+    taskChangedSubject.next();
+    await vi.advanceTimersByTimeAsync(0);
+    await TestBed.tick();
+    expect(service.activeTask()).toBeNull();
+    expect(service.timeLoggedToday()).toBe(0);
   });
 
   it('rethrows non-404 active-task errors', async () => {

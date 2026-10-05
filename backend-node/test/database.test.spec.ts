@@ -1,108 +1,205 @@
-import assert         from 'node:assert/strict';
-import { once } from 'node:events';
-import { createServer } from 'node:net';
+import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-import pg       from 'pg';
-import { test, vi } from 'vitest';
+import { test } from 'vitest';
 
-import { Database }   from '@database/database';
-import { createPool } from '@database/postgres-pool';
+import { Database } from '@database/database';
+import { errorCode } from '@database/database.helpers';
+
+import { MigrationRepository } from '@features/maintenance/migration.repository';
+import { TagsRepository } from '@features/tags/tags.repository';
+import { TasksRepository } from '@features/tasks/tasks.repository';
+import { TimersRepository } from '@features/timers/timers.repository';
 
 
-test('transactions preserve ordering, rollback and release with injected sessions', async () => {
-  const calls = [];
-  const session = {
-    query: async (
-      sql,
-    ) => {
-      calls.push(sql);
-
-      return {
-        rows: [],
-        rowCount: 0
-      };
-    },
-    release: () => calls.push('release')
-  };
-  const database = new Database({
-    ...session,
-    connect: async () => session,
-    end: async () => calls.push('end')
-  });
-  assert.equal(await database.transaction(async (
-    client,
-  ) => {
-    await client.query('write');
-
-    return 7;
-  }), 7);
-  assert.deepEqual(calls, ['BEGIN', 'write', 'COMMIT', 'release']);
-  calls.length = 0;
-  await assert.rejects(database.transaction(async () => {
-    throw new Error('fixture');
-  }), /fixture/);
-  assert.deepEqual(calls, ['BEGIN', 'ROLLBACK', 'release']);
-  await database.end();
-  assert.equal(calls.at(-1), 'end');
-});
-
-test('database pools keep timestamp parsers local', async () => {
-  const parser = pg.types.getTypeParser(1184);
-  const pool = createPool('postgresql://localhost/unused');
-  assert.equal(pool.options.types.getTypeParser(1184)('2026-06-06 10:00:00+00'), '2026-06-06 10:00:00+00');
-  assert.equal(pg.types.getTypeParser(1184), parser);
-  await pool.end();
-});
-
-test('idle connection failures are logged safely and subsequent queries reconnect', async () => {
-  const sockets = [];
-  const server = createServer((
-    socket,
-  ) => {
-    sockets.push(socket);
-    socket.once('data', () => {
-      // AuthenticationOk and ReadyForQuery for the startup packet.
-      socket.write(Buffer.from('5200000008000000005a0000000549', 'hex'));
-      socket.on('data', (
-        packet,
-      ) => {
-        if (packet[0] === 81) {
-          // CommandComplete (SELECT 1) and ReadyForQuery.
-          socket.write(Buffer.from('430000000d53454c4543542031005a0000000549', 'hex'));
-        } else if (packet[0] === 88) {
-          socket.end();
-        }
-      });
-    });
-  });
-  server.listen(0, '127.0.0.1');
-  await once(server, 'listening');
-  const pool = createPool(`postgresql://fixture:private-password@127.0.0.1:${ server.address().port }/fixture?sslmode=disable`);
-  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+test('real transactions commit, roll back and refuse asynchronous callbacks', async () => {
+  const db = new Database(':memory:');
 
   try {
-    assert.equal((await pool.query('SELECT 1')).rowCount, 1);
-    assert.equal(pool.idleCount, 1);
-    // PostgreSQL ErrorResponse: FATAL, code 57P01 (administrator shutdown).
-    const fields = Buffer.from('SFATAL\0C57P01\0Mterminating connection\0\0');
-    const header = Buffer.alloc(5);
-    header[0] = 69;
-    header.writeInt32BE(fields.length + 4, 1);
-    sockets[0].end(Buffer.concat([header, fields]));
-    await vi.waitFor(() => assert.equal(pool.totalCount, 0));
-    assert.deepEqual(log.mock.calls, [['Idle PostgreSQL connection failed', {
-      code: '57P01'
-    }]]);
-    assert.equal((await pool.query('SELECT 1')).rowCount, 1);
-    assert.equal(sockets.length, 2);
+    new MigrationRepository(db).migrate();
+    assert.equal(db.transaction(
+      (
+        client,
+      ) => {
+        client.query('INSERT INTO tag VALUES ($1,$2,$3,$3)', ['one', 'One', 1],
+        );
+
+        return 7;
+      }), 7);
+    assert.throws(() => db.transaction(
+      (
+        client,
+      ) => {
+        client.query('INSERT INTO tag VALUES ($1,$2,$3,$3)', ['two', 'Two', 2],
+        );
+        throw new Error('fixture');
+      }), /fixture/);
+    assert.equal(db.query('SELECT * FROM tag').rowCount, 1);
+    assert.throws(() => db.transaction(async (
+      client,
+    ) => { client.query('DELETE FROM tag'); }), /synchronous/);
+    assert.equal(db.query('SELECT * FROM tag').rowCount, 1);
+    let scope;
+    assert.throws(() => db.transaction(
+      (
+        client,
+      ) => {
+        scope = client;
+        client.query('DELETE FROM tag',
+        );
+
+        return Promise.resolve();
+      }), /synchronous/);
+    assert.throws(() => scope.query('DELETE FROM tag'), /closed/);
+    assert.equal(db.query('SELECT * FROM tag').rowCount, 1);
+  } finally { await db.end(); }
+});
+
+test('constraints map to API errors, migrations are idempotent and failure rolls back', async () => {
+  const db = new Database(':memory:');
+
+  try {
+    const migrations = new MigrationRepository(db);
+    migrations.migrate();
+    migrations.migrate();
+    assert.deepEqual(migrations.status(), [{
+      version: 1,
+      applied: true
+    }]);
+    db.query('INSERT INTO tag VALUES ($1,$2,$3,$3)', ['one', 'One', 1]);
+
+    try { db.query('INSERT INTO tag VALUES ($1,$2,$3,$3)', ['two', 'One', 1]); assert.fail(); }
+    catch (error) { assert.equal(errorCode(error), 'unique'); }
+
+    assert.throws(() => db.query('INSERT INTO tag_task VALUES ($1,$2)', ['missing', 'missing']), /FOREIGN KEY/);
+    assert.throws(() => new MigrationRepository(db, [
+      {
+        version: 1,
+        sql: ''
+      },
+      {
+        version: 2,
+        sql: 'CREATE TABLE transient(id TEXT); INSERT INTO missing VALUES (1);'
+      }
+    ]).migrate(), /missing/);
+    assert.equal(db.query('PRAGMA user_version').rows[0].user_version, 1);
+    assert.equal(db.query("SELECT name FROM sqlite_master WHERE name='transient'").rowCount, 0);
+    db.exec('PRAGMA user_version=2');
+    assert.throws(() => migrations.migrate(), /newer/);
+  } finally { await db.end(); }
+});
+
+test('tag filters, empty relations, task deletion and timer transitions use real SQLite', async () => {
+  const db = new Database(':memory:');
+
+  try {
+    new MigrationRepository(db).migrate();
+    const tasks = new TasksRepository(db);
+    const tags = new TagsRepository(db);
+    const timers = new TimersRepository(db);
+    await tags.save('tag', 'Tag', false);
+    await tasks.save({
+      id: 'first',
+      name: 'First',
+      description: null
+    }, undefined, ['tag']);
+    await tasks.save({
+      id: 'second',
+      name: 'Second',
+      description: null
+    }, undefined, []);
+    assert.deepEqual(await tags.resolve([]), []);
+    assert.deepEqual(await tags.resolve(['tag']), ['tag']);
+    assert.equal((await tasks.list({
+      tags: ['tag'],
+      name: undefined,
+      range: undefined
+    }))[0].id, 'first');
+    const first = await tasks.find('first');
+    await tasks.save({
+      id: 'first',
+      name: 'First',
+      description: null
+    }, first, []);
+    assert.equal((await tasks.list({
+      tags: ['tag'],
+      name: undefined,
+      range: undefined
+    })).length, 0);
+    assert.equal(timers.changeRunning('first', 'timer1', 'start'), true);
+    assert.equal(timers.changeRunning('second', 'timer2', 'start'), true);
+    assert.equal(db.query('SELECT * FROM time_log WHERE end_time IS NULL').rowCount, 1);
+    assert.throws(() => timers.changeRunning('missing', 'bad', 'start'), /FOREIGN KEY/);
+    assert.equal(await timers.activeTask(), 'second');
+    assert.equal(timers.changeRunning('second', 'unused', 'stop'), true);
+    assert.equal(timers.changeRunning('second', 'unused', 'stop'), false);
+    await tasks.delete('first');
+    assert.equal((await timers.forTask('first')).length, 0);
+  } finally { await db.end(); }
+});
+
+test('WAL readers observe committed records and migrations recheck the version on each connection', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'jira-sqlite-isolation-'));
+  const path = join(directory, 'app.sqlite');
+  const writer = new Database(path);
+  const reader = new Database(path);
+
+  try {
+    new MigrationRepository(writer).migrate();
+    writer.query('INSERT INTO tag VALUES ($1,$2,$3,$3)', ['one', 'Before', 1]);
+    assert.equal(writer.query('PRAGMA journal_mode').rows[0].journal_mode, 'wal');
+    assert.equal(writer.query('PRAGMA foreign_keys').rows[0].foreign_keys, 1);
+    assert.equal(writer.query('PRAGMA busy_timeout').rows[0].timeout, 5000);
+    writer.transaction((
+      client,
+    ) => {
+      client.query('UPDATE tag SET name=$1 WHERE id=$2', ['After', 'one']);
+      assert.equal(reader.query('SELECT name FROM tag').rows[0].name, 'Before');
+    });
+    assert.equal(reader.query('SELECT name FROM tag').rows[0].name, 'After');
+    new MigrationRepository(reader).migrate();
+    assert.equal(reader.query('PRAGMA user_version').rows[0].user_version, 1);
   } finally {
-    await pool.end();
-    sockets.forEach((
-      socket,
-    ) => socket.destroy());
-    await new Promise((
-      resolve,
-    ) => server.close(resolve));
-    log.mockRestore();
+    await writer.end();
+    await reader.end();
+    rmSync(directory, {
+      recursive: true,
+      force: true
+    });
+  }
+});
+
+test('file database preserves records, backup restores and application lock excludes a second owner', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'jira-sqlite-'));
+  const path = join(directory, 'app.sqlite');
+  const db = new Database(path);
+
+  try {
+    new MigrationRepository(db).migrate();
+    db.lock();
+    const second = new Database(path);
+
+    try { assert.throws(() => second.lock(), /EEXIST/); }
+    finally { await second.end(); }
+
+    db.query('INSERT INTO tag VALUES ($1,$2,$3,$3)', ['one', 'One', 123]);
+    const snapshot = join(directory, 'backup.sqlite');
+    await db.backup(snapshot);
+    await assert.rejects(db.backup(snapshot), /EEXIST/);
+    await db.end();
+    const reopened = new Database(path), restored = new Database(snapshot);
+
+    try {
+      assert.equal(reopened.query('SELECT * FROM tag').rows[0].created_at, 123);
+      assert.deepEqual(restored.query('SELECT * FROM tag').rows, reopened.query('SELECT * FROM tag').rows);
+      assert.equal(reopened.query('PRAGMA integrity_check').rows[0].integrity_check, 'ok');
+    } finally { await reopened.end(); await restored.end(); }
+  } finally {
+    await db.end(); rmSync(directory, {
+      recursive: true,
+      force: true
+    });
   }
 });

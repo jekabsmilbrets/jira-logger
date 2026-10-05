@@ -1,7 +1,0 @@
-when@dev:
-    web_profiler:
-        toolbar: true
-
-when@test:
-    framework:
-        profiler: { collect: false }

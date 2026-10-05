@@ -24,9 +24,16 @@ export class TagsRepository {
   public async resolve(
     ids: readonly (string | null)[],
   ): Promise<string[]> {
+    if (!ids.length) {
+return [];
+}
+
     return (await this.database.query<{
       id: string
-    }>('SELECT id FROM tag WHERE id=ANY($1::uuid[])', [ids])).rows.map(
+    }>('SELECT id FROM tag WHERE id IN (' + ids.map((
+      _,
+      index,
+    ) => '$' + (index + 1)).join(',') + ')', [...ids])).rows.map(
       (
         row,
       ) => row.id,
@@ -39,8 +46,8 @@ export class TagsRepository {
     update: boolean,
   ): Promise<TagRow> {
     const sql: string = update
-      ? 'UPDATE tag SET name=$2,updated_at=date_trunc(\'second\',CURRENT_TIMESTAMP) WHERE id=$1 RETURNING *'
-      : 'INSERT INTO tag (id,name,created_at,updated_at) VALUES ($1,$2,date_trunc(\'second\',CURRENT_TIMESTAMP),date_trunc(\'second\',CURRENT_TIMESTAMP)) RETURNING *';
+      ? 'UPDATE tag SET name=$2,updated_at=unixepoch()*1000 WHERE id=$1 RETURNING *'
+      : 'INSERT INTO tag (id,name,created_at,updated_at) VALUES ($1,$2,unixepoch()*1000,unixepoch()*1000) RETURNING *';
 
     return requiredRow((await this.database.query<TagRow>(sql, [id, name])).rows);
   }

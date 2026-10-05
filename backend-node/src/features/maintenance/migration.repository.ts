@@ -1,53 +1,60 @@
-import type { Database }        from '@database/database';
-import type { DatabaseSession } from '@database/database.types';
+import { readFileSync } from 'node:fs';
 
-import type { MigrationVersion }     from '@features/maintenance/maintenance.types';
-import { migrationLock, migrations } from '@features/maintenance/migrations.constants';
+import type { Database } from '@database/database';
 
+import type { Migration, MigrationVersion } from '@features/maintenance/maintenance.types';
+
+
+const migrations: Migration[] = [
+  {
+    version: 1,
+    sql: readFileSync(new URL('./migrations/001-initial.sql', import.meta.url), 'utf8')
+  }
+];
 
 export class MigrationRepository {
   constructor(
-    private readonly database: Pick<Database, 'connect' | 'query'>,
-  ) {
+    private readonly database: Database,
+    private readonly versions: readonly Migration[] = migrations,
+  ) {}
+
+  public status(): MigrationVersion[] {
+    const version: number = Number(this.database.query<{ user_version: number }>('PRAGMA user_version').rows[0]?.user_version ?? 0);
+
+    return this.versions.map(
+      (
+        migration,
+      ) => ({
+        version: migration.version,
+        applied: migration.version <= version
+      }));
   }
 
-  public async status(): Promise<MigrationVersion[]> {
-    return (await this.database.query<MigrationVersion>('SELECT * FROM doctrine_migration_versions ORDER BY version')).rows;
-  }
+  public migrate(): void {
+    const latest: number = this.versions.at(-1)?.version ?? 0;
 
-  public async migrate(): Promise<void> {
-    const client: DatabaseSession = await this.database.connect();
+    for (const migration of this.versions) {
+      this.database.transaction(
+        (
+          client,
+        ) => {
+          const version: number = Number(client.query<{ user_version: number }>('PRAGMA user_version').rows[0]?.user_version ?? 0);
 
-    try {
-      await client.query('SELECT pg_advisory_lock($1)', [migrationLock]);
-      await client.query('CREATE TABLE IF NOT EXISTS doctrine_migration_versions (version VARCHAR(191) NOT NULL PRIMARY KEY, executed_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL, execution_time INT DEFAULT NULL)');
-
-      for (const migration of migrations) {
-        if ((await client.query('SELECT 1 FROM doctrine_migration_versions WHERE version=$1', [migration.version])).rowCount) {
-          continue;
-        }
-
-        const start: number = Date.now();
-        await client.query('BEGIN');
-
-        try {
-          for (const sql of migration.sql) {
-            await client.query(sql);
+          if (version > latest) {
+            throw new Error('Database schema is newer than this application');
           }
 
-          await client.query('INSERT INTO doctrine_migration_versions VALUES ($1, CURRENT_TIMESTAMP, $2)', [migration.version, Date.now() - start]);
-          await client.query('COMMIT');
-        } catch (error) {
-          await client.query('ROLLBACK');
-          throw error;
-        }
-      }
-    } finally {
-      try {
-        await client.query('SELECT pg_advisory_unlock($1)', [migrationLock]);
-      } finally {
-        client.release();
-      }
+          if (version >= migration.version) {
+            return;
+          }
+
+          if (version !== migration.version - 1) {
+            throw new Error('Missing database migration');
+          }
+
+          this.database.exec(migration.sql);
+          this.database.exec('PRAGMA user_version = ' + migration.version);
+        });
     }
   }
 }

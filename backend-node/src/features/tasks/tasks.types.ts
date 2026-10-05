@@ -6,7 +6,7 @@ import type { TasksRepository } from '@features/tasks/tasks.repository';
 export interface TaskFilter {
   tags: string[];
   name: string | undefined;
-  range: [string | null, string | null] | undefined;
+  range: [number, number] | undefined;
 }
 
 export interface TaskRelations {

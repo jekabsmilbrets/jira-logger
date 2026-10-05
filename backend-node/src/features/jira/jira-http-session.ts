@@ -50,7 +50,7 @@ export class JiraHttpSession implements JiraSession {
     try {
       raw = await response.text();
     } catch (error) {
-      // PHP legacy search translates an interrupted/empty response into its search error.
+      // Preserve the search error for interrupted or empty responses.
       if (path === '/search') {
         throw new JiraError('Jira issue search failed.');
       }
