@@ -4,6 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import { DatabaseSync, type StatementSync } from 'node:sqlite';
 
 import { Database } from '@database/database';
+import { acquireDatabaseLock } from '@database/database.helpers';
 
 import { MigrationRepository } from '@features/maintenance/migration.repository';
 
@@ -286,8 +287,7 @@ export function restoreBackup(
     throw new Error('Restore requires a standalone consistent backup without sidecars');
   }
 
-  const lockPath: string = destination + '.lock';
-  const lock: number = openSync(lockPath, 'wx', 0o600);
+  const releaseLock: () => void = acquireDatabaseLock(destination);
   const temporary: string = temporaryPath(destination);
   let ownsTemporary: boolean = false;
 
@@ -311,8 +311,7 @@ export function restoreBackup(
         removeOwned(temporary);
       }
     } finally {
-      closeSync(lock);
-      unlinkSync(lockPath);
+      releaseLock();
     }
   }
 }

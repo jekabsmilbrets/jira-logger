@@ -1,8 +1,9 @@
-import { closeSync, mkdirSync, openSync, unlinkSync, writeFileSync } from 'node:fs';
+import { closeSync, mkdirSync, openSync, unlinkSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import type { SQLInputValue, StatementResultingChanges, StatementSync } from 'node:sqlite';
 import { backup, DatabaseSync } from 'node:sqlite';
 
+import { acquireDatabaseLock } from '@database/database.helpers';
 import type { DatabaseAccess, QueryExecutor, QueryResult } from '@database/database.types';
 
 
@@ -140,19 +141,7 @@ export class Database implements DatabaseAccess {
       return;
     }
 
-    const lockPath: string = this.path + '.lock';
-    const descriptor: number = openSync(lockPath, 'wx', 0o600);
-
-    try {
-      writeFileSync(descriptor, process.pid + '\n');
-    } catch (error) {
-      unlinkSync(lockPath);
-      throw error;
-    } finally {
-      closeSync(descriptor);
-    }
-
-    this.releaseLock = () => unlinkSync(lockPath);
+    this.releaseLock = acquireDatabaseLock(this.path);
   }
 
   public async ping(): Promise<void> {
